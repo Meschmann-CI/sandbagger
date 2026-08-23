@@ -73,30 +73,20 @@ export function EmptyState({ title, sub, cta }: { title: string; sub?: string; c
 }
 
 // The Saddam: the trophy that belongs to whoever won the last group
-// round. Drawn as a silhouette so the cap and the moustache still read at
-// badge size, and in currentColor so it sits on any background.
+// round. The artwork is black line art on an opaque white background, so
+// multiply blending drops the white and lets it sit on the gold cards and
+// tinted rows without a visible square around it.
 export function SaddamIcon({ size = 18 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-label="The Saddam" role="img">
-      {/* peaked cap, swept up to the left, with its insignia */}
-      <path d="M3.1 6.5 C6.4 2.2 11.4 0.6 15.6 1.3 c3.4 0.6 4.4 3.3 3.6 6.6 l-0.5 2.2 -14.3 0 C3.2 10.1 2.4 9.4 2.6 8.5 Z" />
-      <circle cx="15.3" cy="4.6" r="1.35" fill="#fff" />
-      {/* ears */}
-      <path d="M4.6 12.1 c-1 0 -1.5 0.8 -1.4 1.9 0.1 1.2 0.7 2 1.7 2 Z" />
-      <path d="M19.4 12.1 c1 0 1.5 0.8 1.4 1.9 -0.1 1.2 -0.7 2 -1.7 2 Z" />
-      {/* head and jaw */}
-      <path d="M4.9 8.6 h14.2 l0.5 6.6 c0.2 2 -0.9 3.3 -2.2 4 -0.9 0.5 -1.4 1 -1.9 1.7 -0.9 1.3 -2.1 2 -3.5 2 s-2.6 -0.7 -3.5 -2 c-0.5 -0.7 -1 -1.2 -1.9 -1.7 -1.3 -0.7 -2.4 -2 -2.2 -4 Z" />
-      {/* eyes, knocked out of the silhouette */}
-      <path d="M6.6 10.6 h4.2 v2.7 h-4.2 Z" fill="#fff" />
-      <path d="M13.2 10.6 h4.2 v2.7 h-4.2 Z" fill="#fff" />
-      <circle cx="8.7" cy="12" r="0.85" />
-      <circle cx="15.3" cy="12" r="0.85" />
-      {/* nose bridge */}
-      <path d="M11.4 10.9 h1.2 v4.2 h-1.2 Z" fill="#fff" />
-      {/* the moustache */}
-      <path d="M7.2 16.2 c1.6 -0.6 3.2 -0.9 4.8 -0.9 s3.2 0.3 4.8 0.9 v1.9 h-9.6 Z" fill="#fff" />
-      <path d="M7.9 17.1 c1.3 -0.4 2.7 -0.6 4.1 -0.6 s2.8 0.2 4.1 0.6" stroke="currentColor" strokeWidth="1.1" fill="none" />
-    </svg>
+    <img
+      src="/saddam.png"
+      alt="The Saddam"
+      width={size}
+      height={size}
+      style={{ width: size, height: size, mixBlendMode: 'multiply' }}
+      className="shrink-0 select-none"
+      draggable={false}
+    />
   )
 }
 
