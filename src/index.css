@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  /* Scorecard Clean — light theme */
+  --color-paper: #f6f6f2;
+  --color-card: #ffffff;
+  --color-line: #e7e5dc;
+  --color-line-strong: #d6d3c6;
+
+  --color-ink: #182019;
+  --color-ink-dim: #5b665d;
+  --color-ink-faint: #9aa39b;
+
+  --color-green: #1c7c4a;
+  --color-green-deep: #14603a;
+  --color-green-soft: #e9f4ee;
+  --color-gold: #b98a24;
+  --color-gold-soft: #faf2dd;
+  --color-flag: #cf4a35;
+  --color-flag-soft: #fbeae6;
+
+  --font-sans: "Manrope", "Segoe UI", sans-serif;
+}
+
+html {
+  background: var(--color-paper);
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+
+::selection {
+  background: var(--color-green);
+  color: #fff;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise {
+  animation: rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
