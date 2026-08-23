@@ -37,7 +37,9 @@ export default function LogRound() {
     setScores((s) => ({ ...s, [id]: Math.max(50, Math.min(160, (s[id] ?? 90) + delta)) }))
 
   const canNext = step === 0 ? courseName.trim().length > 0 : step === 1 ? playerIds.length > 0 : true
-  const allScored = playerIds.every((id) => scores[id] !== undefined)
+  // One score is enough. Anyone left blank gets asked for theirs later.
+  const anyScored = playerIds.some((id) => scores[id] !== undefined)
+  const missing = playerIds.filter((id) => scores[id] === undefined)
 
   const save = () => {
     const round = addRound({
@@ -47,7 +49,7 @@ export default function LogRound() {
       tripId: tripId || undefined,
       players: playerIds.map((pid) => ({
         playerId: pid,
-        gross: scores[pid],
+        gross: scores[pid] ?? null,
         handicapSnapshot: data.players.find((p) => p.id === pid)!.handicap,
       })),
     })
@@ -226,8 +228,20 @@ export default function LogRound() {
             )
           })}
           <p className="text-[11.5px] text-ink-faint px-1 pt-1">
-            Tap − / + to nudge from 90, or type it straight in. Per-hole scorecards are coming next.
+            Tap − / + to nudge from 90, or type it straight in.
           </p>
+          {missing.length > 0 && anyScored && (
+            <Card className="p-3.5 border-gold/30 bg-gold-soft/40">
+              <p className="text-[12.5px] text-ink">
+                <span className="font-bold">Don't know everyone's score?</span> Leave it blank —{' '}
+                {missing
+                  .map((id) => data.players.find((p) => p.id === id)?.name)
+                  .filter(Boolean)
+                  .join(' and ')}{' '}
+                will be asked to fill {missing.length === 1 ? 'theirs' : 'them'} in next time they open the app.
+              </p>
+            </Card>
+          )}
         </div>
       )}
 
@@ -241,8 +255,8 @@ export default function LogRound() {
                 Next
               </PrimaryButton>
             ) : (
-              <PrimaryButton onClick={() => allScored && save()} disabled={!allScored} className="flex-1 !py-4">
-                Save round
+              <PrimaryButton onClick={() => anyScored && save()} disabled={!anyScored} className="flex-1 !py-4">
+                {missing.length > 0 ? `Save with ${missing.length} to come` : 'Save round'}
               </PrimaryButton>
             )}
           </div>

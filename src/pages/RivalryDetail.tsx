@@ -1,6 +1,6 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
-import { fmt1, net } from '../types'
+import { fmt1, hasScore, net, type ScoredRoundPlayer } from '../types'
 import { byDate, headToHead, prettyDate, shortDate } from '../lib/stats'
 import { Avatar, Card, SectionLabel } from '../components/ui'
 
@@ -20,8 +20,13 @@ export default function RivalryDetail() {
   }
 
   const h = headToHead(data, a.id, b.id)
+  // A meeting needs both scores posted, matching how the record is counted.
   const meetings = byDate(data.rounds)
-    .filter((r) => r.players.some((p) => p.playerId === a.id) && r.players.some((p) => p.playerId === b.id))
+    .filter(
+      (r) =>
+        r.players.some((p) => p.playerId === a.id && hasScore(p)) &&
+        r.players.some((p) => p.playerId === b.id && hasScore(p)),
+    )
     .reverse()
 
   const streakLine =
@@ -94,8 +99,8 @@ export default function RivalryDetail() {
       <Card className="divide-y divide-line">
         {meetings.length === 0 && <p className="p-5 text-center text-[13.5px] text-ink-dim">These two have never been in the same round.</p>}
         {meetings.map((r) => {
-          const ra = r.players.find((p) => p.playerId === a.id)!
-          const rb = r.players.find((p) => p.playerId === b.id)!
+          const ra = r.players.find((p) => p.playerId === a.id) as ScoredRoundPlayer
+          const rb = r.players.find((p) => p.playerId === b.id) as ScoredRoundPlayer
           const diff = net(ra) - net(rb)
           const winner = diff === 0 ? null : diff < 0 ? a : b
           return (

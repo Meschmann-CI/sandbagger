@@ -46,12 +46,25 @@ const tabs = [
 export default function Shell() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const { data } = useStore()
+  const { data, syncError } = useStore()
   const me = data.players.find((p) => p.id === data.currentUserId) ?? data.players[0]
   const hideFab = pathname.startsWith('/log') || pathname.startsWith('/rounds/') || pathname.startsWith('/trips/new')
 
   return (
     <div className="mx-auto max-w-md min-h-dvh flex flex-col relative">
+      {/* A write that failed has already been applied on screen, so say so
+          rather than letting it quietly reappear on the next refresh. */}
+      {syncError && (
+        <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-flag/40 bg-flag-soft px-4 py-3">
+          <p className="text-[13px] font-bold text-flag">That didn't save to the group</p>
+          <p className="text-[12px] text-ink-dim mt-0.5">
+            {syncError}. What you see may not have stuck — reload to check.
+          </p>
+          <button onClick={() => window.location.reload()} className="mt-1.5 text-[12.5px] font-bold text-green">
+            Reload
+          </button>
+        </div>
+      )}
       <main className="flex-1 px-4 pb-32 pt-3">
         <Outlet />
       </main>

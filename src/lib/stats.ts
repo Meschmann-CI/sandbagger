@@ -1,4 +1,14 @@
-import { isGroupRound, net, round1, type AppData, type Player, type Round } from '../types'
+import {
+  hasScore,
+  isGroupRound,
+  net,
+  round1,
+  scored,
+  type AppData,
+  type Player,
+  type Round,
+  type ScoredRoundPlayer,
+} from '../types'
 
 export const byDate = (rounds: Round[]) =>
   [...rounds].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
@@ -22,8 +32,10 @@ export interface H2H {
 export function headToHead(data: AppData, aId: string, bId: string): H2H {
   const h: H2H = { aId, bId, aWins: 0, bWins: 0, ties: 0, aStreak: 0 }
   for (const round of byDate(data.rounds)) {
-    const a = round.players.find((p) => p.playerId === aId)
-    const b = round.players.find((p) => p.playerId === bId)
+    // Needs both cards in; a round with a score still outstanding hasn't
+    // settled anything yet.
+    const a = round.players.find((p) => p.playerId === aId && hasScore(p)) as ScoredRoundPlayer | undefined
+    const b = round.players.find((p) => p.playerId === bId && hasScore(p)) as ScoredRoundPlayer | undefined
     if (!a || !b) continue
     const diff = net(a) - net(b)
     if (diff === 0) {
@@ -60,7 +72,7 @@ export interface RoundStanding {
 }
 
 export function roundStandings(round: Round): RoundStanding[] {
-  const sorted = [...round.players].sort((a, b) => net(a) - net(b))
+  const sorted = scored(round).sort((a, b) => net(a) - net(b))
   const out: RoundStanding[] = []
   sorted.forEach((rp, i) => {
     const prev = out[i - 1]
@@ -92,7 +104,12 @@ export function leaderboard(data: AppData, rounds = data.rounds): LeaderRow[] {
   const rows = data.players.map((player) => {
     const mine = ordered.filter((r) => r.players.some((p) => p.playerId === player.id))
     const mineGroup = mine.filter(isGroupRound)
-    const grosses = mine.map((r) => r.players.find((p) => p.playerId === player.id)!.gross)
+    // Rounds counts every round they were in; the score-based stats only
+    // count the ones they've actually posted.
+    const grosses = mine
+      .map((r) => r.players.find((p) => p.playerId === player.id))
+      .filter((rp) => rp && hasScore(rp))
+      .map((rp) => rp!.gross as number)
     let wins = 0
     for (const r of mineGroup) if (roundWinnerIds(r).includes(player.id)) wins++
     let streak = 0
@@ -173,13 +190,17 @@ export interface PlayerStats {
   bestNet: number | null
   money: number
   saddamHeld: boolean
-  last5: { round: Round; gross: number }[]
+  last5: { round: Round; gross: number | null }[]
+  /** Rounds they're in where their own score is still missing. */
+  awaitingScore: Round[]
 }
 
 export function playerStats(data: AppData, playerId: string): PlayerStats {
   const mine = byDate(data.rounds).filter((r) => r.players.some((p) => p.playerId === playerId))
-  const grosses = mine.map((r) => r.players.find((p) => p.playerId === playerId)!.gross)
-  const nets = mine.map((r) => net(r.players.find((p) => p.playerId === playerId)!))
+  const myEntry = (r: Round) => r.players.find((p) => p.playerId === playerId)
+  const myScored = mine.map(myEntry).filter((rp): rp is ScoredRoundPlayer => !!rp && hasScore(rp))
+  const grosses = myScored.map((rp) => rp.gross)
+  const nets = myScored.map(net)
   return {
     rounds: mine.length,
     soloRounds: mine.filter((r) => !isGroupRound(r)).length,
@@ -188,9 +209,13 @@ export function playerStats(data: AppData, playerId: string): PlayerStats {
     bestNet: nets.length ? Math.min(...nets) : null,
     money: moneyTotals(data).get(playerId) ?? 0,
     saddamHeld: saddamState(data).holderId === playerId,
+    awaitingScore: mine.filter((r) => {
+      const rp = myEntry(r)
+      return !!rp && !hasScore(rp)
+    }),
     last5: mine.slice(-5).reverse().map((round) => ({
       round,
-      gross: round.players.find((p) => p.playerId === playerId)!.gross,
+      gross: myEntry(round)?.gross ?? null,
     })),
   }
 }

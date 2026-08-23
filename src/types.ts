@@ -23,10 +23,18 @@ export interface Group {
 
 export interface RoundPlayer {
   playerId: string
-  gross: number
+  // null means "played, score not in yet" — whoever logged the round
+  // didn't know it. The player fills it in themselves later.
+  gross: number | null
   handicapSnapshot: number
   holes?: (number | null)[] // 18 entries when per-hole entry was used
 }
+
+export interface ScoredRoundPlayer extends RoundPlayer {
+  gross: number
+}
+
+export const hasScore = (rp: RoundPlayer): rp is ScoredRoundPlayer => rp.gross != null
 
 export interface Round {
   id: string
@@ -163,12 +171,17 @@ export interface AppData {
 // tie into a 0.0000001 margin.
 export const round1 = (n: number) => Math.round(n * 10) / 10
 
-export const net = (rp: RoundPlayer) => round1(rp.gross - rp.handicapSnapshot)
+export const net = (rp: ScoredRoundPlayer) => round1(rp.gross - rp.handicapSnapshot)
 
-// Group rounds (2+ players) are the only ones that count for wins,
+// Everything downstream ignores players whose score isn't in yet, so a
+// round quietly becomes competitive the moment the second card lands.
+export const scored = (r: Round): ScoredRoundPlayer[] => r.players.filter(hasScore)
+export const pending = (r: Round) => r.players.filter((rp) => !hasScore(rp))
+
+// Group rounds (2+ posted scores) are the only ones that count for wins,
 // streaks, head-to-head, and the Saddam. Solo rounds still count for
 // personal stats and averages.
-export const isGroupRound = (r: Round) => r.players.length >= 2
+export const isGroupRound = (r: Round) => scored(r).length >= 2
 
 // Handicaps and net scores carry one decimal, GHIN-style.
 export const fmt1 = (n: number) => n.toFixed(1)

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
-import { byDate, roundStandings, saddamState, shortDate } from '../lib/stats'
+import { byDate, playerStats, roundStandings, saddamState, shortDate } from '../lib/stats'
 import { canSeeTrip, fmt1, isGroupRound } from '../types'
 import { Avatar, Card, Pill, SaddamBadge, SectionLabel } from '../components/ui'
 
@@ -14,6 +14,7 @@ export default function Home() {
   const holder = data.players.find((p) => p.id === saddam.holderId)
   const rounds = byDate(data.rounds)
   const recent = rounds.slice(-3).reverse()
+  const awaiting = playerStats(data, me.id).awaitingScore.slice().reverse()
 
   const visibleTrips = data.trips.filter((t) => canSeeTrip(t, me.id))
   const planning = visibleTrips.filter((t) => t.status === 'planning')
@@ -38,6 +39,27 @@ export default function Home() {
           <Avatar player={me} size={40} />
         </Link>
       </header>
+
+      {/* Rounds someone logged you into without your score */}
+      {awaiting.length > 0 && (
+        <Card
+          onClick={() => navigate(`/rounds/${awaiting[0].id}`)}
+          className="mt-2 p-4 border-gold/40 bg-gold-soft/60 flex items-center gap-3.5"
+        >
+          <span className="text-[22px]">📝</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14.5px] font-extrabold text-ink">
+              {awaiting.length === 1 ? 'You owe a score' : `You owe ${awaiting.length} scores`}
+            </p>
+            <p className="text-[12.5px] text-ink-dim mt-0.5 truncate">
+              {awaiting.length === 1
+                ? `${awaiting[0].courseName}, ${shortDate(awaiting[0].date)}`
+                : `Starting with ${awaiting[0].courseName}, ${shortDate(awaiting[0].date)}`}
+            </p>
+          </div>
+          <span className="text-[13px] font-bold text-green shrink-0">Add it →</span>
+        </Card>
+      )}
 
       {/* Next trip — the centerpiece */}
       {heroTrip ? (

@@ -109,6 +109,17 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
     if (error) throw new Error(`${what}: ${error.message}`)
   }
 
+  // A delete blocked by row-level security comes back as success with zero
+  // rows touched, not as an error — so the row silently survives while the
+  // screen shows it gone. Ask for the deleted ids and treat none as failure.
+  const removeRow = async (table: string, id: string, what: string) => {
+    const { data: gone, error } = await client.from(table).delete().eq('id', id).select('id')
+    guard(error, what)
+    if (!gone || gone.length === 0) {
+      throw new Error(`${what}: nothing was deleted — you may not have permission`)
+    }
+  }
+
   return {
     cloud: true,
 
@@ -223,19 +234,19 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           return
         }
         case 'round.delete':
-          guard((await client.from('rounds').delete().eq('id', change.id)).error, 'Deleting round')
+          await removeRow('rounds', change.id, 'Deleting round')
           return
         case 'bet.upsert':
           guard((await client.from('bets').upsert(betRow(change.bet))).error, 'Saving bet')
           return
         case 'bet.delete':
-          guard((await client.from('bets').delete().eq('id', change.id)).error, 'Deleting bet')
+          await removeRow('bets', change.id, 'Deleting bet')
           return
         case 'trip.upsert':
           guard((await client.from('trips').upsert(tripRow(change.trip))).error, 'Saving trip')
           return
         case 'trip.delete':
-          guard((await client.from('trips').delete().eq('id', change.id)).error, 'Deleting trip')
+          await removeRow('trips', change.id, 'Deleting trip')
           return
         case 'player.upsert': {
           const p = change.player
@@ -264,13 +275,13 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           guard((await client.from('expenses').upsert(expenseRow(change.expense))).error, 'Saving cost')
           return
         case 'expense.delete':
-          guard((await client.from('expenses').delete().eq('id', change.id)).error, 'Deleting cost')
+          await removeRow('expenses', change.id, 'Deleting cost')
           return
         case 'payment.upsert':
           guard((await client.from('payments').upsert(paymentRow(change.payment))).error, 'Saving payback')
           return
         case 'payment.delete':
-          guard((await client.from('payments').delete().eq('id', change.id)).error, 'Deleting payback')
+          await removeRow('payments', change.id, 'Deleting payback')
           return
         case 'group.upsert':
           guard((await client.from('groups').update({ name: change.group.name }).eq('id', groupId)).error, 'Saving group')

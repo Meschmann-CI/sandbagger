@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
 import type { ItineraryItem, Review, Trip } from '../types'
-import { SPANNING_KINDS, fmt1 } from '../types'
+import { SPANNING_KINDS, fmt1, hasScore, type ScoredRoundPlayer } from '../types'
 import { byDate, leaderboard, moneyTotals, prettyDate, roundStandings, shortDate, timeToMinutes } from '../lib/stats'
 import ItineraryCard from './ItineraryCard'
 import ItineraryEditor from './ItineraryEditor'
@@ -127,12 +127,12 @@ export default function TripBooked({ trip }: { trip: Trip }) {
             </div>
             {board
               .map((row) => {
-                const mine = rounds.filter((r) => r.players.some((p) => p.playerId === row.player.id))
-                const netTotal = mine.reduce((sum, r) => {
-                  const rp = r.players.find((p) => p.playerId === row.player.id)!
-                  return sum + rp.gross - rp.handicapSnapshot
-                }, 0)
-                const grossTotal = mine.reduce((sum, r) => sum + r.players.find((p) => p.playerId === row.player.id)!.gross, 0)
+                // Only rounds they've posted a score for count toward the totals.
+                const mine = rounds
+                  .map((r) => r.players.find((p) => p.playerId === row.player.id))
+                  .filter((rp): rp is ScoredRoundPlayer => !!rp && hasScore(rp))
+                const netTotal = mine.reduce((sum, rp) => sum + rp.gross - rp.handicapSnapshot, 0)
+                const grossTotal = mine.reduce((sum, rp) => sum + rp.gross, 0)
                 return { row, netTotal, grossTotal }
               })
               .sort((a, b) => a.netTotal - b.netTotal)

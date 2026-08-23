@@ -12,6 +12,7 @@ import Home from './pages/Home'
 import Rounds from './pages/Rounds'
 import RoundDetail from './pages/RoundDetail'
 import LogRound from './pages/LogRound'
+import EditRound from './pages/EditRound'
 import Ledger from './pages/Ledger'
 import RivalryDetail from './pages/RivalryDetail'
 import Trips from './pages/Trips'
@@ -31,6 +32,7 @@ function AppRoutes() {
           <Route path="/" element={<Home />} />
           <Route path="/rounds" element={<Rounds />} />
           <Route path="/rounds/:id" element={<RoundDetail />} />
+          <Route path="/rounds/:id/edit" element={<EditRound />} />
           <Route path="/log" element={<LogRound />} />
           <Route path="/h2h" element={<Ledger />} />
           <Route path="/h2h/:aId/:bId" element={<RivalryDetail />} />

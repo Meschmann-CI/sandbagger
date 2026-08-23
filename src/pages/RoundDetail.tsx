@@ -1,13 +1,16 @@
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
-import { canSeeTrip, fmt1, isGroupRound, net, round1 } from '../types'
+import { canSeeTrip, fmt1, hasScore, isGroupRound, net, pending, round1, type ScoredRoundPlayer } from '../types'
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
-import { Avatar, Card, MoneyBadge, Pill, SaddamBadge, SectionLabel } from '../components/ui'
+import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
 
 export default function RoundDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { data, deleteRound } = useStore()
+  const { data, deleteRound, updateRound } = useStore()
+  const [entering, setEntering] = useState<string | null>(null)
+  const [draftScore, setDraftScore] = useState('')
   const round = data.rounds.find((r) => r.id === id)
 
   if (!round) {
@@ -19,38 +22,71 @@ export default function RoundDetail() {
   }
 
   const standings = roundStandings(round)
-  const top = data.players.find((p) => p.id === standings[0].playerId)!
-  // The round itself is group history, but don't name a trip the viewer
-  // isn't part of.
+  const waiting = pending(round)
+  const top = standings.length ? data.players.find((p) => p.id === standings[0].playerId) : undefined
   const tripRecord = round.tripId ? data.trips.find((t) => t.id === round.tripId) : undefined
   const trip = tripRecord && canSeeTrip(tripRecord, data.currentUserId) ? tripRecord : undefined
   const bets = data.bets.filter((b) => b.roundId === round.id)
-  const solo = !isGroupRound(round)
+  // Genuinely a solo round only if nobody else played — not merely because
+  // their card hasn't landed yet.
+  const solo = !isGroupRound(round) && waiting.length === 0
   const margin = standings.length > 1 ? round1(standings[1].netScore - standings[0].netScore) : 0
   const saddam = saddamState(data)
-  const saddamChangedHere = saddam.since === round.date && saddam.holderId === standings[0].playerId && !solo
+  const saddamChangedHere = saddam.since === round.date && saddam.holderId === standings[0]?.playerId && !solo
+  const iAmWaiting = waiting.some((rp) => rp.playerId === data.currentUserId)
 
-  const blurb = solo
-    ? `${top.name} out on the solo grind. ${standings[0].gross} on the card.`
-    : margin === 0
-      ? 'Dead heat at the top. Nobody gets bragging rights today.'
-      : margin >= 8
-        ? `${top.name} won by ${fmt1(margin)}. That's not a win, that's a crime scene.`
-        : margin >= 4
-          ? `${top.name} won comfortably by ${fmt1(margin)}.`
-          : `${top.name} escaped with it by ${fmt1(margin)}.`
+  const saveScore = (playerId: string) => {
+    const gross = parseInt(draftScore, 10)
+    if (Number.isNaN(gross)) return
+    updateRound({
+      ...round,
+      players: round.players.map((rp) => (rp.playerId === playerId ? { ...rp, gross } : rp)),
+    })
+    setEntering(null)
+    setDraftScore('')
+  }
+
+  const waitingNames = waiting
+    .map((rp) => data.players.find((p) => p.id === rp.playerId)?.name)
+    .filter(Boolean)
+    .join(' and ')
+
+  const blurb = !top
+    ? 'Nobody has posted a score for this round yet.'
+    : waiting.length > 0
+      ? `${top.name} posted ${standings[0].gross}. Still waiting on ${waitingNames}.`
+      : solo
+        ? `${top.name} out on the solo grind. ${standings[0].gross} on the card.`
+        : margin === 0
+        ? 'Dead heat at the top. Nobody gets bragging rights today.'
+        : margin >= 8
+          ? `${top.name} won by ${fmt1(margin)}. That's not a win, that's a crime scene.`
+          : margin >= 4
+            ? `${top.name} won comfortably by ${fmt1(margin)}.`
+            : `${top.name} escaped with it by ${fmt1(margin)}.`
 
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
         <button onClick={() => navigate(-1)} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
-        <h1 className="text-[24px] font-extrabold tracking-tight leading-tight text-ink">{round.courseName}</h1>
-        <p className="text-[13px] text-ink-dim mt-1">
-          {prettyDate(round.date)}
-          {round.tee && ` · ${round.tee} tees`}
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-[24px] font-extrabold tracking-tight leading-tight text-ink">{round.courseName}</h1>
+            <p className="text-[13px] text-ink-dim mt-1">
+              {prettyDate(round.date)}
+              {round.tee && ` · ${round.tee} tees`}
+            </p>
+          </div>
+          <button
+            onClick={() => navigate(`/rounds/${round.id}/edit`)}
+            className="shrink-0 rounded-xl border border-line-strong bg-card px-4 py-2 text-[13px] font-bold text-ink-dim active:bg-paper"
+          >
+            Edit
+          </button>
+        </div>
         <div className="flex gap-2 mt-2">
-          {solo && <Pill>Solo round</Pill>}
+          {solo && standings.length > 0 && <Pill>Solo round</Pill>}
+          {waiting.length > 0 && <Pill tone="flag">{waiting.length} score{waiting.length === 1 ? '' : 's'} outstanding</Pill>}
           {trip && (
             <Link to={`/trips/${trip.id}`}>
               <Pill tone="green">⛳ {trip.name}</Pill>
@@ -59,9 +95,43 @@ export default function RoundDetail() {
         </div>
       </header>
 
-      <Card className="mt-2 p-4">
+      {/* Your own outstanding score gets top billing */}
+      {iAmWaiting && (
+        <Card className="mt-2 p-4 border-gold/40 bg-gold-soft/50">
+          <p className="text-[14.5px] font-extrabold text-ink">Your score is missing</p>
+          <p className="text-[13px] text-ink-dim mt-1">
+            Someone logged this round and left yours blank. Add it and the records update.
+          </p>
+          {entering === data.currentUserId ? (
+            <div className="flex items-center gap-2 mt-3">
+              <input
+                type="number"
+                inputMode="numeric"
+                value={draftScore}
+                onChange={(e) => setDraftScore(e.target.value)}
+                placeholder="Gross"
+                autoFocus
+                className="w-24 h-12 rounded-xl border border-line-strong bg-card text-center text-[20px] font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
+              />
+              <PrimaryButton onClick={() => saveScore(data.currentUserId)} disabled={!draftScore.trim()} className="flex-1 !py-3">
+                Post it
+              </PrimaryButton>
+              <button onClick={() => setEntering(null)} className="px-3 text-[13px] font-bold text-ink-faint">Cancel</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setEntering(data.currentUserId); setDraftScore('') }}
+              className="mt-3 rounded-xl bg-green px-5 py-2.5 text-[14px] font-bold text-white"
+            >
+              Enter my score
+            </button>
+          )}
+        </Card>
+      )}
+
+      <Card className="mt-3 p-4">
         <p className="text-[14.5px] font-bold text-ink leading-snug">{blurb}</p>
-        {saddamChangedHere && (
+        {saddamChangedHere && top && (
           <p className="mt-2 flex items-center gap-2 text-[13px] text-ink-dim">
             <SaddamBadge size={16} /> The Saddam changed hands here. {top.name} carries it now.
           </p>
@@ -76,9 +146,11 @@ export default function RoundDetail() {
           <span className="w-10 text-right">Gross</span>
           <span className="w-10 text-right">Hcp</span>
         </div>
+
         {standings.map((s) => {
-          const p = data.players.find((pl) => pl.id === s.playerId)!
-          const rp = round.players.find((x) => x.playerId === s.playerId)!
+          const p = data.players.find((pl) => pl.id === s.playerId)
+          const rp = round.players.find((x) => x.playerId === s.playerId) as ScoredRoundPlayer | undefined
+          if (!p || !rp) return null
           return (
             <div key={s.playerId} className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 items-center px-4 py-3 border-b border-line last:border-0">
               <div className="flex items-center gap-2.5 min-w-0">
@@ -92,7 +164,61 @@ export default function RoundDetail() {
             </div>
           )
         })}
+
+        {/* Still to come */}
+        {waiting.map((rp) => {
+          const p = data.players.find((pl) => pl.id === rp.playerId)
+          if (!p) return null
+          const isMe = rp.playerId === data.currentUserId
+          return (
+            <div key={rp.playerId} className="px-4 py-3 border-b border-line last:border-0 bg-paper/60">
+              <div className="flex items-center gap-2.5">
+                {!solo && <span className="w-4" />}
+                <Avatar player={p} size={30} />
+                <div className="flex-1 min-w-0">
+                  <span className="text-[14px] text-ink-dim truncate">{p.name}</span>
+                  <p className="text-[11.5px] text-ink-faint">Score not in yet</p>
+                </div>
+                {entering === rp.playerId ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={draftScore}
+                      onChange={(e) => setDraftScore(e.target.value)}
+                      placeholder="—"
+                      autoFocus
+                      className="w-16 h-10 rounded-lg border border-line-strong bg-card text-center text-[16px] font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
+                    />
+                    <button
+                      onClick={() => saveScore(rp.playerId)}
+                      disabled={!draftScore.trim()}
+                      className="rounded-lg bg-green px-3 py-2 text-[12.5px] font-bold text-white disabled:opacity-30"
+                    >
+                      Save
+                    </button>
+                    <button onClick={() => setEntering(null)} className="px-1 text-[12px] font-bold text-ink-faint">✕</button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setEntering(rp.playerId); setDraftScore('') }}
+                    className="shrink-0 rounded-lg border border-line-strong px-3 py-1.5 text-[12.5px] font-bold text-green"
+                  >
+                    {isMe ? 'Add mine' : 'Add it'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </Card>
+
+      {waiting.length > 0 && (
+        <p className="text-[11.5px] text-ink-faint px-2 mt-2">
+          Outstanding scores don't count toward records. This round starts affecting the leaderboard and the Saddam once at
+          least two are in.
+        </p>
+      )}
 
       {bets.length > 0 && (
         <>
@@ -108,7 +234,8 @@ export default function RoundDetail() {
                   {[...bet.results]
                     .sort((a, b) => b.amount - a.amount)
                     .map((res) => {
-                      const p = data.players.find((pl) => pl.id === res.playerId)!
+                      const p = data.players.find((pl) => pl.id === res.playerId)
+                      if (!p) return null
                       return (
                         <div key={res.playerId} className="flex items-center justify-between text-[13.5px]">
                           <span className="text-ink-dim">{p.name}</span>
@@ -123,17 +250,19 @@ export default function RoundDetail() {
         </>
       )}
 
-      <div className="mt-8 mb-4 text-center">
+      <div className="mt-8 mb-4">
         <button
           onClick={() => {
-            if (confirm('Delete this round? The ledger forgets nothing... except this.')) {
+            const scores = round.players.filter(hasScore).length
+            const detail = scores > 0 ? ` ${scores} score${scores === 1 ? '' : 's'} will be erased.` : ''
+            if (confirm(`Delete this round at ${round.courseName}?${detail} This can't be undone.`)) {
               deleteRound(round.id)
               navigate('/rounds')
             }
           }}
-          className="text-[12.5px] font-bold text-flag/80"
+          className="w-full rounded-xl border border-flag/40 bg-flag-soft py-3 text-[14px] font-bold text-flag active:bg-flag/10"
         >
-          Delete round
+          Delete this round
         </button>
       </div>
     </div>

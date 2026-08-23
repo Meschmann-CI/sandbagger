@@ -70,7 +70,9 @@ create index if not exists rounds_group_idx on rounds(group_id);
 create table if not exists round_players (
   round_id uuid not null references rounds(id) on delete cascade,
   player_id uuid not null references players(id) on delete cascade,
-  gross integer not null,
+  -- Nullable: whoever logged the round may not have known everyone's
+  -- score. The player fills their own in later.
+  gross integer,
   -- Snapshotted so history stays accurate when a handicap changes.
   handicap_snapshot numeric(4,1) not null,
   holes integer[],
@@ -105,6 +107,9 @@ create table if not exists payments (
   amount numeric(10,2) not null,
   paid_on date
 );
+
+-- Migration for projects created before scores could be left blank.
+alter table round_players alter column gross drop not null;
 
 -- ============================================================
 -- Helpers
