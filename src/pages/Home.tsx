@@ -115,6 +115,17 @@ export default function Home() {
       >
         Recent Rounds
       </SectionLabel>
+      {recent.length === 0 && (
+        <Card className="p-5 text-center">
+          <p className="text-[14px] font-bold text-ink">No rounds logged yet</p>
+          <p className="text-[13px] text-ink-dim mt-1">
+            Log one and the records start keeping themselves. Solo rounds count too.
+          </p>
+          <button onClick={() => navigate('/log')} className="mt-3 rounded-xl bg-green px-5 py-2.5 text-[14px] font-bold text-white">
+            Log a round
+          </button>
+        </Card>
+      )}
       <div className="space-y-3">
         {recent.map((r) => {
           const standings = roundStandings(r)

@@ -103,6 +103,11 @@ export default function Ledger() {
       </Card>
 
       <SectionLabel>Rivalries</SectionLabel>
+      {pairs.length === 0 && (
+        <Card className="p-5 text-center text-[13.5px] text-ink-dim">
+          Nothing to settle yet. Records start the first time two of you play the same round.
+        </Card>
+      )}
       <div className="space-y-3">
         {pairs.map(([aId, bId]) => {
           const a = data.players.find((p) => p.id === aId)!
