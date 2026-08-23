@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMembers, useStore } from '../data/store'
 import { playerStats, shortDate } from '../lib/stats'
-import { fmt1, isSoloRound, round1, type Player } from '../types'
+import { deriveInitials, fmt1, isSoloRound, round1, type Player } from '../types'
 import { supabase } from '../lib/supabase'
 import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
 
@@ -330,6 +330,15 @@ function EditGolfer({ player, cloud, onDone }: { player: Player; cloud: boolean;
   const [email, setEmail] = useState(player.email ?? '')
   const [handicap, setHandicap] = useState(player.handicap.toFixed(1))
   const [homeCourse, setHomeCourse] = useState(player.homeCourse ?? '')
+  const [initials, setInitials] = useState(player.initials)
+  // Track it so typing a surname updates the avatar, but a deliberate
+  // override survives further edits to the name.
+  const [initialsEdited, setInitialsEdited] = useState(false)
+
+  const onNameChange = (value: string) => {
+    setName(value)
+    if (!initialsEdited) setInitials(deriveInitials(value))
+  }
 
   const field =
     'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
@@ -340,6 +349,7 @@ function EditGolfer({ player, cloud, onDone }: { player: Player; cloud: boolean;
     updatePlayer({
       ...player,
       name: name.trim(),
+      initials: (initials.trim() || deriveInitials(name)).toUpperCase().slice(0, 3),
       email: email.trim() || undefined,
       handicap: round1(Number(handicap) || player.handicap),
       homeCourse: homeCourse.trim() || undefined,
@@ -350,12 +360,27 @@ function EditGolfer({ player, cloud, onDone }: { player: Player; cloud: boolean;
   return (
     <div className="p-4 space-y-3">
       <div className="flex items-center gap-3">
-        <Avatar player={player} size={32} />
+        {/* Preview, so the avatar you're about to save is the one you see */}
+        <Avatar player={{ ...player, name, initials: initials || deriveInitials(name) }} size={32} />
         <p className="text-[14px] font-extrabold text-ink">Editing {player.name}</p>
       </div>
-      <div>
-        <label className={label}>Name</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} className={field} autoFocus />
+      <div className="grid grid-cols-[1fr_auto] gap-2.5">
+        <div>
+          <label className={label}>Name</label>
+          <input value={name} onChange={(e) => onNameChange(e.target.value)} className={field} autoFocus />
+        </div>
+        <div className="w-20">
+          <label className={label}>Initials</label>
+          <input
+            value={initials}
+            onChange={(e) => {
+              setInitialsEdited(true)
+              setInitials(e.target.value.toUpperCase().slice(0, 3))
+            }}
+            maxLength={3}
+            className={`${field} text-center font-bold tracking-wider`}
+          />
+        </div>
       </div>
       {cloud && (
         <div>

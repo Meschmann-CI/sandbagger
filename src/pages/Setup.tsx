@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { requireSupabase } from '../lib/supabase'
+import { deriveInitials } from '../types'
 import { seedCloudGroup } from '../data/cloudSeed'
 import { Card, PrimaryButton } from '../components/ui'
 
@@ -7,11 +8,6 @@ import { Card, PrimaryButton } from '../components/ui'
 // they're starting the group, joining one, or waiting to be added.
 
 type Mode = 'choose' | 'create' | 'join'
-
-const initialsFrom = (name: string) => {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  return (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : name.trim().slice(0, 2)).toUpperCase()
-}
 
 const randomCode = () =>
   Array.from({ length: 6 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('')
@@ -45,7 +41,7 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
         group_name: groupName.trim() || 'Our Golf Group',
         invite_code: randomCode(),
         player_name: name.trim(),
-        player_initials: initialsFrom(name),
+        player_initials: deriveInitials(name),
         player_handicap: Number(handicap) || 18,
         player_home_course: homeCourse.trim() || null,
       })
@@ -70,7 +66,7 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
       const { error: rpcError } = await requireSupabase().rpc('join_group_by_code', {
         code: code.trim(),
         player_name: name.trim(),
-        player_initials: initialsFrom(name),
+        player_initials: deriveInitials(name),
         player_handicap: Number(handicap) || 18,
       })
       if (rpcError) throw new Error(rpcError.message)

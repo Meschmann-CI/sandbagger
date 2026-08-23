@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import { round1, type AppData, type Bet, type Expense, type Payment, type Player, type Round, type Trip } from '../types'
+import { deriveInitials, round1, type AppData, type Bet, type Expense, type Payment, type Player, type Round, type Trip } from '../types'
 import type { Backend, Change } from './backend'
 
 // One store, two backends. The UI never learns which one is behind it:
@@ -44,10 +44,10 @@ const makeId = () =>
     ? crypto.randomUUID()
     : `${Date.now().toString(16)}-${Math.floor(Math.random() * 1e12).toString(16)}`
 
+// Same derivation the edit form uses, plus a nudge when two golfers would
+// otherwise share the same avatar letters.
 function initialsFor(name: string, existing: Player[]): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  const base = parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : name.trim().slice(0, 2)
-  const upper = base.toUpperCase()
+  const upper = deriveInitials(name)
   if (!existing.some((p) => p.initials === upper)) return upper
   const alt = name.trim().slice(0, 2).toUpperCase()
   return existing.some((p) => p.initials === alt) ? `${upper[0]}${existing.length + 1}` : alt

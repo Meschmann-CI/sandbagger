@@ -200,3 +200,12 @@ export const isSoloRound = (r: Round) => r.players.length === 1
 
 // Handicaps and net scores carry one decimal, GHIN-style.
 export const fmt1 = (n: number) => n.toFixed(1)
+
+// First and last initial where there's a surname, otherwise the first two
+// letters. Always overridable — a nickname beats a derivation.
+export function deriveInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '??'
+  const base = parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : parts[0].slice(0, 2)
+  return base.toUpperCase()
+}
