@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMembers, useStore } from '../data/store'
 import { playerStats, shortDate } from '../lib/stats'
-import { fmt1, isGroupRound } from '../types'
+import { fmt1, isGroupRound, round1, type Player } from '../types'
 import { supabase } from '../lib/supabase'
 import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
 
@@ -18,6 +18,7 @@ export default function Profile() {
   const [newHcp, setNewHcp] = useState('')
   const [newCourse, setNewCourse] = useState('')
   const [newEmail, setNewEmail] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   return (
     <div className="rise">
@@ -213,31 +214,54 @@ export default function Profile() {
       )}
 
       <Card className="divide-y divide-line">
-        {members.map((p) => (
-          <div key={p.id} className="flex items-center gap-3 px-4 py-3">
-            <Avatar player={p} size={32} />
-            <div className="flex-1 min-w-0">
-              <p className="text-[14px] font-bold text-ink truncate">
-                {p.name}
-                {p.id === me.id && <span className="text-ink-faint font-semibold"> (you)</span>}
-              </p>
-              <p className="text-[11.5px] text-ink-faint tabular-nums">
-                Hcp {fmt1(p.handicap)}
-                {p.homeCourse && ` · ${p.homeCourse}`}
-              </p>
+        {members.map((p) =>
+          editingId === p.id ? (
+            <EditGolfer key={p.id} player={p} cloud={cloud} onDone={() => setEditingId(null)} />
+          ) : (
+            <div key={p.id} className="flex items-center gap-3 px-4 py-3">
+              <Avatar player={p} size={32} />
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-bold text-ink truncate">
+                  {p.name}
+                  {p.id === me.id && <span className="text-ink-faint font-semibold"> (you)</span>}
+                </p>
+                <p className="text-[11.5px] text-ink-faint truncate">
+                  <span className="tabular-nums">Hcp {fmt1(p.handicap)}</span>
+                  {p.homeCourse && ` · ${p.homeCourse}`}
+                </p>
+                {cloud && (
+                  <p className="text-[11.5px] mt-0.5 truncate">
+                    {p.email ? (
+                      <span className="text-green font-semibold">{p.email}</span>
+                    ) : (
+                      <span className="text-flag font-semibold">No email — can't sign in yet</span>
+                    )}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                {p.id === me.id && (
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-green">You</span>
+                )}
+                <button onClick={() => setEditingId(p.id)} className="text-[12.5px] font-bold text-green">
+                  Edit
+                </button>
+                {!cloud && p.id !== me.id && (
+                  <button onClick={() => setCurrentUser(p.id)} className="text-[12px] font-bold text-ink-faint">
+                    Switch to
+                  </button>
+                )}
+              </div>
             </div>
-            {p.id === me.id ? (
-              <span className="text-[11px] font-bold uppercase tracking-wider text-green shrink-0">You</span>
-            ) : cloud ? (
-              <span className="text-[11px] font-semibold text-ink-faint shrink-0">{p.email ? 'Invited' : 'No email'}</span>
-            ) : (
-              <button onClick={() => setCurrentUser(p.id)} className="text-[12.5px] font-bold text-green shrink-0">
-                Switch to
-              </button>
-            )}
-          </div>
-        ))}
+          ),
+        )}
       </Card>
+      {cloud && members.some((p) => !p.email) && (
+        <p className="text-[11.5px] text-ink-dim px-2 mt-2">
+          Add an email to each golfer before you send them the link. When they sign in with that exact address, this profile
+          becomes theirs — history and all. Without it they'd end up with a second, empty profile.
+        </p>
+      )}
       {!cloud && (
         <p className="text-[11px] text-ink-faint px-2 mt-2">
           "Switch to" stands in for real logins until the app is online — handy for checking what each golfer sees.
@@ -289,6 +313,85 @@ export default function Profile() {
         </div>
       )}
       <div className="h-6" />
+    </div>
+  )
+}
+
+// Editing an existing golfer, mainly so the organizer can attach the email
+// they'll sign in with. Matching that address is what hands them this
+// profile and its history instead of creating a second, empty one.
+function EditGolfer({ player, cloud, onDone }: { player: Player; cloud: boolean; onDone: () => void }) {
+  const { updatePlayer } = useStore()
+  const [name, setName] = useState(player.name)
+  const [email, setEmail] = useState(player.email ?? '')
+  const [handicap, setHandicap] = useState(player.handicap.toFixed(1))
+  const [homeCourse, setHomeCourse] = useState(player.homeCourse ?? '')
+
+  const field =
+    'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
+  const label = 'block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5'
+
+  const save = () => {
+    if (!name.trim()) return
+    updatePlayer({
+      ...player,
+      name: name.trim(),
+      email: email.trim() || undefined,
+      handicap: round1(Number(handicap) || player.handicap),
+      homeCourse: homeCourse.trim() || undefined,
+    })
+    onDone()
+  }
+
+  return (
+    <div className="p-4 space-y-3">
+      <div className="flex items-center gap-3">
+        <Avatar player={player} size={32} />
+        <p className="text-[14px] font-extrabold text-ink">Editing {player.name}</p>
+      </div>
+      <div>
+        <label className={label}>Name</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} className={field} autoFocus />
+      </div>
+      {cloud && (
+        <div>
+          <label className={label}>Sign-in email</label>
+          <input
+            type="email"
+            inputMode="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="them@example.com"
+            className={field}
+          />
+          <p className="text-[11px] text-ink-faint mt-1.5">
+            Must match the address they sign in with, or they'll get a fresh empty profile instead of this one.
+          </p>
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-2.5">
+        <div>
+          <label className={label}>Handicap</label>
+          <input
+            value={handicap}
+            onChange={(e) => setHandicap(e.target.value.replace(/[^\d.]/g, ''))}
+            inputMode="decimal"
+            className={`${field} tabular-nums`}
+          />
+        </div>
+        <div>
+          <label className={label}>Home course</label>
+          <input value={homeCourse} onChange={(e) => setHomeCourse(e.target.value)} placeholder="Optional" className={field} />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <PrimaryButton onClick={save} disabled={!name.trim()} className="flex-1 !py-2.5">
+          Save
+        </PrimaryButton>
+        <button onClick={onDone} className="px-4 text-[13px] font-bold text-ink-faint">
+          Cancel
+        </button>
+      </div>
     </div>
   )
 }
