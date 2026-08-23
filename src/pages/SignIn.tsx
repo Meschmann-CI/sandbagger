@@ -2,6 +2,22 @@ import { useState } from 'react'
 import { requireSupabase } from '../lib/supabase'
 import { Card, PrimaryButton } from '../components/ui'
 
+// Supabase's own wording for these is too terse to act on, and the
+// rate-limit one is the single most likely thing a new golfer will hit.
+function friendlyAuthError(message: string): string {
+  const m = message.toLowerCase()
+  if (m.includes('rate limit') || m.includes('too many requests')) {
+    return "Too many sign-in emails were sent recently, so this one didn't go out. Wait a few minutes and try once more — retrying now only pushes it further out."
+  }
+  if (m.includes('invalid') && m.includes('email')) {
+    return "That doesn't look like a valid email address."
+  }
+  if (m.includes('redirect')) {
+    return 'This address is not on the allowed sign-in list for the app yet. Tell Matt and he can add it.'
+  }
+  return message
+}
+
 // Magic-link sign in: no passwords to remember at the 19th hole.
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -25,7 +41,7 @@ export default function SignIn() {
       )
       const { error: authError } = await Promise.race([request, timeout])
       if (authError) {
-        setError(authError.message)
+        setError(friendlyAuthError(authError.message))
         setStatus('idle')
       } else {
         setStatus('sent')
