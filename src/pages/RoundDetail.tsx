@@ -3,14 +3,19 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, type ScoredRoundPlayer } from '../types'
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
+import { anyCards } from '../lib/holes'
+import { money } from '../lib/money'
+import BetEditor from '../components/BetEditor'
+import Scorecard from '../components/Scorecard'
 import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
 
 export default function RoundDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { data, deleteRound, updateRound } = useStore()
+  const { data, deleteRound, updateRound, addBet, deleteBet } = useStore()
   const [entering, setEntering] = useState<string | null>(null)
   const [draftScore, setDraftScore] = useState('')
+  const [addingBet, setAddingBet] = useState(false)
   const round = data.rounds.find((r) => r.id === id)
 
   if (!round) {
@@ -220,15 +225,71 @@ export default function RoundDetail() {
         </p>
       )}
 
+      {/* Per-hole card */}
+      <SectionLabel
+        action={
+          <button onClick={() => navigate(`/rounds/${round.id}/card`)} className="text-[12.5px] font-bold text-green">
+            {anyCards(round) ? 'Edit card' : '+ Add hole scores'}
+          </button>
+        }
+      >
+        Scorecard by Hole
+      </SectionLabel>
+      {anyCards(round) ? (
+        <Scorecard round={round} />
+      ) : (
+        <Card className="p-4 text-center">
+          <p className="text-[13.5px] text-ink-dim">
+            No hole-by-hole scores yet. Add them and skins and nassau work themselves out.
+          </p>
+        </Card>
+      )}
+
+      <SectionLabel
+        action={
+          !addingBet ? (
+            <button onClick={() => setAddingBet(true)} className="text-[12.5px] font-bold text-green">+ Add bet</button>
+          ) : undefined
+        }
+      >
+        Money Games
+      </SectionLabel>
+
+      {addingBet && (
+        <div className="mb-3">
+          <BetEditor
+            round={round}
+            onSave={(bet) => {
+              addBet(bet)
+              setAddingBet(false)
+            }}
+            onCancel={() => setAddingBet(false)}
+          />
+        </div>
+      )}
+
+      {bets.length === 0 && !addingBet && (
+        <Card className="p-4 text-center text-[13.5px] text-ink-dim">Nothing on this round. Yet.</Card>
+      )}
+
       {bets.length > 0 && (
         <>
-          <SectionLabel>Money Games</SectionLabel>
           <div className="space-y-3">
             {bets.map((bet) => (
               <Card key={bet.id} className="p-4">
                 <div className="flex items-baseline justify-between">
                   <p className="font-bold text-[14px] text-ink">{bet.name}</p>
-                  <p className="text-[11.5px] text-ink-faint tabular-nums">${bet.stake} stake</p>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <p className="text-[11.5px] text-ink-faint tabular-nums">{money(bet.stake)} stake</p>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Remove "${bet.name}" from this round?`)) deleteBet(bet.id)
+                      }}
+                      className="text-[11.5px] font-bold text-flag/70"
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-2.5 space-y-1.5">
                   {[...bet.results]

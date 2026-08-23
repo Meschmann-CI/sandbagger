@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMembers, useStore } from '../data/store'
 import { fmt1, type RoundPlayer } from '../types'
 import { courseSuggestions } from '../lib/stats'
+import { hasCard } from '../lib/holes'
 import { Avatar, Card, GhostButton, PrimaryButton } from '../components/ui'
 
 // Everything about a logged round on one screen. Scores can be cleared
@@ -149,7 +150,17 @@ export default function EditRound() {
                         </p>
                       </div>
                     </button>
-                    {on && (
+                    {on && hasCard(entry) ? (
+                      /* Their total comes from the card, so editing it here
+                         would just contradict it. Send them to the card. */
+                      <button
+                        onClick={() => navigate(`/rounds/${round.id}/card`)}
+                        className="shrink-0 text-right"
+                      >
+                        <span className="block text-[18px] font-extrabold text-ink tabular-nums">{entry.gross ?? '—'}</span>
+                        <span className="block text-[11px] font-bold text-green">from card →</span>
+                      </button>
+                    ) : on ? (
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           onClick={() => bump(p.id, -1)}
@@ -174,14 +185,15 @@ export default function EditRound() {
                           +
                         </button>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </Card>
               )
             })}
           </div>
           <p className="text-[11.5px] text-ink-faint px-1 mt-2">
-            Clear a score to blank and it goes back on that golfer's list to fill in.
+            Clear a score to blank and it goes back on that golfer's list to fill in. Anyone with a hole-by-hole card gets
+            their total from it — tap through to change that.
           </p>
         </div>
 
