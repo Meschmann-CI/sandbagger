@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { byDate, roundStandings, shortDate } from '../lib/stats'
-import { fmt1, isGroupRound } from '../types'
+import { fmt1, isSoloRound, pending } from '../types'
 import { Avatar, Card, EmptyState, Pill, PrimaryButton } from '../components/ui'
 
 type Filter = 'all' | 'mine' | 'group'
@@ -14,7 +14,7 @@ export default function Rounds() {
 
   const all = byDate(data.rounds).reverse()
   const rounds = all.filter((r) =>
-    filter === 'mine' ? r.players.some((p) => p.playerId === data.currentUserId) : filter === 'group' ? isGroupRound(r) : true,
+    filter === 'mine' ? r.players.some((p) => p.playerId === data.currentUserId) : filter === 'group' ? !isSoloRound(r) : true,
   )
 
   const filters: { key: Filter; label: string }[] = [
@@ -55,8 +55,9 @@ export default function Rounds() {
       <div className="space-y-3">
         {rounds.map((r) => {
           const standings = roundStandings(r)
-          const top = data.players.find((p) => p.id === standings[0].playerId)!
-          const solo = !isGroupRound(r)
+          const top = standings.length ? data.players.find((p) => p.id === standings[0].playerId) : undefined
+          const solo = isSoloRound(r)
+          const waiting = pending(r)
           const trip = r.tripId ? data.trips.find((t) => t.id === r.tripId) : undefined
           const hasBets = data.bets.some((b) => b.roundId === r.id)
           return (
@@ -77,7 +78,14 @@ export default function Rounds() {
                   })}
                 </div>
                 <p className="flex-1 text-[12.5px] text-ink-dim truncate">
-                  {solo ? (
+                  {!top ? (
+                    'No scores in yet'
+                  ) : waiting.length > 0 ? (
+                    <>
+                      {top.name} posted <span className="font-bold text-ink tabular-nums">{standings[0].gross}</span> · waiting
+                      on {waiting.length === 1 ? data.players.find((p) => p.id === waiting[0].playerId)?.name : `${waiting.length} more`}
+                    </>
+                  ) : solo ? (
                     <>
                       {top.name} shot <span className="font-bold text-ink tabular-nums">{standings[0].gross}</span>
                     </>
@@ -89,7 +97,8 @@ export default function Rounds() {
                   )}
                 </p>
                 <div className="flex gap-1.5 shrink-0">
-                  {solo && <Pill>Solo</Pill>}
+                  {waiting.length > 0 && <Pill tone="flag">Pending</Pill>}
+                  {solo && waiting.length === 0 && <Pill>Solo</Pill>}
                   {trip && <Pill tone="green">Trip</Pill>}
                   {hasBets && <Pill tone="gold">$</Pill>}
                 </div>

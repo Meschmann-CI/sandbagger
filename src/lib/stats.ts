@@ -1,6 +1,7 @@
 import {
   hasScore,
   isGroupRound,
+  isSoloRound,
   net,
   round1,
   scored,
@@ -203,7 +204,7 @@ export function playerStats(data: AppData, playerId: string): PlayerStats {
   const nets = myScored.map(net)
   return {
     rounds: mine.length,
-    soloRounds: mine.filter((r) => !isGroupRound(r)).length,
+    soloRounds: mine.filter(isSoloRound).length,
     avgGross: grosses.length ? grosses.reduce((a, b) => a + b, 0) / grosses.length : null,
     bestGross: grosses.length ? Math.min(...grosses) : null,
     bestNet: nets.length ? Math.min(...nets) : null,

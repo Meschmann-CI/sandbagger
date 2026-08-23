@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { byDate, playerStats, roundStandings, saddamState, shortDate } from '../lib/stats'
-import { canSeeTrip, fmt1, isGroupRound } from '../types'
+import { canSeeTrip, fmt1, isSoloRound, pending } from '../types'
 import { Avatar, Card, Pill, SaddamBadge, SectionLabel } from '../components/ui'
 
 const TODAY = new Date().toISOString().slice(0, 10)
@@ -151,8 +151,9 @@ export default function Home() {
       <div className="space-y-3">
         {recent.map((r) => {
           const standings = roundStandings(r)
-          const top = data.players.find((p) => p.id === standings[0].playerId)!
-          const solo = !isGroupRound(r)
+          const top = standings.length ? data.players.find((p) => p.id === standings[0].playerId) : undefined
+          const solo = isSoloRound(r)
+          const waiting = pending(r)
           return (
             <Card key={r.id} onClick={() => navigate(`/rounds/${r.id}`)} className="p-4">
               <div className="flex items-baseline justify-between gap-3">
@@ -171,7 +172,14 @@ export default function Home() {
                   })}
                 </div>
                 <p className="flex-1 text-[12.5px] text-ink-dim truncate">
-                  {solo ? (
+                  {!top ? (
+                    'No scores in yet'
+                  ) : waiting.length > 0 ? (
+                    <>
+                      {top.name} posted <span className="font-bold tabular-nums">{standings[0].gross}</span> · waiting on{' '}
+                      {waiting.length === 1 ? data.players.find((p) => p.id === waiting[0].playerId)?.name : `${waiting.length} more`}
+                    </>
+                  ) : solo ? (
                     <>
                       {top.name} shot <span className="font-bold tabular-nums">{standings[0].gross}</span>
                     </>
@@ -182,7 +190,7 @@ export default function Home() {
                     </>
                   )}
                 </p>
-                {solo && <Pill>Solo</Pill>}
+                {waiting.length > 0 ? <Pill tone="flag">Pending</Pill> : solo ? <Pill>Solo</Pill> : null}
               </div>
             </Card>
           )

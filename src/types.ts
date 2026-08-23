@@ -183,5 +183,10 @@ export const pending = (r: Round) => r.players.filter((rp) => !hasScore(rp))
 // personal stats and averages.
 export const isGroupRound = (r: Round) => scored(r).length >= 2
 
+// Whether it was played alone, which is about who teed off — not about
+// whose card has come in yet. Keep these apart: a foursome with one score
+// posted is not a solo round.
+export const isSoloRound = (r: Round) => r.players.length === 1
+
 // Handicaps and net scores carry one decimal, GHIN-style.
 export const fmt1 = (n: number) => n.toFixed(1)

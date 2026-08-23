@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
-import { canSeeTrip, fmt1, hasScore, isGroupRound, net, pending, round1, type ScoredRoundPlayer } from '../types'
+import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, type ScoredRoundPlayer } from '../types'
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
 import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
 
@@ -29,7 +29,7 @@ export default function RoundDetail() {
   const bets = data.bets.filter((b) => b.roundId === round.id)
   // Genuinely a solo round only if nobody else played — not merely because
   // their card hasn't landed yet.
-  const solo = !isGroupRound(round) && waiting.length === 0
+  const solo = isSoloRound(round)
   const margin = standings.length > 1 ? round1(standings[1].netScore - standings[0].netScore) : 0
   const saddam = saddamState(data)
   const saddamChangedHere = saddam.since === round.date && saddam.holderId === standings[0]?.playerId && !solo

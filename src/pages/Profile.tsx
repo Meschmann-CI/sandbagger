@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMembers, useStore } from '../data/store'
 import { playerStats, shortDate } from '../lib/stats'
-import { fmt1, isGroupRound, round1, type Player } from '../types'
+import { fmt1, isSoloRound, round1, type Player } from '../types'
 import { supabase } from '../lib/supabase'
 import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
 
@@ -112,10 +112,14 @@ export default function Profile() {
                 <p className="text-[14px] font-bold text-ink truncate">{round.courseName}</p>
                 <p className="text-[11.5px] text-ink-faint tabular-nums">
                   {shortDate(round.date)}
-                  {!isGroupRound(round) && ' · solo'}
+                  {isSoloRound(round) && ' · solo'}
                 </p>
               </div>
-              <p className="text-[18px] font-extrabold text-ink tabular-nums">{gross}</p>
+              {gross == null ? (
+                <span className="text-[12px] font-bold text-flag shrink-0">Add score</span>
+              ) : (
+                <p className="text-[18px] font-extrabold text-ink tabular-nums">{gross}</p>
+              )}
             </div>
           ))}
         </Card>
