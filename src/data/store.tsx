@@ -31,6 +31,7 @@ interface StoreApi {
   addPayment: (payment: Omit<Payment, 'id'>) => void
   deletePayment: (paymentId: string) => void
   renameGroup: (name: string) => void
+  awardSaddam: (playerId: string, note?: string) => void
   resetToSample: () => void
   newId: (prefix?: string) => string
 }
@@ -205,6 +206,14 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     },
     renameGroup(name) {
       const group = { ...dataRef.current.group, name: name.trim() }
+      commit({ kind: 'group.upsert', group }, (d) => ({ ...d, group }))
+    },
+    // Dated today so any group round logged from here on can take it back.
+    awardSaddam(playerId, note) {
+      const group = {
+        ...dataRef.current.group,
+        saddamAward: { playerId, date: new Date().toISOString().slice(0, 10), note: note?.trim() || undefined },
+      }
       commit({ kind: 'group.upsert', group }, (d) => ({ ...d, group }))
     },
     resetToSample() {

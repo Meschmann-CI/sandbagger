@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { byDate, playerStats, roundStandings, saddamState, shortDate } from '../lib/stats'
 import { canSeeTrip, fmt1, isSoloRound, pending } from '../types'
-import { Avatar, Card, Pill, SaddamBadge, SectionLabel } from '../components/ui'
+import { Avatar, Card, Pill, SaddamIcon, SectionLabel } from '../components/ui'
 
 const TODAY = new Date().toISOString().slice(0, 10)
 
@@ -107,25 +107,35 @@ export default function Home() {
         </Card>
       )}
 
-      {/* The Saddam */}
-      {holder && (
-        <Card className="mt-3 p-4 flex items-center gap-3.5 border-gold/30 bg-gold-soft/40">
-          <SaddamBadge size={26} />
-          <div className="flex-1 min-w-0">
-            <p className="text-[14.5px] text-ink">
-              <span className="font-extrabold">{holder.name}</span> holds the Saddam
-            </p>
-            <p className="text-[12px] text-ink-dim mt-0.5">
-              Won {saddam.since && shortDate(saddam.since)}
-              {saddam.courseName && ` at ${saddam.courseName}`}
-              {saddam.defenses > 0 && ` · ${saddam.defenses} defense${saddam.defenses === 1 ? '' : 's'}`}
-            </p>
-          </div>
-          <Link to="/h2h" onClick={(e) => e.stopPropagation()} className="text-[12.5px] font-bold text-green shrink-0">
-            Records →
-          </Link>
-        </Card>
-      )}
+      {/* The Saddam — always shown, so it's obvious who's carrying it */}
+      <Card
+        onClick={() => navigate('/saddam')}
+        className="mt-3 p-4 flex items-center gap-3.5 border-gold/30 bg-gold-soft/40"
+      >
+        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-card border border-gold/30 text-ink shrink-0">
+          <SaddamIcon size={32} />
+        </span>
+        <div className="flex-1 min-w-0">
+          {holder ? (
+            <>
+              <p className="text-[14.5px] text-ink">
+                <span className="font-extrabold">{holder.name}</span> holds the Saddam
+              </p>
+              <p className="text-[12px] text-ink-dim mt-0.5">
+                {saddam.byHand ? 'Handed over' : 'Won'} {saddam.since && shortDate(saddam.since)}
+                {saddam.courseName && ` at ${saddam.courseName}`}
+                {saddam.defenses > 0 && ` · ${saddam.defenses} defense${saddam.defenses === 1 ? '' : 's'}`}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-[14.5px] font-extrabold text-ink">The Saddam is up for grabs</p>
+              <p className="text-[12px] text-ink-dim mt-0.5">Win a group round to take it, or hand it to whoever has it.</p>
+            </>
+          )}
+        </div>
+        <span className="text-[12.5px] font-bold text-green shrink-0">{holder ? 'History →' : 'Set it →'}</span>
+      </Card>
 
       {/* Recent rounds */}
       <SectionLabel

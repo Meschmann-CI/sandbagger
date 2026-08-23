@@ -161,6 +161,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         inviteCode: groupRes.data.invite_code,
         adminId: (playersRes.data ?? []).find((p: any) => p.is_admin)?.id ?? playerId,
         memberIds: (playersRes.data ?? []).filter((p: any) => p.is_member).map((p: any) => p.id),
+        saddamAward: groupRes.data.saddam_award ?? undefined,
       }
 
       return {
@@ -284,7 +285,15 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           await removeRow('payments', change.id, 'Deleting payback')
           return
         case 'group.upsert':
-          guard((await client.from('groups').update({ name: change.group.name }).eq('id', groupId)).error, 'Saving group')
+          guard(
+            (
+              await client
+                .from('groups')
+                .update({ name: change.group.name, saddam_award: change.group.saddamAward ?? null })
+                .eq('id', groupId)
+            ).error,
+            'Saving group',
+          )
           return
         // Local-only concerns.
         case 'session.currentUser':

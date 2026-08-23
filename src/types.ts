@@ -13,12 +13,22 @@ export interface Player {
   email?: string
 }
 
+// Handing the Saddam over by hand. The trophy predates the app and can
+// change hands over things the app never sees, so this sets the starting
+// point and logged group rounds after that date take over again.
+export interface SaddamAward {
+  playerId: string
+  date: string
+  note?: string
+}
+
 export interface Group {
   id: string
   name: string
   inviteCode: string
   adminId: string
   memberIds: string[]
+  saddamAward?: SaddamAward
 }
 
 export interface RoundPlayer {

@@ -108,7 +108,10 @@ create table if not exists payments (
   paid_on date
 );
 
--- Migration for projects created before scores could be left blank.
+-- Migrations, for projects created before these existed.
+-- Handing the Saddam over by hand:
+alter table groups add column if not exists saddam_award jsonb;
+-- Scores that aren't in yet:
 alter table round_players alter column gross drop not null;
 
 -- ============================================================

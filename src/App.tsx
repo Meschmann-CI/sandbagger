@@ -19,6 +19,7 @@ import Trips from './pages/Trips'
 import TripNew from './pages/TripNew'
 import TripDetail from './pages/TripDetail'
 import Profile from './pages/Profile'
+import Saddam from './pages/Saddam'
 import SignIn from './pages/SignIn'
 import Setup from './pages/Setup'
 import { Card } from './components/ui'
@@ -40,6 +41,7 @@ function AppRoutes() {
           <Route path="/trips/new" element={<TripNew />} />
           <Route path="/trips/:id" element={<TripDetail />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/saddam" element={<Saddam />} />
           <Route path="/ledger" element={<Navigate to="/h2h" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

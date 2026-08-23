@@ -33,21 +33,28 @@ export default function Ledger() {
         <p className="text-[13px] text-ink-dim">Group rounds only. The record is permanent.</p>
       </header>
 
-      {holder && (
-        <Card className="mt-2 p-4 flex items-center gap-3.5 border-gold/30 bg-gold-soft/40">
-          <SaddamBadge size={24} />
-          <div className="flex-1 min-w-0">
-            <p className="text-[14px] text-ink">
-              <span className="font-extrabold">{holder.name}</span> holds the Saddam
-            </p>
-            <p className="text-[12px] text-ink-dim mt-0.5">
-              Since {saddam.since && shortDate(saddam.since)}
-              {saddam.courseName && ` · ${saddam.courseName}`}
-            </p>
-          </div>
-          <Avatar player={holder} size={34} />
-        </Card>
-      )}
+      <Card onClick={() => navigate('/saddam')} className="mt-2 p-4 flex items-center gap-3.5 border-gold/30 bg-gold-soft/40">
+        <SaddamBadge size={24} />
+        <div className="flex-1 min-w-0">
+          {holder ? (
+            <>
+              <p className="text-[14px] text-ink">
+                <span className="font-extrabold">{holder.name}</span> holds the Saddam
+              </p>
+              <p className="text-[12px] text-ink-dim mt-0.5">
+                Since {saddam.since && shortDate(saddam.since)}
+                {saddam.courseName && ` · ${saddam.courseName}`}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-[14px] font-extrabold text-ink">Nobody holds the Saddam</p>
+              <p className="text-[12px] text-ink-dim mt-0.5">Tap to hand it over or see the history</p>
+            </>
+          )}
+        </div>
+        {holder ? <Avatar player={holder} size={34} /> : <span className="text-[12.5px] font-bold text-green">Set it →</span>}
+      </Card>
 
       {talk.length > 0 && (
         <Card className="mt-3 p-4 border-l-4 border-l-flag/50">

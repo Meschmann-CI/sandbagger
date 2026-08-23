@@ -145,26 +145,76 @@ export interface SaddamState {
   holderId: string | null
   since: string | null
   courseName: string | null
+  /** Set when the current holder was handed it rather than winning a round. */
+  note: string | null
+  byHand: boolean
   defenses: number // group rounds the holder has survived since taking it
 }
 
-export function saddamState(data: AppData): SaddamState {
+export interface SaddamChange {
+  playerId: string
+  date: string
+  courseName: string | null
+  note: string | null
+  byHand: boolean
+  roundId: string | null
+}
+
+// The whole chain of custody, oldest first. A manual handover resets the
+// chain: only rounds on or after its date can take the trophy back.
+export function saddamHistory(data: AppData): SaddamChange[] {
+  const award = data.group.saddamAward
+  const changes: SaddamChange[] = []
   let holderId: string | null = null
-  let since: string | null = null
-  let courseName: string | null = null
-  let defenses = 0
+
+  if (award) {
+    holderId = award.playerId
+    changes.push({
+      playerId: award.playerId,
+      date: award.date,
+      courseName: null,
+      note: award.note ?? null,
+      byHand: true,
+      roundId: null,
+    })
+  }
+
   for (const round of byDate(data.rounds).filter(isGroupRound)) {
+    if (award && round.date < award.date) continue
     const winners = roundWinnerIds(round)
     if (winners.length === 1 && winners[0] !== holderId) {
       holderId = winners[0]
-      since = round.date
-      courseName = round.courseName
-      defenses = 0
-    } else if (holderId) {
-      defenses++
+      changes.push({
+        playerId: holderId,
+        date: round.date,
+        courseName: round.courseName,
+        note: null,
+        byHand: false,
+        roundId: round.id,
+      })
     }
   }
-  return { holderId, since, courseName, defenses }
+  return changes
+}
+
+export function saddamState(data: AppData): SaddamState {
+  const history = saddamHistory(data)
+  const current = history[history.length - 1]
+  if (!current) return { holderId: null, since: null, courseName: null, note: null, byHand: false, defenses: 0 }
+
+  // Group rounds the holder has sat through without losing it.
+  const defenses = byDate(data.rounds)
+    .filter(isGroupRound)
+    .filter((r) => r.date >= current.date && r.id !== current.roundId).length
+
+  return {
+    holderId: current.playerId,
+    since: current.date,
+    courseName: current.courseName,
+    note: current.note,
+    byHand: current.byHand,
+    defenses,
+  }
 }
 
 // ---------- Money ----------
