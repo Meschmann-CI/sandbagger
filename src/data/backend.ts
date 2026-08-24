@@ -10,6 +10,9 @@ export type Change =
   | { kind: 'bet.delete'; id: string }
   | { kind: 'trip.upsert'; trip: Trip }
   | { kind: 'trip.delete'; id: string }
+  // Votes get their own change because several people cast them at once.
+  // Writing the whole trip back would drop whichever vote landed first.
+  | { kind: 'trip.vote'; tripId: string; optionId: string }
   | { kind: 'player.upsert'; player: Player }
   | { kind: 'player.delete'; id: string }
   | { kind: 'expense.upsert'; expense: Expense }

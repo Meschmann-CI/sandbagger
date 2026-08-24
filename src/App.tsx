@@ -5,6 +5,7 @@ import { StoreProvider } from './data/store'
 import type { Backend } from './data/backend'
 import { localBackend } from './data/localBackend'
 import { NoPlayerError, makeSupabaseBackend, resolveMyPlayer } from './data/supabaseBackend'
+import { withOutbox } from './data/outbox'
 import { isCloudMode, supabase } from './lib/supabase'
 import type { AppData } from './types'
 import Shell from './components/Shell'
@@ -117,7 +118,7 @@ function CloudApp() {
     setState({ phase: 'booting' })
     try {
       const { playerId, groupId } = await resolveMyPlayer(client)
-      const backend = makeSupabaseBackend(client, playerId, groupId)
+      const backend = withOutbox(makeSupabaseBackend(client, playerId, groupId))
       const initial = await backend.load()
       setState({ phase: 'ready', backend, initial })
     } catch (err) {

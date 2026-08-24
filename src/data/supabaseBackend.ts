@@ -260,6 +260,14 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         case 'trip.delete':
           await removeRow('trips', change.id, 'Deleting trip')
           return
+        case 'trip.vote':
+          // Toggled inside the database so simultaneous votes don't
+          // overwrite each other. See toggle_trip_vote in schema.sql.
+          guard(
+            (await client.rpc('toggle_trip_vote', { trip_id: change.tripId, option_id: change.optionId })).error,
+            'Saving vote',
+          )
+          return
         case 'player.upsert': {
           const p = change.player
           guard(

@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { deriveInitials, round1, type AppData, type Bet, type Expense, type Payment, type Player, type Round, type Trip } from '../types'
 import { todayISO } from '../lib/dates'
+import { onOutboxChange, outboxSnapshot, outboxStatus } from './outbox'
 import type { Backend, Change } from './backend'
 
 // One store, two backends. The UI never learns which one is behind it:
@@ -14,6 +15,8 @@ interface StoreApi {
   data: AppData
   cloud: boolean
   syncError: string | null
+  /** Writes sitting on this device, waiting for signal. */
+  pendingWrites: number
   addRound: (round: Omit<Round, 'id' | 'groupId'>) => Round
   updateRound: (round: Round) => void
   deleteRound: (roundId: string) => void
@@ -22,6 +25,7 @@ interface StoreApi {
   addTrip: (trip: Omit<Trip, 'id' | 'groupId'>) => Trip
   updateTrip: (trip: Trip) => void
   deleteTrip: (tripId: string) => void
+  voteTripOption: (tripId: string, optionId: string) => void
   addPlayer: (input: { name: string; handicap: number; homeCourse?: string; email?: string }) => Player
   updatePlayer: (player: Player) => void
   removePlayer: (playerId: string) => void
@@ -58,6 +62,11 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
   const [syncError, setSyncError] = useState<string | null>(null)
   const dataRef = useRef(data)
   dataRef.current = data
+
+  // The outbox lives outside React — it has to keep working while the app
+  // is backgrounded — so read it as an external store.
+  useSyncExternalStore(onOutboxChange, outboxSnapshot, () => '0:')
+  const { pending: pendingWrites, error: outboxError } = outboxStatus()
 
   // Applies the change locally first so the UI never waits on the network,
   // then pushes it. A failed write surfaces rather than silently vanishing.
@@ -101,7 +110,10 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
   const api: StoreApi = {
     data,
     cloud: backend.cloud,
-    syncError,
+    // A write the server actually refused matters more than one that
+    // simply hasn't gone out yet.
+    syncError: syncError ?? outboxError,
+    pendingWrites,
     newId: makeId,
 
     addRound(round) {
@@ -133,6 +145,23 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     },
     updateTrip(trip) {
       commit({ kind: 'trip.upsert', trip }, (d) => ({ ...d, trips: d.trips.map((t) => (t.id === trip.id ? trip : t)) }))
+    },
+    // Mirrors toggle_trip_vote in schema.sql so the screen updates
+    // straight away; the database redoes it authoritatively.
+    voteTripOption(tripId, optionId) {
+      const me = dataRef.current.currentUserId
+      const trip = dataRef.current.trips.find((t) => t.id === tripId)
+      if (!trip) return
+      const alreadyMine = trip.options.find((o) => o.id === optionId)?.votes.includes(me) ?? false
+      const options = trip.options.map((option) => {
+        const withoutMe = option.votes.filter((v) => v !== me)
+        // One vote per golfer per trip, and tapping your pick again undoes it.
+        return { ...option, votes: option.id === optionId && !alreadyMine ? [...withoutMe, me] : withoutMe }
+      })
+      commit({ kind: 'trip.vote', tripId, optionId }, (d) => ({
+        ...d,
+        trips: d.trips.map((t) => (t.id === tripId ? { ...t, options } : t)),
+      }))
     },
     deleteTrip(tripId) {
       commit({ kind: 'trip.delete', id: tripId }, (d) => ({

@@ -46,12 +46,24 @@ const tabs = [
 export default function Shell() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const { data, syncError } = useStore()
+  const { data, syncError, pendingWrites } = useStore()
   const me = data.players.find((p) => p.id === data.currentUserId) ?? data.players[0]
   const hideFab = pathname.startsWith('/log') || pathname.startsWith('/rounds/') || pathname.startsWith('/trips/new')
 
   return (
     <div className="mx-auto max-w-md min-h-dvh flex flex-col relative">
+      {/* Queued writes are fine, not broken — the app is doing what it
+          should on a course with no signal. Say so calmly. */}
+      {pendingWrites > 0 && (
+        <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-gold/40 bg-gold-soft px-4 py-2.5 flex items-center gap-2.5">
+          <span className="h-2 w-2 rounded-full bg-gold shrink-0" />
+          <p className="text-[12.5px] font-bold text-ink">
+            {pendingWrites} change{pendingWrites === 1 ? '' : 's'} saved on this phone
+          </p>
+          <p className="text-[12px] text-ink-dim">· sends when you're back online</p>
+        </div>
+      )}
+
       {/* A write that failed has already been applied on screen, so say so
           rather than letting it quietly reappear on the next refresh. */}
       {syncError && (
