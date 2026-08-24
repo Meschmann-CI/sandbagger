@@ -71,6 +71,8 @@ Two things only work once deployed:
   make private trips actually private. **Re-run this in the Supabase SQL editor after
   pulling** — it's safe to re-run, and trip voting needs the `toggle_trip_vote`
   function it adds.
+- `src/lib/courses.ts` — par and stroke index, and how a round's free-text
+  course name finds them
 - `src/data/outbox.ts` — the queue that holds writes until there's signal
 - `public/sw.js` — the service worker, so the app opens with no network
 - `src/data/backend.ts` — the change descriptors both backends understand

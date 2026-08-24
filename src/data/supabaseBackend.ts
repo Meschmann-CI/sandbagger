@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { AppData, Bet, Expense, Group, Payment, Player, Round, Trip } from '../types'
+import type { AppData, Bet, Course, Expense, Group, Payment, Player, Round, Trip } from '../types'
 import type { Backend, Change } from './backend'
 
 // Maps between the app's camelCase shapes and the snake_case tables in
@@ -53,6 +53,15 @@ const tripRow = (t: Trip) => ({
   chosen_option_id: t.chosenOptionId ?? null,
   options: t.options,
   itinerary: t.itinerary,
+})
+
+const courseRow = (c: Course) => ({
+  id: c.id,
+  group_id: c.groupId,
+  name: c.name,
+  slug: c.slug,
+  pars: c.pars,
+  stroke_index: c.strokeIndex ?? null,
 })
 
 const roundRow = (r: Round) => ({
@@ -124,10 +133,11 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
     cloud: true,
 
     async load(): Promise<AppData> {
-      const [groupRes, playersRes, tripsRes, roundsRes, roundPlayersRes, betsRes, expensesRes, paymentsRes] =
+      const [groupRes, playersRes, coursesRes, tripsRes, roundsRes, roundPlayersRes, betsRes, expensesRes, paymentsRes] =
         await Promise.all([
           client.from('groups').select('*').eq('id', groupId).single(),
           client.from('players').select('*').eq('group_id', groupId).order('created_at'),
+          client.from('courses').select('*').eq('group_id', groupId).order('name'),
           client.from('trips').select('*'),
           client.from('rounds').select('*').order('played_on'),
           client.from('round_players').select('*'),
@@ -138,6 +148,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
 
       guard(groupRes.error, 'Loading group')
       guard(playersRes.error, 'Loading players')
+      guard(coursesRes.error, 'Loading courses')
       guard(tripsRes.error, 'Loading trips')
       guard(roundsRes.error, 'Loading rounds')
       guard(roundPlayersRes.error, 'Loading scores')
@@ -168,6 +179,14 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         players,
         group,
         currentUserId: playerId,
+        courses: (coursesRes.data ?? []).map((c: any) => ({
+          id: c.id,
+          groupId: c.group_id,
+          name: c.name,
+          slug: c.slug,
+          pars: c.pars ?? [],
+          strokeIndex: c.stroke_index ?? undefined,
+        })),
         trips: (tripsRes.data ?? []).map(toTrip),
         rounds: (roundsRes.data ?? []).map((r: any) => ({
           id: r.id,
@@ -247,6 +266,12 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         }
         case 'round.delete':
           await removeRow('rounds', change.id, 'Deleting round')
+          return
+        case 'course.upsert':
+          guard((await client.from('courses').upsert(courseRow(change.course), { onConflict: 'group_id,slug' })).error, 'Saving course')
+          return
+        case 'course.delete':
+          await removeRow('courses', change.id, 'Deleting course')
           return
         case 'bet.upsert':
           guard((await client.from('bets').upsert(betRow(change.bet))).error, 'Saving bet')

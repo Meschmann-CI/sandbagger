@@ -41,6 +41,23 @@ export async function seedCloudGroup(
   const pid = (id: string) => idMap.get(id) ?? null
   const pids = (ids: string[]) => ids.map((id) => idMap.get(id)).filter((x): x is string => !!x)
 
+  // --- Courses ---
+  // Rounds find these by slug rather than by id, so nothing else has to
+  // be remapped to point at them.
+  if (seedData.courses.length) {
+    const { error } = await client.from('courses').insert(
+      seedData.courses.map((c) => ({
+        id: uuid(),
+        group_id: groupId,
+        name: c.name,
+        slug: c.slug,
+        pars: c.pars,
+        stroke_index: c.strokeIndex ?? null,
+      })),
+    )
+    if (error) throw new Error(`Adding courses: ${error.message}`)
+  }
+
   // --- Trips ---
   seedData.trips.forEach((t) => idMap.set(t.id, uuid()))
   if (seedData.trips.length) {

@@ -53,6 +53,24 @@ create table if not exists trips (
 
 create index if not exists trips_group_idx on trips(group_id);
 
+-- Par and stroke index, off the physical scorecard, entered once per
+-- course. Rounds keep recording the course as free text and are matched
+-- to a row here by slug, so filling one in reaches back through every
+-- round already played there without rewriting any of them.
+create table if not exists courses (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references groups(id) on delete cascade,
+  name text not null,
+  slug text not null,
+  -- 18 entries once complete; nulls while it's still being filled in.
+  pars smallint[] not null default '{}',
+  stroke_index smallint[],
+  created_at timestamptz not null default now(),
+  unique (group_id, slug)
+);
+
+create index if not exists courses_group_idx on courses(group_id);
+
 create table if not exists rounds (
   id uuid primary key default gen_random_uuid(),
   group_id uuid not null references groups(id) on delete cascade,
@@ -315,6 +333,7 @@ $$;
 
 alter table groups enable row level security;
 alter table players enable row level security;
+alter table courses enable row level security;
 alter table trips enable row level security;
 alter table rounds enable row level security;
 alter table round_players enable row level security;
@@ -376,6 +395,12 @@ drop policy if exists trips_delete on trips;
 create policy trips_delete on trips for delete
   using (group_id = current_group_id() and created_by = current_player_id());
 
+-- courses: shared reference data, like the rounds played on them
+drop policy if exists courses_all on courses;
+create policy courses_all on courses for all
+  using (group_id = current_group_id())
+  with check (group_id = current_group_id());
+
 -- rounds: shared history, visible to the whole group
 drop policy if exists rounds_all on rounds;
 create policy rounds_all on rounds for all
@@ -415,7 +440,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['players', 'trips', 'rounds', 'round_players', 'bets', 'expenses', 'payments']
+  foreach t in array array['players', 'courses', 'trips', 'rounds', 'round_players', 'bets', 'expenses', 'payments']
   loop
     begin
       execute format('alter publication supabase_realtime add table %I', t);

@@ -4,6 +4,7 @@ import type { Bet, BetResult, BetType, Round } from '../types'
 import { hasScore } from '../types'
 import { calcCustom, calcNassau, calcSkins } from '../lib/bets'
 import { anyCards } from '../lib/holes'
+import { findCourse } from '../lib/courses'
 import { money } from '../lib/money'
 import { Avatar, Card, PrimaryButton } from '../components/ui'
 
@@ -16,6 +17,7 @@ const TYPES: { key: BetType; label: string; blurb: string }[] = [
 export default function BetEditor({ round, onSave, onCancel }: { round: Round; onSave: (bet: Omit<Bet, 'id'>) => void; onCancel: () => void }) {
   const { data } = useStore()
   const scoredIds = round.players.filter(hasScore).map((rp) => rp.playerId)
+  const course = findCourse(data, round.courseName)
 
   const [type, setType] = useState<BetType>('skins')
   const [name, setName] = useState('')
@@ -31,9 +33,9 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
 
   const outcome = useMemo(() => {
     if (type === 'skins') return calcSkins(round, inIds, stakeNum)
-    if (type === 'nassau') return calcNassau(round, inIds, stakeNum, useNet)
+    if (type === 'nassau') return calcNassau(round, inIds, stakeNum, useNet, course)
     return calcCustom(inIds, customWinner, stakeNum)
-  }, [type, round, inIds, stakeNum, useNet, customWinner])
+  }, [type, round, inIds, stakeNum, useNet, customWinner, course])
 
   // Fall back to typing amounts when the card can't decide it.
   const showManual = manualMode || (!outcome.computable && type !== 'custom')

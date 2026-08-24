@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMembers, useStore } from '../data/store'
 import { HANDICAP_NUDGE_AFTER, playerStats, roundsAtCurrentHandicap, shortDate } from '../lib/stats'
+import { courseSlug, hasPars } from '../lib/courses'
 import { deriveInitials, fmt1, isSoloRound, round1, type Player } from '../types'
 import { supabase } from '../lib/supabase'
 import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, RowButton, SaddamBadge, SectionLabel } from '../components/ui'
@@ -27,6 +28,11 @@ export default function Profile() {
       return false
     }
   })
+
+  // Courses played that still have no par entered.
+  const coursesNeedingPar = new Set(
+    data.rounds.map((r) => courseSlug(r.courseName)).filter((slug) => !hasPars(data.courses.find((c) => c.slug === slug))),
+  ).size
 
   const roundsAtIndex = roundsAtCurrentHandicap(data, me.id)
   const showHandicapNudge = !nudgeDismissed && !editingHcp && roundsAtIndex >= HANDICAP_NUDGE_AFTER
@@ -222,6 +228,23 @@ export default function Profile() {
           <p className="text-[12.5px] text-ink-dim mt-0.5">Lifetime records, streaks, and the Saddam</p>
         </div>
         <span className="text-[13px] font-bold text-green">Open →</span>
+      </Card>
+
+      <SectionLabel>Courses</SectionLabel>
+      <Card onClick={() => navigate('/courses')} className="p-4 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[14.5px] font-bold text-ink">Scorecards</p>
+          <p className="text-[12.5px] text-ink-dim mt-0.5">
+            {coursesNeedingPar === 0
+              ? 'Par is in for every course you’ve played'
+              : `${coursesNeedingPar} course${coursesNeedingPar === 1 ? '' : 's'} without par yet`}
+          </p>
+        </div>
+        {coursesNeedingPar > 0 ? (
+          <Pill tone="gold">{coursesNeedingPar}</Pill>
+        ) : (
+          <span className="text-[13px] font-bold text-green shrink-0">Open →</span>
+        )}
       </Card>
 
       {/* The group roster */}

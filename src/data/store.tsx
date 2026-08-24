@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
-import { deriveInitials, round1, type AppData, type Bet, type Expense, type Payment, type Player, type Round, type Trip } from '../types'
+import { deriveInitials, round1, type AppData, type Bet, type Course, type Expense, type Payment, type Player, type Round, type Trip } from '../types'
 import { todayISO } from '../lib/dates'
+import { courseSlug } from '../lib/courses'
 import { onOutboxChange, outboxSnapshot, outboxStatus } from './outbox'
 import type { Backend, Change } from './backend'
 
@@ -20,6 +21,9 @@ interface StoreApi {
   addRound: (round: Omit<Round, 'id' | 'groupId'>) => Round
   updateRound: (round: Round) => void
   deleteRound: (roundId: string) => void
+  /** Creates the course record on first use, keyed on the normalised name. */
+  saveCourse: (name: string, pars: (number | null)[], strokeIndex?: (number | null)[]) => void
+  deleteCourse: (courseId: string) => void
   addBet: (bet: Omit<Bet, 'id'>) => void
   deleteBet: (betId: string) => void
   addTrip: (trip: Omit<Trip, 'id' | 'groupId'>) => Trip
@@ -129,6 +133,32 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         ...d,
         rounds: d.rounds.filter((r) => r.id !== roundId),
         bets: d.bets.filter((b) => b.roundId !== roundId),
+      }))
+    },
+    // Keyed on the slug rather than an id, so entering par from a round
+    // updates the course the group already has rather than making a
+    // second one with the same name.
+    saveCourse(name, pars, strokeIndex) {
+      const slug = courseSlug(name)
+      const existing = dataRef.current.courses.find((c) => c.slug === slug)
+      const anyIndex = strokeIndex?.some((n) => n != null)
+      const course: Course = {
+        id: existing?.id ?? makeId(),
+        groupId: dataRef.current.group.id,
+        name: existing?.name ?? name.trim(),
+        slug,
+        pars,
+        strokeIndex: anyIndex ? strokeIndex : undefined,
+      }
+      commit({ kind: 'course.upsert', course }, (d) => ({
+        ...d,
+        courses: existing ? d.courses.map((c) => (c.id === course.id ? course : c)) : [...d.courses, course],
+      }))
+    },
+    deleteCourse(courseId) {
+      commit({ kind: 'course.delete', id: courseId }, (d) => ({
+        ...d,
+        courses: d.courses.filter((c) => c.id !== courseId),
       }))
     },
     addBet(bet) {

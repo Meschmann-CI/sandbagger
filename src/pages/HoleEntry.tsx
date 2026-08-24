@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { HOLE_COUNT, cardOf, cardTotal, holesEntered } from '../lib/holes'
+import { findCourse, hasPars, padded, toPar } from '../lib/courses'
 import { Avatar, Card, PrimaryButton } from '../components/ui'
 
 // Hole by hole, everyone on one screen — the way you'd actually fill a
@@ -37,6 +38,9 @@ export default function HoleEntry() {
       return [rp.playerId, merged]
     }),
   )
+
+  const course = findCourse(data, round?.courseName ?? '')
+  const pars = hasPars(course) ? padded(course.pars) : null
 
   const holeComplete = players.length > 0 && players.every((rp) => cards[rp.playerId]?.[hole] != null)
 
@@ -99,6 +103,21 @@ export default function HoleEntry() {
     return card.slice(0, hole + 1).reduce<number>((sum, h) => sum + (h ?? 0), 0)
   }
 
+  // Against par for the holes they've actually put a score on, which is
+  // the number you'd be keeping in your head walking down the fairway.
+  const runningToPar = (playerId: string): string | null => {
+    if (!pars) return null
+    const card = cards[playerId] ?? []
+    let strokes = 0
+    let par = 0
+    for (let i = 0; i <= hole; i++) {
+      if (card[i] == null) continue
+      strokes += card[i] as number
+      par += pars[i] ?? 0
+    }
+    return par === 0 ? null : toPar(strokes - par)
+  }
+
   const enteredThisHole = round.players.filter((rp) => cards[rp.playerId]?.[hole] != null).length
   const totalEntered = round.players.reduce((sum, rp) => sum + (cards[rp.playerId]?.filter((h) => h != null).length ?? 0), 0)
 
@@ -140,6 +159,9 @@ export default function HoleEntry() {
               <div className="text-center">
                 <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-faint">Hole</p>
                 <p className="text-[30px] font-extrabold text-ink leading-none tabular-nums">{hole + 1}</p>
+                {pars?.[hole] != null && (
+                  <p className="text-[11px] font-bold text-ink-faint tabular-nums mt-0.5">par {pars[hole]}</p>
+                )}
               </div>
               <button
                 onClick={() => { setArmedHole(null); setHole((h) => Math.min(HOLE_COUNT - 1, h + 1)) }}
@@ -188,7 +210,16 @@ export default function HoleEntry() {
                         {p.id === data.currentUserId && <span className="text-ink-faint font-semibold"> (you)</span>}
                       </p>
                       <p className="text-[11.5px] text-ink-faint tabular-nums">
-                        {runningTotal(rp.playerId) > 0 ? `${runningTotal(rp.playerId)} thru ${hole + 1}` : 'no scores yet'}
+                        {runningTotal(rp.playerId) > 0 ? (
+                          <>
+                            {runningTotal(rp.playerId)} thru {hole + 1}
+                            {runningToPar(rp.playerId) && (
+                              <span className="font-bold text-ink-dim"> · {runningToPar(rp.playerId)}</span>
+                            )}
+                          </>
+                        ) : (
+                          'no scores yet'
+                        )}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">

@@ -46,6 +46,28 @@ export interface ScoredRoundPlayer extends RoundPlayer {
 
 export const hasScore = (rp: RoundPlayer): rp is ScoredRoundPlayer => rp.gross != null
 
+// ---------- Courses ----------
+
+// Par and the stroke index come off the physical scorecard, entered once
+// per course and reused by every round played there. There's no reliable
+// free source to look them up from: the authoritative database isn't
+// public, and a wrong par silently poisons every score-to-par in the app.
+//
+// Rounds still record the course as free text, the way they always have.
+// A round is matched to its course by `slug`, so filling this in reaches
+// backwards through history without touching a single existing round.
+export interface Course {
+  id: string
+  groupId: string
+  name: string
+  /** The course name, normalised. How a round's free text finds this record. */
+  slug: string
+  /** 18 entries. Nulls while it's still being filled in. */
+  pars: (number | null)[]
+  /** 18 entries, each hole's 1-18 difficulty ranking. Optional: only the bets need it. */
+  strokeIndex?: (number | null)[]
+}
+
 export interface Round {
   id: string
   groupId: string
@@ -169,6 +191,7 @@ export interface Bet {
 export interface AppData {
   players: Player[]
   group: Group
+  courses: Course[]
   rounds: Round[]
   trips: Trip[]
   bets: Bet[]

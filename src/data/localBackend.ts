@@ -12,7 +12,14 @@ export const localBackend: Backend = {
   async load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) return JSON.parse(raw) as AppData
+      if (raw) {
+        const stored = JSON.parse(raw) as AppData
+        // A snapshot saved before a collection existed doesn't have it.
+        // Backfilling here beats making every screen defensive about it,
+        // and beats bumping the storage key, which would throw away
+        // whatever the browser is already holding.
+        return { ...stored, courses: stored.courses ?? [] }
+      }
     } catch {
       // fall through to the sample data
     }

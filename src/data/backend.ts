@@ -1,4 +1,4 @@
-import type { AppData, Bet, Expense, Group, Payment, Player, Round, Trip } from '../types'
+import type { AppData, Bet, Course, Expense, Group, Payment, Player, Round, Trip } from '../types'
 
 // Every mutation the app can make. The store applies the change to its
 // own state optimistically and hands the same descriptor to the backend,
@@ -6,6 +6,8 @@ import type { AppData, Bet, Expense, Group, Payment, Player, Round, Trip } from 
 export type Change =
   | { kind: 'round.upsert'; round: Round }
   | { kind: 'round.delete'; id: string }
+  | { kind: 'course.upsert'; course: Course }
+  | { kind: 'course.delete'; id: string }
   | { kind: 'bet.upsert'; bet: Bet }
   | { kind: 'bet.delete'; id: string }
   | { kind: 'trip.upsert'; trip: Trip }

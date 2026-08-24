@@ -5,6 +5,7 @@ import { useStore } from '../data/store'
 import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, type ScoredRoundPlayer } from '../types'
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
 import { anyCards } from '../lib/holes'
+import { coursePar, courseSlug, findCourse, toPar } from '../lib/courses'
 import { grossWarning } from '../lib/scores'
 import { money } from '../lib/money'
 import BetEditor from '../components/BetEditor'
@@ -41,6 +42,8 @@ export default function RoundDetail() {
   // their card hasn't landed yet.
   const solo = isSoloRound(round)
   const margin = standings.length > 1 ? round1(standings[1].netScore - standings[0].netScore) : 0
+  const course = findCourse(data, round.courseName)
+  const par = coursePar(course)
   const saddam = saddamState(data)
   const saddamChangedHere = saddam.since === round.date && saddam.holderId === standings[0]?.playerId && !solo
   const iAmWaiting = waiting.some((rp) => rp.playerId === data.currentUserId)
@@ -88,6 +91,7 @@ export default function RoundDetail() {
             <h1 className="text-[24px] font-extrabold tracking-tight leading-tight text-ink">{round.courseName}</h1>
             <p className="text-[13px] text-ink-dim mt-1">
               {prettyDate(round.date)}
+              {par != null && ` · par ${par}`}
               {round.tee && ` · ${round.tee} tees`}
             </p>
           </div>
@@ -147,6 +151,24 @@ export default function RoundDetail() {
         </Card>
       )}
 
+      {/* Par is entered once per course and reaches back through every
+          round already played there, so it's worth asking for here. */}
+      {!par && (
+        <Card
+          onClick={() => navigate(`/courses/${encodeURIComponent(courseSlug(round.courseName))}`)}
+          className="mt-3 p-4 flex items-center gap-3.5"
+        >
+          <span className="text-[20px]">🚩</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13.5px] font-bold text-ink">No par for {round.courseName} yet</p>
+            <p className="text-[12.5px] text-ink-dim mt-0.5">
+              Eighteen taps off the scorecard, and every round here starts showing scores against par.
+            </p>
+          </div>
+          <span className="text-[12.5px] font-bold text-green shrink-0">Add it →</span>
+        </Card>
+      )}
+
       <Card className="mt-3 p-4">
         <p className="text-[14.5px] font-bold text-ink leading-snug">{blurb}</p>
         {saddamChangedHere && top && (
@@ -177,7 +199,10 @@ export default function RoundDetail() {
                 <span className={`truncate text-[14px] ${s.rank === 1 && !solo ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>{p.name}</span>
               </div>
               <span className="w-12 text-right text-[16px] font-extrabold text-ink tabular-nums">{fmt1(net(rp))}</span>
-              <span className="w-10 text-right text-[13px] text-ink-dim tabular-nums">{rp.gross}</span>
+              <span className="w-10 text-right text-[13px] text-ink-dim tabular-nums">
+                {rp.gross}
+                {par != null && <span className="block text-[10.5px] text-ink-faint">{toPar(rp.gross - par)}</span>}
+              </span>
               <span className="w-10 text-right text-[12px] text-ink-faint tabular-nums">{fmt1(rp.handicapSnapshot)}</span>
             </div>
           )
