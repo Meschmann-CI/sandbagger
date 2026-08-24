@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { AppData, Bet, Expense, Group, Payment, Player, Round, Trip } from '../types'
+import type { AppData, Bet, Course, Expense, Group, Payment, Player, Round, Trip } from '../types'
 import type { Backend, Change } from './backend'
 
 // Maps between the app's camelCase shapes and the snake_case tables in
@@ -53,6 +53,15 @@ const tripRow = (t: Trip) => ({
   chosen_option_id: t.chosenOptionId ?? null,
   options: t.options,
   itinerary: t.itinerary,
+})
+
+const courseRow = (c: Course) => ({
+  id: c.id,
+  group_id: c.groupId,
+  name: c.name,
+  slug: c.slug,
+  pars: c.pars,
+  stroke_index: c.strokeIndex ?? null,
 })
 
 const roundRow = (r: Round) => ({
@@ -124,10 +133,11 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
     cloud: true,
 
     async load(): Promise<AppData> {
-      const [groupRes, playersRes, tripsRes, roundsRes, roundPlayersRes, betsRes, expensesRes, paymentsRes] =
+      const [groupRes, playersRes, coursesRes, tripsRes, roundsRes, roundPlayersRes, betsRes, expensesRes, paymentsRes] =
         await Promise.all([
           client.from('groups').select('*').eq('id', groupId).single(),
           client.from('players').select('*').eq('group_id', groupId).order('created_at'),
+          client.from('courses').select('*').eq('group_id', groupId).order('name'),
           client.from('trips').select('*'),
           client.from('rounds').select('*').order('played_on'),
           client.from('round_players').select('*'),
@@ -138,6 +148,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
 
       guard(groupRes.error, 'Loading group')
       guard(playersRes.error, 'Loading players')
+      guard(coursesRes.error, 'Loading courses')
       guard(tripsRes.error, 'Loading trips')
       guard(roundsRes.error, 'Loading rounds')
       guard(roundPlayersRes.error, 'Loading scores')
@@ -168,6 +179,14 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         players,
         group,
         currentUserId: playerId,
+        courses: (coursesRes.data ?? []).map((c: any) => ({
+          id: c.id,
+          groupId: c.group_id,
+          name: c.name,
+          slug: c.slug,
+          pars: c.pars ?? [],
+          strokeIndex: c.stroke_index ?? undefined,
+        })),
         trips: (tripsRes.data ?? []).map(toTrip),
         rounds: (roundsRes.data ?? []).map((r: any) => ({
           id: r.id,
@@ -213,13 +232,15 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         case 'round.upsert': {
           const r = change.round
           guard((await client.from('rounds').upsert({ ...roundRow(r), created_by: playerId })).error, 'Saving round')
-          // Replace the score rows wholesale — simpler than diffing, and a
-          // round is always edited as one card.
-          guard((await client.from('round_players').delete().eq('round_id', r.id)).error, 'Clearing scores')
+          // Upsert the score rows rather than clearing and reinserting
+          // them. Four phones share one card on the course, and a
+          // delete-then-insert briefly empties the round — a concurrent
+          // save from another phone lands in that window and the row it
+          // wrote is gone.
           if (r.players.length) {
             guard(
               (
-                await client.from('round_players').insert(
+                await client.from('round_players').upsert(
                   r.players.map((rp) => ({
                     round_id: r.id,
                     player_id: rp.playerId,
@@ -227,15 +248,30 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
                     handicap_snapshot: rp.handicapSnapshot,
                     holes: rp.holes ?? null,
                   })),
+                  { onConflict: 'round_id,player_id' },
                 )
               ).error,
               'Saving scores',
             )
           }
+          // Drop only golfers actually taken off the round, so a save
+          // never removes someone another phone just added.
+          const keep = r.players.map((rp) => rp.playerId)
+          const prune = client.from('round_players').delete().eq('round_id', r.id)
+          guard(
+            (await (keep.length ? prune.not('player_id', 'in', `(${keep.join(',')})`) : prune)).error,
+            'Removing golfers from round',
+          )
           return
         }
         case 'round.delete':
           await removeRow('rounds', change.id, 'Deleting round')
+          return
+        case 'course.upsert':
+          guard((await client.from('courses').upsert(courseRow(change.course), { onConflict: 'group_id,slug' })).error, 'Saving course')
+          return
+        case 'course.delete':
+          await removeRow('courses', change.id, 'Deleting course')
           return
         case 'bet.upsert':
           guard((await client.from('bets').upsert(betRow(change.bet))).error, 'Saving bet')
@@ -248,6 +284,14 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           return
         case 'trip.delete':
           await removeRow('trips', change.id, 'Deleting trip')
+          return
+        case 'trip.vote':
+          // Toggled inside the database so simultaneous votes don't
+          // overwrite each other. See toggle_trip_vote in schema.sql.
+          guard(
+            (await client.rpc('toggle_trip_vote', { trip_id: change.tripId, option_id: change.optionId })).error,
+            'Saving vote',
+          )
           return
         case 'player.upsert': {
           const p = change.player

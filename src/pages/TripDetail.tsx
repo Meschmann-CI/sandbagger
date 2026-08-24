@@ -1,18 +1,21 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useGoBack } from '../lib/nav'
 import { useStore } from '../data/store'
 import { shortDate } from '../lib/stats'
+import { todayISO } from '../lib/dates'
 import TripPlanning from '../components/TripPlanning'
 import TripBooked from '../components/TripBooked'
 import TripAttendees from '../components/TripAttendees'
 import { Card, Pill } from '../components/ui'
+import { useConfirm } from '../components/Confirm'
 import { canSeeTrip } from '../types'
-
-const TODAY = new Date().toISOString().slice(0, 10)
 
 export default function TripDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const goBack = useGoBack('/trips')
   const { data, deleteTrip } = useStore()
+  const confirm = useConfirm()
   const trip = data.trips.find((t) => t.id === id)
 
   if (!trip) {
@@ -41,12 +44,12 @@ export default function TripDetail() {
     )
   }
 
-  const isPast = !!trip.endDate && trip.endDate < TODAY
+  const isPast = !!trip.endDate && trip.endDate < todayISO()
 
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => navigate(-1)} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
+        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-[24px] font-extrabold tracking-tight text-ink leading-tight">{trip.name}</h1>
           {trip.status === 'planning' ? <Pill tone="green">Planning</Pill> : isPast ? <Pill>Archived</Pill> : <Pill tone="gold">Booked</Pill>}
@@ -69,8 +72,14 @@ export default function TripDetail() {
 
       <div className="mt-10 mb-4 text-center">
         <button
-          onClick={() => {
-            if (confirm(`Delete "${trip.name}"? Rounds stay on the books, the trip goes away.`)) {
+          onClick={async () => {
+            const ok = await confirm({
+              title: `Delete "${trip.name}"?`,
+              body: 'The itinerary and the cost split go with it. Rounds played on the trip stay on the books.',
+              confirmLabel: 'Delete trip',
+              danger: true,
+            })
+            if (ok) {
               deleteTrip(trip.id)
               navigate('/trips')
             }

@@ -21,6 +21,23 @@ export const seedData: AppData = {
     memberIds: ['p-alex', 'p-ravi', 'p-danny', 'p-kim'],
   },
 
+  // Only the home course has its card filled in, so the demo shows both
+  // sides: scores against par where it's known, and the prompt to add it
+  // where it isn't.
+  courses: [
+    {
+      id: 'c-cobbs',
+      groupId: 'g-1',
+      name: 'Cobbs Creek',
+      slug: 'cobbs creek',
+      //     1  2  3  4  5  6  7  8  9 | 10 11 12 13 14 15 16 17 18
+      pars: [4, 5, 3, 4, 4, 3, 5, 4, 4, 4, 3, 4, 5, 4, 4, 3, 5, 4],
+      // Odd rankings on the front, even on the back, so strokes fall
+      // evenly over both nines. That's how a real card is laid out.
+      strokeIndex: [5, 1, 17, 7, 11, 15, 3, 9, 13, 6, 16, 8, 2, 10, 12, 18, 4, 14],
+    },
+  ],
+
   rounds: [
     // ---- Sandhills trip ----
     {

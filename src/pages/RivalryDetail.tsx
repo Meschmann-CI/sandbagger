@@ -1,12 +1,14 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useGoBack } from '../lib/nav'
 import { useStore } from '../data/store'
 import { fmt1, hasScore, net, type ScoredRoundPlayer } from '../types'
 import { byDate, headToHead, prettyDate, shortDate } from '../lib/stats'
-import { Avatar, Card, SectionLabel } from '../components/ui'
+import { Avatar, Card, RowButton, SectionLabel } from '../components/ui'
 
 export default function RivalryDetail() {
   const { aId, bId } = useParams()
   const navigate = useNavigate()
+  const goBack = useGoBack('/h2h')
   const { data } = useStore()
   const a = data.players.find((p) => p.id === aId)
   const b = data.players.find((p) => p.id === bId)
@@ -52,7 +54,7 @@ export default function RivalryDetail() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => navigate(-1)} className="text-[13px] font-bold text-ink-faint mb-3">← Back</button>
+        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-3">← Back</button>
       </header>
 
       {/* Tale of the tape */}
@@ -104,7 +106,7 @@ export default function RivalryDetail() {
           const diff = net(ra) - net(rb)
           const winner = diff === 0 ? null : diff < 0 ? a : b
           return (
-            <div key={r.id} onClick={() => navigate(`/rounds/${r.id}`)} className="px-4 py-3.5 cursor-pointer active:bg-paper">
+            <RowButton key={r.id} onClick={() => navigate(`/rounds/${r.id}`)} className="block px-4 py-3.5">
               <div className="flex items-baseline justify-between gap-3">
                 <p className="text-[13.5px] font-bold text-ink truncate">{r.courseName}</p>
                 <p className="text-[10.5px] text-ink-faint shrink-0 tabular-nums">{shortDate(r.date)}</p>
@@ -123,7 +125,7 @@ export default function RivalryDetail() {
                   {fmt1(net(ra))} <span className="text-ink-faint">vs</span> {fmt1(net(rb))}
                 </p>
               </div>
-            </div>
+            </RowButton>
           )
         })}
       </Card>

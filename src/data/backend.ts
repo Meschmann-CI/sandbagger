@@ -1,4 +1,4 @@
-import type { AppData, Bet, Expense, Group, Payment, Player, Round, Trip } from '../types'
+import type { AppData, Bet, Course, Expense, Group, Payment, Player, Round, Trip } from '../types'
 
 // Every mutation the app can make. The store applies the change to its
 // own state optimistically and hands the same descriptor to the backend,
@@ -6,10 +6,15 @@ import type { AppData, Bet, Expense, Group, Payment, Player, Round, Trip } from 
 export type Change =
   | { kind: 'round.upsert'; round: Round }
   | { kind: 'round.delete'; id: string }
+  | { kind: 'course.upsert'; course: Course }
+  | { kind: 'course.delete'; id: string }
   | { kind: 'bet.upsert'; bet: Bet }
   | { kind: 'bet.delete'; id: string }
   | { kind: 'trip.upsert'; trip: Trip }
   | { kind: 'trip.delete'; id: string }
+  // Votes get their own change because several people cast them at once.
+  // Writing the whole trip back would drop whichever vote landed first.
+  | { kind: 'trip.vote'; tripId: string; optionId: string }
   | { kind: 'player.upsert'; player: Player }
   | { kind: 'player.delete'; id: string }
   | { kind: 'expense.upsert'; expense: Expense }

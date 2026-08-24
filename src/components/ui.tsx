@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { Player } from '../types'
+import { money } from '../lib/money'
 
 export function Avatar({ player, size = 40 }: { player: Player; size?: number }) {
   return (
@@ -17,14 +18,37 @@ export function Avatar({ player, size = 40 }: { player: Player; size?: number })
   )
 }
 
+const CARD_BASE = 'rounded-2xl border border-line bg-card shadow-[0_1px_2px_rgba(24,32,25,0.05)]'
+
+// Navigation cards are the app's main control, so a tappable one renders
+// as a real button: reachable by keyboard, announced as an action, and it
+// gets a focus ring. As a bare div with a click handler it was none of
+// those things.
 export function Card({ children, className = '', onClick }: { children: ReactNode; className?: string; onClick?: () => void }) {
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`${CARD_BASE} w-full text-left cursor-pointer active:scale-[0.99] transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green ${className}`}
+      >
+        {children}
+      </button>
+    )
+  }
+  return <div className={`${CARD_BASE} ${className}`}>{children}</div>
+}
+
+/** A tappable row inside a Card list — same reasoning as Card above. */
+export function RowButton({ children, onClick, className = '' }: { children: ReactNode; onClick: () => void; className?: string }) {
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className={`rounded-2xl border border-line bg-card shadow-[0_1px_2px_rgba(24,32,25,0.05)] ${onClick ? 'cursor-pointer active:scale-[0.99] transition-transform' : ''} ${className}`}
+      className={`w-full text-left cursor-pointer active:bg-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green ${className}`}
     >
       {children}
-    </div>
+    </button>
   )
 }
 
@@ -42,7 +66,8 @@ export function MoneyBadge({ amount, className = '' }: { amount: number; classNa
   const color = amount > 0 ? 'text-green' : amount < 0 ? 'text-flag' : 'text-ink-faint'
   return (
     <span className={`font-bold tabular-nums ${color} ${className}`}>
-      {sign}${Math.abs(amount)}
+      {sign}
+      {money(Math.abs(amount))}
     </span>
   )
 }

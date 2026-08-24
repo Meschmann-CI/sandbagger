@@ -53,6 +53,24 @@ create table if not exists trips (
 
 create index if not exists trips_group_idx on trips(group_id);
 
+-- Par and stroke index, off the physical scorecard, entered once per
+-- course. Rounds keep recording the course as free text and are matched
+-- to a row here by slug, so filling one in reaches back through every
+-- round already played there without rewriting any of them.
+create table if not exists courses (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references groups(id) on delete cascade,
+  name text not null,
+  slug text not null,
+  -- 18 entries once complete; nulls while it's still being filled in.
+  pars smallint[] not null default '{}',
+  stroke_index smallint[],
+  created_at timestamptz not null default now(),
+  unique (group_id, slug)
+);
+
+create index if not exists courses_group_idx on courses(group_id);
+
 create table if not exists rounds (
   id uuid primary key default gen_random_uuid(),
   group_id uuid not null references groups(id) on delete cascade,
@@ -243,12 +261,79 @@ begin
 end;
 $$;
 
+-- Casting a vote.
+--
+-- A trip is one row, and its destinations and their votes live inside a
+-- single JSONB column. The app used to vote by writing the whole trip
+-- back, so two people voting within a few seconds of each other meant
+-- the second write clobbered the first and a vote simply disappeared.
+-- Voting is the one thing everybody does at once, so the toggle happens
+-- here, in one statement, against whatever the row currently holds.
+--
+-- security invoker on purpose: the trips policies still apply, so this
+-- can't be used to vote on a trip you can't see.
+
+create or replace function jsonb_without(arr jsonb, val jsonb)
+returns jsonb
+language sql
+immutable
+as $$
+  select coalesce(jsonb_agg(e), '[]'::jsonb)
+  from jsonb_array_elements(coalesce(arr, '[]'::jsonb)) e
+  where e <> val
+$$;
+
+create or replace function toggle_trip_vote(trip_id uuid, option_id text)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  me jsonb;
+  result jsonb;
+begin
+  if current_player_id() is null then
+    raise exception 'No player profile for this account';
+  end if;
+  me := to_jsonb(current_player_id()::text);
+
+  update trips t
+     set options = (
+       select coalesce(
+         jsonb_agg(
+           case
+             -- Tapping your own pick again takes it back.
+             when o->>'id' = option_id
+                  and not (coalesce(o->'votes', '[]'::jsonb) @> jsonb_build_array(me))
+               then jsonb_set(o, '{votes}', jsonb_without(o->'votes', me) || jsonb_build_array(me))
+             -- One vote per golfer per trip, so clear it off the others.
+             else jsonb_set(o, '{votes}', jsonb_without(o->'votes', me))
+           end
+           order by ord
+         ),
+         '[]'::jsonb
+       )
+       from jsonb_array_elements(coalesce(t.options, '[]'::jsonb)) with ordinality as x(o, ord)
+     )
+   where t.id = toggle_trip_vote.trip_id
+   returning t.options into result;
+
+  if result is null then
+    raise exception 'That trip is not yours to vote on';
+  end if;
+
+  return result;
+end;
+$$;
+
 -- ============================================================
 -- Row Level Security
 -- ============================================================
 
 alter table groups enable row level security;
 alter table players enable row level security;
+alter table courses enable row level security;
 alter table trips enable row level security;
 alter table rounds enable row level security;
 alter table round_players enable row level security;
@@ -310,6 +395,12 @@ drop policy if exists trips_delete on trips;
 create policy trips_delete on trips for delete
   using (group_id = current_group_id() and created_by = current_player_id());
 
+-- courses: shared reference data, like the rounds played on them
+drop policy if exists courses_all on courses;
+create policy courses_all on courses for all
+  using (group_id = current_group_id())
+  with check (group_id = current_group_id());
+
 -- rounds: shared history, visible to the whole group
 drop policy if exists rounds_all on rounds;
 create policy rounds_all on rounds for all
@@ -349,7 +440,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['players', 'trips', 'rounds', 'round_players', 'bets', 'expenses', 'payments']
+  foreach t in array array['players', 'courses', 'trips', 'rounds', 'round_players', 'bets', 'expenses', 'payments']
   loop
     begin
       execute format('alter publication supabase_realtime add table %I', t);

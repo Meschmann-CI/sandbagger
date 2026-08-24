@@ -1,14 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { byDate, playerStats, roundStandings, saddamState, shortDate } from '../lib/stats'
+import { todayISO } from '../lib/dates'
 import { canSeeTrip, fmt1, isSoloRound, pending } from '../types'
 import { Avatar, Card, Pill, SaddamIcon, SectionLabel } from '../components/ui'
-
-const TODAY = new Date().toISOString().slice(0, 10)
 
 export default function Home() {
   const { data } = useStore()
   const navigate = useNavigate()
+  const TODAY = todayISO()
   const me = data.players.find((p) => p.id === data.currentUserId)!
   const saddam = saddamState(data)
   const holder = data.players.find((p) => p.id === saddam.holderId)

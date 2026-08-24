@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useStore } from '../data/store'
 import type { Trip, TripOption } from '../types'
 import { Avatar, Card, Pill, PrimaryButton, SectionLabel } from './ui'
+import { useConfirm } from './Confirm'
 
 export default function TripPlanning({ trip }: { trip: Trip }) {
-  const { data, updateTrip, newId } = useStore()
+  const { updateTrip, voteTripOption, newId } = useStore()
+  const confirm = useConfirm()
   const [newDest, setNewDest] = useState('')
-  const me = data.currentUserId
   const votesIn = new Set(trip.options.flatMap((o) => o.votes)).size
   const voterCount = trip.attendeeIds.length
 
@@ -19,23 +20,17 @@ export default function TripPlanning({ trip }: { trip: Trip }) {
     setNewDest('')
   }
 
-  const vote = (optionId: string) => {
-    updateTrip({
-      ...trip,
-      options: trip.options.map((o) => ({
-        ...o,
-        votes:
-          o.id === optionId
-            ? o.votes.includes(me)
-              ? o.votes.filter((v) => v !== me)
-              : [...o.votes, me]
-            : o.votes.filter((v) => v !== me), // one vote per golfer per trip
-      })),
-    })
-  }
+  // Toggled through its own change rather than by writing the whole trip
+  // back, so two people voting at once don't overwrite each other.
+  const vote = (optionId: string) => voteTripOption(trip.id, optionId)
 
-  const lockIn = (option: TripOption) => {
-    if (!confirm(`Lock in ${option.title}? Planning's over, packing begins.`)) return
+  const lockIn = async (option: TripOption) => {
+    const ok = await confirm({
+      title: `Lock in ${option.title}?`,
+      body: "Voting closes and the trip moves to booked, where the itinerary and cost splitting live. Planning's over, packing begins.",
+      confirmLabel: "Lock it in",
+    })
+    if (!ok) return
     updateTrip({ ...trip, status: 'booked', location: option.title, chosenOptionId: option.id })
   }
 
@@ -56,7 +51,7 @@ export default function TripPlanning({ trip }: { trip: Trip }) {
         {[...trip.options]
           .sort((a, b) => b.votes.length - a.votes.length)
           .map((option) => (
-            <OptionCard key={option.id} trip={trip} option={option} onVote={() => vote(option.id)} onLockIn={() => lockIn(option)} />
+            <OptionCard key={option.id} trip={trip} option={option} onVote={() => vote(option.id)} onLockIn={() => void lockIn(option)} />
           ))}
       </div>
 

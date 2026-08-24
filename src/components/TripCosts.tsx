@@ -3,6 +3,7 @@ import { useStore } from '../data/store'
 import type { ExpenseCategory, Trip } from '../types'
 import { money, settleUp, tripBalances } from '../lib/money'
 import { shortDate } from '../lib/stats'
+import { todayISO } from '../lib/dates'
 import { Avatar, Card, PrimaryButton, SectionLabel } from './ui'
 
 const CATEGORIES: { key: ExpenseCategory; icon: string; label: string }[] = [
@@ -100,7 +101,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
                       <span className="font-extrabold tabular-nums text-flag">{money(s.amount)}</span>
                     </p>
                     <button
-                      onClick={() => addPayment({ tripId: trip.id, fromId: s.fromId, toId: s.toId, amount: s.amount, date: new Date().toISOString().slice(0, 10) })}
+                      onClick={() => addPayment({ tripId: trip.id, fromId: s.fromId, toId: s.toId, amount: s.amount, date: todayISO() })}
                       className="rounded-lg bg-green px-3 py-1.5 text-[12px] font-bold text-white shrink-0 active:scale-95"
                     >
                       Mark paid
@@ -192,7 +193,7 @@ function ExpenseForm({ trip, onSave, onCancel }: { trip: Trip; onSave: (e: Omit<
   const [category, setCategory] = useState<ExpenseCategory>('lodging')
   const [paidById, setPaidById] = useState(data.currentUserId)
   const [sharedByIds, setSharedByIds] = useState<string[]>(trip.attendeeIds)
-  const [date, setDate] = useState(trip.startDate ?? new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(trip.startDate ?? todayISO())
 
   const attendees = trip.attendeeIds.map((id) => data.players.find((p) => p.id === id)).filter((p): p is NonNullable<typeof p> => !!p)
   const value = Number(amount)

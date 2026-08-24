@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useGoBack } from '../lib/nav'
 import { useMembers, useStore } from '../data/store'
 import { headToHead, leaderboard, saddamState, shortDate, trashTalk } from '../lib/stats'
 import { Avatar, Card, MoneyBadge, SaddamBadge, SectionLabel } from '../components/ui'
@@ -10,6 +11,7 @@ export default function Ledger() {
   const { data } = useStore()
   const members = useMembers()
   const navigate = useNavigate()
+  const goBack = useGoBack('/profile')
   const board = leaderboard(data)
   const saddam = saddamState(data)
   const holder = data.players.find((p) => p.id === saddam.holderId)
@@ -28,7 +30,7 @@ export default function Ledger() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => navigate(-1)} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
+        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
         <h1 className="text-[26px] font-extrabold tracking-tight text-ink">Head-to-Head</h1>
         <p className="text-[13px] text-ink-dim">Group rounds only. The record is permanent.</p>
       </header>

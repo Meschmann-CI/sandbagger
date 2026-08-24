@@ -1,5 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import { deriveInitials, round1, type AppData, type Bet, type Expense, type Payment, type Player, type Round, type Trip } from '../types'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { deriveInitials, round1, type AppData, type Bet, type Course, type Expense, type Payment, type Player, type Round, type Trip } from '../types'
+import { todayISO } from '../lib/dates'
+import { courseSlug } from '../lib/courses'
+import { onOutboxChange, outboxSnapshot, outboxStatus } from './outbox'
 import type { Backend, Change } from './backend'
 
 // One store, two backends. The UI never learns which one is behind it:
@@ -13,17 +16,22 @@ interface StoreApi {
   data: AppData
   cloud: boolean
   syncError: string | null
+  /** Writes sitting on this device, waiting for signal. */
+  pendingWrites: number
   addRound: (round: Omit<Round, 'id' | 'groupId'>) => Round
   updateRound: (round: Round) => void
   deleteRound: (roundId: string) => void
+  /** Creates the course record on first use, keyed on the normalised name. */
+  saveCourse: (name: string, pars: (number | null)[], strokeIndex?: (number | null)[]) => void
+  deleteCourse: (courseId: string) => void
   addBet: (bet: Omit<Bet, 'id'>) => void
   deleteBet: (betId: string) => void
   addTrip: (trip: Omit<Trip, 'id' | 'groupId'>) => Trip
   updateTrip: (trip: Trip) => void
   deleteTrip: (tripId: string) => void
+  voteTripOption: (tripId: string, optionId: string) => void
   addPlayer: (input: { name: string; handicap: number; homeCourse?: string; email?: string }) => Player
   updatePlayer: (player: Player) => void
-  adjustHandicap: (playerId: string, delta: number) => void
   removePlayer: (playerId: string) => void
   setCurrentUser: (playerId: string) => void
   addExpense: (expense: Omit<Expense, 'id'>) => void
@@ -58,6 +66,11 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
   const [syncError, setSyncError] = useState<string | null>(null)
   const dataRef = useRef(data)
   dataRef.current = data
+
+  // The outbox lives outside React — it has to keep working while the app
+  // is backgrounded — so read it as an external store.
+  useSyncExternalStore(onOutboxChange, outboxSnapshot, () => '0:')
+  const { pending: pendingWrites, error: outboxError } = outboxStatus()
 
   // Applies the change locally first so the UI never waits on the network,
   // then pushes it. A failed write surfaces rather than silently vanishing.
@@ -101,7 +114,10 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
   const api: StoreApi = {
     data,
     cloud: backend.cloud,
-    syncError,
+    // A write the server actually refused matters more than one that
+    // simply hasn't gone out yet.
+    syncError: syncError ?? outboxError,
+    pendingWrites,
     newId: makeId,
 
     addRound(round) {
@@ -119,6 +135,32 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         bets: d.bets.filter((b) => b.roundId !== roundId),
       }))
     },
+    // Keyed on the slug rather than an id, so entering par from a round
+    // updates the course the group already has rather than making a
+    // second one with the same name.
+    saveCourse(name, pars, strokeIndex) {
+      const slug = courseSlug(name)
+      const existing = dataRef.current.courses.find((c) => c.slug === slug)
+      const anyIndex = strokeIndex?.some((n) => n != null)
+      const course: Course = {
+        id: existing?.id ?? makeId(),
+        groupId: dataRef.current.group.id,
+        name: existing?.name ?? name.trim(),
+        slug,
+        pars,
+        strokeIndex: anyIndex ? strokeIndex : undefined,
+      }
+      commit({ kind: 'course.upsert', course }, (d) => ({
+        ...d,
+        courses: existing ? d.courses.map((c) => (c.id === course.id ? course : c)) : [...d.courses, course],
+      }))
+    },
+    deleteCourse(courseId) {
+      commit({ kind: 'course.delete', id: courseId }, (d) => ({
+        ...d,
+        courses: d.courses.filter((c) => c.id !== courseId),
+      }))
+    },
     addBet(bet) {
       const full: Bet = { ...bet, id: makeId() }
       commit({ kind: 'bet.upsert', bet: full }, (d) => ({ ...d, bets: [...d.bets, full] }))
@@ -133,6 +175,23 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     },
     updateTrip(trip) {
       commit({ kind: 'trip.upsert', trip }, (d) => ({ ...d, trips: d.trips.map((t) => (t.id === trip.id ? trip : t)) }))
+    },
+    // Mirrors toggle_trip_vote in schema.sql so the screen updates
+    // straight away; the database redoes it authoritatively.
+    voteTripOption(tripId, optionId) {
+      const me = dataRef.current.currentUserId
+      const trip = dataRef.current.trips.find((t) => t.id === tripId)
+      if (!trip) return
+      const alreadyMine = trip.options.find((o) => o.id === optionId)?.votes.includes(me) ?? false
+      const options = trip.options.map((option) => {
+        const withoutMe = option.votes.filter((v) => v !== me)
+        // One vote per golfer per trip, and tapping your pick again undoes it.
+        return { ...option, votes: option.id === optionId && !alreadyMine ? [...withoutMe, me] : withoutMe }
+      })
+      commit({ kind: 'trip.vote', tripId, optionId }, (d) => ({
+        ...d,
+        trips: d.trips.map((t) => (t.id === tripId ? { ...t, options } : t)),
+      }))
     },
     deleteTrip(tripId) {
       commit({ kind: 'trip.delete', id: tripId }, (d) => ({
@@ -164,17 +223,6 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
       commit({ kind: 'player.upsert', player }, (d) => ({
         ...d,
         players: d.players.map((p) => (p.id === player.id ? player : p)),
-      }))
-    },
-    // Delta-based so rapid taps on the stepper each land instead of
-    // several of them recomputing from the same rendered value.
-    adjustHandicap(playerId, delta) {
-      const current = dataRef.current.players.find((p) => p.id === playerId)
-      if (!current) return
-      const player = { ...current, handicap: round1(Math.min(54, Math.max(0, current.handicap + delta))) }
-      commit({ kind: 'player.upsert', player }, (d) => ({
-        ...d,
-        players: d.players.map((p) => (p.id === playerId ? player : p)),
       }))
     },
     // Removing a member keeps their rounds and money history intact —
@@ -212,7 +260,7 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     awardSaddam(playerId, note) {
       const group = {
         ...dataRef.current.group,
-        saddamAward: { playerId, date: new Date().toISOString().slice(0, 10), note: note?.trim() || undefined },
+        saddamAward: { playerId, date: todayISO(), note: note?.trim() || undefined },
       }
       commit({ kind: 'group.upsert', group }, (d) => ({ ...d, group }))
     },

@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
-import { HOLE_COUNT, cardOf, cardTotal, emptyCard, holesEntered } from '../lib/holes'
+import { HOLE_COUNT, cardOf, cardTotal, holesEntered } from '../lib/holes'
+import { findCourse, hasPars, padded, toPar } from '../lib/courses'
 import { Avatar, Card, PrimaryButton } from '../components/ui'
 
 // Hole by hole, everyone on one screen — the way you'd actually fill a
@@ -12,9 +13,11 @@ export default function HoleEntry() {
   const { data, updateRound } = useStore()
   const round = data.rounds.find((r) => r.id === id)
 
-  const [cards, setCards] = useState<Record<string, (number | null)[]>>(() =>
-    Object.fromEntries((round?.players ?? []).map((rp) => [rp.playerId, cardOf(rp)])),
-  )
+  // Only the cells this session actually typed, keyed player → hole.
+  // Everything on screen is the live round with these laid over the top,
+  // so a score somebody posts from another phone mid-round shows up here
+  // rather than being silently overwritten when this card is saved.
+  const [edits, setEdits] = useState<Record<string, Record<number, number | null>>>({})
   const [hole, setHole] = useState(() => {
     // Open on the first hole nobody has filled in.
     const filled = (round?.players ?? []).map((rp) => holesEntered(rp))
@@ -22,6 +25,36 @@ export default function HoleEntry() {
     return Math.min(most, HOLE_COUNT - 1)
   })
   const [view, setView] = useState<'hole' | 'grid'>('hole')
+  // The hole the user is actively filling in. Only this one auto-advances,
+  // so stepping back to fix the 4th doesn't fling you forward again.
+  const [armedHole, setArmedHole] = useState<number | null>(null)
+
+  // The live card for each golfer: what's saved, plus this session's edits.
+  const players = round?.players ?? []
+  const cards: Record<string, (number | null)[]> = Object.fromEntries(
+    players.map((rp) => {
+      const merged = cardOf(rp)
+      for (const [index, value] of Object.entries(edits[rp.playerId] ?? {})) merged[Number(index)] = value
+      return [rp.playerId, merged]
+    }),
+  )
+
+  const course = findCourse(data, round?.courseName ?? '')
+  const pars = hasPars(course) ? padded(course.pars) : null
+
+  const holeComplete = players.length > 0 && players.every((rp) => cards[rp.playerId]?.[hole] != null)
+
+  // Everyone's in — move on. The pause is deliberate: without it, typing
+  // the "1" of a 10 completes the hole and the screen jumps before the
+  // "0" lands.
+  useEffect(() => {
+    if (view !== 'hole' || armedHole !== hole || !holeComplete || hole >= HOLE_COUNT - 1) return
+    const timer = setTimeout(() => {
+      setHole((h) => Math.min(HOLE_COUNT - 1, h + 1))
+      setArmedHole(null)
+    }, 900)
+    return () => clearTimeout(timer)
+  }, [armedHole, hole, holeComplete, view])
 
   if (!round) {
     return (
@@ -31,12 +64,16 @@ export default function HoleEntry() {
     )
   }
 
-  const setScore = (playerId: string, index: number, value: number | null) =>
-    setCards((all) => {
-      const card = [...(all[playerId] ?? emptyCard())]
-      card[index] = value == null ? null : Math.max(1, Math.min(20, value))
-      return { ...all, [playerId]: card }
-    })
+  const setScore = (playerId: string, index: number, value: number | null) => {
+    setArmedHole(index)
+    setEdits((all) => ({
+      ...all,
+      [playerId]: {
+        ...(all[playerId] ?? {}),
+        [index]: value == null ? null : Math.max(1, Math.min(20, value)),
+      },
+    }))
+  }
 
   const bump = (playerId: string, index: number, delta: number) => {
     const current = cards[playerId]?.[index]
@@ -47,7 +84,7 @@ export default function HoleEntry() {
     updateRound({
       ...round,
       players: round.players.map((rp) => {
-        const card = cards[rp.playerId] ?? cardOf(rp)
+        const card = cards[rp.playerId]
         const total = cardTotal(card)
         return {
           ...rp,
@@ -64,6 +101,21 @@ export default function HoleEntry() {
   const runningTotal = (playerId: string) => {
     const card = cards[playerId] ?? []
     return card.slice(0, hole + 1).reduce<number>((sum, h) => sum + (h ?? 0), 0)
+  }
+
+  // Against par for the holes they've actually put a score on, which is
+  // the number you'd be keeping in your head walking down the fairway.
+  const runningToPar = (playerId: string): string | null => {
+    if (!pars) return null
+    const card = cards[playerId] ?? []
+    let strokes = 0
+    let par = 0
+    for (let i = 0; i <= hole; i++) {
+      if (card[i] == null) continue
+      strokes += card[i] as number
+      par += pars[i] ?? 0
+    }
+    return par === 0 ? null : toPar(strokes - par)
   }
 
   const enteredThisHole = round.players.filter((rp) => cards[rp.playerId]?.[hole] != null).length
@@ -98,7 +150,7 @@ export default function HoleEntry() {
           <Card className="p-3">
             <div className="flex items-center justify-between gap-2">
               <button
-                onClick={() => setHole((h) => Math.max(0, h - 1))}
+                onClick={() => { setArmedHole(null); setHole((h) => Math.max(0, h - 1)) }}
                 disabled={hole === 0}
                 className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-lg font-bold text-ink disabled:opacity-30 active:scale-95"
               >
@@ -107,9 +159,12 @@ export default function HoleEntry() {
               <div className="text-center">
                 <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-faint">Hole</p>
                 <p className="text-[30px] font-extrabold text-ink leading-none tabular-nums">{hole + 1}</p>
+                {pars?.[hole] != null && (
+                  <p className="text-[11px] font-bold text-ink-faint tabular-nums mt-0.5">par {pars[hole]}</p>
+                )}
               </div>
               <button
-                onClick={() => setHole((h) => Math.min(HOLE_COUNT - 1, h + 1))}
+                onClick={() => { setArmedHole(null); setHole((h) => Math.min(HOLE_COUNT - 1, h + 1)) }}
                 disabled={hole === HOLE_COUNT - 1}
                 className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-lg font-bold text-ink disabled:opacity-30 active:scale-95"
               >
@@ -123,7 +178,7 @@ export default function HoleEntry() {
                 return (
                   <button
                     key={i}
-                    onClick={() => setHole(i)}
+                    onClick={() => { setArmedHole(null); setHole(i) }}
                     className={`h-7 rounded-md text-[11px] font-bold tabular-nums transition ${
                       i === hole
                         ? 'bg-green text-white'
@@ -155,7 +210,16 @@ export default function HoleEntry() {
                         {p.id === data.currentUserId && <span className="text-ink-faint font-semibold"> (you)</span>}
                       </p>
                       <p className="text-[11.5px] text-ink-faint tabular-nums">
-                        {runningTotal(rp.playerId) > 0 ? `${runningTotal(rp.playerId)} thru ${hole + 1}` : 'no scores yet'}
+                        {runningTotal(rp.playerId) > 0 ? (
+                          <>
+                            {runningTotal(rp.playerId)} thru {hole + 1}
+                            {runningToPar(rp.playerId) && (
+                              <span className="font-bold text-ink-dim"> · {runningToPar(rp.playerId)}</span>
+                            )}
+                          </>
+                        ) : (
+                          'no scores yet'
+                        )}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">

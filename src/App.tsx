@@ -5,9 +5,11 @@ import { StoreProvider } from './data/store'
 import type { Backend } from './data/backend'
 import { localBackend } from './data/localBackend'
 import { NoPlayerError, makeSupabaseBackend, resolveMyPlayer } from './data/supabaseBackend'
+import { withOutbox } from './data/outbox'
 import { isCloudMode, supabase } from './lib/supabase'
 import type { AppData } from './types'
 import Shell from './components/Shell'
+import { ConfirmProvider } from './components/Confirm'
 import Home from './pages/Home'
 import Rounds from './pages/Rounds'
 import RoundDetail from './pages/RoundDetail'
@@ -21,6 +23,8 @@ import TripNew from './pages/TripNew'
 import TripDetail from './pages/TripDetail'
 import Profile from './pages/Profile'
 import Saddam from './pages/Saddam'
+import Courses from './pages/Courses'
+import CourseEdit from './pages/CourseEdit'
 import SignIn from './pages/SignIn'
 import Setup from './pages/Setup'
 import { Card } from './components/ui'
@@ -29,25 +33,29 @@ import { Card } from './components/ui'
 function AppRoutes() {
   return (
     <HashRouter>
-      <Routes>
-        <Route element={<Shell />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/rounds" element={<Rounds />} />
-          <Route path="/rounds/:id" element={<RoundDetail />} />
-          <Route path="/rounds/:id/edit" element={<EditRound />} />
-          <Route path="/rounds/:id/card" element={<HoleEntry />} />
-          <Route path="/log" element={<LogRound />} />
-          <Route path="/h2h" element={<Ledger />} />
-          <Route path="/h2h/:aId/:bId" element={<RivalryDetail />} />
-          <Route path="/trips" element={<Trips />} />
-          <Route path="/trips/new" element={<TripNew />} />
-          <Route path="/trips/:id" element={<TripDetail />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/saddam" element={<Saddam />} />
-          <Route path="/ledger" element={<Navigate to="/h2h" replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
+      <ConfirmProvider>
+        <Routes>
+          <Route element={<Shell />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/rounds" element={<Rounds />} />
+            <Route path="/rounds/:id" element={<RoundDetail />} />
+            <Route path="/rounds/:id/edit" element={<EditRound />} />
+            <Route path="/rounds/:id/card" element={<HoleEntry />} />
+            <Route path="/log" element={<LogRound />} />
+            <Route path="/h2h" element={<Ledger />} />
+            <Route path="/h2h/:aId/:bId" element={<RivalryDetail />} />
+            <Route path="/trips" element={<Trips />} />
+            <Route path="/trips/new" element={<TripNew />} />
+            <Route path="/trips/:id" element={<TripDetail />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/saddam" element={<Saddam />} />
+            <Route path="/courses" element={<Courses />} />
+            <Route path="/courses/:slug" element={<CourseEdit />} />
+            <Route path="/ledger" element={<Navigate to="/h2h" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </ConfirmProvider>
     </HashRouter>
   )
 }
@@ -114,7 +122,7 @@ function CloudApp() {
     setState({ phase: 'booting' })
     try {
       const { playerId, groupId } = await resolveMyPlayer(client)
-      const backend = makeSupabaseBackend(client, playerId, groupId)
+      const backend = withOutbox(makeSupabaseBackend(client, playerId, groupId))
       const initial = await backend.load()
       setState({ phase: 'ready', backend, initial })
     } catch (err) {

@@ -15,6 +15,22 @@ The app decides at startup based on whether Supabase credentials are present:
 
 See **[SETUP.md](SETUP.md)** for the walkthrough to switch it on.
 
+## On the course
+
+Cell service on a golf course is bad, so the app is built to survive it:
+
+- **Installable.** Add it to a home screen and it opens like an app, with no
+  browser chrome. The group is on iPhones, and iOS reads the `apple-touch-icon`
+  in `index.html` rather than the manifest, so that link is the one that decides
+  what the home screen shows. `npm run icons` regenerates the one icon Android
+  needs and iOS ignores: a padded copy for launchers that crop to a circle.
+- **Opens offline.** A service worker caches the app shell, its assets, and the
+  font. Supabase reads are never cached — a stale leaderboard that looks live is
+  worse than an honest failure.
+- **Writes wait.** A score entered with no signal goes into a queue on the
+  device and sends itself when the phone reconnects. The header says how many
+  are waiting. `src/data/outbox.ts`, covered by `npm test`.
+
 ## Stack
 
 - Vite + React + TypeScript, Tailwind CSS v4
@@ -52,7 +68,13 @@ Two things only work once deployed:
 
 - `src/types.ts` — the data model, mirroring `supabase/schema.sql`
 - `supabase/schema.sql` — tables, sign-in helpers, and the row-level security rules that
-  make private trips actually private
+  make private trips actually private. **Re-run this in the Supabase SQL editor after
+  pulling** — it's safe to re-run, and trip voting needs the `toggle_trip_vote`
+  function it adds.
+- `src/lib/courses.ts` — par and stroke index, and how a round's free-text
+  course name finds them
+- `src/data/outbox.ts` — the queue that holds writes until there's signal
+- `public/sw.js` — the service worker, so the app opens with no network
 - `src/data/backend.ts` — the change descriptors both backends understand
 - `src/data/localBackend.ts` / `src/data/supabaseBackend.ts` — the two implementations
 - `src/data/store.tsx` — one store over either backend; applies changes locally first,

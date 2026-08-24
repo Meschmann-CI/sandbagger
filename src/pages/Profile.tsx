@@ -1,18 +1,62 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMembers, useStore } from '../data/store'
-import { playerStats, shortDate } from '../lib/stats'
+import { HANDICAP_NUDGE_AFTER, playerStats, roundsAtCurrentHandicap, shortDate } from '../lib/stats'
+import { courseSlug, hasPars } from '../lib/courses'
 import { deriveInitials, fmt1, isSoloRound, round1, type Player } from '../types'
 import { supabase } from '../lib/supabase'
-import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
+import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, RowButton, SaddamBadge, SectionLabel } from '../components/ui'
+import { useConfirm } from '../components/Confirm'
+
+// Dismissing the nudge is remembered against the index it was about, so
+// saying "still right" quiets it until the number actually changes.
+const nudgeKey = (playerId: string, handicap: number) => `sandbagger-hcp-ok:${playerId}:${handicap.toFixed(1)}`
 
 export default function Profile() {
-  const { data, cloud, syncError, adjustHandicap, setCurrentUser, addPlayer, resetToSample } = useStore()
+  const { data, cloud, syncError, updatePlayer, setCurrentUser, addPlayer, resetToSample } = useStore()
+  const confirm = useConfirm()
   const members = useMembers()
   const navigate = useNavigate()
   const me = data.players.find((p) => p.id === data.currentUserId)!
   const stats = playerStats(data, me.id)
   const [editingHcp, setEditingHcp] = useState(false)
+  const [hcpDraft, setHcpDraft] = useState('')
+  const [nudgeDismissed, setNudgeDismissed] = useState(() => {
+    try {
+      return !!localStorage.getItem(nudgeKey(data.currentUserId, me.handicap))
+    } catch {
+      return false
+    }
+  })
+
+  // Courses played that still have no par entered.
+  const coursesNeedingPar = new Set(
+    data.rounds.map((r) => courseSlug(r.courseName)).filter((slug) => !hasPars(data.courses.find((c) => c.slug === slug))),
+  ).size
+
+  const roundsAtIndex = roundsAtCurrentHandicap(data, me.id)
+  const showHandicapNudge = !nudgeDismissed && !editingHcp && roundsAtIndex >= HANDICAP_NUDGE_AFTER
+
+  const dismissHandicapNudge = () => {
+    try {
+      localStorage.setItem(nudgeKey(me.id, me.handicap), '1')
+    } catch {
+      // private mode; the nudge just comes back next visit
+    }
+    setNudgeDismissed(true)
+  }
+
+  // The steppers move the draft, not the record — the old version fired a
+  // network write on every tenth-of-a-stroke tap.
+  const nudgeDraft = (delta: number) =>
+    setHcpDraft((current) => round1(Math.min(54, Math.max(0, (Number(current) || 0) + delta))).toFixed(1))
+
+  const saveHandicap = () => {
+    const value = Number(hcpDraft)
+    if (!Number.isFinite(value)) return
+    updatePlayer({ ...me, handicap: round1(Math.min(54, Math.max(0, value))) })
+    setEditingHcp(false)
+  }
   const [addingMember, setAddingMember] = useState(false)
   const [newName, setNewName] = useState('')
   const [newHcp, setNewHcp] = useState('')
@@ -40,36 +84,87 @@ export default function Profile() {
         </div>
       </header>
 
-      {/* Handicap */}
-      <Card className="mt-3 p-4 flex items-center justify-between">
-        <div>
-          <p className="text-[12px] font-bold uppercase tracking-wider text-ink-faint">Handicap index</p>
-          <p className="text-[26px] font-extrabold text-ink tabular-nums leading-tight">{fmt1(me.handicap)}</p>
+      {/* Handicap. Typed, not stepped: getting from 18.0 to 12.4 at a
+          tenth per tap is fifty-six taps. The −/+ are for fine tuning,
+          and they move a local draft rather than writing on every press. */}
+      <Card className="mt-3 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[12px] font-bold uppercase tracking-wider text-ink-faint">Handicap index</p>
+            {editingHcp ? (
+              <input
+                value={hcpDraft}
+                onChange={(e) => setHcpDraft(e.target.value.replace(/[^\d.]/g, ''))}
+                inputMode="decimal"
+                autoFocus
+                aria-label="Handicap index"
+                className="mt-1 w-28 rounded-xl border border-line-strong bg-card px-3 py-2 text-[24px] font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
+              />
+            ) : (
+              <p className="text-[26px] font-extrabold text-ink tabular-nums leading-tight">{fmt1(me.handicap)}</p>
+            )}
+          </div>
+          {editingHcp ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => nudgeDraft(-0.1)}
+                aria-label="Lower handicap by a tenth"
+                className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-xl font-bold text-ink active:scale-95"
+              >
+                −
+              </button>
+              <button
+                onClick={() => nudgeDraft(0.1)}
+                aria-label="Raise handicap by a tenth"
+                className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-xl font-bold text-ink active:scale-95"
+              >
+                +
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => { setHcpDraft(me.handicap.toFixed(1)); setEditingHcp(true) }} className="text-[13px] font-bold text-green">
+              Update
+            </button>
+          )}
         </div>
-        {editingHcp ? (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => adjustHandicap(me.id, -0.1)}
-              className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-xl font-bold text-ink active:scale-95"
-            >
-              −
-            </button>
-            <button
-              onClick={() => adjustHandicap(me.id, 0.1)}
-              className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-xl font-bold text-ink active:scale-95"
-            >
-              +
-            </button>
-            <button onClick={() => setEditingHcp(false)} className="ml-1 text-[13px] font-bold text-green">
-              Done
+        {editingHcp && (
+          <div className="flex gap-2 mt-3.5 pt-3.5 border-t border-line">
+            <PrimaryButton onClick={saveHandicap} disabled={!hcpDraft.trim()} className="flex-1 !py-2.5">
+              Save index
+            </PrimaryButton>
+            <button onClick={() => setEditingHcp(false)} className="px-4 text-[13px] font-bold text-ink-faint">
+              Cancel
             </button>
           </div>
-        ) : (
-          <button onClick={() => setEditingHcp(true)} className="text-[13px] font-bold text-green">
-            Update
-          </button>
         )}
       </Card>
+
+      {/* GHIN stays the source of truth — this only points out that the
+          number here hasn't moved in a while. */}
+      {showHandicapNudge && (
+        <Card className="mt-3 p-4 border-gold/40 bg-gold-soft/50 flex items-start gap-3">
+          <span className="text-[18px] mt-0.5">📈</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13.5px] font-bold text-ink">
+              You've played {roundsAtIndex} rounds at {fmt1(me.handicap)}
+            </p>
+            <p className="text-[12.5px] text-ink-dim mt-1">
+              If GHIN has moved your index since then, update it here so net scores and bets stay honest.
+            </p>
+            <div className="flex gap-4 mt-2.5">
+              <button
+                onClick={() => { setHcpDraft(me.handicap.toFixed(1)); setEditingHcp(true) }}
+                className="text-[12.5px] font-bold text-green"
+              >
+                Update it
+              </button>
+              <button onClick={dismissHandicapNudge} className="text-[12.5px] font-bold text-ink-faint">
+                Still right
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Stat grid */}
       <div className="grid grid-cols-3 gap-3 mt-3">
@@ -107,7 +202,7 @@ export default function Profile() {
       ) : (
         <Card className="divide-y divide-line">
           {stats.last5.map(({ round, gross }) => (
-            <div key={round.id} onClick={() => navigate(`/rounds/${round.id}`)} className="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-paper">
+            <RowButton key={round.id} onClick={() => navigate(`/rounds/${round.id}`)} className="flex items-center gap-3 px-4 py-3">
               <div className="flex-1 min-w-0">
                 <p className="text-[14px] font-bold text-ink truncate">{round.courseName}</p>
                 <p className="text-[11.5px] text-ink-faint tabular-nums">
@@ -120,7 +215,7 @@ export default function Profile() {
               ) : (
                 <p className="text-[18px] font-extrabold text-ink tabular-nums">{gross}</p>
               )}
-            </div>
+            </RowButton>
           ))}
         </Card>
       )}
@@ -133,6 +228,23 @@ export default function Profile() {
           <p className="text-[12.5px] text-ink-dim mt-0.5">Lifetime records, streaks, and the Saddam</p>
         </div>
         <span className="text-[13px] font-bold text-green">Open →</span>
+      </Card>
+
+      <SectionLabel>Courses</SectionLabel>
+      <Card onClick={() => navigate('/courses')} className="p-4 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[14.5px] font-bold text-ink">Scorecards</p>
+          <p className="text-[12.5px] text-ink-dim mt-0.5">
+            {coursesNeedingPar === 0
+              ? 'Par is in for every course you’ve played'
+              : `${coursesNeedingPar} course${coursesNeedingPar === 1 ? '' : 's'} without par yet`}
+          </p>
+        </div>
+        {coursesNeedingPar > 0 ? (
+          <Pill tone="gold">{coursesNeedingPar}</Pill>
+        ) : (
+          <span className="text-[13px] font-bold text-green shrink-0">Open →</span>
+        )}
       </Card>
 
       {/* The group roster */}
@@ -307,8 +419,14 @@ export default function Profile() {
       {!cloud && (
         <div className="mt-8 mb-4 text-center">
           <button
-            onClick={() => {
-              if (confirm('Reset everything back to the sample data?')) resetToSample()
+            onClick={async () => {
+              const ok = await confirm({
+                title: 'Reset back to the sample data?',
+                body: 'Every round, trip, and bet stored in this browser is replaced with the demo set.',
+                confirmLabel: 'Reset everything',
+                danger: true,
+              })
+              if (ok) resetToSample()
             }}
             className="text-[12px] font-bold text-ink-faint"
           >

@@ -271,6 +271,34 @@ export function playerStats(data: AppData, playerId: string): PlayerStats {
   }
 }
 
+// ---------- Handicap drift ----------
+
+/** Below this the number hasn't had time to go stale. */
+export const HANDICAP_NUDGE_AFTER = 5
+
+/**
+ * How many rounds in a row this golfer has posted at their current index.
+ *
+ * The app deliberately does not compute handicaps — GHIN does, and a
+ * second number that disagrees with it is worse than no number. All this
+ * does is notice the index here has sat still for a while and suggest
+ * checking the real one. Read off the per-round snapshots, so it needs no
+ * extra field and no migration.
+ */
+export function roundsAtCurrentHandicap(data: AppData, playerId: string): number {
+  const player = data.players.find((p) => p.id === playerId)
+  if (!player) return 0
+  const current = round1(player.handicap)
+  let count = 0
+  for (const round of byDate(data.rounds).reverse()) {
+    const rp = round.players.find((p) => p.playerId === playerId)
+    if (!rp) continue
+    if (round1(rp.handicapSnapshot) !== current) break
+    count++
+  }
+  return count
+}
+
 // ---------- Dates & copy ----------
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']

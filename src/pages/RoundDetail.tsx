@@ -1,18 +1,24 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useGoBack } from '../lib/nav'
 import { useStore } from '../data/store'
 import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, type ScoredRoundPlayer } from '../types'
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
 import { anyCards } from '../lib/holes'
+import { coursePar, courseSlug, findCourse, toPar } from '../lib/courses'
+import { grossWarning } from '../lib/scores'
 import { money } from '../lib/money'
 import BetEditor from '../components/BetEditor'
 import Scorecard from '../components/Scorecard'
+import { useConfirm } from '../components/Confirm'
 import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
 
 export default function RoundDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const goBack = useGoBack('/rounds')
   const { data, deleteRound, updateRound, addBet, deleteBet } = useStore()
+  const confirm = useConfirm()
   const [entering, setEntering] = useState<string | null>(null)
   const [draftScore, setDraftScore] = useState('')
   const [addingBet, setAddingBet] = useState(false)
@@ -36,9 +42,15 @@ export default function RoundDetail() {
   // their card hasn't landed yet.
   const solo = isSoloRound(round)
   const margin = standings.length > 1 ? round1(standings[1].netScore - standings[0].netScore) : 0
+  const course = findCourse(data, round.courseName)
+  const par = coursePar(course)
   const saddam = saddamState(data)
   const saddamChangedHere = saddam.since === round.date && saddam.holderId === standings[0]?.playerId && !solo
   const iAmWaiting = waiting.some((rp) => rp.playerId === data.currentUserId)
+
+  // Warns on an implausible number but still takes it — some rounds
+  // really do go that way.
+  const draftWarning = draftScore.trim() ? grossWarning(parseInt(draftScore, 10)) : null
 
   const saveScore = (playerId: string) => {
     const gross = parseInt(draftScore, 10)
@@ -73,12 +85,13 @@ export default function RoundDetail() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => navigate(-1)} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
+        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-[24px] font-extrabold tracking-tight leading-tight text-ink">{round.courseName}</h1>
             <p className="text-[13px] text-ink-dim mt-1">
               {prettyDate(round.date)}
+              {par != null && ` · par ${par}`}
               {round.tee && ` · ${round.tee} tees`}
             </p>
           </div>
@@ -123,7 +136,11 @@ export default function RoundDetail() {
               </PrimaryButton>
               <button onClick={() => setEntering(null)} className="px-3 text-[13px] font-bold text-ink-faint">Cancel</button>
             </div>
-          ) : (
+          ) : null}
+          {entering === data.currentUserId && draftWarning && (
+            <p className="text-[12px] font-semibold text-flag mt-2">{draftWarning}</p>
+          )}
+          {entering !== data.currentUserId && (
             <button
               onClick={() => { setEntering(data.currentUserId); setDraftScore('') }}
               className="mt-3 rounded-xl bg-green px-5 py-2.5 text-[14px] font-bold text-white"
@@ -131,6 +148,24 @@ export default function RoundDetail() {
               Enter my score
             </button>
           )}
+        </Card>
+      )}
+
+      {/* Par is entered once per course and reaches back through every
+          round already played there, so it's worth asking for here. */}
+      {!par && (
+        <Card
+          onClick={() => navigate(`/courses/${encodeURIComponent(courseSlug(round.courseName))}`)}
+          className="mt-3 p-4 flex items-center gap-3.5"
+        >
+          <span className="text-[20px]">🚩</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13.5px] font-bold text-ink">No par for {round.courseName} yet</p>
+            <p className="text-[12.5px] text-ink-dim mt-0.5">
+              Eighteen taps off the scorecard, and every round here starts showing scores against par.
+            </p>
+          </div>
+          <span className="text-[12.5px] font-bold text-green shrink-0">Add it →</span>
         </Card>
       )}
 
@@ -164,7 +199,10 @@ export default function RoundDetail() {
                 <span className={`truncate text-[14px] ${s.rank === 1 && !solo ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>{p.name}</span>
               </div>
               <span className="w-12 text-right text-[16px] font-extrabold text-ink tabular-nums">{fmt1(net(rp))}</span>
-              <span className="w-10 text-right text-[13px] text-ink-dim tabular-nums">{rp.gross}</span>
+              <span className="w-10 text-right text-[13px] text-ink-dim tabular-nums">
+                {rp.gross}
+                {par != null && <span className="block text-[10.5px] text-ink-faint">{toPar(rp.gross - par)}</span>}
+              </span>
               <span className="w-10 text-right text-[12px] text-ink-faint tabular-nums">{fmt1(rp.handicapSnapshot)}</span>
             </div>
           )
@@ -213,6 +251,9 @@ export default function RoundDetail() {
                   </button>
                 )}
               </div>
+              {entering === rp.playerId && draftWarning && (
+                <p className="text-[12px] font-semibold text-flag mt-1.5">{draftWarning}</p>
+              )}
             </div>
           )
         })}
@@ -282,8 +323,14 @@ export default function RoundDetail() {
                   <div className="flex items-center gap-3 shrink-0">
                     <p className="text-[11.5px] text-ink-faint tabular-nums">{money(bet.stake)} stake</p>
                     <button
-                      onClick={() => {
-                        if (confirm(`Remove "${bet.name}" from this round?`)) deleteBet(bet.id)
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: `Remove "${bet.name}"?`,
+                          body: 'The money from this bet comes back off everyone\'s all-time total.',
+                          confirmLabel: 'Remove bet',
+                          danger: true,
+                        })
+                        if (ok) deleteBet(bet.id)
                       }}
                       className="text-[11.5px] font-bold text-flag/70"
                     >
@@ -313,10 +360,16 @@ export default function RoundDetail() {
 
       <div className="mt-8 mb-4">
         <button
-          onClick={() => {
+          onClick={async () => {
             const scores = round.players.filter(hasScore).length
-            const detail = scores > 0 ? ` ${scores} score${scores === 1 ? '' : 's'} will be erased.` : ''
-            if (confirm(`Delete this round at ${round.courseName}?${detail} This can't be undone.`)) {
+            const detail = scores > 0 ? `${scores} posted score${scores === 1 ? '' : 's'} will be erased, along with any bets on it. ` : ''
+            const ok = await confirm({
+              title: `Delete this round at ${round.courseName}?`,
+              body: `${detail}This can't be undone.`,
+              confirmLabel: 'Delete round',
+              danger: true,
+            })
+            if (ok) {
               deleteRound(round.id)
               navigate('/rounds')
             }

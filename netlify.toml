@@ -8,3 +8,32 @@
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+
+# How an update reaches a phone that already has the app installed.
+#
+# The service worker file is the trigger: the browser refetches it, sees
+# it changed, and installs the new version. If it were allowed to sit in
+# a cache, everyone would stay on the old app until that cache expired,
+# so it must always be revalidated.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Vite fingerprints these, so a given URL's contents can never change.
+# Safe to keep forever, which is what makes a cold launch fast.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "public, max-age=0, must-revalidate"
