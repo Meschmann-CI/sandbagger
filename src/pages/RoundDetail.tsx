@@ -6,10 +6,12 @@ import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, type Sco
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
 import { anyCards } from '../lib/holes'
 import { coursePar, courseSlug, findCourse, toPar } from '../lib/courses'
+import { todayISO } from '../lib/dates'
 import { grossWarning } from '../lib/scores'
-import { money } from '../lib/money'
+import { money, settleUp } from '../lib/money'
 import BetEditor from '../components/BetEditor'
 import Scorecard from '../components/Scorecard'
+import SettleUp from '../components/SettleUp'
 import { useConfirm } from '../components/Confirm'
 import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
 
@@ -17,7 +19,7 @@ export default function RoundDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const goBack = useGoBack('/rounds')
-  const { data, deleteRound, updateRound, addBet, deleteBet } = useStore()
+  const { data, deleteRound, updateRound, addBet, deleteBet, addPayment, deletePayment } = useStore()
   const confirm = useConfirm()
   const [entering, setEntering] = useState<string | null>(null)
   const [draftScore, setDraftScore] = useState('')
@@ -42,6 +44,18 @@ export default function RoundDetail() {
   // their card hasn't landed yet.
   const solo = isSoloRound(round)
   const margin = standings.length > 1 ? round1(standings[1].netScore - standings[0].netScore) : 0
+  // Net across every bet on the round, less anything already paid back.
+  // Positive means they're owed money, matching how a trip's balances read.
+  const roundPaybacks = data.payments.filter((p) => p.roundId === round.id)
+  const betNet = new Map<string, number>()
+  const shift = (id: string, by: number) => betNet.set(id, (betNet.get(id) ?? 0) + by)
+  for (const bet of bets) for (const result of bet.results) shift(result.playerId, result.amount)
+  for (const p of roundPaybacks) {
+    shift(p.fromId, p.amount)
+    shift(p.toId, -p.amount)
+  }
+  const betsOwed = settleUp([...betNet].map(([playerId, net]) => ({ playerId, paid: 0, share: 0, net })))
+
   const course = findCourse(data, round.courseName)
   const par = coursePar(course)
   const saddam = saddamState(data)
@@ -311,6 +325,39 @@ export default function RoundDetail() {
 
       {bets.length === 0 && !addingBet && (
         <Card className="p-4 text-center text-[13.5px] text-ink-dim">Nothing on this round. Yet.</Card>
+      )}
+
+      {/* What the bets add up to between people, and how to make it stop
+          being true. Money won on a round is a permanent record; this is
+          about whether it's actually changed hands. */}
+      {bets.length > 0 && (
+        <Card className={`mb-3 p-4 ${betsOwed.length === 0 ? 'bg-green-soft/50 border-green/25' : 'bg-gold-soft/40 border-gold/30'}`}>
+          <p className="text-[12px] font-bold uppercase tracking-wider text-ink-faint mb-2.5">Settle up</p>
+          <SettleUp
+            owed={betsOwed}
+            note={`${round.courseName} (Sandbagger)`}
+            squareLabel="All settled. Nobody owes anybody for this one. 🎉"
+            onMarkPaid={(s) =>
+              addPayment({ roundId: round.id, fromId: s.fromId, toId: s.toId, amount: s.amount, date: todayISO() })
+            }
+          />
+          {roundPaybacks.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-gold/25 space-y-1.5">
+              {roundPaybacks.map((p) => (
+                <div key={p.id} className="flex items-center gap-2 text-[12px]">
+                  <span className="flex-1 text-ink-dim">
+                    <span className="font-bold text-ink">{data.players.find((x) => x.id === p.fromId)?.name}</span> paid{' '}
+                    <span className="font-bold text-ink">{data.players.find((x) => x.id === p.toId)?.name}</span>{' '}
+                    <span className="font-bold tabular-nums text-green">{money(p.amount)}</span>
+                  </span>
+                  <button onClick={() => deletePayment(p.id)} className="text-[11px] font-bold text-flag/70 shrink-0">
+                    Undo
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
       )}
 
       {bets.length > 0 && (

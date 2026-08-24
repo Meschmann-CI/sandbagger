@@ -156,7 +156,9 @@ export async function seedCloudGroup(
     const { error } = await client.from('payments').insert(
       seedData.payments.map((p) => ({
         id: uuid(),
-        trip_id: idMap.get(p.tripId),
+        // A payback settles either a trip or a round's bets, never both.
+        trip_id: p.tripId ? idMap.get(p.tripId) : null,
+        round_id: p.roundId ? idMap.get(p.roundId) : null,
         from_player: pid(p.fromId),
         to_player: pid(p.toId),
         amount: p.amount,

@@ -88,7 +88,8 @@ const expenseRow = (e: Expense) => ({
 
 const paymentRow = (p: Payment) => ({
   id: p.id,
-  trip_id: p.tripId,
+  trip_id: p.tripId ?? null,
+  round_id: p.roundId ?? null,
   from_player: p.fromId,
   to_player: p.toId,
   amount: p.amount,
@@ -219,7 +220,8 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         })),
         payments: (paymentsRes.data ?? []).map((p: any) => ({
           id: p.id,
-          tripId: p.trip_id,
+          tripId: p.trip_id ?? undefined,
+          roundId: p.round_id ?? undefined,
           fromId: p.from_player,
           toId: p.to_player,
           amount: num(p.amount),

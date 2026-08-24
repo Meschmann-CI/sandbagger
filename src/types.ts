@@ -164,10 +164,13 @@ export interface Expense {
   date?: string
 }
 
-// A payback between two golfers, so settled debts stop showing up.
+// A payback between two golfers, so settled debts stop showing up. It
+// belongs to whichever it settled: a trip's costs, or the bets on a
+// single round. Exactly one of these is set.
 export interface Payment {
   id: string
-  tripId: string
+  tripId?: string
+  roundId?: string
   fromId: string
   toId: string
   amount: number

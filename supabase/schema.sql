@@ -133,6 +133,10 @@ alter table groups add column if not exists saddam_award jsonb;
 alter table round_players alter column gross drop not null;
 -- Venmo handles, for settling up. Public usernames, nothing linked.
 alter table players add column if not exists venmo text;
+-- Paybacks used to belong to a trip. A bet on a single round needs
+-- settling too, so a payment now hangs off whichever it cleared.
+alter table payments alter column trip_id drop not null;
+alter table payments add column if not exists round_id uuid references rounds(id) on delete cascade;
 
 -- ============================================================
 -- Helpers
@@ -426,10 +430,18 @@ create policy expenses_all on expenses for all
   using (trip_id in (select id from trips))
   with check (trip_id in (select id from trips));
 
+-- A payment is visible to whoever can see the thing it settled, so a
+-- payback on a private trip stays as private as the trip does.
 drop policy if exists payments_all on payments;
 create policy payments_all on payments for all
-  using (trip_id in (select id from trips))
-  with check (trip_id in (select id from trips));
+  using (
+    (trip_id is not null and trip_id in (select id from trips))
+    or (round_id is not null and round_id in (select id from rounds))
+  )
+  with check (
+    (trip_id is not null and trip_id in (select id from trips))
+    or (round_id is not null and round_id in (select id from rounds))
+  );
 
 -- ============================================================
 -- Realtime (so a round logged on the course shows up on everyone's phone)

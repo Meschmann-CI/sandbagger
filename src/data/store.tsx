@@ -133,6 +133,8 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         ...d,
         rounds: d.rounds.filter((r) => r.id !== roundId),
         bets: d.bets.filter((b) => b.roundId !== roundId),
+        // The paybacks settled those bets, so they go with them.
+        payments: d.payments.filter((p) => p.roundId !== roundId),
       }))
     },
     // Keyed on the slug rather than an id, so entering par from a round
