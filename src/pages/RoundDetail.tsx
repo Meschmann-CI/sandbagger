@@ -8,10 +8,11 @@ import { anyCards } from '../lib/holes'
 import { coursePar, courseSlug, findCourse, toPar } from '../lib/courses'
 import { todayISO } from '../lib/dates'
 import { grossWarning } from '../lib/scores'
-import { money, settleUp } from '../lib/money'
+import { money } from '../lib/money'
 import BetEditor from '../components/BetEditor'
 import Scorecard from '../components/Scorecard'
 import SettleUp from '../components/SettleUp'
+import { roundBetSettlements } from '../lib/settlements'
 import { useConfirm } from '../components/Confirm'
 import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
 
@@ -44,17 +45,8 @@ export default function RoundDetail() {
   // their card hasn't landed yet.
   const solo = isSoloRound(round)
   const margin = standings.length > 1 ? round1(standings[1].netScore - standings[0].netScore) : 0
-  // Net across every bet on the round, less anything already paid back.
-  // Positive means they're owed money, matching how a trip's balances read.
   const roundPaybacks = data.payments.filter((p) => p.roundId === round.id)
-  const betNet = new Map<string, number>()
-  const shift = (id: string, by: number) => betNet.set(id, (betNet.get(id) ?? 0) + by)
-  for (const bet of bets) for (const result of bet.results) shift(result.playerId, result.amount)
-  for (const p of roundPaybacks) {
-    shift(p.fromId, p.amount)
-    shift(p.toId, -p.amount)
-  }
-  const betsOwed = settleUp([...betNet].map(([playerId, net]) => ({ playerId, paid: 0, share: 0, net })))
+  const betsOwed = roundBetSettlements(data, round)
 
   const course = findCourse(data, round.courseName)
   const par = coursePar(course)

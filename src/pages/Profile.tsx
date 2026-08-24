@@ -474,6 +474,7 @@ function EditGolfer({ player, cloud, onDone }: { player: Player; cloud: boolean;
       email: email.trim() || undefined,
       handicap: round1(Number(handicap) || player.handicap),
       homeCourse: homeCourse.trim() || undefined,
+      venmo: venmo.trim() || undefined,
     })
     onDone()
   }

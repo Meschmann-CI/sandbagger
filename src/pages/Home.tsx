@@ -2,8 +2,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { byDate, playerStats, roundStandings, saddamState, shortDate } from '../lib/stats'
 import { todayISO } from '../lib/dates'
+import { myOutstanding } from '../lib/settlements'
+import { money } from '../lib/money'
 import { canSeeTrip, fmt1, isSoloRound, pending } from '../types'
-import { Avatar, Card, Pill, SaddamIcon, SectionLabel } from '../components/ui'
+import { Avatar, Card, Pill, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
 
 export default function Home() {
   const { data } = useStore()
@@ -15,6 +17,10 @@ export default function Home() {
   const rounds = byDate(data.rounds)
   const recent = rounds.slice(-3).reverse()
   const awaiting = playerStats(data, me.id).awaitingScore.slice().reverse()
+
+  // What I owe and what I'm owed, everywhere.
+  const debts = myOutstanding(data, me.id)
+  const netPosition = debts.reduce((sum, d) => sum + (d.toId === me.id ? d.amount : -d.amount), 0)
 
   const visibleTrips = data.trips.filter((t) => canSeeTrip(t, me.id))
   const planning = visibleTrips.filter((t) => t.status === 'planning')
@@ -58,6 +64,50 @@ export default function Home() {
             </p>
           </div>
           <span className="text-[13px] font-bold text-green shrink-0">Add it →</span>
+        </Card>
+      )}
+
+      {/* Money still on the table, wherever it came from. Each row goes
+          to the round or trip it belongs to, where Pay and Mark paid live. */}
+      {debts.length > 0 && (
+        <Card className="mt-3 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-line">
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">💸 Money on the table</p>
+            {netPosition !== 0 && (
+              <span className={`text-[12.5px] font-extrabold tabular-nums ${netPosition > 0 ? 'text-green' : 'text-flag'}`}>
+                {netPosition > 0 ? `+${money(netPosition)} coming` : `${money(-netPosition)} owed`}
+              </span>
+            )}
+          </div>
+          <div className="divide-y divide-line">
+            {debts.map((d, i) => {
+              const iOwe = d.fromId === me.id
+              const other = data.players.find((p) => p.id === (iOwe ? d.toId : d.fromId))
+              return (
+                <RowButton key={i} onClick={() => navigate(d.href)} className="flex items-center gap-3 px-4 py-3">
+                  {other && <Avatar player={other} size={26} />}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13.5px] text-ink truncate">
+                      {iOwe ? (
+                        <>
+                          You owe <span className="font-extrabold">{other?.name}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-extrabold">{other?.name}</span> owes you
+                        </>
+                      )}
+                    </p>
+                    <p className="text-[11.5px] text-ink-faint truncate">{d.label}</p>
+                  </div>
+                  <span className={`text-[15px] font-extrabold tabular-nums shrink-0 ${iOwe ? 'text-flag' : 'text-green'}`}>
+                    {money(d.amount)}
+                  </span>
+                  <span className="text-[12px] font-bold text-green shrink-0">{iOwe ? 'Settle →' : 'Nudge →'}</span>
+                </RowButton>
+              )
+            })}
+          </div>
         </Card>
       )}
 
