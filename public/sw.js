@@ -5,8 +5,9 @@
 // catch up in the parking lot. This half handles reads — the app shell
 // and its assets. Writes are queued separately, in src/data/outbox.ts.
 //
-// Bump VERSION to retire every old cache on the next activate.
-const VERSION = 'v1'
+// Bump VERSION to retire every old cache on the next activate. Needed
+// whenever a static file changes name or contents — the icons did.
+const VERSION = 'v2'
 const SHELL = `sandbagger-shell-${VERSION}`
 const ASSETS = `sandbagger-assets-${VERSION}`
 
