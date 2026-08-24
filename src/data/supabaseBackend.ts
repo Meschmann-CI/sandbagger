@@ -18,6 +18,7 @@ function toPlayer(row: any): Player {
     homeCourse: row.home_course ?? undefined,
     color: row.color,
     email: row.email ?? undefined,
+    venmo: row.venmo ?? undefined,
   }
 }
 
@@ -306,6 +307,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
                 home_course: p.homeCourse ?? null,
                 color: p.color,
                 email: p.email ?? null,
+                venmo: p.venmo ?? null,
               })
             ).error,
             'Saving golfer',

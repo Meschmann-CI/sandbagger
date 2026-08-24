@@ -4,6 +4,7 @@ import type { ExpenseCategory, Trip } from '../types'
 import { money, settleUp, tripBalances } from '../lib/money'
 import { shortDate } from '../lib/stats'
 import { todayISO } from '../lib/dates'
+import { venmoLink } from '../lib/venmo'
 import { Avatar, Card, PrimaryButton, SectionLabel } from './ui'
 
 const CATEGORIES: { key: ExpenseCategory; icon: string; label: string }[] = [
@@ -91,24 +92,58 @@ export default function TripCosts({ trip }: { trip: Trip }) {
             {owed.length === 0 ? (
               <p className="text-[14px] font-bold text-green">All square. Nobody owes anybody. 🎉</p>
             ) : (
-              <div className="space-y-2.5">
-                {owed.map((s, i) => (
-                  <div key={i} className="flex items-center gap-2.5">
-                    <Avatar player={data.players.find((p) => p.id === s.fromId)!} size={24} />
-                    <p className="flex-1 text-[13.5px] text-ink min-w-0">
-                      <span className="font-extrabold">{name(s.fromId)}</span> owes{' '}
-                      <span className="font-extrabold">{name(s.toId)}</span>{' '}
-                      <span className="font-extrabold tabular-nums text-flag">{money(s.amount)}</span>
-                    </p>
-                    <button
-                      onClick={() => addPayment({ tripId: trip.id, fromId: s.fromId, toId: s.toId, amount: s.amount, date: todayISO() })}
-                      className="rounded-lg bg-green px-3 py-1.5 text-[12px] font-bold text-white shrink-0 active:scale-95"
-                    >
-                      Mark paid
-                    </button>
-                  </div>
-                ))}
+              <>
+              <div className="space-y-3">
+                {owed.map((s, i) => {
+                  const from = data.players.find((p) => p.id === s.fromId)
+                  const to = data.players.find((p) => p.id === s.toId)
+                  const iOwe = s.fromId === data.currentUserId
+                  const owedToMe = s.toId === data.currentUserId
+                  // Pay the person you owe; ask the person who owes you.
+                  // Anyone else's debt isn't yours to settle.
+                  const other = iOwe ? to : owedToMe ? from : undefined
+                  const action = iOwe ? 'pay' : 'charge'
+                  const note = `${trip.name} (Sandbagger)`
+                  return (
+                    <div key={i} className="flex items-center gap-2.5">
+                      <Avatar player={from!} size={24} />
+                      <p className="flex-1 text-[13.5px] text-ink min-w-0">
+                        <span className="font-extrabold">{name(s.fromId)}</span> owes{' '}
+                        <span className="font-extrabold">{name(s.toId)}</span>{' '}
+                        <span className="font-extrabold tabular-nums text-flag">{money(s.amount)}</span>
+                        {other && !other.venmo && (
+                          <span className="block text-[11px] text-ink-faint mt-0.5">
+                            Add {other.name}'s Venmo on the roster to settle it here
+                          </span>
+                        )}
+                      </p>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {other?.venmo && (
+                          <a
+                            href={venmoLink(other.venmo, s.amount, note, action)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-lg bg-[#008CFF] px-3 py-1.5 text-[12px] font-bold text-white active:scale-95"
+                          >
+                            {iOwe ? 'Pay' : 'Request'}
+                          </a>
+                        )}
+                        <button
+                          onClick={() => addPayment({ tripId: trip.id, fromId: s.fromId, toId: s.toId, amount: s.amount, date: todayISO() })}
+                          className="rounded-lg border border-line-strong bg-card px-3 py-1.5 text-[12px] font-bold text-ink-dim active:bg-paper"
+                        >
+                          Mark paid
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
+              <p className="text-[11px] text-ink-faint mt-3">
+                Venmo opens with the amount and note already filled in. You still send it yourself, and "Mark paid" is what
+                clears it here.
+              </p>
+              </>
             )}
           </Card>
 

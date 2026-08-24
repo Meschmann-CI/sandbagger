@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMembers, useStore } from '../data/store'
 import { HANDICAP_NUDGE_AFTER, playerStats, roundsAtCurrentHandicap, shortDate } from '../lib/stats'
 import { courseSlug, hasPars } from '../lib/courses'
+import { normalizeVenmo } from '../lib/venmo'
 import { deriveInitials, fmt1, isSoloRound, round1, type Player } from '../types'
 import { supabase } from '../lib/supabase'
 import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, RowButton, SaddamBadge, SectionLabel } from '../components/ui'
@@ -344,6 +345,7 @@ export default function Profile() {
                 <p className="text-[11.5px] text-ink-faint truncate">
                   <span className="tabular-nums">Hcp {fmt1(p.handicap)}</span>
                   {p.homeCourse && ` · ${p.homeCourse}`}
+                  {p.venmo && ` · @${p.venmo}`}
                 </p>
                 {cloud && (
                   <p className="text-[11.5px] mt-0.5 truncate">
@@ -448,6 +450,7 @@ function EditGolfer({ player, cloud, onDone }: { player: Player; cloud: boolean;
   const [email, setEmail] = useState(player.email ?? '')
   const [handicap, setHandicap] = useState(player.handicap.toFixed(1))
   const [homeCourse, setHomeCourse] = useState(player.homeCourse ?? '')
+  const [venmo, setVenmo] = useState(player.venmo ?? '')
   const [initials, setInitials] = useState(player.initials)
   // Track it so typing a surname updates the avatar, but a deliberate
   // override survives further edits to the name.
@@ -530,6 +533,24 @@ function EditGolfer({ player, cloud, onDone }: { player: Player; cloud: boolean;
           <label className={label}>Home course</label>
           <input value={homeCourse} onChange={(e) => setHomeCourse(e.target.value)} placeholder="Optional" className={field} />
         </div>
+      </div>
+      <div>
+        <label className={label}>Venmo</label>
+        <div className="relative">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[14px] font-bold text-ink-faint">@</span>
+          <input
+            value={venmo}
+            onChange={(e) => setVenmo(normalizeVenmo(e.target.value))}
+            placeholder="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            className={`${field} pl-7`}
+          />
+        </div>
+        <p className="text-[11px] text-ink-faint mt-1.5">
+          Just the username, so settling up a trip is one tap. Nothing gets linked and no account is connected.
+        </p>
       </div>
       <div className="flex gap-2">
         <PrimaryButton onClick={save} disabled={!name.trim()} className="flex-1 !py-2.5">

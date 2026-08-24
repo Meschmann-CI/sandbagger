@@ -11,6 +11,10 @@ export interface Player {
   // Set when someone is added before they've signed in — their first
   // magic-link login claims the profile with this address.
   email?: string
+  // Their Venmo username, so settling up is one tap. Nothing is linked
+  // and no account is connected: a handle is public, and it only goes
+  // into building a link.
+  venmo?: string
 }
 
 // Handing the Saddam over by hand. The trophy predates the app and can

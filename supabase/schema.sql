@@ -131,6 +131,8 @@ create table if not exists payments (
 alter table groups add column if not exists saddam_award jsonb;
 -- Scores that aren't in yet:
 alter table round_players alter column gross drop not null;
+-- Venmo handles, for settling up. Public usernames, nothing linked.
+alter table players add column if not exists venmo text;
 
 -- ============================================================
 -- Helpers

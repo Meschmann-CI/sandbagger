@@ -8,9 +8,9 @@ import type { AppData } from '../types'
 export const seedData: AppData = {
   currentUserId: 'p-alex',
   players: [
-    { id: 'p-alex', name: 'Alex', initials: 'AM', handicap: 11.2, homeCourse: 'Cobbs Creek', color: '#1c7c4a' },
-    { id: 'p-ravi', name: 'Ravi', initials: 'RS', handicap: 14.8, homeCourse: 'Rancho Park', color: '#2f6fa8' },
-    { id: 'p-danny', name: 'Danny', initials: 'DC', handicap: 17.5, homeCourse: 'Cobbs Creek', color: '#b8702f' },
+    { id: 'p-alex', name: 'Alex', initials: 'AM', handicap: 11.2, homeCourse: 'Cobbs Creek', color: '#1c7c4a', venmo: 'Alex-Demo' },
+    { id: 'p-ravi', name: 'Ravi', initials: 'RS', handicap: 14.8, homeCourse: 'Rancho Park', color: '#2f6fa8', venmo: 'Ravi-Demo' },
+    { id: 'p-danny', name: 'Danny', initials: 'DC', handicap: 17.5, homeCourse: 'Cobbs Creek', color: '#b8702f', venmo: 'Danny-Demo' },
     { id: 'p-kim', name: 'Kim', initials: 'KR', handicap: 21.0, homeCourse: 'Sandy Hollow', color: '#7a5195' },
   ],
   group: {
