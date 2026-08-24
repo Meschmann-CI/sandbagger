@@ -27,8 +27,12 @@ function friendlyAuthError(message: string): string {
   if (m.includes('rate limit') || m.includes('too many requests')) {
     return "Too many sign-in emails were sent recently, so this one didn't go out. Wait a few minutes and try once more — retrying now only pushes it further out."
   }
-  if (m.includes('expired')) {
-    return 'That code has expired. Send a new email and use the code from that one.'
+  // The link and the code are the same one-time token, so opening the
+  // link spends the code too. Someone who taps it out of habit and then
+  // types the code lands here, and "expired" on its own is baffling when
+  // the email arrived a minute ago.
+  if (m.includes('expired') || m.includes('already') || m.includes('used')) {
+    return 'That code has already been used or has expired. Tapping the link in the email uses it up too. Send a new email and type the code from that one without opening its link.'
   }
   if (m.includes('invalid') && (m.includes('token') || m.includes('otp') || m.includes('code'))) {
     return "That code wasn't right. Check the email again — it's the most recent one that counts."
