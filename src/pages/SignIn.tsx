@@ -2,12 +2,36 @@ import { useState } from 'react'
 import { requireSupabase } from '../lib/supabase'
 import { Card, PrimaryButton } from '../components/ui'
 
+// Signing in without ever leaving the app.
+//
+// The obvious flow — email a link, tap it — is broken on an iPhone once
+// the app is on the home screen. iOS gives a home-screen app its own
+// storage, separate from Safari's, and Mail always opens links in
+// Safari. So the link signs you in over in Safari while the app you're
+// actually looking at sits on "check your email" forever, and there's no
+// way to hand the session across or to make Mail open the app instead.
+//
+// The same email carries a code. Typing it in happens inside the app, so
+// there's nothing to hand across. The link still works for anyone signing
+// in from a desktop browser.
+
+// A home-screen app, where the link cannot work.
+const isInstalled = () =>
+  window.matchMedia?.('(display-mode: standalone)').matches ||
+  (navigator as unknown as { standalone?: boolean }).standalone === true
+
 // Supabase's own wording for these is too terse to act on, and the
 // rate-limit one is the single most likely thing a new golfer will hit.
 function friendlyAuthError(message: string): string {
   const m = message.toLowerCase()
   if (m.includes('rate limit') || m.includes('too many requests')) {
     return "Too many sign-in emails were sent recently, so this one didn't go out. Wait a few minutes and try once more — retrying now only pushes it further out."
+  }
+  if (m.includes('expired')) {
+    return 'That code has expired. Send a new email and use the code from that one.'
+  }
+  if (m.includes('invalid') && (m.includes('token') || m.includes('otp') || m.includes('code'))) {
+    return "That code wasn't right. Check the email again — it's the most recent one that counts."
   }
   if (m.includes('invalid') && m.includes('email')) {
     return "That doesn't look like a valid email address."
@@ -18,11 +42,12 @@ function friendlyAuthError(message: string): string {
   return message
 }
 
-// Magic-link sign in: no passwords to remember at the 19th hole.
 export default function SignIn() {
   const [email, setEmail] = useState('')
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle')
+  const [code, setCode] = useState('')
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'verifying'>('idle')
   const [error, setError] = useState<string | null>(null)
+  const installed = isInstalled()
 
   const send = async () => {
     const address = email.trim()
@@ -52,23 +77,81 @@ export default function SignIn() {
     }
   }
 
+  const verify = async () => {
+    const token = code.replace(/\D/g, '')
+    if (!token) return
+    setStatus('verifying')
+    setError(null)
+    try {
+      // 'email' covers both a brand new golfer and one who already has an
+      // account, so the same box works either way.
+      const { error: authError } = await requireSupabase().auth.verifyOtp({
+        email: email.trim(),
+        token,
+        type: 'email',
+      })
+      if (authError) {
+        setError(friendlyAuthError(authError.message))
+        setStatus('sent')
+      }
+      // On success the auth listener in App.tsx takes over and boots the
+      // group, so there's nothing to do here.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      setStatus('sent')
+    }
+  }
+
+  const sent = status === 'sent' || status === 'verifying'
+
   return (
     <div className="mx-auto max-w-md min-h-dvh flex flex-col justify-center px-5 rise">
       <div className="text-center mb-7">
-        <div className="text-5xl mb-3">⛳</div>
+        <img src="/sandbagger-icon-180.png" alt="" width={72} height={72} className="mx-auto rounded-2xl mb-3" />
         <h1 className="text-[30px] font-extrabold tracking-tight text-ink">Sandbagger</h1>
         <p className="text-[14px] text-ink-dim mt-1.5">Trips, rounds, and receipts.</p>
       </div>
 
-      {status === 'sent' ? (
-        <Card className="p-6 text-center">
-          <p className="text-2xl mb-2">📬</p>
-          <p className="text-[16px] font-extrabold text-ink">Check your email</p>
-          <p className="text-[13.5px] text-ink-dim mt-1.5">
-            We sent a sign-in link to <span className="font-bold text-ink">{email.trim()}</span>. Open it on this device and
-            you're in.
+      {sent ? (
+        <Card className="p-5">
+          <p className="text-2xl text-center mb-2">📬</p>
+          <p className="text-[16px] font-extrabold text-ink text-center">Check your email</p>
+          <p className="text-[13.5px] text-ink-dim mt-1.5 text-center">
+            We sent a six-digit code to <span className="font-bold text-ink">{email.trim()}</span>.
           </p>
-          <button onClick={() => setStatus('idle')} className="mt-4 text-[13px] font-bold text-green">
+
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-ink-faint mt-5 mb-2">
+            Enter the code
+          </label>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+            onKeyDown={(e) => e.key === 'Enter' && void verify()}
+            placeholder="000000"
+            autoFocus
+            className="w-full rounded-xl border border-line-strong bg-card px-4 py-3.5 text-center text-[26px] font-extrabold tracking-[0.3em] text-ink tabular-nums placeholder:text-ink-faint placeholder:tracking-[0.3em] focus:border-green focus:outline-none"
+          />
+          <PrimaryButton onClick={() => void verify()} disabled={code.length < 6 || status === 'verifying'} className="w-full mt-3">
+            {status === 'verifying' ? 'Signing you in…' : 'Sign in'}
+          </PrimaryButton>
+          {error && <p className="text-[12.5px] text-flag font-semibold mt-2.5">{error}</p>}
+
+          <p className="text-[11.5px] text-ink-faint mt-3.5">
+            {installed
+              ? "The email also has a link, but don't tap it — on an iPhone it opens Safari, which is a separate app from this one and won't sign you in here. The code is the one that works."
+              : 'The email also has a link you can tap instead. Either works.'}
+          </p>
+          <button
+            onClick={() => {
+              setStatus('idle')
+              setCode('')
+              setError(null)
+            }}
+            className="mt-3 text-[13px] font-bold text-green"
+          >
             Use a different email
           </button>
         </Card>
@@ -86,11 +169,11 @@ export default function SignIn() {
             className="w-full rounded-xl border border-line-strong bg-card px-4 py-3.5 text-[16px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
           />
           <PrimaryButton onClick={() => void send()} disabled={!email.trim() || status === 'sending'} className="w-full mt-3">
-            {status === 'sending' ? 'Sending…' : 'Send me a sign-in link'}
+            {status === 'sending' ? 'Sending…' : 'Email me a code'}
           </PrimaryButton>
           {error && <p className="text-[12.5px] text-flag font-semibold mt-2.5">{error}</p>}
           <p className="text-[11.5px] text-ink-faint mt-3">
-            No password. You'll get a link by email that signs you in on this device.
+            No password. You'll get a six-digit code by email to type in here.
           </p>
         </Card>
       )}
