@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useGoBack } from '../lib/nav'
 import { useMembers, useStore } from '../data/store'
 import AttendeePicker from '../components/AttendeePicker'
 import { PrimaryButton } from '../components/ui'
 
 export default function TripNew() {
   const navigate = useNavigate()
+  const goBack = useGoBack('/trips')
   const { data, addTrip } = useStore()
   const members = useMembers()
   const [name, setName] = useState('')
@@ -29,7 +31,7 @@ export default function TripNew() {
   return (
     <div className="rise">
       <header className="pt-4 pb-4 px-1">
-        <button onClick={() => navigate(-1)} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
+        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
         <h1 className="text-[24px] font-extrabold tracking-tight text-ink">New Trip</h1>
         <p className="text-[13px] text-ink-dim mt-1">
           Name it, pick who's coming, then throw destinations in the ring. Everybody on the list votes.

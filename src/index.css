@@ -60,3 +60,33 @@ input[type="number"]::-webkit-inner-spin-button {
 .rise {
   animation: rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sheet-up {
+  animation: sheet-up 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Respect the phone's reduce-motion setting. */
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .sheet-up {
+    animation: none;
+  }
+}

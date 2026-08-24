@@ -213,13 +213,15 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         case 'round.upsert': {
           const r = change.round
           guard((await client.from('rounds').upsert({ ...roundRow(r), created_by: playerId })).error, 'Saving round')
-          // Replace the score rows wholesale — simpler than diffing, and a
-          // round is always edited as one card.
-          guard((await client.from('round_players').delete().eq('round_id', r.id)).error, 'Clearing scores')
+          // Upsert the score rows rather than clearing and reinserting
+          // them. Four phones share one card on the course, and a
+          // delete-then-insert briefly empties the round — a concurrent
+          // save from another phone lands in that window and the row it
+          // wrote is gone.
           if (r.players.length) {
             guard(
               (
-                await client.from('round_players').insert(
+                await client.from('round_players').upsert(
                   r.players.map((rp) => ({
                     round_id: r.id,
                     player_id: rp.playerId,
@@ -227,11 +229,20 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
                     handicap_snapshot: rp.handicapSnapshot,
                     holes: rp.holes ?? null,
                   })),
+                  { onConflict: 'round_id,player_id' },
                 )
               ).error,
               'Saving scores',
             )
           }
+          // Drop only golfers actually taken off the round, so a save
+          // never removes someone another phone just added.
+          const keep = r.players.map((rp) => rp.playerId)
+          const prune = client.from('round_players').delete().eq('round_id', r.id)
+          guard(
+            (await (keep.length ? prune.not('player_id', 'in', `(${keep.join(',')})`) : prune)).error,
+            'Removing golfers from round',
+          )
           return
         }
         case 'round.delete':

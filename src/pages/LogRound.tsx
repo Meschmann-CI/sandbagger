@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useGoBack } from '../lib/nav'
 import { useMembers, useStore } from '../data/store'
 import { courseSuggestions } from '../lib/stats'
+import { todayISO } from '../lib/dates'
+import { GROSS_CEILING, GROSS_FLOOR, grossWarning } from '../lib/scores'
 import { fmt1 } from '../types'
 import { Avatar, Card, GhostButton, PrimaryButton } from '../components/ui'
 
@@ -9,16 +12,15 @@ import { Avatar, Card, GhostButton, PrimaryButton } from '../components/ui'
 // Defaults to just you, since most rounds are solo. Tap the others in
 // when the group actually played.
 
-const TODAY = new Date().toISOString().slice(0, 10)
-
 export default function LogRound() {
   const navigate = useNavigate()
+  const goBack = useGoBack('/')
   const { data, addRound } = useStore()
   const members = useMembers()
 
   const [step, setStep] = useState(0)
   const [courseName, setCourseName] = useState('')
-  const [date, setDate] = useState(TODAY)
+  const [date, setDate] = useState(todayISO)
   const [tee, setTee] = useState('')
   const [tripId, setTripId] = useState<string>('')
   const [playerIds, setPlayerIds] = useState<string[]>([data.currentUserId])
@@ -34,7 +36,7 @@ export default function LogRound() {
     setPlayerIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
 
   const bump = (id: string, delta: number) =>
-    setScores((s) => ({ ...s, [id]: Math.max(50, Math.min(160, (s[id] ?? 90) + delta)) }))
+    setScores((s) => ({ ...s, [id]: Math.max(GROSS_FLOOR, Math.min(GROSS_CEILING, (s[id] ?? 90) + delta)) }))
 
   const canNext = step === 0 ? courseName.trim().length > 0 : step === 1 ? playerIds.length > 0 : true
   // One score is enough. Anyone left blank gets asked for theirs later.
@@ -67,7 +69,7 @@ export default function LogRound() {
             ))}
           </div>
         </div>
-        <button onClick={() => navigate(-1)} className="text-[13px] font-bold text-ink-faint px-2 py-1">Cancel</button>
+        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint px-2 py-1">Cancel</button>
       </header>
 
       {/* Step 1: course + date */}
@@ -183,8 +185,9 @@ export default function LogRound() {
           {playerIds.map((pid) => {
             const p = data.players.find((pl) => pl.id === pid)!
             const val = scores[pid]
+            const warning = val === undefined ? null : grossWarning(val)
             return (
-              <Card key={pid} className="p-4 flex items-center gap-3">
+              <Card key={pid} className="p-4 flex flex-wrap items-center gap-3">
                 <Avatar player={p} size={40} />
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-[14.5px] text-ink truncate">{p.name}</p>
@@ -224,6 +227,7 @@ export default function LogRound() {
                     +
                   </button>
                 </div>
+                {warning && <p className="w-full text-[12px] font-semibold text-flag">{warning}</p>}
               </Card>
             )
           })}

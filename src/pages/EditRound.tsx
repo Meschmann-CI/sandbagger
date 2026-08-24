@@ -5,6 +5,7 @@ import { fmt1, type RoundPlayer } from '../types'
 import { courseSuggestions } from '../lib/stats'
 import { hasCard } from '../lib/holes'
 import { Avatar, Card, GhostButton, PrimaryButton } from '../components/ui'
+import { useConfirm } from '../components/Confirm'
 
 // Everything about a logged round on one screen. Scores can be cleared
 // back to blank, which puts the round back on that golfer's to-do list.
@@ -12,6 +13,7 @@ export default function EditRound() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data, updateRound, deleteRound } = useStore()
+  const confirm = useConfirm()
   const members = useMembers()
   const round = data.rounds.find((r) => r.id === id)
 
@@ -73,7 +75,7 @@ export default function EditRound() {
     <div className="rise">
       <header className="pt-4 pb-4 px-1 flex items-center justify-between">
         <h1 className="text-[24px] font-extrabold tracking-tight text-ink">Edit Round</h1>
-        <button onClick={() => navigate(-1)} className="text-[13px] font-bold text-ink-faint px-2 py-1">Cancel</button>
+        <button onClick={() => navigate(`/rounds/${round.id}`)} className="text-[13px] font-bold text-ink-faint px-2 py-1">Cancel</button>
       </header>
 
       <div className="space-y-4">
@@ -201,12 +203,18 @@ export default function EditRound() {
           <PrimaryButton onClick={save} disabled={!courseName.trim() || !date || entries.length === 0} className="flex-1 !py-4">
             Save changes
           </PrimaryButton>
-          <GhostButton onClick={() => navigate(-1)}>Cancel</GhostButton>
+          <GhostButton onClick={() => navigate(`/rounds/${round.id}`)}>Cancel</GhostButton>
         </div>
 
         <button
-          onClick={() => {
-            if (confirm(`Delete this round at ${round.courseName}? This can't be undone.`)) {
+          onClick={async () => {
+            const ok = await confirm({
+              title: `Delete this round at ${round.courseName}?`,
+              body: 'Its scores and any bets on it go too. This can\'t be undone.',
+              confirmLabel: 'Delete round',
+              danger: true,
+            })
+            if (ok) {
               deleteRound(round.id)
               navigate('/rounds')
             }

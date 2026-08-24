@@ -4,16 +4,16 @@ import { useStore } from '../data/store'
 import type { ItineraryItem, Review, Trip } from '../types'
 import { SPANNING_KINDS, fmt1, hasScore, type ScoredRoundPlayer } from '../types'
 import { byDate, leaderboard, moneyTotals, prettyDate, roundStandings, shortDate, timeToMinutes } from '../lib/stats'
+import { todayISO } from '../lib/dates'
 import ItineraryCard from './ItineraryCard'
 import ItineraryEditor from './ItineraryEditor'
 import TripCosts from './TripCosts'
 import { Avatar, Card, MoneyBadge, PrimaryButton, SectionLabel } from './ui'
 
-const TODAY = new Date().toISOString().slice(0, 10)
-
 export default function TripBooked({ trip }: { trip: Trip }) {
   const navigate = useNavigate()
   const { data, updateTrip, newId } = useStore()
+  const TODAY = todayISO()
   const [editDates, setEditDates] = useState(false)
   const [start, setStart] = useState(trip.startDate ?? '')
   const [end, setEnd] = useState(trip.endDate ?? '')

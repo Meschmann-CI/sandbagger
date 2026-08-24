@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { deriveInitials, round1, type AppData, type Bet, type Expense, type Payment, type Player, type Round, type Trip } from '../types'
+import { todayISO } from '../lib/dates'
 import type { Backend, Change } from './backend'
 
 // One store, two backends. The UI never learns which one is behind it:
@@ -23,7 +24,6 @@ interface StoreApi {
   deleteTrip: (tripId: string) => void
   addPlayer: (input: { name: string; handicap: number; homeCourse?: string; email?: string }) => Player
   updatePlayer: (player: Player) => void
-  adjustHandicap: (playerId: string, delta: number) => void
   removePlayer: (playerId: string) => void
   setCurrentUser: (playerId: string) => void
   addExpense: (expense: Omit<Expense, 'id'>) => void
@@ -166,17 +166,6 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         players: d.players.map((p) => (p.id === player.id ? player : p)),
       }))
     },
-    // Delta-based so rapid taps on the stepper each land instead of
-    // several of them recomputing from the same rendered value.
-    adjustHandicap(playerId, delta) {
-      const current = dataRef.current.players.find((p) => p.id === playerId)
-      if (!current) return
-      const player = { ...current, handicap: round1(Math.min(54, Math.max(0, current.handicap + delta))) }
-      commit({ kind: 'player.upsert', player }, (d) => ({
-        ...d,
-        players: d.players.map((p) => (p.id === playerId ? player : p)),
-      }))
-    },
     // Removing a member keeps their rounds and money history intact —
     // deleting that would rewrite the record.
     removePlayer(playerId) {
@@ -212,7 +201,7 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     awardSaddam(playerId, note) {
       const group = {
         ...dataRef.current.group,
-        saddamAward: { playerId, date: new Date().toISOString().slice(0, 10), note: note?.trim() || undefined },
+        saddamAward: { playerId, date: todayISO(), note: note?.trim() || undefined },
       }
       commit({ kind: 'group.upsert', group }, (d) => ({ ...d, group }))
     },

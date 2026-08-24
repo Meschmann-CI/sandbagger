@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useGoBack } from '../lib/nav'
 import { useMembers, useStore } from '../data/store'
 import { prettyDate, saddamHistory, saddamState, shortDate } from '../lib/stats'
-import { Avatar, Card, PrimaryButton, SaddamIcon, SectionLabel } from '../components/ui'
+import { Avatar, Card, PrimaryButton, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
 
 // Who holds the trophy, how it got there, and a way to hand it over when
 // it changed hands somewhere the app never saw.
 export default function Saddam() {
   const navigate = useNavigate()
+  const goBack = useGoBack('/h2h')
   const { data, awardSaddam } = useStore()
   const members = useMembers()
   const [handingOver, setHandingOver] = useState(false)
@@ -33,7 +35,7 @@ export default function Saddam() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => navigate(-1)} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
+        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
         <h1 className="text-[26px] font-extrabold tracking-tight text-ink">The Saddam</h1>
         <p className="text-[13px] text-ink-dim">Held by whoever won the last group round.</p>
       </header>
@@ -140,12 +142,12 @@ export default function Saddam() {
             const p = data.players.find((pl) => pl.id === change.playerId)
             if (!p) return null
             const current = i === 0
-            return (
-              <div
-                key={`${change.date}-${change.playerId}-${i}`}
-                onClick={change.roundId ? () => navigate(`/rounds/${change.roundId}`) : undefined}
-                className={`flex items-center gap-3 px-4 py-3 ${change.roundId ? 'cursor-pointer active:bg-paper' : ''}`}
-              >
+            const key = `${change.date}-${change.playerId}-${i}`
+            const row = 'flex items-center gap-3 px-4 py-3'
+            // A handover has no round to open, so only the ones won on the
+            // course are tappable.
+            const body = (
+              <>
                 <Avatar player={p} size={30} />
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] font-bold text-ink truncate">
@@ -162,6 +164,15 @@ export default function Saddam() {
                     <SaddamIcon size={20} />
                   </span>
                 )}
+              </>
+            )
+            return change.roundId ? (
+              <RowButton key={key} onClick={() => navigate(`/rounds/${change.roundId}`)} className={row}>
+                {body}
+              </RowButton>
+            ) : (
+              <div key={key} className={row}>
+                {body}
               </div>
             )
           })}

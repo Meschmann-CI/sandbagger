@@ -1,16 +1,16 @@
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { leaderboard, shortDate } from '../lib/stats'
+import { todayISO } from '../lib/dates'
 import { canSeeTrip } from '../types'
 import { useMembers } from '../data/store'
 import { Avatar, Card, EmptyState, Pill, SectionLabel } from '../components/ui'
-
-const TODAY = new Date().toISOString().slice(0, 10)
 
 export default function Trips() {
   const { data } = useStore()
   const navigate = useNavigate()
   const members = useMembers()
+  const TODAY = todayISO()
 
   // A row of who's going, plus a lock when the trip is not group-wide.
   const Attendees = ({ ids }: { ids: string[] }) => {
