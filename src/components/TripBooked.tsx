@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
 import type { ItineraryItem, Review, Trip } from '../types'
-import { SPANNING_KINDS, fmt1, hasScore, type ScoredRoundPlayer } from '../types'
-import { byDate, leaderboard, moneyTotals, prettyDate, roundStandings, shortDate, timeToMinutes } from '../lib/stats'
+import { SPANNING_KINDS, fmt1 } from '../types'
+import { byDate, moneyTotals, prettyDate, roundStandings, shortDate, timeToMinutes, tripBoard } from '../lib/stats'
 import { todayISO } from '../lib/dates'
 import ItineraryCard from './ItineraryCard'
 import ItineraryEditor from './ItineraryEditor'
@@ -21,7 +21,7 @@ export default function TripBooked({ trip }: { trip: Trip }) {
   const [editingId, setEditingId] = useState<string | null>(null)
 
   const rounds = byDate(data.rounds.filter((r) => r.tripId === trip.id))
-  const board = leaderboard(data, rounds).filter((row) => row.rounds > 0)
+  const board = tripBoard(data, rounds)
   const roundIds = new Set(rounds.map((r) => r.id))
   const money = moneyTotals(data, roundIds)
   const isPast = !!trip.endDate && trip.endDate < TODAY
@@ -125,34 +125,31 @@ export default function TripBooked({ trip }: { trip: Trip }) {
               <span className="w-12 text-right">Gross Σ</span>
               <span className="w-11 text-right">Money</span>
             </div>
-            {board
-              .map((row) => {
-                // Only rounds they've posted a score for count toward the totals.
-                const mine = rounds
-                  .map((r) => r.players.find((p) => p.playerId === row.player.id))
-                  .filter((rp): rp is ScoredRoundPlayer => !!rp && hasScore(rp))
-                const netTotal = mine.reduce((sum, rp) => sum + rp.gross - rp.handicapSnapshot, 0)
-                const grossTotal = mine.reduce((sum, rp) => sum + rp.gross, 0)
-                return { row, netTotal, grossTotal }
-              })
-              .sort((a, b) => a.netTotal - b.netTotal)
-              .map(({ row, netTotal, grossTotal }, i) => (
-                <div key={row.player.id} className="grid grid-cols-[1fr_repeat(3,auto)] gap-x-4 items-center px-4 py-3.5 border-b border-line last:border-0">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className={`font-extrabold text-[15px] w-4 tabular-nums ${i === 0 ? 'text-gold' : 'text-ink-faint'}`}>{i + 1}</span>
-                    <Avatar player={row.player} size={30} />
+            {board.map((row, i) => (
+              <div key={row.player.id} className="grid grid-cols-[1fr_repeat(3,auto)] gap-x-4 items-center px-4 py-3.5 border-b border-line last:border-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className={`font-extrabold text-[15px] w-4 tabular-nums ${i === 0 ? 'text-gold' : 'text-ink-faint'}`}>{i + 1}</span>
+                  <Avatar player={row.player} size={30} />
+                  <div className="min-w-0">
                     <span className={`text-[14px] truncate ${i === 0 ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>
                       {row.player.name}
                       {i === 0 && ' 🏆'}
                     </span>
+                    {/* A smaller total from fewer rounds isn't a lead, so say it. */}
+                    {row.roundsPlayed < board[0].roundsPlayed && (
+                      <p className="text-[10.5px] text-ink-faint">
+                        {row.roundsPlayed} of {rounds.length} rounds
+                      </p>
+                    )}
                   </div>
-                  <span className="w-14 text-right font-extrabold text-[15px] text-ink tabular-nums">{fmt1(netTotal)}</span>
-                  <span className="w-12 text-right text-[12.5px] text-ink-dim tabular-nums">{grossTotal}</span>
-                  <span className="w-11 text-right">
-                    <MoneyBadge amount={money.get(row.player.id) ?? 0} className="text-[12.5px]" />
-                  </span>
                 </div>
-              ))}
+                <span className="w-14 text-right font-extrabold text-[15px] text-ink tabular-nums">{fmt1(row.netTotal)}</span>
+                <span className="w-12 text-right text-[12.5px] text-ink-dim tabular-nums">{row.grossTotal}</span>
+                <span className="w-11 text-right">
+                  <MoneyBadge amount={money.get(row.player.id) ?? 0} className="text-[12.5px]" />
+                </span>
+              </div>
+            ))}
           </Card>
         </>
       )}

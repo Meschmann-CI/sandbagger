@@ -137,6 +137,39 @@ export function leaderboard(data: AppData, rounds = data.rounds): LeaderRow[] {
   return rows.sort((a, b) => b.wins - a.wins || (a.avgGross ?? 999) - (b.avgGross ?? 999))
 }
 
+// ---------- Trip standings ----------
+// The trip championship is lowest total net across the trip's rounds —
+// the definition the Final Standings table has always shown, with the
+// arithmetic on screen. The archive card used to rank by rounds won
+// instead, so the two screens could crown different people. One function
+// now, so they can't disagree.
+
+export interface TripRow {
+  player: Player
+  roundsPlayed: number
+  netTotal: number
+  grossTotal: number
+}
+
+export function tripBoard(data: AppData, rounds: Round[]): TripRow[] {
+  const rows: TripRow[] = []
+  for (const player of data.players) {
+    const mine = rounds
+      .map((r) => r.players.find((p) => p.playerId === player.id))
+      .filter((rp): rp is ScoredRoundPlayer => !!rp && hasScore(rp))
+    if (mine.length === 0) continue
+    rows.push({
+      player,
+      roundsPlayed: mine.length,
+      netTotal: round1(mine.reduce((sum, rp) => sum + net(rp), 0)),
+      grossTotal: mine.reduce((sum, rp) => sum + rp.gross, 0),
+    })
+  }
+  // Most rounds played first, then lowest net. Skipping Saturday isn't a
+  // scoring strategy — a smaller sum from fewer rounds can't take the trip.
+  return rows.sort((a, b) => b.roundsPlayed - a.roundsPlayed || a.netTotal - b.netTotal)
+}
+
 // ---------- The Saddam ----------
 // The little trophy. It goes to whoever won the most recent group round.
 // On a tie for the lowest net, it stays where it is.

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
-import { leaderboard, shortDate } from '../lib/stats'
+import { shortDate, tripBoard } from '../lib/stats'
 import { todayISO } from '../lib/dates'
 import { canSeeTrip } from '../types'
 import { useMembers } from '../data/store'
@@ -124,8 +124,9 @@ export default function Trips() {
           <div className="space-y-3">
             {past.map((trip) => {
               const rounds = data.rounds.filter((r) => r.tripId === trip.id)
-              const board = leaderboard(data, rounds).filter((row) => row.rounds > 0)
-              const champ = board[0]?.player
+              // Same computation as the trip's Final Standings, so the
+              // name on this card is the name at the top in there.
+              const champ = tripBoard(data, rounds)[0]?.player
               return (
                 <Card key={trip.id} onClick={() => navigate(`/trips/${trip.id}`)} className="p-4 flex items-center gap-3.5">
                   <div className="h-11 w-11 rounded-xl bg-paper border border-line flex items-center justify-center text-[19px] shrink-0">
