@@ -119,22 +119,26 @@ export default function TripBooked({ trip }: { trip: Trip }) {
         <>
           <SectionLabel>{isPast ? 'Final Standings' : 'Trip Leaderboard'}</SectionLabel>
           <Card>
-            <div className="grid grid-cols-[1fr_repeat(3,auto)] gap-x-4 px-4 py-2.5 border-b border-line text-[10px] font-bold uppercase tracking-wider text-ink-faint">
+            <div className="grid grid-cols-[1fr_repeat(3,auto)] gap-x-3 px-4 py-2.5 border-b border-line text-[10px] font-bold uppercase tracking-wider text-ink-faint">
               <span>Player</span>
               <span className="w-14 text-right">Net Σ</span>
               <span className="w-12 text-right">Gross Σ</span>
               <span className="w-11 text-right">Money</span>
             </div>
             {board.map((row, i) => (
-              <div key={row.player.id} className="grid grid-cols-[1fr_repeat(3,auto)] gap-x-4 items-center px-4 py-3.5 border-b border-line last:border-0">
+              <div key={row.player.id} className="grid grid-cols-[1fr_repeat(3,auto)] gap-x-3 items-center px-4 py-3.5 border-b border-line last:border-0">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <span className={`font-extrabold text-[15px] w-4 tabular-nums ${i === 0 ? 'text-gold' : 'text-ink-faint'}`}>{i + 1}</span>
+                  {/* The trophy IS the winner's rank, in the rank column —
+                      next to the name it fights the score columns for
+                      space on a phone, and one of them ends up clipped. */}
+                  <span className={`text-[15px] w-5 shrink-0 tabular-nums ${i === 0 ? '' : 'font-extrabold text-ink-faint'}`}>
+                    {i === 0 ? '🏆' : i + 1}
+                  </span>
                   <Avatar player={row.player} size={30} />
                   <div className="min-w-0">
-                    <span className={`text-[14px] truncate ${i === 0 ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>
+                    <p className={`text-[14px] truncate ${i === 0 ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>
                       {row.player.name}
-                      {i === 0 && ' 🏆'}
-                    </span>
+                    </p>
                     {/* A smaller total from fewer rounds isn't a lead, so say it. */}
                     {row.roundsPlayed < board[0].roundsPlayed && (
                       <p className="text-[10.5px] text-ink-faint">
