@@ -179,7 +179,7 @@ export interface Payment {
 
 // ---------- Bets ----------
 
-export type BetType = 'nassau' | 'skins' | 'custom'
+export type BetType = 'nassau' | 'skins' | 'match' | 'custom'
 
 export interface BetResult {
   playerId: string

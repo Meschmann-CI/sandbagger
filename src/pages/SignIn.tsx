@@ -15,11 +15,6 @@ import { Card, PrimaryButton } from '../components/ui'
 // there's nothing to hand across. The link still works for anyone signing
 // in from a desktop browser.
 
-// A home-screen app, where the link cannot work.
-const isInstalled = () =>
-  window.matchMedia?.('(display-mode: standalone)').matches ||
-  (navigator as unknown as { standalone?: boolean }).standalone === true
-
 // Supabase's own wording for these is too terse to act on, and the
 // rate-limit one is the single most likely thing a new golfer will hit.
 function friendlyAuthError(message: string): string {
@@ -51,7 +46,6 @@ export default function SignIn() {
   const [code, setCode] = useState('')
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'verifying'>('idle')
   const [error, setError] = useState<string | null>(null)
-  const installed = isInstalled()
 
   const send = async () => {
     const address = email.trim()
@@ -144,9 +138,7 @@ export default function SignIn() {
           {error && <p className="text-[12.5px] text-flag font-semibold mt-2.5">{error}</p>}
 
           <p className="text-[11.5px] text-ink-faint mt-3.5">
-            {installed
-              ? "The email also has a link, but don't tap it — on an iPhone it opens Safari, which is a separate app from this one and won't sign you in here. The code is the one that works."
-              : 'The email also has a link you can tap instead. Either works.'}
+            Type the code here rather than tapping anything in the email — opening a sign-in link spends the code.
           </p>
           <button
             onClick={() => {

@@ -2,15 +2,16 @@ import { useMemo, useState } from 'react'
 import { useStore } from '../data/store'
 import type { Bet, BetResult, BetType, Round } from '../types'
 import { hasScore } from '../types'
-import { calcCustom, calcNassau, calcSkins } from '../lib/bets'
+import { calcCustom, calcMatchPlay, calcNassau, calcSkins } from '../lib/bets'
 import { anyCards } from '../lib/holes'
-import { findCourse } from '../lib/courses'
+import { findCourse, hasStrokeIndex } from '../lib/courses'
 import { money } from '../lib/money'
 import { Avatar, Card, PrimaryButton } from '../components/ui'
 
 const TYPES: { key: BetType; label: string; blurb: string }[] = [
   { key: 'skins', label: 'Skins', blurb: 'Low score on a hole wins it. Ties carry nothing.' },
   { key: 'nassau', label: 'Nassau', blurb: 'Three bets: front nine, back nine, and the eighteen.' },
+  { key: 'match', label: 'Match', blurb: 'One on one, hole by hole. Most holes up takes the stake.' },
   { key: 'custom', label: 'Custom', blurb: 'One-off — closest to the pin, longest drive, whatever.' },
 ]
 
@@ -34,6 +35,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
   const outcome = useMemo(() => {
     if (type === 'skins') return calcSkins(round, inIds, stakeNum)
     if (type === 'nassau') return calcNassau(round, inIds, stakeNum, useNet, course)
+    if (type === 'match') return calcMatchPlay(round, inIds, stakeNum, useNet, course)
     return calcCustom(inIds, customWinner, stakeNum)
   }, [type, round, inIds, stakeNum, useNet, customWinner, course])
 
@@ -49,7 +51,12 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
   const results = showManual ? manualResults : outcome.results
   const balanced = Math.abs(manualSum) < 0.005
   const canSave =
-    inIds.length >= 2 && stakeNum >= 0 && (showManual ? balanced && manualResults.some((r) => r.amount !== 0) : outcome.computable)
+    inIds.length >= 2 &&
+    // A match is strictly one on one; three players in a "match" is a
+    // different game (and it has a name: skins).
+    (type !== 'match' || inIds.length === 2) &&
+    stakeNum >= 0 &&
+    (showManual ? balanced && manualResults.some((r) => r.amount !== 0) : outcome.computable)
 
   const label = 'block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5'
   const field =
@@ -60,7 +67,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
   return (
     <div className="rounded-2xl border border-green/30 bg-card p-4 space-y-3.5">
       {/* Game */}
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-4 gap-1.5">
         {TYPES.map((t) => (
           <button
             key={t.key}
@@ -99,7 +106,9 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
         <p className="text-[11.5px] text-ink-faint">
           {type === 'skins'
             ? `${money(stakeNum)} per hole, paid by everyone else to whoever wins it.`
-            : `${money(stakeNum)} on each of the three, paid by everyone else to whoever wins it.`}
+            : type === 'match'
+              ? `${money(stakeNum)} on the match. Winner takes it; all square and nobody pays.`
+              : `${money(stakeNum)} on each of the three, paid by everyone else to whoever wins it.`}
         </p>
       )}
 
@@ -129,8 +138,8 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
         </div>
       </div>
 
-      {/* Nassau gross/net */}
-      {type === 'nassau' && (
+      {/* Gross/net, for the games where handicaps come into it */}
+      {(type === 'nassau' || type === 'match') && (
         <div>
           <label className={label}>Decided on</label>
           <div className="flex gap-2">
@@ -150,8 +159,13 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
             ))}
           </div>
           <p className="text-[11px] text-ink-faint mt-1.5">
-            Net takes off the full handicap over eighteen and half of it on each nine. Without a stroke index the app can't
-            allocate shots hole by hole, so that's the approximation.
+            {type === 'match'
+              ? hasStrokeIndex(course)
+                ? 'Net gives the difference in handicaps as strokes on the hardest holes, off this course’s stroke index.'
+                : 'Net needs this course’s stroke index — which holes get a stroke decides who wins them. Add it from the Courses page, or play it gross.'
+              : hasStrokeIndex(course)
+                ? 'Net gives strokes hole by hole off this course’s stroke index.'
+                : 'Net takes off the full handicap over eighteen and half of it on each nine. Add this course’s stroke index for the real hole-by-hole allocation.'}
           </p>
         </div>
       )}

@@ -156,6 +156,107 @@ export function calcNassau(
   return { results: toResults(totals), detail, computable: true }
 }
 
+/**
+ * Match play: one on one, hole by hole. Win a hole by scoring lower on
+ * it; most holes up takes the stake. The match closes early once the
+ * lead is bigger than the holes left — that's what "3&2" means.
+ *
+ * Net gives the DIFFERENCE in handicaps, not each player's full number,
+ * as strokes on the hardest holes. That's the convention off a real
+ * card, and it's why net here demands the course's stroke index: which
+ * specific holes get a stroke decides who wins those holes, so there is
+ * no honest way to spread them without the ranking.
+ */
+export function calcMatchPlay(
+  round: Round,
+  playerIds: string[],
+  stake: number,
+  useNet: boolean,
+  course?: Course,
+): BetOutcome {
+  const entries = playerIds
+    .map((id) => round.players.find((rp) => rp.playerId === id))
+    .filter((rp): rp is RoundPlayer => !!rp)
+  // Both checks: two names in the bet, and both actually on the round —
+  // otherwise a stray id silently turns a threesome into somebody
+  // else's head-to-head.
+  if (playerIds.length !== 2 || entries.length !== 2) {
+    return emptyOutcome(playerIds, 'Match play is one on one — pick exactly two golfers from this round.')
+  }
+
+  const [a, b] = entries
+  const ranked = hasStrokeIndex(course) ? course : null
+  if (useNet && !ranked) {
+    return emptyOutcome(
+      playerIds,
+      "Net match play needs this course's stroke index — add it from the Courses page, or play the match gross.",
+    )
+  }
+
+  // Strokes for the weaker player, hardest holes first.
+  let strokesA = Array<number>(HOLE_COUNT).fill(0)
+  let strokesB = Array<number>(HOLE_COUNT).fill(0)
+  if (useNet && ranked) {
+    const diff = a.handicapSnapshot - b.handicapSnapshot
+    if (diff > 0) strokesA = strokesByHole(ranked, diff)
+    else if (diff < 0) strokesB = strokesByHole(ranked, -diff)
+  }
+
+  // Holes are judged in order, and only as far as both cards go —
+  // a match has a running state, unlike skins.
+  const cardA = cardOf(a)
+  const cardB = cardOf(b)
+  let up = 0 // positive = A leads
+  let thru = 0
+  let closedWithLeft: number | null = null
+  for (let h = 0; h < HOLE_COUNT; h++) {
+    if (cardA[h] == null || cardB[h] == null) break
+    thru = h + 1
+    const netA = cardA[h]! - strokesA[h]
+    const netB = cardB[h]! - strokesB[h]
+    if (netA < netB) up++
+    else if (netB < netA) up--
+    const remaining = HOLE_COUNT - thru
+    if (Math.abs(up) > remaining) {
+      closedWithLeft = remaining
+      break
+    }
+  }
+
+  if (thru === 0) return emptyOutcome(playerIds, 'No hole has a score for both golfers yet.')
+
+  const totals = zeroed(playerIds)
+  const detail: string[] = []
+  const leaderId = up > 0 ? a.playerId : b.playerId
+  const loserId = up > 0 ? b.playerId : a.playerId
+
+  if (useNet && ranked) {
+    const diff = Math.abs(Math.round(a.handicapSnapshot - b.handicapSnapshot))
+    const receiverId = a.handicapSnapshot > b.handicapSnapshot ? a.playerId : b.playerId
+    if (diff > 0) detail.push(`Gets ${diff} stroke${diff === 1 ? '' : 's'}, hardest holes first|${receiverId}`)
+  }
+
+  // Decided — either closed early ("3&2") or on the last green ("1 up").
+  // A win at the 18th is never written "1&0"; that's not how a card reads.
+  if (closedWithLeft != null || thru === HOLE_COUNT) {
+    if (up === 0) {
+      detail.push('All square after eighteen. Nobody pays.')
+      return { results: toResults(totals), detail, computable: true }
+    }
+    pay(totals, leaderId, [loserId], stake)
+    const margin =
+      closedWithLeft != null && closedWithLeft > 0 ? `${Math.abs(up)}&${closedWithLeft}` : `${Math.abs(up)} up`
+    detail.push(`Takes it ${margin}|${leaderId}`)
+    return { results: toResults(totals), detail, computable: true }
+  }
+
+  // Still live.
+  const remaining = HOLE_COUNT - thru
+  if (up === 0) detail.push(`All square thru ${thru}.`)
+  else detail.push(`${Math.abs(up)} up thru ${thru}${Math.abs(up) === remaining ? ' — dormie' : ''}|${leaderId}`)
+  return { results: toResults(totals), detail, computable: false }
+}
+
 /** Winner-takes-all on a one-off bet, e.g. closest to the pin. */
 export function calcCustom(playerIds: string[], winnerId: string | null, stake: number): BetOutcome {
   const totals = zeroed(playerIds)

@@ -100,7 +100,7 @@ create table if not exists round_players (
 create table if not exists bets (
   id uuid primary key default gen_random_uuid(),
   round_id uuid not null references rounds(id) on delete cascade,
-  type text not null check (type in ('nassau', 'skins', 'custom')),
+  type text not null check (type in ('nassau', 'skins', 'match', 'custom')),
   name text not null,
   stake numeric(10,2) not null default 0,
   results jsonb not null default '[]'::jsonb
@@ -133,6 +133,10 @@ alter table groups add column if not exists saddam_award jsonb;
 alter table round_players alter column gross drop not null;
 -- Venmo handles, for settling up. Public usernames, nothing linked.
 alter table players add column if not exists venmo text;
+-- Match play joined the bet types. `create table if not exists` never
+-- touches an existing table, so the check has to be widened by hand.
+alter table bets drop constraint if exists bets_type_check;
+alter table bets add constraint bets_type_check check (type in ('nassau', 'skins', 'match', 'custom'));
 -- Paybacks used to belong to a trip. A bet on a single round needs
 -- settling too, so a payment now hangs off whichever it cleared.
 alter table payments alter column trip_id drop not null;
