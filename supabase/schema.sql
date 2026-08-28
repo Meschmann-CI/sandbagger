@@ -103,7 +103,12 @@ create table if not exists bets (
   type text not null check (type in ('nassau', 'skins', 'match', 'custom')),
   name text not null,
   stake numeric(10,2) not null default 0,
-  results jsonb not null default '[]'::jsonb
+  results jsonb not null default '[]'::jsonb,
+  -- Amounts typed by hand are never recomputed from the card.
+  manual boolean not null default false,
+  -- Net or gross, kept so the card can settle the bet later. Null on
+  -- bets saved before live bets existed; those stay as stored.
+  net boolean
 );
 
 create table if not exists expenses (
@@ -137,6 +142,9 @@ alter table players add column if not exists venmo text;
 -- touches an existing table, so the check has to be widened by hand.
 alter table bets drop constraint if exists bets_type_check;
 alter table bets add constraint bets_type_check check (type in ('nassau', 'skins', 'match', 'custom'));
+-- Live bets: placed on the first tee, settled by the card as it fills in.
+alter table bets add column if not exists manual boolean not null default false;
+alter table bets add column if not exists net boolean;
 -- Paybacks used to belong to a trip. A bet on a single round needs
 -- settling too, so a payment now hangs off whichever it cleared.
 alter table payments alter column trip_id drop not null;

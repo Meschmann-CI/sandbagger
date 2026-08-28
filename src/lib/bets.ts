@@ -1,4 +1,4 @@
-import type { BetResult, Course, Round, RoundPlayer } from '../types'
+import type { Bet, BetResult, Course, Round, RoundPlayer } from '../types'
 import { BACK, FRONT, HOLE_COUNT, cardOf, nineComparable, strokes } from './holes'
 import { hasStrokeIndex, strokesByHole } from './courses'
 
@@ -263,6 +263,23 @@ export function calcCustom(playerIds: string[], winnerId: string | null, stake: 
   if (!winnerId) return emptyOutcome(playerIds, 'Pick who won it.')
   pay(totals, winnerId, playerIds.filter((id) => id !== winnerId), stake)
   return { results: toResults(totals), detail: ['Winner takes the stake from each of the others.'], computable: true }
+}
+
+/**
+ * Settles a saved bet from the round's cards, or returns null for bets
+ * the card can't speak for: custom bets, hand-typed amounts, and bets
+ * saved before net/gross was stored (their results are already final).
+ *
+ * This is what makes a bet placed on the first tee live — the same
+ * function drives the status line while the cards fill in and the
+ * results written back when they're saved.
+ */
+export function settleFromCard(bet: Bet, round: Round, course?: Course): BetOutcome | null {
+  if (bet.type === 'custom' || bet.manual || bet.net === undefined) return null
+  const ids = bet.results.map((r) => r.playerId)
+  if (bet.type === 'skins') return calcSkins(round, ids, bet.stake)
+  if (bet.type === 'nassau') return calcNassau(round, ids, bet.stake, bet.net, course)
+  return calcMatchPlay(round, ids, bet.stake, bet.net, course)
 }
 
 export const nassauReady = (round: Round, playerIds: string[]) => {

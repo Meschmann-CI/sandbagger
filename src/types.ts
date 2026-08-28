@@ -193,6 +193,14 @@ export interface Bet {
   name: string
   stake: number
   results: BetResult[]
+  /** Amounts typed by hand. Never recomputed from the card. */
+  manual?: boolean
+  /**
+   * Net or gross, for the card-based games. Stored so a bet placed on
+   * the first tee can settle itself as the card fills in. Undefined on
+   * bets saved before live bets existed — those keep their results.
+   */
+  net?: boolean
 }
 
 export interface AppData {

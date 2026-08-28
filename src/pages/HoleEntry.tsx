@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { HOLE_COUNT, cardOf, cardTotal, holesEntered } from '../lib/holes'
 import { findCourse, hasPars, padded, toPar } from '../lib/courses'
+import { settleFromCard } from '../lib/bets'
+import type { Round } from '../types'
 import { Avatar, Card, PrimaryButton } from '../components/ui'
 
 // Hole by hole, everyone on one screen — the way you'd actually fill a
@@ -10,7 +12,7 @@ import { Avatar, Card, PrimaryButton } from '../components/ui'
 export default function HoleEntry() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { data, updateRound } = useStore()
+  const { data, updateRound, updateBet } = useStore()
   const round = data.rounds.find((r) => r.id === id)
 
   // Only the cells this session actually typed, keyed player → hole.
@@ -41,6 +43,15 @@ export default function HoleEntry() {
 
   const course = findCourse(data, round?.courseName ?? '')
   const pars = hasPars(course) ? padded(course.pars) : null
+
+  // The round as the cards stand right now, unsaved edits included —
+  // it's what the live bet lines are judged against.
+  const liveRound: Round | null = round
+    ? { ...round, players: round.players.map((rp) => ({ ...rp, holes: cards[rp.playerId] })) }
+    : null
+  const liveBets = (round && liveRound ? data.bets.filter((b) => b.roundId === round.id) : [])
+    .map((bet) => ({ bet, outcome: settleFromCard(bet, liveRound!, course) }))
+    .filter((x): x is { bet: (typeof x)['bet']; outcome: NonNullable<(typeof x)['outcome']> } => x.outcome != null)
 
   const holeComplete = players.length > 0 && players.every((rp) => cards[rp.playerId]?.[hole] != null)
 
@@ -81,20 +92,28 @@ export default function HoleEntry() {
   }
 
   const save = () => {
-    updateRound({
-      ...round,
-      players: round.players.map((rp) => {
-        const card = cards[rp.playerId]
-        const total = cardTotal(card)
-        return {
-          ...rp,
-          holes: card.some((h) => h != null) ? card : undefined,
-          // The card is the source of truth once it exists, so the total
-          // every other screen reads stays consistent with it.
-          gross: total ?? rp.gross,
-        }
-      }),
+    const players = round.players.map((rp) => {
+      const card = cards[rp.playerId]
+      // The gross comes from the card only once the card is finished.
+      // A ten-hole card summing to 41 is not a gross of 41, and writing
+      // it mid-round put "best round: 41" on the leaderboard until the
+      // back nine came in.
+      const complete = card.every((h) => h != null)
+      return {
+        ...rp,
+        holes: card.some((h) => h != null) ? card : undefined,
+        gross: complete ? cardTotal(card) : rp.gross,
+      }
     })
+    updateRound({ ...round, players })
+
+    // Any live bets settle against what was just saved — the same
+    // arithmetic the status lines above the card were showing.
+    const saved: Round = { ...round, players }
+    for (const bet of data.bets.filter((b) => b.roundId === round.id)) {
+      const outcome = settleFromCard(bet, saved, course)
+      if (outcome) updateBet({ ...bet, results: outcome.results })
+    }
     navigate(`/rounds/${round.id}`, { replace: true })
   }
 
@@ -143,6 +162,25 @@ export default function HoleEntry() {
           ))}
         </div>
       </header>
+
+      {/* The bets riding on this card, as it stands right now */}
+      {liveBets.length > 0 && (
+        <Card className="mb-3 p-3.5 bg-gold-soft/40 border-gold/30 space-y-1.5">
+          {liveBets.map(({ bet, outcome }) => (
+            <p key={bet.id} className="text-[12.5px] text-ink">
+              <span className="font-extrabold">{bet.name}:</span>{' '}
+              {outcome.detail
+                .map((line) => {
+                  const [text, playerId] = line.split('|')
+                  const who = playerId ? data.players.find((p) => p.id === playerId)?.name : null
+                  // "2 up thru 14|barry" reads as "Barry 2 up thru 14".
+                  return who ? `${who} ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text
+                })
+                .join(' · ')}
+            </p>
+          ))}
+        </Card>
+      )}
 
       {view === 'hole' ? (
         <>

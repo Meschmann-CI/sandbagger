@@ -55,7 +55,9 @@ export default function LogRound() {
         handicapSnapshot: data.players.find((p) => p.id === pid)!.handicap,
       })),
     })
-    navigate(`/rounds/${round.id}`, { replace: true })
+    // No totals yet means they're on the course — go straight to the
+    // hole-by-hole card instead of a round page full of blanks.
+    navigate(anyScored ? `/rounds/${round.id}` : `/rounds/${round.id}/card`, { replace: true })
   }
 
   return (
@@ -234,6 +236,14 @@ export default function LogRound() {
           <p className="text-[11.5px] text-ink-faint px-1 pt-1">
             Tap − / + to nudge from 90, or type it straight in.
           </p>
+          {!anyScored && (
+            <Card className="p-3.5 border-green/30 bg-green-soft/40">
+              <p className="text-[12.5px] text-ink">
+                <span className="font-bold">On the course right now?</span> Leave these blank and start the round — you'll
+                score it hole by hole as you play, and any bets on it settle themselves from the card.
+              </p>
+            </Card>
+          )}
           {missing.length > 0 && anyScored && (
             <Card className="p-3.5 border-gold/30 bg-gold-soft/40">
               <p className="text-[12.5px] text-ink">
@@ -259,8 +269,14 @@ export default function LogRound() {
                 Next
               </PrimaryButton>
             ) : (
-              <PrimaryButton onClick={() => anyScored && save()} disabled={!anyScored} className="flex-1 !py-4">
-                {missing.length > 0 ? `Save with ${missing.length} to come` : 'Save round'}
+              // Zero scores is a real state now, not a blocked one: it's
+              // the first tee. The round starts and the card takes over.
+              <PrimaryButton onClick={() => save()} disabled={playerIds.length === 0} className="flex-1 !py-4">
+                {!anyScored
+                  ? 'Start round — score as you play'
+                  : missing.length > 0
+                    ? `Save with ${missing.length} to come`
+                    : 'Save round'}
               </PrimaryButton>
             )}
           </div>

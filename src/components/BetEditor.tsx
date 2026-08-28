@@ -23,7 +23,11 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
   const [type, setType] = useState<BetType>('skins')
   const [name, setName] = useState('')
   const [stake, setStake] = useState('5')
-  const [inIds, setInIds] = useState<string[]>(scoredIds)
+  // Default to whoever has a score in; on the first tee that's nobody,
+  // and a live bet is between everyone who teed off.
+  const [inIds, setInIds] = useState<string[]>(
+    scoredIds.length ? scoredIds : round.players.map((rp) => rp.playerId),
+  )
   const [useNet, setUseNet] = useState(true)
   const [customWinner, setCustomWinner] = useState<string | null>(null)
   const [manual, setManual] = useState<Record<string, string>>({})
@@ -39,8 +43,12 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
     return calcCustom(inIds, customWinner, stakeNum)
   }, [type, round, inIds, stakeNum, useNet, customWinner, course])
 
-  // Fall back to typing amounts when the card can't decide it.
-  const showManual = manualMode || (!outcome.computable && type !== 'custom')
+  // Typing amounts is a deliberate choice now, not a fallback the editor
+  // forces. An undecided card bet is saveable as it stands — it goes on
+  // the round at $0 and settles itself as the card fills in, which is
+  // what lets the match go on the board at the first tee.
+  const showManual = manualMode
+  const liveSave = type !== 'custom' && !showManual && !outcome.computable
 
   const manualResults: BetResult[] = inIds.map((playerId) => ({
     playerId,
@@ -56,7 +64,13 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
     // different game (and it has a name: skins).
     (type !== 'match' || inIds.length === 2) &&
     stakeNum >= 0 &&
-    (showManual ? balanced && manualResults.some((r) => r.amount !== 0) : outcome.computable)
+    (showManual
+      ? balanced && manualResults.some((r) => r.amount !== 0)
+      : // A custom bet needs its winner picked; a card bet can go on the
+        // board undecided and settle itself from the card.
+        type === 'custom'
+        ? outcome.computable
+        : true)
 
   const label = 'block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5'
   const field =
@@ -292,12 +306,16 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
               name: name.trim() || TYPES.find((t) => t.key === type)!.label,
               stake: stakeNum,
               results: results.filter((r) => inIds.includes(r.playerId)),
+              // What settleFromCard needs later: hand-typed amounts are
+              // final, and a card bet remembers how it's decided.
+              manual: showManual || undefined,
+              net: type === 'custom' || showManual ? undefined : type === 'skins' ? false : useNet,
             })
           }
           disabled={!canSave}
           className="flex-1 !py-2.5"
         >
-          Save bet
+          {liveSave ? 'Save — settles from the card' : 'Save bet'}
         </PrimaryButton>
         <button onClick={onCancel} className="px-4 text-[13px] font-bold text-ink-faint">Cancel</button>
       </div>

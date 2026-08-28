@@ -10,6 +10,7 @@ import {
   type Round,
   type ScoredRoundPlayer,
 } from '../types'
+import { hasCard } from './holes'
 
 export const byDate = (rounds: Round[]) =>
   [...rounds].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
@@ -293,9 +294,12 @@ export function playerStats(data: AppData, playerId: string): PlayerStats {
     bestNet: nets.length ? Math.min(...nets) : null,
     money: moneyTotals(data).get(playerId) ?? 0,
     saddamHeld: saddamState(data).holderId === playerId,
+    // A card that's mid-entry isn't a missing score, it's a round in
+    // progress — nagging "you owe a score" at someone on the 7th tee is
+    // just noise. The gross lands when the card completes.
     awaitingScore: mine.filter((r) => {
       const rp = myEntry(r)
-      return !!rp && !hasScore(rp)
+      return !!rp && !hasScore(rp) && !hasCard(rp)
     }),
     last5: mine.slice(-5).reverse().map((round) => ({
       round,

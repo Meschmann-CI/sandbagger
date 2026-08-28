@@ -4,7 +4,8 @@ import { useGoBack } from '../lib/nav'
 import { useStore } from '../data/store'
 import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, type ScoredRoundPlayer } from '../types'
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
-import { anyCards } from '../lib/holes'
+import { anyCards, holesEntered } from '../lib/holes'
+import { settleFromCard } from '../lib/bets'
 import { coursePar, courseSlug, findCourse, toPar } from '../lib/courses'
 import { todayISO } from '../lib/dates'
 import { grossWarning } from '../lib/scores'
@@ -74,8 +75,11 @@ export default function RoundDetail() {
     .filter(Boolean)
     .join(' and ')
 
+  const holesIn = round.players.reduce((sum, rp) => sum + holesEntered(rp), 0)
   const blurb = !top
-    ? 'Nobody has posted a score for this round yet.'
+    ? anyCards(round)
+      ? `Card's going — ${holesIn} hole score${holesIn === 1 ? '' : 's'} in so far.`
+      : 'Nobody has posted a score for this round yet.'
     : waiting.length > 0
       ? `${top.name} posted ${standings[0].gross}. Still waiting on ${waitingNames}.`
       : solo
@@ -355,7 +359,18 @@ export default function RoundDetail() {
       {bets.length > 0 && (
         <>
           <div className="space-y-3">
-            {bets.map((bet) => (
+            {bets.map((bet) => {
+              // The card's verdict as it stands — "2 up thru 14", "3
+              // holes judged" — for bets that settle from the card.
+              const live = settleFromCard(bet, round, course)
+              const status = live?.detail
+                .map((line) => {
+                  const [text, playerId] = line.split('|')
+                  const who = playerId ? data.players.find((p) => p.id === playerId)?.name : null
+                  return who ? `${who} ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text
+                })
+                .join(' · ')
+              return (
               <Card key={bet.id} className="p-4">
                 <div className="flex items-baseline justify-between">
                   <p className="font-bold text-[14px] text-ink">{bet.name}</p>
@@ -377,6 +392,11 @@ export default function RoundDetail() {
                     </button>
                   </div>
                 </div>
+                {status && (
+                  <p className={`text-[12px] mt-1 font-semibold ${live?.computable ? 'text-ink-dim' : 'text-gold'}`}>
+                    {live?.computable ? status : `Live: ${status}`}
+                  </p>
+                )}
                 <div className="mt-2.5 space-y-1.5">
                   {[...bet.results]
                     .sort((a, b) => b.amount - a.amount)
@@ -392,7 +412,8 @@ export default function RoundDetail() {
                     })}
                 </div>
               </Card>
-            ))}
+              )
+            })}
           </div>
         </>
       )}

@@ -25,6 +25,7 @@ interface StoreApi {
   saveCourse: (name: string, pars: (number | null)[], strokeIndex?: (number | null)[]) => void
   deleteCourse: (courseId: string) => void
   addBet: (bet: Omit<Bet, 'id'>) => void
+  updateBet: (bet: Bet) => void
   deleteBet: (betId: string) => void
   addTrip: (trip: Omit<Trip, 'id' | 'groupId'>) => Trip
   updateTrip: (trip: Trip) => void
@@ -166,6 +167,9 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     addBet(bet) {
       const full: Bet = { ...bet, id: makeId() }
       commit({ kind: 'bet.upsert', bet: full }, (d) => ({ ...d, bets: [...d.bets, full] }))
+    },
+    updateBet(bet) {
+      commit({ kind: 'bet.upsert', bet }, (d) => ({ ...d, bets: d.bets.map((b) => (b.id === bet.id ? bet : b)) }))
     },
     deleteBet(betId) {
       commit({ kind: 'bet.delete', id: betId }, (d) => ({ ...d, bets: d.bets.filter((b) => b.id !== betId) }))

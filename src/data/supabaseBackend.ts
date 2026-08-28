@@ -103,6 +103,8 @@ const betRow = (b: Bet) => ({
   name: b.name,
   stake: b.stake,
   results: b.results,
+  manual: b.manual ?? false,
+  net: b.net ?? null,
 })
 
 export class NoPlayerError extends Error {
@@ -207,6 +209,8 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           name: b.name,
           stake: num(b.stake),
           results: b.results ?? [],
+          manual: b.manual || undefined,
+          net: b.net ?? undefined,
         })),
         expenses: (expensesRes.data ?? []).map((e: any) => ({
           id: e.id,
