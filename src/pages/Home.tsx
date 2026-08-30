@@ -3,6 +3,7 @@ import { useStore } from '../data/store'
 import { byDate, playerStats, roundStandings, saddamState, shortDate } from '../lib/stats'
 import { todayISO } from '../lib/dates'
 import { myOutstanding } from '../lib/settlements'
+import { anyCards, cardComplete, holesEntered } from '../lib/holes'
 import { money } from '../lib/money'
 import { canSeeTrip, fmt1, isSoloRound, pending } from '../types'
 import { Avatar, Card, Pill, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
@@ -21,6 +22,16 @@ export default function Home() {
   // What I owe and what I'm owed, everywhere.
   const debts = myOutstanding(data, me.id)
   const netPosition = debts.reduce((sum, d) => sum + (d.toId === me.id ? d.amount : -d.amount), 0)
+
+  // A card being filled in today — one tap back to scoring, since coming
+  // back to the app mid-round is the single most common thing on a
+  // course. Latest first, in case of a 36-hole day.
+  const inProgress = rounds
+    .filter((r) => r.date === TODAY && anyCards(r) && r.players.some((rp) => !cardComplete(rp)))
+    .at(-1)
+  const inProgressHoles = inProgress
+    ? inProgress.players.reduce((sum, rp) => sum + holesEntered(rp), 0)
+    : 0
 
   const visibleTrips = data.trips.filter((t) => canSeeTrip(t, me.id))
   const planning = visibleTrips.filter((t) => t.status === 'planning')
@@ -45,6 +56,23 @@ export default function Home() {
           <Avatar player={me} size={40} />
         </Link>
       </header>
+
+      {/* Straight back onto the card — the app's front door mid-round */}
+      {inProgress && (
+        <Card
+          onClick={() => navigate(`/rounds/${inProgress.id}/card`)}
+          className="mt-2 p-4 border-green/40 bg-green-soft/50 flex items-center gap-3.5"
+        >
+          <span className="text-[22px]">⛳</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14.5px] font-extrabold text-ink">Round in progress</p>
+            <p className="text-[12.5px] text-ink-dim mt-0.5 truncate">
+              {inProgress.courseName} · {inProgressHoles} hole score{inProgressHoles === 1 ? '' : 's'} in
+            </p>
+          </div>
+          <span className="text-[13px] font-bold text-green shrink-0">Keep scoring →</span>
+        </Card>
+      )}
 
       {/* Rounds someone logged you into without your score */}
       {awaiting.length > 0 && (

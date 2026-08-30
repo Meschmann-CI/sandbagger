@@ -4,7 +4,7 @@ import { useGoBack } from '../lib/nav'
 import { useStore } from '../data/store'
 import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, type ScoredRoundPlayer } from '../types'
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
-import { anyCards, holesEntered } from '../lib/holes'
+import { anyCards, cardComplete, holesEntered } from '../lib/holes'
 import { settleFromCard } from '../lib/bets'
 import { coursePar, courseSlug, findCourse, toPar } from '../lib/courses'
 import { todayISO } from '../lib/dates'
@@ -280,7 +280,7 @@ export default function RoundDetail() {
       <SectionLabel
         action={
           <button onClick={() => navigate(`/rounds/${round.id}/card`)} className="text-[12.5px] font-bold text-green">
-            {anyCards(round) ? 'Edit card' : '+ Add hole scores'}
+            {!anyCards(round) ? '+ Add hole scores' : round.players.some((rp) => !cardComplete(rp)) ? 'Keep scoring →' : 'Edit card'}
           </button>
         }
       >

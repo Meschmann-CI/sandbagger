@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { HOLE_COUNT, cardOf, cardTotal, holesEntered } from '../lib/holes'
@@ -9,6 +9,17 @@ import { Avatar, Card, PrimaryButton } from '../components/ui'
 
 // Hole by hole, everyone on one screen — the way you'd actually fill a
 // card walking off a green. The grid view is for fixing mistakes after.
+//
+// This screen is a companion, not an editor. Every tap saves itself,
+// nothing jumps unless you tap it, and leaving mid-round costs nothing —
+// the first real round on a real course found the old version's save
+// button and auto-advance both fighting the person holding the phone.
+
+// A hole is almost always a 2 through a 10, so scores are picked, not
+// stepped: one tap on the number. Steppers hide behind "…" for the rare
+// card that needs a 14.
+const QUICK_SCORES = [2, 3, 4, 5, 6, 7, 8, 9, 10]
+
 export default function HoleEntry() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -27,9 +38,13 @@ export default function HoleEntry() {
     return Math.min(most, HOLE_COUNT - 1)
   })
   const [view, setView] = useState<'hole' | 'grid'>('hole')
-  // The hole the user is actively filling in. Only this one auto-advances,
-  // so stepping back to fix the 4th doesn't fling you forward again.
-  const [armedHole, setArmedHole] = useState<number | null>(null)
+  // Which golfer has the stepper fallback open instead of the number row.
+  const [fallbackFor, setFallbackFor] = useState<string | null>(null)
+  // Autosave debounce. A ref so the timeout always runs the latest
+  // closure, and so it deliberately survives navigation — walking away
+  // mid-debounce still lands the write.
+  const commitRef = useRef<() => void>(() => {})
+  const commitTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   // The live card for each golfer: what's saved, plus this session's edits.
   const players = round?.players ?? []
@@ -53,19 +68,11 @@ export default function HoleEntry() {
     .map((bet) => ({ bet, outcome: settleFromCard(bet, liveRound!, course) }))
     .filter((x): x is { bet: (typeof x)['bet']; outcome: NonNullable<(typeof x)['outcome']> } => x.outcome != null)
 
+  // No auto-advance. The first live round proved any timer is wrong for
+  // somebody: it jumped while a fat-fingered + was being walked back.
+  // When the hole is complete the Next button turns green instead —
+  // moving on is always the scorekeeper's tap, never the app's.
   const holeComplete = players.length > 0 && players.every((rp) => cards[rp.playerId]?.[hole] != null)
-
-  // Everyone's in — move on. The pause is deliberate: without it, typing
-  // the "1" of a 10 completes the hole and the screen jumps before the
-  // "0" lands.
-  useEffect(() => {
-    if (view !== 'hole' || armedHole !== hole || !holeComplete || hole >= HOLE_COUNT - 1) return
-    const timer = setTimeout(() => {
-      setHole((h) => Math.min(HOLE_COUNT - 1, h + 1))
-      setArmedHole(null)
-    }, 900)
-    return () => clearTimeout(timer)
-  }, [armedHole, hole, holeComplete, view])
 
   if (!round) {
     return (
@@ -75,29 +82,12 @@ export default function HoleEntry() {
     )
   }
 
-  const setScore = (playerId: string, index: number, value: number | null) => {
-    setArmedHole(index)
-    setEdits((all) => ({
-      ...all,
-      [playerId]: {
-        ...(all[playerId] ?? {}),
-        [index]: value == null ? null : Math.max(1, Math.min(20, value)),
-      },
-    }))
-  }
-
-  const bump = (playerId: string, index: number, delta: number) => {
-    const current = cards[playerId]?.[index]
-    setScore(playerId, index, current == null ? 4 : current + delta)
-  }
-
-  const save = () => {
-    const players = round.players.map((rp) => {
+  // Writes the card, the grosses, and the live bets in one pass. The
+  // gross comes from the card only once the card is finished: a ten-hole
+  // card summing to 41 is not a round of 41.
+  const commitCards = () => {
+    const nextPlayers = round.players.map((rp) => {
       const card = cards[rp.playerId]
-      // The gross comes from the card only once the card is finished.
-      // A ten-hole card summing to 41 is not a gross of 41, and writing
-      // it mid-round put "best round: 41" on the leaderboard until the
-      // back nine came in.
       const complete = card.every((h) => h != null)
       return {
         ...rp,
@@ -105,15 +95,43 @@ export default function HoleEntry() {
         gross: complete ? cardTotal(card) : rp.gross,
       }
     })
-    updateRound({ ...round, players })
-
-    // Any live bets settle against what was just saved — the same
-    // arithmetic the status lines above the card were showing.
-    const saved: Round = { ...round, players }
+    updateRound({ ...round, players: nextPlayers })
+    const saved: Round = { ...round, players: nextPlayers }
     for (const bet of data.bets.filter((b) => b.roundId === round.id)) {
       const outcome = settleFromCard(bet, saved, course)
       if (outcome) updateBet({ ...bet, results: outcome.results })
     }
+  }
+  commitRef.current = commitCards
+
+  // Every tap saves itself, a beat later so a flurry on one hole lands
+  // as one write. The store already applies it on screen instantly and
+  // queues it offline, so there is nothing for a save button to add.
+  const queueCommit = () => {
+    clearTimeout(commitTimer.current)
+    commitTimer.current = setTimeout(() => commitRef.current(), 800)
+  }
+
+  const setScore = (playerId: string, index: number, value: number | null) => {
+    setEdits((all) => ({
+      ...all,
+      [playerId]: {
+        ...(all[playerId] ?? {}),
+        [index]: value == null ? null : Math.max(1, Math.min(20, value)),
+      },
+    }))
+    queueCommit()
+  }
+
+  const bump = (playerId: string, index: number, delta: number) => {
+    const current = cards[playerId]?.[index]
+    setScore(playerId, index, current == null ? 4 : current + delta)
+  }
+
+  // "Done" just leaves — with any pending write flushed first.
+  const done = () => {
+    clearTimeout(commitTimer.current)
+    commitCards()
     navigate(`/rounds/${round.id}`, { replace: true })
   }
 
@@ -144,7 +162,7 @@ export default function HoleEntry() {
     <div className="rise">
       <header className="pt-4 pb-3 px-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <button onClick={() => navigate(`/rounds/${round.id}`)} className="text-[13px] font-bold text-ink-faint mb-1">
+          <button onClick={done} className="text-[13px] font-bold text-ink-faint mb-1">
             ← Back
           </button>
           <h1 className="text-[21px] font-extrabold tracking-tight text-ink truncate">{round.courseName}</h1>
@@ -188,7 +206,7 @@ export default function HoleEntry() {
           <Card className="p-3">
             <div className="flex items-center justify-between gap-2">
               <button
-                onClick={() => { setArmedHole(null); setHole((h) => Math.max(0, h - 1)) }}
+                onClick={() => { setFallbackFor(null); setHole((h) => Math.max(0, h - 1)) }}
                 disabled={hole === 0}
                 className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-lg font-bold text-ink disabled:opacity-30 active:scale-95"
               >
@@ -202,7 +220,7 @@ export default function HoleEntry() {
                 )}
               </div>
               <button
-                onClick={() => { setArmedHole(null); setHole((h) => Math.min(HOLE_COUNT - 1, h + 1)) }}
+                onClick={() => { setFallbackFor(null); setHole((h) => Math.min(HOLE_COUNT - 1, h + 1)) }}
                 disabled={hole === HOLE_COUNT - 1}
                 className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-lg font-bold text-ink disabled:opacity-30 active:scale-95"
               >
@@ -216,7 +234,7 @@ export default function HoleEntry() {
                 return (
                   <button
                     key={i}
-                    onClick={() => { setArmedHole(null); setHole(i) }}
+                    onClick={() => { setFallbackFor(null); setHole(i) }}
                     className={`h-7 rounded-md text-[11px] font-bold tabular-nums transition ${
                       i === hole
                         ? 'bg-green text-white'
@@ -238,29 +256,34 @@ export default function HoleEntry() {
               const p = data.players.find((pl) => pl.id === rp.playerId)
               if (!p) return null
               const value = cards[rp.playerId]?.[hole] ?? null
+              const par = pars?.[hole]
+              const oddScore = value != null && !QUICK_SCORES.includes(value)
+              const usingFallback = fallbackFor === rp.playerId || oddScore
               return (
-                <Card key={rp.playerId} className="p-3.5">
-                  <div className="flex items-center gap-3">
-                    <Avatar player={p} size={36} />
+                <Card key={rp.playerId} className="p-3">
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <Avatar player={p} size={30} />
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-[14.5px] text-ink truncate">
+                      <p className="font-bold text-[14px] text-ink truncate">
                         {p.name}
                         {p.id === data.currentUserId && <span className="text-ink-faint font-semibold"> (you)</span>}
                       </p>
-                      <p className="text-[11.5px] text-ink-faint tabular-nums">
-                        {runningTotal(rp.playerId) > 0 ? (
-                          <>
-                            {runningTotal(rp.playerId)} thru {hole + 1}
-                            {runningToPar(rp.playerId) && (
-                              <span className="font-bold text-ink-dim"> · {runningToPar(rp.playerId)}</span>
-                            )}
-                          </>
-                        ) : (
-                          'no scores yet'
-                        )}
-                      </p>
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <p className="text-[11.5px] text-ink-faint tabular-nums shrink-0">
+                      {runningTotal(rp.playerId) > 0 ? (
+                        <>
+                          {runningTotal(rp.playerId)} thru {hole + 1}
+                          {runningToPar(rp.playerId) && (
+                            <span className="font-bold text-ink-dim"> · {runningToPar(rp.playerId)}</span>
+                          )}
+                        </>
+                      ) : (
+                        'no scores yet'
+                      )}
+                    </p>
+                  </div>
+                  {usingFallback ? (
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => bump(rp.playerId, hole, -1)}
                         className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-xl font-bold text-ink active:scale-95"
@@ -286,8 +309,49 @@ export default function HoleEntry() {
                       >
                         +
                       </button>
+                      {!oddScore && (
+                        <button
+                          onClick={() => setFallbackFor(null)}
+                          className="ml-auto px-3 text-[12px] font-bold text-green"
+                        >
+                          Numbers
+                        </button>
+                      )}
                     </div>
-                  </div>
+                  ) : (
+                    /* One tap, straight on the number. Tapping it again
+                       clears it — the undo the auto-advance never allowed. */
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {QUICK_SCORES.map((n) => {
+                        const on = value === n
+                        const isPar = par === n
+                        return (
+                          <button
+                            key={n}
+                            onClick={() => setScore(rp.playerId, hole, on ? null : n)}
+                            aria-label={`${p.name}, ${n} on hole ${hole + 1}`}
+                            aria-pressed={on}
+                            className={`h-10 rounded-xl border text-[16px] font-extrabold tabular-nums transition active:scale-95 ${
+                              on
+                                ? 'bg-green text-white border-green'
+                                : isPar
+                                  ? 'bg-green-soft/50 text-green border-green/40'
+                                  : 'bg-card text-ink-dim border-line-strong'
+                            }`}
+                          >
+                            {n}
+                          </button>
+                        )
+                      })}
+                      <button
+                        onClick={() => setFallbackFor(rp.playerId)}
+                        aria-label={`other score for ${p.name}`}
+                        className="h-10 rounded-xl border border-line-strong bg-card text-[16px] font-extrabold text-ink-faint active:scale-95"
+                      >
+                        …
+                      </button>
+                    </div>
+                  )}
                 </Card>
               )
             })}
@@ -295,9 +359,13 @@ export default function HoleEntry() {
 
           {hole < HOLE_COUNT - 1 && (
             <button
-              onClick={() => setHole((h) => h + 1)}
+              onClick={() => { setFallbackFor(null); setHole((h) => h + 1) }}
               disabled={enteredThisHole === 0}
-              className="w-full mt-3 rounded-xl border border-line-strong bg-card py-3 text-[14px] font-bold text-ink-dim disabled:opacity-40 active:bg-paper"
+              className={`w-full mt-3 rounded-xl py-3.5 text-[14.5px] font-bold transition disabled:opacity-40 active:scale-[0.99] ${
+                holeComplete
+                  ? 'bg-green text-white shadow-[0_2px_6px_rgba(28,124,74,0.35)]'
+                  : 'border border-line-strong bg-card text-ink-dim active:bg-paper'
+              }`}
             >
               Next hole →
             </button>
@@ -368,16 +436,13 @@ export default function HoleEntry() {
         </Card>
       )}
 
-      <div className="flex gap-3 mt-4">
-        <PrimaryButton onClick={save} disabled={totalEntered === 0} className="flex-1 !py-4">
-          Save card
+      <div className="mt-4">
+        <PrimaryButton onClick={done} className="w-full !py-4">
+          Done — back to the round
         </PrimaryButton>
-        <button onClick={() => navigate(`/rounds/${round.id}`)} className="px-5 text-[13px] font-bold text-ink-faint">
-          Cancel
-        </button>
       </div>
       <p className="text-[11.5px] text-ink-faint px-1 mt-2">
-        Saving the card sets each golfer's total from their holes. Partial cards are fine — totals count what's entered.
+        Every tap saves by itself, so pocket the phone whenever — coming back picks up right where the card left off.
       </p>
       <div className="h-4" />
     </div>
