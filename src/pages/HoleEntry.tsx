@@ -15,10 +15,11 @@ import { Avatar, Card, PrimaryButton } from '../components/ui'
 // the first real round on a real course found the old version's save
 // button and auto-advance both fighting the person holding the phone.
 
-// A hole is almost always a 2 through a 10, so scores are picked, not
-// stepped: one tap on the number. Steppers hide behind "…" for the rare
-// card that needs a 14.
-const QUICK_SCORES = [2, 3, 4, 5, 6, 7, 8, 9, 10]
+// Scores are picked, not stepped: one tap on the number. The row starts
+// at 1 — an ace is rare, but the day somebody makes one is exactly the
+// day it can't be hiding behind a menu. Steppers stay behind "…" for the
+// card that needs an 11+.
+const QUICK_SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 export default function HoleEntry() {
   const { id } = useParams()
@@ -321,7 +322,7 @@ export default function HoleEntry() {
                   ) : (
                     /* One tap, straight on the number. Tapping it again
                        clears it — the undo the auto-advance never allowed. */
-                    <div className="grid grid-cols-5 gap-1.5">
+                    <div className="grid grid-cols-6 gap-1.5">
                       {QUICK_SCORES.map((n) => {
                         const on = value === n
                         const isPar = par === n
