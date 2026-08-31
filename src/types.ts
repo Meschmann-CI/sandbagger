@@ -15,6 +15,11 @@ export interface Player {
   // and no account is connected: a handle is public, and it only goes
   // into building a link.
   venmo?: string
+  // A guest: someone's brother-in-law who joined a round. They hold
+  // scores, win bets, and owe money, but they stay off the lifetime
+  // records — the leaderboard, head-to-head, and the Saddam are for
+  // members only.
+  guest?: boolean
 }
 
 // Handing the Saddam over by hand. The trophy predates the app and can

@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMembers, useStore } from '../data/store'
-import { HANDICAP_NUDGE_AFTER, playerStats, roundsAtCurrentHandicap, shortDate } from '../lib/stats'
+import { HANDICAP_NUDGE_AFTER, holeStats, playerStats, roundsAtCurrentHandicap, shortDate } from '../lib/stats'
 import { courseSlug, hasPars } from '../lib/courses'
 import { normalizeVenmo } from '../lib/venmo'
+import { disablePush, enablePush, pushEnabled, pushSupported } from '../lib/push'
 import { deriveInitials, fmt1, isSoloRound, round1, type Player } from '../types'
 import { supabase } from '../lib/supabase'
 import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, RowButton, SaddamBadge, SectionLabel } from '../components/ui'
@@ -20,6 +21,8 @@ export default function Profile() {
   const navigate = useNavigate()
   const me = data.players.find((p) => p.id === data.currentUserId)!
   const stats = playerStats(data, me.id)
+  const game = holeStats(data, me.id)
+  const guests = data.players.filter((p) => p.guest)
   const [editingHcp, setEditingHcp] = useState(false)
   const [hcpDraft, setHcpDraft] = useState('')
   const [nudgeDismissed, setNudgeDismissed] = useState(() => {
@@ -187,6 +190,69 @@ export default function Profile() {
         <p className="text-[13.5px] font-bold text-ink">All-time money</p>
         <MoneyBadge amount={stats.money} className="text-[16px]" />
       </Card>
+
+      {/* Notifications: only meaningful in cloud mode, and on an iPhone
+          only once the app is on the home screen. */}
+      {cloud && <PushToggle playerId={me.id} />}
+
+      {/* What the hole-by-hole cards and course pars add up to. Only
+          holes with both a score and a known par count, so the rates
+          can't be gamed by an uncarded 88. */}
+      {game.holes > 0 ? (
+        <>
+          <SectionLabel>Your Game · {game.holes} holes</SectionLabel>
+          <div className="grid grid-cols-3 gap-3">
+            {([3, 4, 5] as const).map((par) => (
+              <Card key={par} className="p-3.5 text-center">
+                <p className="text-[22px] font-extrabold text-ink tabular-nums">
+                  {game.avgByPar[par] != null ? game.avgByPar[par]!.toFixed(2) : '—'}
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-ink-faint mt-0.5">on par {par}s</p>
+              </Card>
+            ))}
+          </div>
+          <Card className="mt-3 p-4">
+            {(() => {
+              const buckets = [
+                { label: 'Birdie+', count: game.counts.albatross + game.counts.eagle + game.counts.birdie, cls: 'bg-green' },
+                { label: 'Par', count: game.counts.par, cls: 'bg-green/40' },
+                { label: 'Bogey', count: game.counts.bogey, cls: 'bg-line-strong' },
+                { label: 'Double+', count: game.counts.double + game.counts.worse, cls: 'bg-flag/60' },
+              ]
+              return (
+                <>
+                  <div className="flex h-3 overflow-hidden rounded-full">
+                    {buckets.map(
+                      (b) =>
+                        b.count > 0 && (
+                          <div key={b.label} className={b.cls} style={{ width: `${(100 * b.count) / game.holes}%` }} />
+                        ),
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5">
+                    {buckets.map((b) => (
+                      <span key={b.label} className="inline-flex items-center gap-1.5 text-[11px] text-ink-dim">
+                        <span className={`h-2.5 w-2.5 rounded-full ${b.cls}`} />
+                        <span className="font-bold">{b.label}</span>
+                        <span className="tabular-nums text-ink-faint">
+                          {b.count} · {Math.round((100 * b.count) / game.holes)}%
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )
+            })()}
+          </Card>
+        </>
+      ) : (
+        <Card className="mt-3 p-4">
+          <p className="text-[13px] text-ink-dim">
+            <span className="font-bold text-ink">Want the real breakdown?</span> Score rounds hole by hole and fill in
+            course pars, and this turns into your par-3/4/5 averages and birdie-to-blowup rates.
+          </p>
+        </Card>
+      )}
 
       {/* My recent rounds */}
       <SectionLabel
@@ -373,7 +439,36 @@ export default function Profile() {
             </div>
           ),
         )}
+        {/* Guests live at the bottom of the roster: editable (name,
+            handicap, Venmo for settling up) but visibly not members. */}
+        {guests.map((p) =>
+          editingId === p.id ? (
+            <EditGolfer key={p.id} player={p} cloud={cloud} onDone={() => setEditingId(null)} />
+          ) : (
+            <div key={p.id} className="flex items-center gap-3 px-4 py-3 bg-paper/50">
+              <Avatar player={p} size={32} />
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-bold text-ink truncate">{p.name}</p>
+                <p className="text-[11.5px] text-ink-faint truncate">
+                  <span className="tabular-nums">Hcp {fmt1(p.handicap)}</span>
+                  {p.venmo && ` · @${p.venmo}`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2.5 shrink-0">
+                <Pill>Guest</Pill>
+                <button onClick={() => setEditingId(p.id)} className="text-[12.5px] font-bold text-green">
+                  Edit
+                </button>
+              </div>
+            </div>
+          ),
+        )}
       </Card>
+      {guests.length > 0 && (
+        <p className="text-[11px] text-ink-faint px-2 mt-2">
+          Guests play rounds and settle bets, but stay off the leaderboard, the head-to-head records, and the Saddam.
+        </p>
+      )}
       {cloud && members.some((p) => !p.email) && (
         <p className="text-[11.5px] text-ink-dim px-2 mt-2">
           Add an email to each golfer before you send them the link. When they sign in with that exact address, this profile
@@ -562,5 +657,65 @@ function EditGolfer({ player, cloud, onDone }: { player: Player; cloud: boolean;
         </button>
       </div>
     </div>
+  )
+}
+
+// The push toggle. iOS only allows the permission prompt from a tap, and
+// only for apps on the home screen — so this is a button, not a switch
+// flipped on by default, and it explains itself when it can't work yet.
+function PushToggle({ playerId }: { playerId: string }) {
+  const [state, setState] = useState<'checking' | 'unsupported' | 'off' | 'on' | 'denied'>('checking')
+
+  useEffect(() => {
+    if (!pushSupported()) {
+      setState('unsupported')
+      return
+    }
+    if (Notification.permission === 'denied') {
+      setState('denied')
+      return
+    }
+    void pushEnabled().then((on) => setState(on ? 'on' : 'off'))
+  }, [])
+
+  const turnOn = async () => {
+    setState('checking')
+    const result = await enablePush(playerId)
+    setState(result === 'on' ? 'on' : result === 'denied' ? 'denied' : 'off')
+  }
+
+  const turnOff = async () => {
+    setState('checking')
+    await disablePush()
+    setState('off')
+  }
+
+  return (
+    <Card className="mt-3 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[13.5px] font-bold text-ink">Notifications</p>
+          <p className="text-[12px] text-ink-dim mt-0.5">
+            {state === 'on'
+              ? 'On for this phone — rounds, results, and money.'
+              : state === 'denied'
+                ? 'Blocked in iOS Settings. Allow notifications for Sandbagger there, then come back.'
+                : state === 'unsupported'
+                  ? 'Add the app to your home screen first — iPhones only allow notifications for installed apps.'
+                  : 'Hear about posted rounds, settled bets, and money coming your way.'}
+          </p>
+        </div>
+        {(state === 'off' || state === 'on') && (
+          <button
+            onClick={() => void (state === 'on' ? turnOff() : turnOn())}
+            className={`shrink-0 rounded-xl px-4 py-2 text-[13px] font-bold transition active:scale-95 ${
+              state === 'on' ? 'border border-line-strong bg-card text-ink-dim' : 'bg-green text-white'
+            }`}
+          >
+            {state === 'on' ? 'Turn off' : 'Turn on'}
+          </button>
+        )}
+      </div>
+    </Card>
   )
 }

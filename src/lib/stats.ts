@@ -10,7 +10,8 @@ import {
   type Round,
   type ScoredRoundPlayer,
 } from '../types'
-import { hasCard } from './holes'
+import { cardOf, hasCard } from './holes'
+import { findCourse, hasPars, padded, scoreKind, type ScoreKind } from './courses'
 
 export const byDate = (rounds: Round[]) =>
   [...rounds].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
@@ -103,7 +104,8 @@ export interface LeaderRow {
 
 export function leaderboard(data: AppData, rounds = data.rounds): LeaderRow[] {
   const ordered = byDate(rounds)
-  const rows = data.players.map((player) => {
+  // Lifetime records are members' business; guests pass through.
+  const rows = data.players.filter((p) => !p.guest).map((player) => {
     const mine = ordered.filter((r) => r.players.some((p) => p.playerId === player.id))
     const mineGroup = mine.filter(isGroupRound)
     // Rounds counts every round they were in; the score-based stats only
@@ -155,6 +157,7 @@ export interface TripRow {
 export function tripBoard(data: AppData, rounds: Round[]): TripRow[] {
   const rows: TripRow[] = []
   for (const player of data.players) {
+    if (player.guest) continue
     const mine = rounds
       .map((r) => r.players.find((p) => p.playerId === player.id))
       .filter((rp): rp is ScoredRoundPlayer => !!rp && hasScore(rp))
@@ -216,7 +219,10 @@ export function saddamHistory(data: AppData): SaddamChange[] {
   for (const round of byDate(data.rounds).filter(isGroupRound)) {
     if (award && round.date < award.date) continue
     const winners = roundWinnerIds(round)
-    if (winners.length === 1 && winners[0] !== holderId) {
+    // A guest can win the round but never the trophy: an outright guest
+    // win leaves the Saddam where it is, and a tie changes nothing.
+    const isMember = (id: string) => data.group.memberIds.includes(id)
+    if (winners.length === 1 && isMember(winners[0]) && winners[0] !== holderId) {
       holderId = winners[0]
       changes.push({
         playerId: holderId,
@@ -336,6 +342,59 @@ export function roundsAtCurrentHandicap(data: AppData, playerId: string): number
   return count
 }
 
+// ---------- Hole-by-hole game stats ----------
+// What the course pars unlock: how someone actually scores, hole by
+// hole, rather than one number per round. Only holes with both a score
+// and a known par count, so the rates stay honest.
+
+export interface HoleStats {
+  /** Holes that had both a score and a par. */
+  holes: number
+  /** Average strokes on par 3s / 4s / 5s, keyed by par. */
+  avgByPar: Partial<Record<3 | 4 | 5, number>>
+  holesByPar: Partial<Record<3 | 4 | 5, number>>
+  counts: Record<ScoreKind, number>
+}
+
+export function holeStats(data: AppData, playerId: string): HoleStats {
+  const strokesByPar: Record<number, number> = {}
+  const holesByPar: Record<number, number> = {}
+  const counts: Record<ScoreKind, number> = {
+    albatross: 0,
+    eagle: 0,
+    birdie: 0,
+    par: 0,
+    bogey: 0,
+    double: 0,
+    worse: 0,
+  }
+  let holes = 0
+
+  for (const round of data.rounds) {
+    const rp = round.players.find((p) => p.playerId === playerId)
+    if (!rp || !hasCard(rp)) continue
+    const course = findCourse(data, round.courseName)
+    if (!hasPars(course)) continue
+    const pars = padded(course.pars)
+    const card = cardOf(rp)
+    for (let i = 0; i < card.length; i++) {
+      const score = card[i]
+      const par = pars[i]
+      if (score == null || par == null) continue
+      holes++
+      strokesByPar[par] = (strokesByPar[par] ?? 0) + score
+      holesByPar[par] = (holesByPar[par] ?? 0) + 1
+      counts[scoreKind(score, par)]++
+    }
+  }
+
+  const avgByPar: HoleStats['avgByPar'] = {}
+  for (const par of [3, 4, 5] as const) {
+    if (holesByPar[par]) avgByPar[par] = Math.round((strokesByPar[par]! / holesByPar[par]!) * 100) / 100
+  }
+  return { holes, avgByPar, holesByPar: holesByPar as HoleStats['holesByPar'], counts }
+}
+
 // ---------- Dates & copy ----------
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -365,11 +424,12 @@ export function timeToMinutes(raw?: string): number {
 export function trashTalk(data: AppData): string[] {
   const lines: string[] = []
   const name = (id: string) => data.players.find((p) => p.id === id)?.name ?? '???'
+  const regulars = data.players.filter((p) => !p.guest)
 
-  for (let i = 0; i < data.players.length; i++) {
-    for (let j = i + 1; j < data.players.length; j++) {
-      const a = data.players[i]
-      const b = data.players[j]
+  for (let i = 0; i < regulars.length; i++) {
+    for (let j = i + 1; j < regulars.length; j++) {
+      const a = regulars[i]
+      const b = regulars[j]
       const h = headToHead(data, a.id, b.id)
       if (h.aWins + h.bWins === 0) continue
       if (h.aStreak >= 3) lines.push(`${name(a.id)} has beaten ${name(b.id)} ${h.aStreak} times in a row. Someone check on ${name(b.id)}.`)

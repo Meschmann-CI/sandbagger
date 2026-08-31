@@ -31,7 +31,7 @@ interface StoreApi {
   updateTrip: (trip: Trip) => void
   deleteTrip: (tripId: string) => void
   voteTripOption: (tripId: string, optionId: string) => void
-  addPlayer: (input: { name: string; handicap: number; homeCourse?: string; email?: string }) => Player
+  addPlayer: (input: { name: string; handicap: number; homeCourse?: string; email?: string; guest?: boolean }) => Player
   updatePlayer: (player: Player) => void
   removePlayer: (playerId: string) => void
   setCurrentUser: (playerId: string) => void
@@ -208,7 +208,7 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         payments: d.payments.filter((p) => p.tripId !== tripId),
       }))
     },
-    addPlayer({ name, handicap, homeCourse, email }) {
+    addPlayer({ name, handicap, homeCourse, email, guest }) {
       const player: Player = {
         id: makeId(),
         name: name.trim(),
@@ -216,12 +216,14 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         handicap: round1(handicap),
         homeCourse: homeCourse?.trim() || undefined,
         email: email?.trim() || undefined,
+        guest: guest || undefined,
         color: AVATAR_COLORS[data.players.length % AVATAR_COLORS.length],
       }
       commit({ kind: 'player.upsert', player }, (d) => ({
         ...d,
         players: [...d.players, player],
-        group: { ...d.group, memberIds: [...d.group.memberIds, player.id] },
+        // A guest joins the round, not the group.
+        group: guest ? d.group : { ...d.group, memberIds: [...d.group.memberIds, player.id] },
       }))
       return player
     },

@@ -19,6 +19,7 @@ function toPlayer(row: any): Player {
     color: row.color,
     email: row.email ?? undefined,
     venmo: row.venmo ?? undefined,
+    guest: row.is_guest || undefined,
   }
 }
 
@@ -175,7 +176,8 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         name: groupRes.data.name,
         inviteCode: groupRes.data.invite_code,
         adminId: (playersRes.data ?? []).find((p: any) => p.is_admin)?.id ?? playerId,
-        memberIds: (playersRes.data ?? []).filter((p: any) => p.is_member).map((p: any) => p.id),
+        // Guests are never members, whatever is_member defaulted to.
+        memberIds: (playersRes.data ?? []).filter((p: any) => p.is_member && !p.is_guest).map((p: any) => p.id),
         saddamAward: groupRes.data.saddam_award ?? undefined,
       }
 
@@ -314,6 +316,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
                 color: p.color,
                 email: p.email ?? null,
                 venmo: p.venmo ?? null,
+                is_guest: p.guest ?? false,
               })
             ).error,
             'Saving golfer',

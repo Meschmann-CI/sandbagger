@@ -5,6 +5,7 @@ import { useMembers, useStore } from '../data/store'
 import { courseSuggestions } from '../lib/stats'
 import { todayISO } from '../lib/dates'
 import { GROSS_CEILING, GROSS_FLOOR, grossWarning } from '../lib/scores'
+import { notifyGroup } from '../lib/push'
 import { fmt1 } from '../types'
 import { Avatar, Card, GhostButton, PrimaryButton } from '../components/ui'
 
@@ -15,7 +16,7 @@ import { Avatar, Card, GhostButton, PrimaryButton } from '../components/ui'
 export default function LogRound() {
   const navigate = useNavigate()
   const goBack = useGoBack('/')
-  const { data, addRound } = useStore()
+  const { data, addRound, addPlayer } = useStore()
   const members = useMembers()
 
   const [step, setStep] = useState(0)
@@ -25,6 +26,21 @@ export default function LogRound() {
   const [tripId, setTripId] = useState<string>('')
   const [playerIds, setPlayerIds] = useState<string[]>([data.currentUserId])
   const [scores, setScores] = useState<Record<string, number>>({})
+  const [addingGuest, setAddingGuest] = useState(false)
+  const [guestName, setGuestName] = useState('')
+  const [guestHcp, setGuestHcp] = useState('')
+
+  const guests = data.players.filter((p) => p.guest)
+
+  const addGuest = () => {
+    if (!guestName.trim()) return
+    // 18 when nobody knows — the polite default for a mystery guest.
+    const player = addPlayer({ name: guestName, handicap: Number(guestHcp) || 18, guest: true })
+    setPlayerIds((ids) => [...ids, player.id])
+    setGuestName('')
+    setGuestHcp('')
+    setAddingGuest(false)
+  }
 
   const suggestions = useMemo(() => courseSuggestions(data), [data])
   const filteredSuggestions = courseName
@@ -55,6 +71,18 @@ export default function LogRound() {
         handicapSnapshot: data.players.find((p) => p.id === pid)!.handicap,
       })),
     })
+    // A posted round is news; a round just starting is not — the group
+    // hears about that one when the card finishes.
+    if (anyScored) {
+      const me = data.players.find((p) => p.id === data.currentUserId)
+      notifyGroup({
+        toPlayerIds: data.group.memberIds.filter((id) => id !== data.currentUserId),
+        title: `${me?.name ?? 'Someone'} logged a round at ${courseName.trim()}`,
+        body:
+          missing.length > 0 ? `${playerIds.length - missing.length} of ${playerIds.length} scores in.` : 'All scores in.',
+        url: `/rounds/${round.id}`,
+      })
+    }
     // No totals yet means they're on the course — go straight to the
     // hole-by-hole card instead of a round page full of blanks.
     navigate(anyScored ? `/rounds/${round.id}` : `/rounds/${round.id}/card`, { replace: true })
@@ -177,6 +205,71 @@ export default function LogRound() {
               </Card>
             )
           })}
+
+          {/* Guests: on the round and in the bets, off the lifetime
+              records. Once added they stick around for the next time the
+              same brother-in-law tags along. */}
+          {(guests.length > 0 || addingGuest) && (
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint px-1 pt-2">Guests</p>
+          )}
+          {guests.map((p) => {
+            const on = playerIds.includes(p.id)
+            return (
+              <Card
+                key={p.id}
+                onClick={() => togglePlayer(p.id)}
+                className={`p-3.5 flex items-center gap-3 transition ${on ? 'border-green/50 bg-green-soft/40' : 'opacity-60'}`}
+              >
+                <Avatar player={p} size={36} />
+                <div className="flex-1">
+                  <p className="font-bold text-[14px] text-ink">{p.name}</p>
+                  <p className="text-[11.5px] text-ink-faint tabular-nums">Guest · hcp {fmt1(p.handicap)}</p>
+                </div>
+                <span className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition ${on ? 'border-green bg-green' : 'border-line-strong'}`}>
+                  {on && (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4.5 12.5 L9.5 17.5 L19.5 6.5" />
+                    </svg>
+                  )}
+                </span>
+              </Card>
+            )
+          })}
+          {addingGuest ? (
+            <Card className="p-3.5 space-y-2.5">
+              <div className="grid grid-cols-[1fr_5.5rem] gap-2">
+                <input
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="Guest's name"
+                  autoFocus
+                  className="rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+                />
+                <input
+                  value={guestHcp}
+                  onChange={(e) => setGuestHcp(e.target.value.replace(/[^\d.]/g, ''))}
+                  placeholder="Hcp"
+                  inputMode="decimal"
+                  className="rounded-lg border border-line-strong bg-card px-3 py-2.5 text-center text-[14px] text-ink tabular-nums placeholder:text-ink-faint focus:border-green focus:outline-none"
+                />
+              </div>
+              <div className="flex gap-2">
+                <PrimaryButton onClick={addGuest} disabled={!guestName.trim()} className="flex-1 !py-2.5">
+                  Add to round
+                </PrimaryButton>
+                <button onClick={() => setAddingGuest(false)} className="px-3 text-[13px] font-bold text-ink-faint">
+                  Cancel
+                </button>
+              </div>
+            </Card>
+          ) : (
+            <button
+              onClick={() => setAddingGuest(true)}
+              className="w-full rounded-xl border border-dashed border-line-strong bg-card py-3 text-[13px] font-bold text-ink-dim active:bg-paper"
+            >
+              + Bring a guest
+            </button>
+          )}
         </div>
       )}
 
