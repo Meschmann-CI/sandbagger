@@ -6,8 +6,8 @@
 // and its assets. Writes are queued separately, in src/data/outbox.ts.
 //
 // Bump VERSION to retire every old cache on the next activate. Needed
-// whenever a static file changes name or contents — the icons did.
-const VERSION = 'v2'
+// whenever a static file changes name or contents.
+const VERSION = 'v3'
 const SHELL = `sandbagger-shell-${VERSION}`
 const ASSETS = `sandbagger-assets-${VERSION}`
 
@@ -80,4 +80,45 @@ self.addEventListener('fetch', (event) => {
 
   // Vite fingerprints built assets, so a cache hit is always the right file.
   event.respondWith(cacheFirst(event, sameOrigin ? ASSETS : SHELL))
+})
+
+// ---------- Push ----------
+// The payload is JSON from the notify Edge Function:
+// { title, body, url } — url is the in-app path to open on tap.
+
+self.addEventListener('push', (event) => {
+  let data = {}
+  try {
+    data = event.data ? event.data.json() : {}
+  } catch {
+    // A malformed payload still owes the user a visible notification —
+    // userVisibleOnly was promised at subscribe time.
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Sandbagger', {
+      body: data.body || '',
+      icon: '/sandbagger-icon-180.png',
+      badge: '/sandbagger-icon-180.png',
+      data: { url: data.url || '/' },
+    }),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data?.url || '/'
+  // The app is hash-routed, so any deep link is the root document plus a
+  // fragment. Focus an open window if there is one; open one if not.
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      const target = `${self.location.origin}/#${url}`
+      for (const win of wins) {
+        if (win.url.startsWith(self.location.origin)) {
+          win.navigate(target)
+          return win.focus()
+        }
+      }
+      return clients.openWindow(target)
+    }),
+  )
 })

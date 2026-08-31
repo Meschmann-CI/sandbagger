@@ -330,6 +330,7 @@ export default function RoundDetail() {
         <Card className={`mb-3 p-4 ${betsOwed.length === 0 ? 'bg-green-soft/50 border-green/25' : 'bg-gold-soft/40 border-gold/30'}`}>
           <p className="text-[12px] font-bold uppercase tracking-wider text-ink-faint mb-2.5">Settle up</p>
           <SettleUp
+            url={`/rounds/${round.id}`}
             owed={betsOwed}
             note={`${round.courseName} (Sandbagger)`}
             squareLabel="All settled. Nobody owes anybody for this one. 🎉"

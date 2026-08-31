@@ -2,6 +2,7 @@ import { useStore } from '../data/store'
 import type { Settlement } from '../lib/money'
 import { money } from '../lib/money'
 import { venmoLink } from '../lib/venmo'
+import { notifyGroup } from '../lib/push'
 import { Avatar } from './ui'
 
 // Who owes who, and the fastest way to make it stop being true.
@@ -15,12 +16,14 @@ interface Props {
   owed: Settlement[]
   /** What shows up in the Venmo feed, e.g. the trip or the course. */
   note: string
+  /** In-app path this settle-up lives at, for the notification tap. */
+  url: string
   onMarkPaid: (settlement: Settlement) => void
   /** Shown when nobody owes anybody. */
   squareLabel?: string
 }
 
-export default function SettleUp({ owed, note, onMarkPaid, squareLabel }: Props) {
+export default function SettleUp({ owed, note, url, onMarkPaid, squareLabel }: Props) {
   const { data } = useStore()
   const name = (id: string) => data.players.find((p) => p.id === id)?.name ?? 'Someone'
 
@@ -64,7 +67,17 @@ export default function SettleUp({ owed, note, onMarkPaid, squareLabel }: Props)
                   </a>
                 )}
                 <button
-                  onClick={() => onMarkPaid(s)}
+                  onClick={() => {
+                    onMarkPaid(s)
+                    // Money moving is exactly what a phone should buzz
+                    // about. Both sides of the debt, minus whoever tapped.
+                    notifyGroup({
+                      toPlayerIds: [s.fromId, s.toId].filter((id) => id !== data.currentUserId),
+                      title: `${name(s.fromId)} paid ${name(s.toId)} ${money(s.amount)}`,
+                      body: note,
+                      url,
+                    })
+                  }}
                   className="rounded-lg border border-line-strong bg-card px-3 py-1.5 text-[12px] font-bold text-ink-dim active:bg-paper"
                 >
                   Mark paid

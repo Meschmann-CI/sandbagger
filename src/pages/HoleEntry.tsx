@@ -4,7 +4,9 @@ import { useStore } from '../data/store'
 import { HOLE_COUNT, cardOf, cardTotal, holesEntered } from '../lib/holes'
 import { findCourse, hasPars, padded, toPar } from '../lib/courses'
 import { settleFromCard } from '../lib/bets'
-import type { Round } from '../types'
+import { roundStandings } from '../lib/stats'
+import { notifyGroup } from '../lib/push'
+import { fmt1, type Round } from '../types'
 import { Avatar, Card, PrimaryButton } from '../components/ui'
 
 // Hole by hole, everyone on one screen — the way you'd actually fill a
@@ -101,6 +103,21 @@ export default function HoleEntry() {
     for (const bet of data.bets.filter((b) => b.roundId === round.id)) {
       const outcome = settleFromCard(bet, saved, course)
       if (outcome) updateBet({ ...bet, results: outcome.results })
+    }
+
+    // The moment the last score lands is the moment the group hears the
+    // result — once, on the save that crossed the line.
+    const wasFinal = round.players.length > 1 && round.players.every((rp) => rp.gross != null)
+    const isFinal = saved.players.length > 1 && saved.players.every((rp) => rp.gross != null)
+    if (isFinal && !wasFinal) {
+      const standings = roundStandings(saved)
+      const winner = data.players.find((p) => p.id === standings[0]?.playerId)
+      notifyGroup({
+        toPlayerIds: data.group.memberIds.filter((id) => id !== data.currentUserId),
+        title: `Final at ${round.courseName}`,
+        body: winner ? `${winner.name} takes it, net ${fmt1(standings[0].netScore)}.` : 'All the cards are in.',
+        url: `/rounds/${round.id}`,
+      })
     }
   }
   commitRef.current = commitCards

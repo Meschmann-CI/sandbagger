@@ -90,6 +90,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
           <Card className={`mt-3 p-4 ${owed.length === 0 ? 'bg-green-soft/50 border-green/25' : 'bg-gold-soft/40 border-gold/30'}`}>
             <p className="text-[12px] font-bold uppercase tracking-wider text-ink-faint mb-2.5">Settle up</p>
             <SettleUp
+              url={`/trips/${trip.id}`}
               owed={owed}
               note={`${trip.name} (Sandbagger)`}
               onMarkPaid={(s) =>
