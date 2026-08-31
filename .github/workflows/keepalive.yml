@@ -1,0 +1,25 @@
+# Pokes the database once a week so Supabase's free tier never pauses the
+# project for inactivity. Without this, a quiet December ends with a dead
+# app in April and someone digging through a dashboard to un-pause it.
+#
+# The key below is the anon key — it's public by design (every visitor's
+# browser already has it), and the keepalive() function it calls does
+# nothing but prove the project is awake.
+name: keep supabase awake
+on:
+  schedule:
+    # Tuesdays, 09:43 UTC. An off-minute on purpose.
+    - cron: "43 9 * * 2"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call keepalive()
+        run: |
+          curl --fail-with-body -sS -X POST \
+            "https://ebukktjspbgzwnaxobfg.supabase.co/rest/v1/rpc/keepalive" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidWtrdGpzcGJnenduYXhvYmZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MDg5MzUsImV4cCI6MjEwMzA4NDkzNX0.12IpyCgKKlmcFujWbLppeYuwVwRDeC3P0LjnGw9fWPc" \
+            -H "Content-Type: application/json" \
+            -d '{}'

@@ -26,6 +26,8 @@ create table if not exists players (
   home_course text,
   color text not null default '#1c7c4a',
   is_member boolean not null default true,
+  -- A guest plays rounds and can owe money, but stays off lifetime records.
+  is_guest boolean not null default false,
   is_admin boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -145,6 +147,8 @@ alter table bets add constraint bets_type_check check (type in ('nassau', 'skins
 -- Live bets: placed on the first tee, settled by the card as it fills in.
 alter table bets add column if not exists manual boolean not null default false;
 alter table bets add column if not exists net boolean;
+-- Guests joined after launch.
+alter table players add column if not exists is_guest boolean not null default false;
 -- Paybacks used to belong to a trip. A bet on a single round needs
 -- settling too, so a payment now hangs off whichever it cleared.
 alter table payments alter column trip_id drop not null;
