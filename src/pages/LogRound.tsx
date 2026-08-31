@@ -7,7 +7,7 @@ import { todayISO } from '../lib/dates'
 import { GROSS_CEILING, GROSS_FLOOR, grossWarning } from '../lib/scores'
 import { notifyGroup } from '../lib/push'
 import { fmt1 } from '../types'
-import { Avatar, Card, GhostButton, PrimaryButton } from '../components/ui'
+import { Avatar, Card, GhostButton, PrimaryButton, SaddamIcon } from '../components/ui'
 
 // The two-minute flow: where → who → scores → done.
 // Defaults to just you, since most rounds are solo. Tap the others in
@@ -29,6 +29,9 @@ export default function LogRound() {
   const [addingGuest, setAddingGuest] = useState(false)
   const [guestName, setGuestName] = useState('')
   const [guestHcp, setGuestHcp] = useState('')
+  // Off by default: putting the trophy up is a declaration, not a side
+  // effect of logging scores.
+  const [saddamOn, setSaddamOn] = useState(false)
 
   const guests = data.players.filter((p) => p.guest)
 
@@ -65,6 +68,7 @@ export default function LogRound() {
       courseName: courseName.trim(),
       tee: tee.trim() || undefined,
       tripId: tripId || undefined,
+      saddamOnTheLine: playerIds.length >= 2 ? saddamOn : false,
       players: playerIds.map((pid) => ({
         playerId: pid,
         gross: scores[pid] ?? null,
@@ -235,6 +239,31 @@ export default function LogRound() {
               </Card>
             )
           })}
+          {/* The Saddam moved from automatic to declared: the trophy has
+              house rules the app can't know (the whole group has to be
+              playing), so the group says when it's at stake. */}
+          {playerIds.length >= 2 && (
+            <Card
+              onClick={() => setSaddamOn((v) => !v)}
+              className={`p-3.5 flex items-center gap-3 transition ${saddamOn ? 'border-gold/50 bg-gold-soft/50' : ''}`}
+            >
+              <SaddamIcon size={26} />
+              <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-bold text-ink">The Saddam is on the line</p>
+                <p className="text-[11.5px] text-ink-faint">
+                  {saddamOn ? 'Winner takes the trophy.' : 'Off — this round can’t move the trophy.'}
+                </p>
+              </div>
+              <span
+                className={`h-7 w-12 rounded-full p-1 transition shrink-0 ${saddamOn ? 'bg-gold' : 'bg-line-strong'}`}
+              >
+                <span
+                  className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${saddamOn ? 'translate-x-5' : ''}`}
+                />
+              </span>
+            </Card>
+          )}
+
           {addingGuest ? (
             <Card className="p-3.5 space-y-2.5">
               <div className="grid grid-cols-[1fr_5.5rem] gap-2">

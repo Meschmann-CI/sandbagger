@@ -1,5 +1,6 @@
 import {
   hasScore,
+  saddamCounts,
   isGroupRound,
   isSoloRound,
   net,
@@ -216,7 +217,7 @@ export function saddamHistory(data: AppData): SaddamChange[] {
     })
   }
 
-  for (const round of byDate(data.rounds).filter(isGroupRound)) {
+  for (const round of byDate(data.rounds).filter(isGroupRound).filter(saddamCounts)) {
     if (award && round.date < award.date) continue
     const winners = roundWinnerIds(round)
     // A guest can win the round but never the trophy: an outright guest
@@ -245,6 +246,7 @@ export function saddamState(data: AppData): SaddamState {
   // Group rounds the holder has sat through without losing it.
   const defenses = byDate(data.rounds)
     .filter(isGroupRound)
+    .filter(saddamCounts)
     .filter((r) => r.date >= current.date && r.id !== current.roundId).length
 
   return {

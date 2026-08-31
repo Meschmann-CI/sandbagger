@@ -4,7 +4,7 @@ import { useMembers, useStore } from '../data/store'
 import { fmt1, type RoundPlayer } from '../types'
 import { courseSuggestions } from '../lib/stats'
 import { hasCard } from '../lib/holes'
-import { Avatar, Card, GhostButton, PrimaryButton } from '../components/ui'
+import { Avatar, Card, GhostButton, PrimaryButton, SaddamIcon } from '../components/ui'
 import { useConfirm } from '../components/Confirm'
 
 // Everything about a logged round on one screen. Scores can be cleared
@@ -22,6 +22,9 @@ export default function EditRound() {
   const [tee, setTee] = useState(round?.tee ?? '')
   const [tripId, setTripId] = useState(round?.tripId ?? '')
   const [entries, setEntries] = useState<RoundPlayer[]>(round?.players ?? [])
+  // Rounds from before the toggle existed count as on-the-line, and this
+  // is where that can be corrected after the fact.
+  const [saddamOn, setSaddamOn] = useState(round ? round.saddamOnTheLine !== false : false)
 
   if (!round) {
     return (
@@ -62,6 +65,7 @@ export default function EditRound() {
       date,
       tee: tee.trim() || undefined,
       tripId: tripId || undefined,
+      saddamOnTheLine: entries.length >= 2 ? saddamOn : false,
       players: entries,
     })
     navigate(`/rounds/${round.id}`, { replace: true })
@@ -198,6 +202,26 @@ export default function EditRound() {
             their total from it — tap through to change that.
           </p>
         </div>
+
+        {entries.length >= 2 && (
+          <Card
+            onClick={() => setSaddamOn((v) => !v)}
+            className={`p-3.5 flex items-center gap-3 transition ${saddamOn ? 'border-gold/50 bg-gold-soft/50' : ''}`}
+          >
+            <SaddamIcon size={26} />
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-[14px] font-bold text-ink">The Saddam is on the line</p>
+              <p className="text-[11.5px] text-ink-faint">
+                {saddamOn ? 'Winner takes the trophy.' : 'Off — this round can’t move the trophy.'}
+              </p>
+            </div>
+            <span className={`h-7 w-12 rounded-full p-1 transition shrink-0 ${saddamOn ? 'bg-gold' : 'bg-line-strong'}`}>
+              <span
+                className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${saddamOn ? 'translate-x-5' : ''}`}
+              />
+            </span>
+          </Card>
+        )}
 
         <div className="flex gap-3 pt-1">
           <PrimaryButton onClick={save} disabled={!courseName.trim() || !date || entries.length === 0} className="flex-1 !py-4">

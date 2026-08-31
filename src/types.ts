@@ -86,7 +86,15 @@ export interface Round {
   tripId?: string
   players: RoundPlayer[]
   notes?: string
+  // Whether the Saddam is at stake. The trophy has house rules the app
+  // can't know — the whole group has to be playing — so it changed from
+  // an automatic transfer to a toggle. Undefined = logged before the
+  // toggle existed, and the old always-on rule applies to those.
+  saddamOnTheLine?: boolean
 }
+
+/** Old rounds keep their history; new ones say so explicitly. */
+export const saddamCounts = (r: Round) => r.saddamOnTheLine !== false
 
 // ---------- Itinerary ----------
 

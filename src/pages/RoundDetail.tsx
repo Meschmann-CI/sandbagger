@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useGoBack } from '../lib/nav'
 import { useStore } from '../data/store'
-import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, type ScoredRoundPlayer } from '../types'
+import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, saddamCounts, type ScoredRoundPlayer } from '../types'
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
 import { anyCards, cardComplete, holesEntered } from '../lib/holes'
 import { settleFromCard } from '../lib/bets'
@@ -112,7 +112,8 @@ export default function RoundDetail() {
             Edit
           </button>
         </div>
-        <div className="flex gap-2 mt-2">
+        <div className="flex flex-wrap gap-2 mt-2">
+          {!solo && round.players.length > 1 && saddamCounts(round) && <Pill tone="gold">Saddam on the line</Pill>}
           {solo && standings.length > 0 && <Pill>Solo round</Pill>}
           {waiting.length > 0 && <Pill tone="flag">{waiting.length} score{waiting.length === 1 ? '' : 's'} outstanding</Pill>}
           {trip && (

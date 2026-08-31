@@ -74,6 +74,7 @@ const roundRow = (r: Round) => ({
   tee: r.tee ?? null,
   trip_id: r.tripId ?? null,
   notes: r.notes ?? null,
+  saddam: r.saddamOnTheLine ?? null,
 })
 
 const expenseRow = (e: Expense) => ({
@@ -202,6 +203,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           tee: r.tee ?? undefined,
           tripId: r.trip_id ?? undefined,
           notes: r.notes ?? undefined,
+          saddamOnTheLine: r.saddam ?? undefined,
           players: scoresByRound.get(r.id) ?? [],
         })),
         bets: (betsRes.data ?? []).map((b: any) => ({
