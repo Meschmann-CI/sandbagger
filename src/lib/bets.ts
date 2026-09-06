@@ -1,6 +1,6 @@
 import type { Bet, BetResult, Course, Round, RoundPlayer } from '../types'
 import { BACK, FRONT, HOLE_COUNT, cardOf, nineComparable, strokes } from './holes'
-import { hasStrokeIndex, strokesByHole } from './courses'
+import { hasSlopeRating, hasStrokeIndex, playingHandicap, strokesByHole, strokesOffLow } from './courses'
 
 // Working out who owes what from the card. Both games pay per unit: the
 // winner of a unit collects the stake from every other player in the bet,
@@ -68,8 +68,8 @@ export function calcSkins(
 
   const strokes = new Map<string, number[]>()
   if (useNet && ranked) {
-    const low = Math.min(...entries.map((rp) => rp.handicapSnapshot))
-    for (const rp of entries) strokes.set(rp.playerId, strokesByHole(ranked, rp.handicapSnapshot - low))
+    const given = strokesOffLow(ranked, entries)
+    for (const rp of entries) strokes.set(rp.playerId, given[rp.playerId])
   }
 
   const totals = zeroed(playerIds)
@@ -104,7 +104,12 @@ export function calcSkins(
   }
 
   detail.push(`${holesJudged} hole${holesJudged === 1 ? '' : 's'} judged.`)
-  if (useNet && ranked) detail.push('Strokes off the low handicap, hardest holes first.')
+  if (useNet && ranked)
+    detail.push(
+      hasSlopeRating(ranked)
+        ? 'Strokes off the low course handicap (slope-adjusted), hardest holes first.'
+        : 'Strokes off the low handicap, hardest holes first.',
+    )
   for (const [id, count] of [...won.entries()].sort((a, b) => b[1] - a[1])) {
     detail.push(`${count} skin${count === 1 ? '' : 's'}|${id}`)
   }
@@ -148,7 +153,9 @@ export function calcNassau(
   const ranked = hasStrokeIndex(course) ? course : null
   const allocation = new Map<string, number[]>()
   if (ranked && useNet) {
-    for (const rp of entries) allocation.set(rp.playerId, strokesByHole(ranked, rp.handicapSnapshot))
+    // Full handicap each in a nassau (not off the low), converted to the
+    // course handicap when rating and slope are in.
+    for (const rp of entries) allocation.set(rp.playerId, strokesByHole(ranked, playingHandicap(ranked, rp.handicapSnapshot)))
   }
 
   const segments: { label: string; from: number; to: number; allowance: number }[] = [
@@ -238,11 +245,13 @@ export function calcMatchPlay(
     )
   }
 
-  // Strokes for the weaker player, hardest holes first.
+  // Strokes for the weaker player, hardest holes first, off the course
+  // handicaps when rating and slope are in.
   let strokesA = Array<number>(HOLE_COUNT).fill(0)
   let strokesB = Array<number>(HOLE_COUNT).fill(0)
+  let diff = 0 // positive = A gets strokes
   if (useNet && ranked) {
-    const diff = a.handicapSnapshot - b.handicapSnapshot
+    diff = playingHandicap(ranked, a.handicapSnapshot) - playingHandicap(ranked, b.handicapSnapshot)
     if (diff > 0) strokesA = strokesByHole(ranked, diff)
     else if (diff < 0) strokesB = strokesByHole(ranked, -diff)
   }
@@ -276,9 +285,9 @@ export function calcMatchPlay(
   const loserId = up > 0 ? b.playerId : a.playerId
 
   if (useNet && ranked) {
-    const diff = Math.abs(Math.round(a.handicapSnapshot - b.handicapSnapshot))
-    const receiverId = a.handicapSnapshot > b.handicapSnapshot ? a.playerId : b.playerId
-    if (diff > 0) detail.push(`Gets ${diff} stroke${diff === 1 ? '' : 's'}, hardest holes first|${receiverId}`)
+    const given = Math.abs(Math.round(diff))
+    const receiverId = diff > 0 ? a.playerId : b.playerId
+    if (given > 0) detail.push(`Gets ${given} stroke${given === 1 ? '' : 's'}, hardest holes first|${receiverId}`)
   }
 
   // Decided — either closed early ("3&2") or on the last green ("1 up").

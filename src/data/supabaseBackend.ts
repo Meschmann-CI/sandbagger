@@ -64,6 +64,8 @@ const courseRow = (c: Course) => ({
   slug: c.slug,
   pars: c.pars,
   stroke_index: c.strokeIndex ?? null,
+  rating: c.rating ?? null,
+  slope: c.slope ?? null,
 })
 
 const roundRow = (r: Round) => ({
@@ -193,6 +195,8 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           slug: c.slug,
           pars: c.pars ?? [],
           strokeIndex: c.stroke_index ?? undefined,
+          rating: c.rating != null ? Number(c.rating) : undefined,
+          slope: c.slope != null ? Number(c.slope) : undefined,
         })),
         trips: (tripsRes.data ?? []).map(toTrip),
         rounds: (roundsRes.data ?? []).map((r: any) => ({

@@ -22,7 +22,12 @@ interface StoreApi {
   updateRound: (round: Round) => void
   deleteRound: (roundId: string) => void
   /** Creates the course record on first use, keyed on the normalised name. */
-  saveCourse: (name: string, pars: (number | null)[], strokeIndex?: (number | null)[]) => void
+  saveCourse: (
+    name: string,
+    pars: (number | null)[],
+    strokeIndex?: (number | null)[],
+    tees?: { rating: number | null; slope: number | null },
+  ) => void
   deleteCourse: (courseId: string) => void
   addBet: (bet: Omit<Bet, 'id'>) => void
   updateBet: (bet: Bet) => void
@@ -141,7 +146,7 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     // Keyed on the slug rather than an id, so entering par from a round
     // updates the course the group already has rather than making a
     // second one with the same name.
-    saveCourse(name, pars, strokeIndex) {
+    saveCourse(name, pars, strokeIndex, tees) {
       const slug = courseSlug(name)
       const existing = dataRef.current.courses.find((c) => c.slug === slug)
       const anyIndex = strokeIndex?.some((n) => n != null)
@@ -152,6 +157,9 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         slug,
         pars,
         strokeIndex: anyIndex ? strokeIndex : undefined,
+        // Undefined tees means the editor didn't touch them; keep what's stored.
+        rating: tees ? tees.rating : existing?.rating,
+        slope: tees ? tees.slope : existing?.slope,
       }
       commit({ kind: 'course.upsert', course }, (d) => ({
         ...d,

@@ -34,6 +34,9 @@ export default function CourseEdit() {
   const [pars, setPars] = useState<(number | null)[]>(() => padded(existing?.pars ?? emptyPars()))
   const [index, setIndex] = useState<(number | null)[]>(() => padded(existing?.strokeIndex))
   const [showIndex, setShowIndex] = useState(() => (existing?.strokeIndex ?? []).some((n) => n != null))
+  // Kept as text while typing — "70." is a valid moment on the way to "70.6".
+  const [rating, setRating] = useState(() => (existing?.rating != null ? String(existing.rating) : ''))
+  const [slope, setSlope] = useState(() => (existing?.slope != null ? String(existing.slope) : ''))
 
   if (!name) {
     return (
@@ -66,8 +69,18 @@ export default function CourseEdit() {
   )
   const indexComplete = indexIn === HOLE_COUNT && duplicates.size === 0
 
+  // Rating reads like "70.6", slope like "133". A slope outside the USGA
+  // 55–155 band is a typo, not a course.
+  const ratingNum = rating.trim() === '' ? null : Number.parseFloat(rating)
+  const slopeNum = slope.trim() === '' ? null : Number.parseInt(slope, 10)
+  const ratingBad = ratingNum != null && (Number.isNaN(ratingNum) || ratingNum < 50 || ratingNum > 90)
+  const slopeBad = slopeNum != null && (Number.isNaN(slopeNum) || slopeNum < 55 || slopeNum > 155)
+
   const save = () => {
-    saveCourse(name, pars, indexIn > 0 ? index : undefined)
+    saveCourse(name, pars, indexIn > 0 ? index : undefined, {
+      rating: ratingBad ? null : ratingNum,
+      slope: slopeBad ? null : slopeNum,
+    })
     goBack()
   }
 
@@ -192,8 +205,50 @@ export default function CourseEdit() {
         </>
       )}
 
+      {/* Rating and slope, for GHIN course handicaps. Off the same card. */}
+      <SectionLabel>Rating &amp; Slope</SectionLabel>
+      <Card className="p-4">
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-ink-faint mb-1">
+              Course rating
+            </label>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={rating}
+              onChange={(e) => setRating(e.target.value)}
+              placeholder="70.6"
+              aria-label="Course rating"
+              className={`w-full h-11 rounded-lg border bg-card text-center text-[16px] font-bold text-ink tabular-nums focus:outline-none ${
+                ratingBad ? 'border-flag bg-flag-soft' : 'border-line-strong focus:border-green'
+              }`}
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-ink-faint mb-1">Slope</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={slope}
+              onChange={(e) => setSlope(e.target.value)}
+              placeholder="133"
+              aria-label="Slope"
+              className={`w-full h-11 rounded-lg border bg-card text-center text-[16px] font-bold text-ink tabular-nums focus:outline-none ${
+                slopeBad ? 'border-flag bg-flag-soft' : 'border-line-strong focus:border-green'
+              }`}
+            />
+          </div>
+        </div>
+        <p className={`text-[12px] mt-2 ${ratingBad || slopeBad ? 'text-flag font-semibold' : 'text-ink-dim'}`}>
+          {ratingBad || slopeBad
+            ? 'That doesn’t look right — rating reads like 70.6, slope is a whole number from 55 to 155.'
+            : 'From the tees you play, printed on the card next to the tee name. With both in, strokes come off GHIN course handicaps — the number the GHIN app shows for this course — instead of raw indexes.'}
+        </p>
+      </Card>
+
       <div className="flex gap-3 mt-5">
-        <PrimaryButton onClick={save} disabled={parsIn === 0} className="flex-1 !py-4">
+        <PrimaryButton onClick={save} disabled={parsIn === 0 || ratingBad || slopeBad} className="flex-1 !py-4">
           {complete ? 'Save scorecard' : `Save ${parsIn} of ${HOLE_COUNT}`}
         </PrimaryButton>
         <button onClick={() => goBack()} className="px-5 text-[13px] font-bold text-ink-faint">

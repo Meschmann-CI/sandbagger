@@ -67,6 +67,11 @@ create table if not exists courses (
   -- 18 entries once complete; nulls while it's still being filled in.
   pars smallint[] not null default '{}',
   stroke_index smallint[],
+  -- Rating and slope for the tees the group plays. With both set, the
+  -- client converts handicap indexes into GHIN course handicaps
+  -- (index * slope/113 + rating - par) before handing out strokes.
+  rating numeric(4,1),
+  slope smallint,
   created_at timestamptz not null default now(),
   unique (group_id, slug)
 );

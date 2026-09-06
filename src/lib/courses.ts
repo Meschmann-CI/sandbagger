@@ -89,19 +89,41 @@ export function holesByDifficulty(course: Course): number[] {
  * the bets used before — which quietly assumed every hole was equally
  * hard, and so gave the wrong answer on any nine that wasn't.
  */
+/** Whether the course can convert an index into a course handicap. */
+export function hasSlopeRating(course: Course | undefined): course is Course {
+  return !!course && course.slope != null && course.rating != null && hasPars(course)
+}
+
+/**
+ * The GHIN conversion: index × (slope ÷ 113) + (rating − par). This is
+ * the number the GHIN app shows per course, and the one strokes should
+ * come from — a 133 slope turns a 37.3 into a 43, not a 37. Falls back
+ * to the raw index where the course's rating and slope aren't in yet,
+ * which is exact only on a slope-113 course but is what the app always
+ * did before.
+ */
+export function playingHandicap(course: Course | undefined, index: number): number {
+  if (!hasSlopeRating(course)) return index
+  const par = coursePar(course)
+  if (par == null) return index
+  return Math.round(index * ((course.slope as number) / 113) + ((course.rating as number) - par))
+}
+
 /**
  * Stroke allocation for a whole round, off the low handicap: the best
  * player plays scratch and everyone else gets their difference, hardest
  * holes first. This is what the dots on the scorecard show, and what net
  * skins settle by. (Match play's difference-of-two is the same thing for
- * two players.)
+ * two players.) Handicaps go through the course handicap conversion
+ * first when the course's rating and slope are entered.
  */
 export function strokesOffLow(
   course: Course,
   players: { playerId: string; handicapSnapshot: number }[],
 ): Record<string, number[]> {
-  const low = Math.min(...players.map((p) => p.handicapSnapshot))
-  return Object.fromEntries(players.map((p) => [p.playerId, strokesByHole(course, p.handicapSnapshot - low)]))
+  const playing = players.map((p) => ({ id: p.playerId, hcp: playingHandicap(course, p.handicapSnapshot) }))
+  const low = Math.min(...playing.map((p) => p.hcp))
+  return Object.fromEntries(playing.map((p) => [p.id, strokesByHole(course, p.hcp - low)]))
 }
 
 export function strokesByHole(course: Course, handicap: number): number[] {

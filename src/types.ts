@@ -75,6 +75,16 @@ export interface Course {
   pars: (number | null)[]
   /** 18 entries, each hole's 1-18 difficulty ranking. Optional: only the bets need it. */
   strokeIndex?: (number | null)[]
+  /**
+   * Course rating and slope for the tees the group plays, off the same
+   * physical scorecard. With both set, strokes are handed out from the
+   * GHIN course handicap — index × (slope ÷ 113) + (rating − par) — the
+   * number the GHIN app shows for the course, rather than the raw index.
+   * A hard course stretches a high handicap far more than a low one, so
+   * skipping this shortchanges the weakest player by several strokes.
+   */
+  rating?: number | null
+  slope?: number | null
 }
 
 export interface Round {

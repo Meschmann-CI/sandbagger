@@ -74,6 +74,7 @@ export default function Courses() {
                     {row.rounds > 0 ? `${row.rounds} round${row.rounds === 1 ? '' : 's'}` : 'no rounds yet'}
                     {row.par != null && ` · par ${row.par}`}
                     {hasStrokeIndex(row.course) && ' · ranked'}
+                    {row.course?.slope != null && row.course?.rating != null && ` · ${row.course.rating}/${row.course.slope}`}
                   </p>
                 </div>
                 {row.par != null ? (
@@ -89,7 +90,8 @@ export default function Courses() {
             ))}
           </Card>
           <p className="text-[11.5px] text-ink-faint px-2 mt-2">
-            The stroke index is the optional extra. It only changes how strokes get handed out in nassau and skins.
+            Stroke index and rating/slope are the optional extras. The index decides which holes get strokes; rating and
+            slope turn indexes into GHIN course handicaps, so the strokes match what the GHIN app says.
           </p>
         </>
       )}
