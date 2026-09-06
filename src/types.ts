@@ -224,6 +224,12 @@ export interface Bet {
    * bets saved before live bets existed — those keep their results.
    */
   net?: boolean
+  /**
+   * Skins only: money goes to whoever holds the most skins at the end
+   * (the stake is each player's ante into one pot) instead of paying
+   * per skin as they're won. A tie for most splits the pot.
+   */
+  winnerTakeAll?: boolean
 }
 
 export interface AppData {

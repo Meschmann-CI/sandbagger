@@ -29,6 +29,9 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
     scoredIds.length ? scoredIds : round.players.map((rp) => rp.playerId),
   )
   const [useNet, setUseNet] = useState(true)
+  // Skins payout: paid per skin as they're won, or one pot to whoever
+  // holds the most at the end.
+  const [winnerTakeAll, setWinnerTakeAll] = useState(false)
   const [customWinner, setCustomWinner] = useState<string | null>(null)
   const [manual, setManual] = useState<Record<string, string>>({})
   const [manualMode, setManualMode] = useState(false)
@@ -37,11 +40,11 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
   const cardsExist = anyCards(round)
 
   const outcome = useMemo(() => {
-    if (type === 'skins') return calcSkins(round, inIds, stakeNum, useNet, course)
+    if (type === 'skins') return calcSkins(round, inIds, stakeNum, useNet, course, winnerTakeAll)
     if (type === 'nassau') return calcNassau(round, inIds, stakeNum, useNet, course)
     if (type === 'match') return calcMatchPlay(round, inIds, stakeNum, useNet, course)
     return calcCustom(inIds, customWinner, stakeNum)
-  }, [type, round, inIds, stakeNum, useNet, customWinner, course])
+  }, [type, round, inIds, stakeNum, useNet, winnerTakeAll, customWinner, course])
 
   // Typing amounts is a deliberate choice now, not a fallback the editor
   // forces. An undecided card bet is saveable as it stands — it goes on
@@ -119,11 +122,36 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
       {type !== 'custom' && (
         <p className="text-[11.5px] text-ink-faint">
           {type === 'skins'
-            ? `${money(stakeNum)} per skin, from each of the others. A carried hole pays its whole stack — no separate kitty.`
+            ? winnerTakeAll
+              ? `${money(stakeNum)} in from each player. Most skins at the end takes the pot; a tie for most splits it.`
+              : `${money(stakeNum)} per skin, from each of the others. A carried hole pays its whole stack — no separate kitty.`
             : type === 'match'
               ? `${money(stakeNum)} on the match. Winner takes it; all square and nobody pays.`
               : `${money(stakeNum)} on each of the three, paid by everyone else to whoever wins it.`}
         </p>
+      )}
+
+      {/* Skins payout: per skin as they land, or one pot at the end */}
+      {type === 'skins' && (
+        <div>
+          <label className={label}>Payout</label>
+          <div className="flex gap-2">
+            {[
+              { v: false, l: 'Per skin' },
+              { v: true, l: 'Winner takes all' },
+            ].map((o) => (
+              <button
+                key={o.l}
+                onClick={() => setWinnerTakeAll(o.v)}
+                className={`flex-1 rounded-lg py-2 text-[13px] font-bold border transition ${
+                  winnerTakeAll === o.v ? 'bg-ink text-white border-ink' : 'border-line-strong text-ink-dim'
+                }`}
+              >
+                {o.l}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Who's in */}
@@ -314,6 +342,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
               // final, and a card bet remembers how it's decided.
               manual: showManual || undefined,
               net: type === 'custom' || showManual ? undefined : useNet,
+              winnerTakeAll: type === 'skins' && winnerTakeAll ? true : undefined,
             })
           }
           disabled={!canSave}

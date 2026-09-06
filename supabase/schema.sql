@@ -115,7 +115,10 @@ create table if not exists bets (
   manual boolean not null default false,
   -- Net or gross, kept so the card can settle the bet later. Null on
   -- bets saved before live bets existed; those stay as stored.
-  net boolean
+  net boolean,
+  -- Skins only: one pot, most skins takes it (a tie for most splits it),
+  -- instead of paying per skin as they're won.
+  winner_take_all boolean not null default false
 );
 
 create table if not exists expenses (

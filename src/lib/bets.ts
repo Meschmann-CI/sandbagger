@@ -41,6 +41,12 @@ const toResults = (totals: Map<string, number>): BetResult[] =>
  * pays three stakes a head. Money follows skins won — there's no
  * separate end-of-round kitty.
  *
+ * Winner-take-all flips that: the stake is each player's ante into one
+ * pot, and whoever holds the most skins at the end takes the lot. Skins
+ * are counted exactly the same way — carried stacks still stack — they
+ * just decide one pot instead of paying as they land. A tie for most
+ * splits the pot; no skins won at all and the money stays put.
+ *
  * Net gives strokes OFF THE LOW handicap — the best player plays
  * scratch, everyone else gets their difference on the hardest holes.
  * That needs the course's stroke index; which holes get a stroke decides
@@ -52,6 +58,7 @@ export function calcSkins(
   stake: number,
   useNet: boolean,
   course?: Course,
+  winnerTakeAll = false,
 ): BetOutcome {
   const entries = playerIds
     .map((id) => round.players.find((rp) => rp.playerId === id))
@@ -95,7 +102,7 @@ export function calcSkins(
     const skins = 1 + carrying
     carrying = 0
     const winnerId = winners[0].id
-    pay(totals, winnerId, playerIds.filter((id) => id !== winnerId), stake * skins)
+    if (!winnerTakeAll) pay(totals, winnerId, playerIds.filter((id) => id !== winnerId), stake * skins)
     won.set(winnerId, (won.get(winnerId) ?? 0) + skins)
   }
 
@@ -112,6 +119,26 @@ export function calcSkins(
     )
   for (const [id, count] of [...won.entries()].sort((a, b) => b[1] - a[1])) {
     detail.push(`${count} skin${count === 1 ? '' : 's'}|${id}`)
+  }
+  // One pot, most skins takes it. Settled here rather than per hole, so
+  // mid-round the money shows who'd take it as things stand.
+  if (winnerTakeAll && won.size > 0) {
+    const most = Math.max(...won.values())
+    const leaders = [...won.entries()].filter(([, n]) => n === most).map(([id]) => id)
+    const losers = playerIds.filter((id) => !leaders.includes(id))
+    for (const id of losers) totals.set(id, (totals.get(id) ?? 0) - stake)
+    for (const id of leaders) totals.set(id, (totals.get(id) ?? 0) + (stake * losers.length) / leaders.length)
+    if (leaders.length === 1) {
+      detail.push(
+        holesJudged === HOLE_COUNT
+          ? `Most skins takes the pot|${leaders[0]}`
+          : `Holding the pot as it stands|${leaders[0]}`,
+      )
+    } else {
+      detail.push(`Tied at ${most} skins apiece — the pot splits.`)
+    }
+  } else if (winnerTakeAll) {
+    detail.push('No skins won yet — the pot sits.')
   }
   if (carrying > 0) {
     detail.push(
@@ -331,7 +358,7 @@ export function calcCustom(playerIds: string[], winnerId: string | null, stake: 
 export function settleFromCard(bet: Bet, round: Round, course?: Course): BetOutcome | null {
   if (bet.type === 'custom' || bet.manual || bet.net === undefined) return null
   const ids = bet.results.map((r) => r.playerId)
-  if (bet.type === 'skins') return calcSkins(round, ids, bet.stake, bet.net, course)
+  if (bet.type === 'skins') return calcSkins(round, ids, bet.stake, bet.net, course, bet.winnerTakeAll)
   if (bet.type === 'nassau') return calcNassau(round, ids, bet.stake, bet.net, course)
   return calcMatchPlay(round, ids, bet.stake, bet.net, course)
 }
