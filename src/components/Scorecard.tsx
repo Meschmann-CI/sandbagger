@@ -1,7 +1,7 @@
 import { useStore } from '../data/store'
 import type { Round } from '../types'
 import { HOLE_COUNT, cardOf, inTotal, outTotal } from '../lib/holes'
-import { findCourse, hasPars, padded, scoreKind, toPar, type ScoreKind } from '../lib/courses'
+import { findCourse, hasPars, hasStrokeIndex, padded, scoreKind, strokesOffLow, toPar, type ScoreKind } from '../lib/courses'
 import { Avatar, Card } from './ui'
 
 // Read-only card. Scrolls sideways rather than squeezing eighteen holes
@@ -25,6 +25,12 @@ export default function Scorecard({ round }: { round: Round }) {
   const { data } = useStore()
   const course = findCourse(data, round.courseName)
   const pars = hasPars(course) ? padded(course.pars) : null
+
+  // The dots a paper card would carry: who gets a stroke where, off the
+  // low handicap in the round. Only when there's a stroke index to say
+  // which holes, and only when there's someone to give strokes against.
+  const strokeDots =
+    hasStrokeIndex(course) && round.players.length > 1 ? strokesOffLow(course, round.players) : null
   const sumPars = (from: number, to: number) => (pars ?? []).slice(from, to).reduce<number>((s, p) => s + (p ?? 0), 0)
 
   // Best score on each hole, so the low number stands out. Only used when
@@ -85,6 +91,7 @@ export default function Scorecard({ round }: { round: Round }) {
               const card = cardOf(rp)
               const out = outTotal(rp)
               const inn = inTotal(rp)
+              const dots = strokeDots?.[rp.playerId]
               const cell = (i: number) => {
                 const v = card[i]
                 const par = pars?.[i]
@@ -93,7 +100,14 @@ export default function Scorecard({ round }: { round: Round }) {
                 const style = v != null && par != null ? MARK[scoreKind(v, par)] : null
                 const best = !pars && bestByHole[i] != null && v === bestByHole[i]
                 return (
-                  <td key={i} className="px-1 py-2 text-center">
+                  <td key={i} className="px-1 py-1.5 text-center align-bottom">
+                    {/* A row for the stroke dots keeps every cell the same
+                        height whether or not this hole gives one. */}
+                    {strokeDots && (
+                      <span className="block h-2 text-[8px] leading-none text-gold" aria-hidden>
+                        {dots?.[i] ? '•'.repeat(Math.min(dots[i], 3)) : ''}
+                      </span>
+                    )}
                     {v == null ? (
                       <span className="text-ink-faint">–</span>
                     ) : style ? (
@@ -137,8 +151,15 @@ export default function Scorecard({ round }: { round: Round }) {
           </tbody>
         </table>
       </div>
-      {pars && (
+      {(pars || strokeDots) && (
         <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 border-t border-line px-3 py-2 text-[10.5px] text-ink-faint">
+          {strokeDots && (
+            <span className="inline-flex items-center gap-1">
+              <span className="text-gold text-[12px] leading-none">•</span> stroke given, off the low handicap
+            </span>
+          )}
+          {pars && (
+            <>
           <span className="inline-flex items-center gap-1.5">
             <span className="h-3.5 w-3.5 rounded-full bg-green-soft" /> birdie
           </span>
@@ -151,6 +172,8 @@ export default function Scorecard({ round }: { round: Round }) {
           <span className="inline-flex items-center gap-1.5">
             <span className="h-3.5 w-3.5 rounded-md border border-flag/40 bg-flag-soft" /> double or worse
           </span>
+            </>
+          )}
         </div>
       )}
     </Card>

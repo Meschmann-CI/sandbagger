@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { HOLE_COUNT, cardOf, cardTotal, holesEntered } from '../lib/holes'
-import { findCourse, hasPars, padded, toPar } from '../lib/courses'
+import { findCourse, hasPars, hasStrokeIndex, padded, strokesOffLow, toPar } from '../lib/courses'
 import { settleFromCard } from '../lib/bets'
 import { roundStandings } from '../lib/stats'
 import { notifyGroup } from '../lib/push'
@@ -61,6 +61,10 @@ export default function HoleEntry() {
 
   const course = findCourse(data, round?.courseName ?? '')
   const pars = hasPars(course) ? padded(course.pars) : null
+  // Who's getting a stroke where, off the low handicap — the dots a
+  // paper card would carry, so nobody argues about it on the tee.
+  const strokeDots =
+    hasStrokeIndex(course) && players.length > 1 ? strokesOffLow(course, players) : null
 
   // The round as the cards stand right now, unsaved edits included —
   // it's what the live bet lines are judged against.
@@ -285,6 +289,13 @@ export default function HoleEntry() {
                       <p className="font-bold text-[14px] text-ink truncate">
                         {p.name}
                         {p.id === data.currentUserId && <span className="text-ink-faint font-semibold"> (you)</span>}
+                        {/* Getting a stroke on this hole — settled before
+                            anyone tees off, not argued after. */}
+                        {(strokeDots?.[rp.playerId]?.[hole] ?? 0) > 0 && (
+                          <span className="ml-1.5 text-[11px] font-bold text-gold whitespace-nowrap">
+                            {'•'.repeat(Math.min(strokeDots![rp.playerId][hole], 3))} stroke here
+                          </span>
+                        )}
                       </p>
                     </div>
                     <p className="text-[11.5px] text-ink-faint tabular-nums shrink-0">

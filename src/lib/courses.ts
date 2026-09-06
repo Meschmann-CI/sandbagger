@@ -89,6 +89,21 @@ export function holesByDifficulty(course: Course): number[] {
  * the bets used before — which quietly assumed every hole was equally
  * hard, and so gave the wrong answer on any nine that wasn't.
  */
+/**
+ * Stroke allocation for a whole round, off the low handicap: the best
+ * player plays scratch and everyone else gets their difference, hardest
+ * holes first. This is what the dots on the scorecard show, and what net
+ * skins settle by. (Match play's difference-of-two is the same thing for
+ * two players.)
+ */
+export function strokesOffLow(
+  course: Course,
+  players: { playerId: string; handicapSnapshot: number }[],
+): Record<string, number[]> {
+  const low = Math.min(...players.map((p) => p.handicapSnapshot))
+  return Object.fromEntries(players.map((p) => [p.playerId, strokesByHole(course, p.handicapSnapshot - low)]))
+}
+
 export function strokesByHole(course: Course, handicap: number): number[] {
   const strokes = Array<number>(HOLE_COUNT).fill(0)
   const whole = Math.round(handicap)

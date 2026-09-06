@@ -31,44 +31,89 @@ const toResults = (totals: Map<string, number>): BetResult[] =>
   [...totals.entries()].map(([playerId, amount]) => ({ playerId, amount: Math.round(amount * 100) / 100 }))
 
 /**
- * Skins: lowest score on a hole wins it. A tie means nobody wins that
- * hole and it does not carry over.
+ * Skins with carryovers, the way they're actually played: lowest score
+ * on a hole wins its skin, a tie pushes the skin onto the next hole, and
+ * that keeps stacking until somebody wins a hole outright and takes the
+ * lot. A stack still standing after the last judged hole dies unclaimed.
+ *
+ * The payout rule, since it comes up in the parking lot: every skin is
+ * worth the stake FROM EACH other player, so a hole carrying two pushes
+ * pays three stakes a head. Money follows skins won — there's no
+ * separate end-of-round kitty.
+ *
+ * Net gives strokes OFF THE LOW handicap — the best player plays
+ * scratch, everyone else gets their difference on the hardest holes.
+ * That needs the course's stroke index; which holes get a stroke decides
+ * who wins them, so there's no honest way to spread them without it.
  */
-export function calcSkins(round: Round, playerIds: string[], stake: number): BetOutcome {
+export function calcSkins(
+  round: Round,
+  playerIds: string[],
+  stake: number,
+  useNet: boolean,
+  course?: Course,
+): BetOutcome {
   const entries = playerIds
     .map((id) => round.players.find((rp) => rp.playerId === id))
     .filter((rp): rp is RoundPlayer => !!rp)
   if (entries.length < 2) return emptyOutcome(playerIds, 'Needs at least two golfers.')
 
+  const ranked = hasStrokeIndex(course) ? course : null
+  if (useNet && !ranked) {
+    return emptyOutcome(
+      playerIds,
+      "Net skins needs this course's stroke index — add it from the Courses page, or play them gross.",
+    )
+  }
+
+  const strokes = new Map<string, number[]>()
+  if (useNet && ranked) {
+    const low = Math.min(...entries.map((rp) => rp.handicapSnapshot))
+    for (const rp of entries) strokes.set(rp.playerId, strokesByHole(ranked, rp.handicapSnapshot - low))
+  }
+
   const totals = zeroed(playerIds)
   const detail: string[] = []
   const won = new Map<string, number>()
-  let holesPlayed = 0
-  let halved = 0
+  let holesJudged = 0
+  let carrying = 0
 
   for (let h = 0; h < HOLE_COUNT; h++) {
-    const scores = entries.map((rp) => ({ id: rp.playerId, score: cardOf(rp)[h] }))
+    const scores = entries.map((rp) => ({
+      id: rp.playerId,
+      score: cardOf(rp)[h] == null ? null : (cardOf(rp)[h] as number) - (strokes.get(rp.playerId)?.[h] ?? 0),
+    }))
     // Every golfer in the bet needs a score on the hole to judge it.
     if (scores.some((s) => s.score == null)) continue
-    holesPlayed++
+    holesJudged++
     const best = Math.min(...scores.map((s) => s.score as number))
     const winners = scores.filter((s) => s.score === best)
     if (winners.length !== 1) {
-      halved++
+      carrying++
       continue
     }
+    const skins = 1 + carrying
+    carrying = 0
     const winnerId = winners[0].id
-    pay(totals, winnerId, playerIds.filter((id) => id !== winnerId), stake)
-    won.set(winnerId, (won.get(winnerId) ?? 0) + 1)
+    pay(totals, winnerId, playerIds.filter((id) => id !== winnerId), stake * skins)
+    won.set(winnerId, (won.get(winnerId) ?? 0) + skins)
   }
 
-  if (holesPlayed === 0) {
+  if (holesJudged === 0) {
     return emptyOutcome(playerIds, 'No hole has a score for everyone in the bet yet.')
   }
 
-  detail.push(`${holesPlayed} hole${holesPlayed === 1 ? '' : 's'} judged, ${halved} halved.`)
+  detail.push(`${holesJudged} hole${holesJudged === 1 ? '' : 's'} judged.`)
+  if (useNet && ranked) detail.push('Strokes off the low handicap, hardest holes first.')
   for (const [id, count] of [...won.entries()].sort((a, b) => b[1] - a[1])) {
     detail.push(`${count} skin${count === 1 ? '' : 's'}|${id}`)
+  }
+  if (carrying > 0) {
+    detail.push(
+      holesJudged === HOLE_COUNT
+        ? `${carrying} skin${carrying === 1 ? '' : 's'} died on the 18th unclaimed.`
+        : `${carrying} skin${carrying === 1 ? '' : 's'} carrying — next outright winner takes ${carrying + 1}.`,
+    )
   }
   return { results: toResults(totals), detail, computable: true }
 }
@@ -277,7 +322,7 @@ export function calcCustom(playerIds: string[], winnerId: string | null, stake: 
 export function settleFromCard(bet: Bet, round: Round, course?: Course): BetOutcome | null {
   if (bet.type === 'custom' || bet.manual || bet.net === undefined) return null
   const ids = bet.results.map((r) => r.playerId)
-  if (bet.type === 'skins') return calcSkins(round, ids, bet.stake)
+  if (bet.type === 'skins') return calcSkins(round, ids, bet.stake, bet.net, course)
   if (bet.type === 'nassau') return calcNassau(round, ids, bet.stake, bet.net, course)
   return calcMatchPlay(round, ids, bet.stake, bet.net, course)
 }

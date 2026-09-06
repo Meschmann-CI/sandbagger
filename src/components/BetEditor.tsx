@@ -9,7 +9,7 @@ import { money } from '../lib/money'
 import { Avatar, Card, PrimaryButton } from '../components/ui'
 
 const TYPES: { key: BetType; label: string; blurb: string }[] = [
-  { key: 'skins', label: 'Skins', blurb: 'Low score on a hole wins it. Ties carry nothing.' },
+  { key: 'skins', label: 'Skins', blurb: 'Low score wins the hole. Ties carry over and stack until someone takes them.' },
   { key: 'nassau', label: 'Nassau', blurb: 'Three bets: front nine, back nine, and the eighteen.' },
   { key: 'match', label: 'Match', blurb: 'One on one, hole by hole. Most holes up takes the stake.' },
   { key: 'custom', label: 'Custom', blurb: 'One-off — closest to the pin, longest drive, whatever.' },
@@ -37,7 +37,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
   const cardsExist = anyCards(round)
 
   const outcome = useMemo(() => {
-    if (type === 'skins') return calcSkins(round, inIds, stakeNum)
+    if (type === 'skins') return calcSkins(round, inIds, stakeNum, useNet, course)
     if (type === 'nassau') return calcNassau(round, inIds, stakeNum, useNet, course)
     if (type === 'match') return calcMatchPlay(round, inIds, stakeNum, useNet, course)
     return calcCustom(inIds, customWinner, stakeNum)
@@ -119,7 +119,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
       {type !== 'custom' && (
         <p className="text-[11.5px] text-ink-faint">
           {type === 'skins'
-            ? `${money(stakeNum)} per hole, paid by everyone else to whoever wins it.`
+            ? `${money(stakeNum)} per skin, from each of the others. A carried hole pays its whole stack — no separate kitty.`
             : type === 'match'
               ? `${money(stakeNum)} on the match. Winner takes it; all square and nobody pays.`
               : `${money(stakeNum)} on each of the three, paid by everyone else to whoever wins it.`}
@@ -153,7 +153,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
       </div>
 
       {/* Gross/net, for the games where handicaps come into it */}
-      {(type === 'nassau' || type === 'match') && (
+      {type !== 'custom' && (
         <div>
           <label className={label}>Decided on</label>
           <div className="flex gap-2">
@@ -177,9 +177,13 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
               ? hasStrokeIndex(course)
                 ? 'Net gives the difference in handicaps as strokes on the hardest holes, off this course’s stroke index.'
                 : 'Net needs this course’s stroke index — which holes get a stroke decides who wins them. Add it from the Courses page, or play it gross.'
-              : hasStrokeIndex(course)
-                ? 'Net gives strokes hole by hole off this course’s stroke index.'
-                : 'Net takes off the full handicap over eighteen and half of it on each nine. Add this course’s stroke index for the real hole-by-hole allocation.'}
+              : type === 'skins'
+                ? hasStrokeIndex(course)
+                  ? 'Net gives strokes off the low handicap: the best player plays scratch, everyone else gets their difference on the hardest holes.'
+                  : 'Net skins need this course’s stroke index — which holes get a stroke decides who wins them. Add it from the Courses page, or play them gross.'
+                : hasStrokeIndex(course)
+                  ? 'Net gives strokes hole by hole off this course’s stroke index.'
+                  : 'Net takes off the full handicap over eighteen and half of it on each nine. Add this course’s stroke index for the real hole-by-hole allocation.'}
           </p>
         </div>
       )}
@@ -309,7 +313,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
               // What settleFromCard needs later: hand-typed amounts are
               // final, and a card bet remembers how it's decided.
               manual: showManual || undefined,
-              net: type === 'custom' || showManual ? undefined : type === 'skins' ? false : useNet,
+              net: type === 'custom' || showManual ? undefined : useNet,
             })
           }
           disabled={!canSave}
