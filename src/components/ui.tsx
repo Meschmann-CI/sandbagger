@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { Player } from '../types'
 import { money } from '../lib/money'
 
@@ -68,6 +68,83 @@ export function MoneyBadge({ amount, className = '' }: { amount: number; classNa
     <span className={`font-bold tabular-nums ${color} ${className}`}>
       {sign}
       {money(Math.abs(amount))}
+    </span>
+  )
+}
+
+/**
+ * A "?" that opens a short explainer next to whatever it's attached to.
+ *
+ * Tap to open, tap anywhere to close — no hover, because there's no
+ * hover on a phone and a rules panel you can't dismiss with a thumb is
+ * worse than no rules panel. The card it sits in never gets taller: the
+ * panel floats over the content, pinned to the right edge so it can't
+ * run off the side of a narrow screen.
+ */
+export function HelpTip({ title, lines }: { title: string; lines: string[] }) {
+  const [open, setOpen] = useState(false)
+  const panel = useRef<HTMLSpanElement>(null)
+  const [shift, setShift] = useState(0)
+
+  // The "?" is rarely at the edge of its card, so right-aligning the
+  // panel to the button alone sent it off the side of a 375px screen.
+  // Measure once it's up and slide it back inside.
+  useLayoutEffect(() => {
+    if (!open) {
+      setShift(0)
+      return
+    }
+    const el = panel.current
+    if (!el) return
+    const margin = 10
+    const box = el.getBoundingClientRect()
+    // The rect already includes any shift from a previous pass, so work
+    // from the untranslated position.
+    const left = box.left - shift
+    const right = box.right - shift
+    if (left < margin) setShift(margin - left)
+    else if (right > window.innerWidth - margin) setShift(window.innerWidth - margin - right)
+    else setShift(0)
+  }, [open, shift])
+
+  return (
+    <span className="relative inline-flex shrink-0 align-middle">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label={`How ${title} works`}
+        className={`flex h-[18px] w-[18px] items-center justify-center rounded-full border text-[11px] font-extrabold leading-none transition ${
+          open ? 'bg-ink text-white border-ink' : 'border-line-strong bg-card text-ink-faint'
+        }`}
+      >
+        ?
+      </button>
+      {open && (
+        <>
+          {/* Catches the dismissing tap without stealing the first one
+              from whatever's underneath being read. */}
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-40 cursor-default"
+          />
+          <span
+            ref={panel}
+            role="tooltip"
+            style={{ transform: `translateX(${shift}px)` }}
+            className="absolute right-0 top-[calc(100%+6px)] z-50 w-[264px] rounded-xl border border-line-strong bg-card p-3 text-left shadow-[0_8px_24px_rgba(24,32,25,0.16)]"
+          >
+            <span className="block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5">{title}</span>
+            {lines.map((line, i) => (
+              <span key={i} className="block text-[12px] leading-[1.45] text-ink-dim mb-1.5 last:mb-0">
+                {line}
+              </span>
+            ))}
+          </span>
+        </>
+      )}
     </span>
   )
 }

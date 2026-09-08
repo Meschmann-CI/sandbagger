@@ -15,7 +15,8 @@ import Scorecard from '../components/Scorecard'
 import SettleUp from '../components/SettleUp'
 import { roundBetSettlements } from '../lib/settlements'
 import { useConfirm } from '../components/Confirm'
-import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
+import { Avatar, Card, HelpTip, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
+import { betRules } from '../lib/betRules'
 
 export default function RoundDetail() {
   const { id } = useParams()
@@ -374,9 +375,10 @@ export default function RoundDetail() {
                 .join(' · ')
               return (
               <Card key={bet.id} className="p-4">
-                <div className="flex items-baseline justify-between">
-                  <p className="font-bold text-[14px] text-ink">{bet.name}</p>
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="font-bold text-[14px] text-ink min-w-0 truncate">{bet.name}</p>
                   <div className="flex items-center gap-3 shrink-0">
+                    <HelpTip {...betRules(bet.type, { net: bet.net, winnerTakeAll: bet.winnerTakeAll })} />
                     <p className="text-[11.5px] text-ink-faint tabular-nums">{money(bet.stake)} stake</p>
                     <button
                       onClick={async () => {

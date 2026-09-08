@@ -3,10 +3,11 @@ import { useStore } from '../data/store'
 import type { Bet, BetResult, BetType, Round } from '../types'
 import { hasScore } from '../types'
 import { calcCustom, calcMatchPlay, calcNassau, calcSkins } from '../lib/bets'
+import { betRules } from '../lib/betRules'
 import { anyCards } from '../lib/holes'
 import { findCourse, hasStrokeIndex } from '../lib/courses'
 import { money } from '../lib/money'
-import { Avatar, Card, PrimaryButton } from '../components/ui'
+import { Avatar, Card, HelpTip, PrimaryButton } from '../components/ui'
 
 const TYPES: { key: BetType; label: string; blurb: string }[] = [
   { key: 'skins', label: 'Skins', blurb: 'Low score wins the hole. Ties carry over and stack until someone takes them.' },
@@ -97,7 +98,10 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
           </button>
         ))}
       </div>
-      <p className="text-[12px] text-ink-dim">{TYPES.find((t) => t.key === type)!.blurb}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[12px] text-ink-dim">{TYPES.find((t) => t.key === type)!.blurb}</p>
+        <HelpTip {...betRules(type, { net: type === 'custom' ? undefined : useNet, winnerTakeAll })} />
+      </div>
 
       <div className="grid grid-cols-[1fr_auto] gap-2.5">
         <div>

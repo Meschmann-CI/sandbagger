@@ -7,7 +7,8 @@ import { settleFromCard } from '../lib/bets'
 import { roundStandings } from '../lib/stats'
 import { notifyGroup } from '../lib/push'
 import { fmt1, type Round } from '../types'
-import { Avatar, Card, PrimaryButton } from '../components/ui'
+import { Avatar, Card, HelpTip, PrimaryButton } from '../components/ui'
+import { betRules } from '../lib/betRules'
 
 // Hole by hole, everyone on one screen — the way you'd actually fill a
 // card walking off a green. The grid view is for fixing mistakes after.
@@ -207,17 +208,20 @@ export default function HoleEntry() {
       {liveBets.length > 0 && (
         <Card className="mb-3 p-3.5 bg-gold-soft/40 border-gold/30 space-y-1.5">
           {liveBets.map(({ bet, outcome }) => (
-            <p key={bet.id} className="text-[12.5px] text-ink">
-              <span className="font-extrabold">{bet.name}:</span>{' '}
-              {outcome.detail
-                .map((line) => {
-                  const [text, playerId] = line.split('|')
-                  const who = playerId ? data.players.find((p) => p.id === playerId)?.name : null
-                  // "2 up thru 14|barry" reads as "Barry 2 up thru 14".
-                  return who ? `${who} ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text
-                })
-                .join(' · ')}
-            </p>
+            <div key={bet.id} className="flex items-start justify-between gap-2">
+              <p className="text-[12.5px] text-ink">
+                <span className="font-extrabold">{bet.name}:</span>{' '}
+                {outcome.detail
+                  .map((line) => {
+                    const [text, playerId] = line.split('|')
+                    const who = playerId ? data.players.find((p) => p.id === playerId)?.name : null
+                    // "2 up thru 14|barry" reads as "Barry 2 up thru 14".
+                    return who ? `${who} ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text
+                  })
+                  .join(' · ')}
+              </p>
+              <HelpTip {...betRules(bet.type, { net: bet.net, winnerTakeAll: bet.winnerTakeAll })} />
+            </div>
           ))}
         </Card>
       )}
