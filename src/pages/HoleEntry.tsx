@@ -120,7 +120,7 @@ export default function HoleEntry() {
       notifyGroup({
         toPlayerIds: data.group.memberIds.filter((id) => id !== data.currentUserId),
         title: `Final at ${round.courseName}`,
-        body: winner ? `${winner.name} takes it, net ${fmt1(standings[0].netScore)}.` : 'All the cards are in.',
+        body: `${winner ? `${winner.name} takes it, net ${fmt1(standings[0].netScore)}.` : 'All the cards are in.'} Rate the course while it’s fresh.`,
         url: `/rounds/${round.id}`,
       })
     }

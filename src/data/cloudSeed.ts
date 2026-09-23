@@ -58,6 +58,33 @@ export async function seedCloudGroup(
     if (error) throw new Error(`Adding courses: ${error.message}`)
   }
 
+  // --- Course ratings and personal orders ---
+  // Both point at players, so they wait for the id map to be filled in.
+  const ratings = seedData.courseRatings
+    .filter((r) => idMap.has(r.playerId))
+    .map((r) => ({
+      id: uuid(),
+      group_id: groupId,
+      course_slug: r.courseSlug,
+      course_name: r.courseName,
+      player_id: idMap.get(r.playerId),
+      overall: r.overall,
+      aspects: r.aspects ?? {},
+      note: r.note ?? null,
+      rated_on: r.date,
+    }))
+  if (ratings.length) {
+    const { error } = await client.from('course_ratings').insert(ratings)
+    if (error) throw new Error(`Adding course ratings: ${error.message}`)
+  }
+  const rankings = seedData.courseRankings
+    .filter((r) => idMap.has(r.playerId))
+    .map((r) => ({ player_id: idMap.get(r.playerId), group_id: groupId, slugs: r.slugs }))
+  if (rankings.length) {
+    const { error } = await client.from('course_rankings').insert(rankings)
+    if (error) throw new Error(`Adding course rankings: ${error.message}`)
+  }
+
   // --- Trips ---
   seedData.trips.forEach((t) => idMap.set(t.id, uuid()))
   if (seedData.trips.length) {

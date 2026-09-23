@@ -24,6 +24,7 @@ import TripDetail from './pages/TripDetail'
 import Profile from './pages/Profile'
 import Saddam from './pages/Saddam'
 import Courses from './pages/Courses'
+import CourseDetail from './pages/CourseDetail'
 import CourseEdit from './pages/CourseEdit'
 import SignIn from './pages/SignIn'
 import Setup from './pages/Setup'
@@ -50,7 +51,8 @@ function AppRoutes() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/saddam" element={<Saddam />} />
             <Route path="/courses" element={<Courses />} />
-            <Route path="/courses/:slug" element={<CourseEdit />} />
+            <Route path="/courses/:slug" element={<CourseDetail />} />
+            <Route path="/courses/:slug/card" element={<CourseEdit />} />
             <Route path="/ledger" element={<Navigate to="/h2h" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

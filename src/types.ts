@@ -87,6 +87,45 @@ export interface Course {
   slope?: number | null
 }
 
+// ---------- Course ratings ----------
+
+// The parts of a day at a course worth a separate opinion. Five is the
+// most a thumb will fill in on the walk to the car; anything past that
+// gets skipped, and skipped sub-scores tell you nothing.
+export type RatingAspect = 'conditions' | 'practice' | 'clubhouse' | 'food' | 'service'
+
+/**
+ * One golfer's take on one course. Keyed on the course slug, the same
+ * way rounds find their scorecard, so a course can be rated whether or
+ * not anyone has entered its par yet. Sub-scores are optional and stay
+ * out of the way — the overall is the rating; the rest is colour.
+ */
+export interface CourseRating {
+  id: string
+  groupId: string
+  courseSlug: string
+  /** The name as typed on the round, kept so a rated course with no
+   * course row still has something to call itself. */
+  courseName: string
+  playerId: string
+  overall: number // 1-5
+  aspects?: Partial<Record<RatingAspect, number>> // 1-5 each
+  note?: string
+  date: string // yyyy-mm-dd, last edited
+}
+
+/**
+ * A golfer's personal order of courses, favourites first. Separate from
+ * the star ratings on purpose: four courses can all be "4 stars" and
+ * still have a clear order in your head. Group rankings come from
+ * everyone's lists, not from averaging stars.
+ */
+export interface CourseRanking {
+  playerId: string
+  groupId: string
+  slugs: string[]
+}
+
 export interface Round {
   id: string
   groupId: string
@@ -236,6 +275,8 @@ export interface AppData {
   players: Player[]
   group: Group
   courses: Course[]
+  courseRatings: CourseRating[]
+  courseRankings: CourseRanking[]
   rounds: Round[]
   trips: Trip[]
   bets: Bet[]

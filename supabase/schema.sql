@@ -78,6 +78,38 @@ create table if not exists courses (
 
 create index if not exists courses_group_idx on courses(group_id);
 
+-- One golfer's opinion of one course. Keyed on the slug like the
+-- scorecard is, so a course can be rated before anyone enters its par.
+-- The overall is the rating; the sub-scores (conditions, practice area,
+-- clubhouse, food, service) are optional colour, kept as JSONB so
+-- adding one later is a client change, not a migration.
+create table if not exists course_ratings (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references groups(id) on delete cascade,
+  course_slug text not null,
+  course_name text not null,
+  player_id uuid not null references players(id) on delete cascade,
+  overall smallint not null check (overall between 1 and 5),
+  aspects jsonb not null default '{}'::jsonb,
+  note text,
+  rated_on date not null default current_date,
+  unique (group_id, course_slug, player_id)
+);
+
+create index if not exists course_ratings_group_idx on course_ratings(group_id);
+
+-- Each golfer's personal order of courses, favourites first. One row
+-- per golfer, rewritten whole; the group's order is worked out on the
+-- client from everyone's lists.
+create table if not exists course_rankings (
+  player_id uuid primary key references players(id) on delete cascade,
+  group_id uuid not null references groups(id) on delete cascade,
+  slugs text[] not null default '{}',
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists course_rankings_group_idx on course_rankings(group_id);
+
 create table if not exists rounds (
   id uuid primary key default gen_random_uuid(),
   group_id uuid not null references groups(id) on delete cascade,
@@ -366,6 +398,8 @@ $$;
 alter table groups enable row level security;
 alter table players enable row level security;
 alter table courses enable row level security;
+alter table course_ratings enable row level security;
+alter table course_rankings enable row level security;
 alter table trips enable row level security;
 alter table rounds enable row level security;
 alter table round_players enable row level security;
@@ -433,6 +467,38 @@ create policy courses_all on courses for all
   using (group_id = current_group_id())
   with check (group_id = current_group_id());
 
+-- course ratings and rankings: everyone in the group reads them all,
+-- but you only write your own. An opinion is the one thing here that
+-- shouldn't be editable by a friend with your phone unlocked... or by
+-- a friend at all.
+drop policy if exists course_ratings_select on course_ratings;
+create policy course_ratings_select on course_ratings for select
+  using (group_id = current_group_id());
+
+drop policy if exists course_ratings_write on course_ratings;
+create policy course_ratings_write on course_ratings for insert
+  with check (group_id = current_group_id() and player_id = current_player_id());
+
+drop policy if exists course_ratings_update on course_ratings;
+create policy course_ratings_update on course_ratings for update
+  using (group_id = current_group_id() and player_id = current_player_id());
+
+drop policy if exists course_ratings_delete on course_ratings;
+create policy course_ratings_delete on course_ratings for delete
+  using (group_id = current_group_id() and player_id = current_player_id());
+
+drop policy if exists course_rankings_select on course_rankings;
+create policy course_rankings_select on course_rankings for select
+  using (group_id = current_group_id());
+
+drop policy if exists course_rankings_write on course_rankings;
+create policy course_rankings_write on course_rankings for insert
+  with check (group_id = current_group_id() and player_id = current_player_id());
+
+drop policy if exists course_rankings_update on course_rankings;
+create policy course_rankings_update on course_rankings for update
+  using (group_id = current_group_id() and player_id = current_player_id());
+
 -- rounds: shared history, visible to the whole group
 drop policy if exists rounds_all on rounds;
 create policy rounds_all on rounds for all
@@ -480,7 +546,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['players', 'courses', 'trips', 'rounds', 'round_players', 'bets', 'expenses', 'payments']
+  foreach t in array array['players', 'courses', 'course_ratings', 'course_rankings', 'trips', 'rounds', 'round_players', 'bets', 'expenses', 'payments']
   loop
     begin
       execute format('alter publication supabase_realtime add table %I', t);

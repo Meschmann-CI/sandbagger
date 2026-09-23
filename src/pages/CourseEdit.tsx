@@ -22,7 +22,8 @@ const PAR_CHOICES = [3, 4, 5]
 export default function CourseEdit() {
   const { slug = '' } = useParams()
   const navigate = useNavigate()
-  const goBack = useGoBack('/courses')
+  // The scorecard hangs off the course's own page now.
+  const goBack = useGoBack(`/courses/${encodeURIComponent(slug)}`)
   const { data, saveCourse, deleteCourse } = useStore()
   const confirm = useConfirm()
 

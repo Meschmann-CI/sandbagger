@@ -11,6 +11,9 @@ import { todayISO } from '../lib/dates'
 import { grossWarning } from '../lib/scores'
 import { money } from '../lib/money'
 import BetEditor from '../components/BetEditor'
+import CourseRatingEditor from '../components/CourseRatingEditor'
+import { StarRating } from '../components/Stars'
+import { courseSummaries, fmtStars } from '../lib/ratings'
 import Scorecard from '../components/Scorecard'
 import SettleUp from '../components/SettleUp'
 import { roundBetSettlements } from '../lib/settlements'
@@ -27,6 +30,7 @@ export default function RoundDetail() {
   const [entering, setEntering] = useState<string | null>(null)
   const [draftScore, setDraftScore] = useState('')
   const [addingBet, setAddingBet] = useState(false)
+  const [rating, setRating] = useState(false)
   const round = data.rounds.find((r) => r.id === id)
 
   if (!round) {
@@ -55,6 +59,15 @@ export default function RoundDetail() {
   const saddam = saddamState(data)
   const saddamChangedHere = saddam.since === round.date && saddam.holderId === standings[0]?.playerId && !solo
   const iAmWaiting = waiting.some((rp) => rp.playerId === data.currentUserId)
+
+  // The course, as an opinion. Asked of anyone who played, once the
+  // round has actually happened (a score or a card on it), and only
+  // until they've answered.
+  const slug = courseSlug(round.courseName)
+  const courseTake = courseSummaries(data).find((c) => c.slug === slug)
+  const iPlayed = round.players.some((rp) => rp.playerId === data.currentUserId)
+  const roundHappened = standings.length > 0 || anyCards(round)
+  const askForRating = iPlayed && roundHappened && !courseTake?.mine
 
   // Warns on an implausible number but still takes it — some rounds
   // really do go that way.
@@ -163,11 +176,43 @@ export default function RoundDetail() {
         </Card>
       )}
 
+      {/* How was it? Asked once, right where the round lands. */}
+      {askForRating && !rating && (
+        <Card onClick={() => setRating(true)} className="mt-3 p-4 border-green/30 bg-green-soft/40 flex items-center gap-3.5">
+          <span className="text-[20px]">⭐</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-extrabold text-ink">How was {round.courseName}?</p>
+            <p className="text-[12.5px] text-ink-dim mt-0.5">
+              Rate it while it’s fresh. One tap for the stars, one more for where it lands on your list.
+            </p>
+          </div>
+          <span className="text-[13px] font-bold text-green shrink-0">Rate →</span>
+        </Card>
+      )}
+      {rating && (
+        <div className="mt-3">
+          <CourseRatingEditor courseName={round.courseName} onDone={() => setRating(false)} />
+        </div>
+      )}
+      {iPlayed && courseTake?.mine && !rating && (
+        <Card
+          onClick={() => navigate(`/courses/${encodeURIComponent(slug)}`)}
+          className="mt-3 px-4 py-3 flex items-center gap-3"
+        >
+          <StarRating value={courseTake.mine.overall} size={13} />
+          <p className="flex-1 min-w-0 text-[12.5px] text-ink-dim truncate tabular-nums">
+            You gave it {courseTake.mine.overall}
+            {courseTake.avg != null && courseTake.ratings.length > 1 && ` · group ${fmtStars(courseTake.avg)}`}
+          </p>
+          <span className="text-[12px] font-bold text-green shrink-0">All ratings →</span>
+        </Card>
+      )}
+
       {/* Par is entered once per course and reaches back through every
           round already played there, so it's worth asking for here. */}
       {!par && (
         <Card
-          onClick={() => navigate(`/courses/${encodeURIComponent(courseSlug(round.courseName))}`)}
+          onClick={() => navigate(`/courses/${encodeURIComponent(slug)}/card`)}
           className="mt-3 p-4 flex items-center gap-3.5"
         >
           <span className="text-[20px]">🚩</span>

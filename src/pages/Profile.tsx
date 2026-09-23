@@ -300,11 +300,11 @@ export default function Profile() {
       <SectionLabel>Courses</SectionLabel>
       <Card onClick={() => navigate('/courses')} className="p-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[14.5px] font-bold text-ink">Scorecards</p>
+          <p className="text-[14.5px] font-bold text-ink">Courses</p>
           <p className="text-[12.5px] text-ink-dim mt-0.5">
             {coursesNeedingPar === 0
-              ? 'Par is in for every course you’ve played'
-              : `${coursesNeedingPar} course${coursesNeedingPar === 1 ? '' : 's'} without par yet`}
+              ? 'Ratings, the group’s ranking, and every scorecard'
+              : `Ratings and rankings · ${coursesNeedingPar} course${coursesNeedingPar === 1 ? '' : 's'} without par yet`}
           </p>
         </div>
         {coursesNeedingPar > 0 ? (

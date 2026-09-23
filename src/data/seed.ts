@@ -38,6 +38,42 @@ export const seedData: AppData = {
     },
   ],
 
+  // A spread of opinions so the ratings screen has something to sort:
+  // one course everyone loves, one that splits the group, and the home
+  // course rated by everyone with sub-scores on a couple.
+  courseRatings: [
+    {
+      id: 'cr-1', groupId: 'g-1', courseSlug: 'mid pines', courseName: 'Mid Pines', playerId: 'p-alex',
+      overall: 5, aspects: { conditions: 5, clubhouse: 5, food: 4, service: 5 }, note: 'Ross at his best. Play it every trip.', date: '2025-10-12',
+    },
+    { id: 'cr-2', groupId: 'g-1', courseSlug: 'mid pines', courseName: 'Mid Pines', playerId: 'p-ravi', overall: 5, date: '2025-10-12' },
+    { id: 'cr-3', groupId: 'g-1', courseSlug: 'mid pines', courseName: 'Mid Pines', playerId: 'p-danny', overall: 4, aspects: { food: 3 }, date: '2025-10-13' },
+    {
+      id: 'cr-4', groupId: 'g-1', courseSlug: 'pine needles', courseName: 'Pine Needles', playerId: 'p-alex',
+      overall: 4, aspects: { conditions: 5, practice: 5 }, date: '2025-10-13',
+    },
+    { id: 'cr-5', groupId: 'g-1', courseSlug: 'pine needles', courseName: 'Pine Needles', playerId: 'p-kim', overall: 5, note: 'Best greens of the trip.', date: '2025-10-13' },
+    {
+      id: 'cr-6', groupId: 'g-1', courseSlug: 'pine barrens course', courseName: 'Pine Barrens Course', playerId: 'p-ravi',
+      overall: 3, aspects: { conditions: 3, service: 2 }, note: 'Slow. Five hours.', date: '2025-10-11',
+    },
+    { id: 'cr-7', groupId: 'g-1', courseSlug: 'pine barrens course', courseName: 'Pine Barrens Course', playerId: 'p-danny', overall: 4, date: '2025-10-11' },
+    { id: 'cr-8', groupId: 'g-1', courseSlug: 'cobbs creek', courseName: 'Cobbs Creek', playerId: 'p-alex', overall: 4, aspects: { conditions: 3, practice: 2, food: 3 }, date: '2026-04-19' },
+    { id: 'cr-9', groupId: 'g-1', courseSlug: 'cobbs creek', courseName: 'Cobbs Creek', playerId: 'p-ravi', overall: 3, date: '2026-04-19' },
+    { id: 'cr-10', groupId: 'g-1', courseSlug: 'cobbs creek', courseName: 'Cobbs Creek', playerId: 'p-danny', overall: 4, note: 'Home. Bias admitted.', date: '2026-05-03' },
+    { id: 'cr-11', groupId: 'g-1', courseSlug: 'cobbs creek', courseName: 'Cobbs Creek', playerId: 'p-kim', overall: 3, date: '2026-05-03' },
+    { id: 'cr-12', groupId: 'g-1', courseSlug: 'rancho park', courseName: 'Rancho Park', playerId: 'p-ravi', overall: 4, date: '2026-06-01' },
+  ],
+  // Personal orders. Nobody has ranked everything, and the lists
+  // disagree — that's the point of deriving the group's order from them
+  // rather than from the stars.
+  courseRankings: [
+    { playerId: 'p-alex', groupId: 'g-1', slugs: ['mid pines', 'pine needles', 'cobbs creek', 'pine barrens course'] },
+    { playerId: 'p-ravi', groupId: 'g-1', slugs: ['mid pines', 'rancho park', 'pine barrens course', 'cobbs creek'] },
+    { playerId: 'p-danny', groupId: 'g-1', slugs: ['pine barrens course', 'mid pines', 'cobbs creek'] },
+    { playerId: 'p-kim', groupId: 'g-1', slugs: ['pine needles', 'cobbs creek'] },
+  ],
+
   rounds: [
     // ---- Sandhills trip ----
     {

@@ -1,4 +1,4 @@
-import type { AppData, Bet, Course, Expense, Group, Payment, Player, Round, Trip } from '../types'
+import type { AppData, Bet, Course, CourseRanking, CourseRating, Expense, Group, Payment, Player, Round, Trip } from '../types'
 
 // Every mutation the app can make. The store applies the change to its
 // own state optimistically and hands the same descriptor to the backend,
@@ -8,6 +8,11 @@ export type Change =
   | { kind: 'round.delete'; id: string }
   | { kind: 'course.upsert'; course: Course }
   | { kind: 'course.delete'; id: string }
+  | { kind: 'courseRating.upsert'; rating: CourseRating }
+  | { kind: 'courseRating.delete'; id: string }
+  // One row per golfer, rewritten whole: a ranking is edited as a unit
+  // and only ever by its owner, so there's nothing to clobber.
+  | { kind: 'courseRanking.upsert'; ranking: CourseRanking }
   | { kind: 'bet.upsert'; bet: Bet }
   | { kind: 'bet.delete'; id: string }
   | { kind: 'trip.upsert'; trip: Trip }

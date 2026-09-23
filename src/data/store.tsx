@@ -1,5 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
-import { deriveInitials, round1, type AppData, type Bet, type Course, type Expense, type Payment, type Player, type Round, type Trip } from '../types'
+import {
+  deriveInitials,
+  round1,
+  type AppData,
+  type Bet,
+  type Course,
+  type CourseRating,
+  type Expense,
+  type Payment,
+  type Player,
+  type RatingAspect,
+  type Round,
+  type Trip,
+} from '../types'
 import { todayISO } from '../lib/dates'
 import { courseSlug } from '../lib/courses'
 import { onOutboxChange, outboxSnapshot, outboxStatus } from './outbox'
@@ -29,6 +42,16 @@ interface StoreApi {
     tees?: { rating: number | null; slope: number | null },
   ) => void
   deleteCourse: (courseId: string) => void
+  /** My rating of a course, by name. One per golfer per course; rating again replaces it. */
+  rateCourse: (input: {
+    courseName: string
+    overall: number
+    aspects?: Partial<Record<RatingAspect, number>>
+    note?: string
+  }) => CourseRating
+  deleteCourseRating: (ratingId: string) => void
+  /** My whole order of courses, favourites first. */
+  setMyRanking: (slugs: string[]) => void
   addBet: (bet: Omit<Bet, 'id'>) => void
   updateBet: (bet: Bet) => void
   deleteBet: (betId: string) => void
@@ -170,6 +193,51 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
       commit({ kind: 'course.delete', id: courseId }, (d) => ({
         ...d,
         courses: d.courses.filter((c) => c.id !== courseId),
+      }))
+    },
+    // Keyed on the slug like the scorecard is, so the rating attaches to
+    // the course however the round happened to spell it.
+    rateCourse({ courseName, overall, aspects, note }) {
+      const d = dataRef.current
+      const slug = courseSlug(courseName)
+      const existing = d.courseRatings.find((r) => r.courseSlug === slug && r.playerId === d.currentUserId)
+      // Drop sub-scores left at zero so "didn't say" never averages in as a 0.
+      const kept = Object.fromEntries(Object.entries(aspects ?? {}).filter(([, v]) => v != null && v > 0)) as Partial<
+        Record<RatingAspect, number>
+      >
+      const rating: CourseRating = {
+        id: existing?.id ?? makeId(),
+        groupId: d.group.id,
+        courseSlug: slug,
+        courseName: d.courses.find((c) => c.slug === slug)?.name ?? courseName.trim(),
+        playerId: d.currentUserId,
+        overall,
+        aspects: Object.keys(kept).length ? kept : undefined,
+        note: note?.trim() || undefined,
+        date: todayISO(),
+      }
+      commit({ kind: 'courseRating.upsert', rating }, (cur) => ({
+        ...cur,
+        courseRatings: existing
+          ? cur.courseRatings.map((r) => (r.id === rating.id ? rating : r))
+          : [...cur.courseRatings, rating],
+      }))
+      return rating
+    },
+    deleteCourseRating(ratingId) {
+      commit({ kind: 'courseRating.delete', id: ratingId }, (d) => ({
+        ...d,
+        courseRatings: d.courseRatings.filter((r) => r.id !== ratingId),
+      }))
+    },
+    setMyRanking(slugs) {
+      const d = dataRef.current
+      const ranking = { playerId: d.currentUserId, groupId: d.group.id, slugs: [...new Set(slugs)] }
+      commit({ kind: 'courseRanking.upsert', ranking }, (cur) => ({
+        ...cur,
+        courseRankings: cur.courseRankings.some((r) => r.playerId === ranking.playerId)
+          ? cur.courseRankings.map((r) => (r.playerId === ranking.playerId ? ranking : r))
+          : [...cur.courseRankings, ranking],
       }))
     },
     addBet(bet) {

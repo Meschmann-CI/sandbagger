@@ -82,8 +82,9 @@ export default function LogRound() {
       notifyGroup({
         toPlayerIds: data.group.memberIds.filter((id) => id !== data.currentUserId),
         title: `${me?.name ?? 'Someone'} logged a round at ${courseName.trim()}`,
-        body:
-          missing.length > 0 ? `${playerIds.length - missing.length} of ${playerIds.length} scores in.` : 'All scores in.',
+        body: `${
+          missing.length > 0 ? `${playerIds.length - missing.length} of ${playerIds.length} scores in.` : 'All scores in.'
+        } Rate the course while it’s fresh.`,
         url: `/rounds/${round.id}`,
       })
     }

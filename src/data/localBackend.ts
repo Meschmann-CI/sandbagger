@@ -18,7 +18,12 @@ export const localBackend: Backend = {
         // Backfilling here beats making every screen defensive about it,
         // and beats bumping the storage key, which would throw away
         // whatever the browser is already holding.
-        return { ...stored, courses: stored.courses ?? [] }
+        return {
+          ...stored,
+          courses: stored.courses ?? [],
+          courseRatings: stored.courseRatings ?? [],
+          courseRankings: stored.courseRankings ?? [],
+        }
       }
     } catch {
       // fall through to the sample data
