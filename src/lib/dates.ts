@@ -16,3 +16,10 @@ export const toISODate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1
  * quietly misfiles the next morning's round.
  */
 export const todayISO = () => toISODate(new Date())
+
+/** The local date n days back, for "recent enough to still ask about" cut-offs. */
+export const daysAgoISO = (n: number) => {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return toISODate(d)
+}

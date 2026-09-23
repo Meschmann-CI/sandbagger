@@ -1,6 +1,11 @@
+import { useId } from 'react'
+
 function Star({ fill, size }: { fill: number; size: number }) {
-  // fill: 0 = empty, 1 = full, fractions render a partial star
-  const id = `star-${Math.random().toString(36).slice(2, 9)}`
+  // fill: 0 = empty, 1 = full, fractions render a partial star.
+  // The gradient needs a document-unique id; useId is stable across
+  // re-renders where Math.random() was not, which had every star
+  // re-registering its gradient on each paint.
+  const id = useId()
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
       <defs>

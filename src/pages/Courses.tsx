@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useMembers, useStore } from '../data/store'
 import { hasPars } from '../lib/courses'
 import { byGroupRank, byRating, courseSummaries, fmtStars, moveBy, myRanking, ordinal } from '../lib/ratings'
-import { useGoBack } from '../lib/nav'
 import { StarRating } from '../components/Stars'
 import { Card, EmptyState, HelpTip, Pill, SectionLabel } from '../components/ui'
 
@@ -19,7 +18,6 @@ export default function Courses() {
   const { data, setMyRanking } = useStore()
   const members = useMembers()
   const navigate = useNavigate()
-  const goBack = useGoBack('/profile')
   const [view, setView] = useState<View>('ratings')
 
   const rows = courseSummaries(data)
@@ -31,9 +29,6 @@ export default function Courses() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-2">
-          ← Back
-        </button>
         <h1 className="text-[26px] font-extrabold tracking-tight text-ink">Courses</h1>
         <p className="text-[13px] text-ink-dim">
           {rows.length === 0

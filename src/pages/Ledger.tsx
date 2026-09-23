@@ -11,7 +11,7 @@ export default function Ledger() {
   const { data } = useStore()
   const members = useMembers()
   const navigate = useNavigate()
-  const goBack = useGoBack('/profile')
+  const goBack = useGoBack('/rounds')
   const board = leaderboard(data)
   const saddam = saddamState(data)
   const holder = data.players.find((p) => p.id === saddam.holderId)

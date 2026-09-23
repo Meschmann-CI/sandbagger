@@ -45,9 +45,9 @@ export default function RivalryDetail() {
       ? `${b.name} has not beaten ${a.name} since ${prettyDate(h.lastBWinDate)}.`
       : h.aStreak <= -2 && h.lastAWinDate
         ? `${a.name} has not beaten ${b.name} since ${prettyDate(h.lastAWinDate)}.`
-        : h.aWins > 0 && h.bWins === 0 && h.aWins >= 2
+        : h.bWins === 0 && h.aWins >= 2
           ? `${b.name} has literally never beaten ${a.name}.`
-          : h.bWins > 0 && h.aWins === 0 && h.bWins >= 2
+          : h.aWins === 0 && h.bWins >= 2
             ? `${a.name} has literally never beaten ${b.name}.`
             : null
 

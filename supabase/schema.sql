@@ -173,6 +173,30 @@ create table if not exists payments (
   paid_on date
 );
 
+-- One row per phone that turned notifications on. The `notify` Edge
+-- Function (supabase/functions/notify) fans messages out to these and
+-- prunes the ones Apple reports gone.
+create table if not exists push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid not null references players(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists push_subs_player_idx on push_subscriptions(player_id);
+
+-- Pinged weekly by .github/workflows/keepalive.yml so the free-tier
+-- project never pauses for inactivity. Deliberately callable with the
+-- anon key; it reads nothing.
+create or replace function keepalive()
+returns text
+language sql
+security definer
+set search_path = public
+as $$ select 'awake' $$;
+
 -- Migrations, for projects created before these existed.
 -- Handing the Saddam over by hand:
 alter table groups add column if not exists saddam_award jsonb;
@@ -391,6 +415,19 @@ begin
 end;
 $$;
 
+-- Security linter follow-ups. jsonb_without takes no table names, but a
+-- role can still swap its search_path; pin it like the other helpers.
+-- The SECURITY DEFINER helpers all key off auth.uid(), so an anonymous
+-- call returns null or raises — harmless, but there's no reason to leave
+-- them reachable without a session. keepalive (below) stays open on
+-- purpose: the weekly GitHub Action pings it with the anon key.
+alter function jsonb_without(jsonb, jsonb) set search_path = public;
+revoke execute on function current_player_id() from anon;
+revoke execute on function current_group_id() from anon;
+revoke execute on function claim_my_player() from anon;
+revoke execute on function create_group_with_owner(text, text, text, text, numeric, text) from anon;
+revoke execute on function join_group_by_code(text, text, text, numeric) from anon;
+
 -- ============================================================
 -- Row Level Security
 -- ============================================================
@@ -406,6 +443,14 @@ alter table round_players enable row level security;
 alter table bets enable row level security;
 alter table expenses enable row level security;
 alter table payments enable row level security;
+alter table push_subscriptions enable row level security;
+
+-- push subscriptions: yours and only yours. The Edge Function reads
+-- everyone's with the service role, which bypasses this.
+drop policy if exists push_subs_own on push_subscriptions;
+create policy push_subs_own on push_subscriptions for all
+  using (player_id = current_player_id())
+  with check (player_id = current_player_id());
 
 -- groups: you see and rename your own group
 drop policy if exists groups_select on groups;

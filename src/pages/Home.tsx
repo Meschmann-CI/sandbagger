@@ -1,17 +1,28 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
-import { byDate, playerStats, roundStandings, saddamState, shortDate } from '../lib/stats'
-import { todayISO } from '../lib/dates'
+import { byDate, leaderboard, playerStats, roundStandings, saddamState, shortDate } from '../lib/stats'
+import { daysAgoISO, todayISO } from '../lib/dates'
 import { myOutstanding } from '../lib/settlements'
 import { anyCards, cardComplete, holesEntered } from '../lib/holes'
 import { money } from '../lib/money'
+import { courseSlug } from '../lib/courses'
+import { byGroupRank, courseSummaries, fmtStars, ratingFor } from '../lib/ratings'
 import { canSeeTrip, fmt1, isSoloRound, pending } from '../types'
+import { StarRating } from '../components/Stars'
 import { Avatar, Card, Pill, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
+
+// The front door. Anything that needs doing comes first (a card mid-
+// round, a score you owe, money on the table, a course to rate), then
+// where the season stands, then what's happened lately. A trip only
+// takes the top when one is actually booked and coming up; the rest of
+// the year it sits below the rounds, because that's how often it's the
+// point.
 
 export default function Home() {
   const { data } = useStore()
   const navigate = useNavigate()
   const TODAY = todayISO()
+  const YEAR = TODAY.slice(0, 4)
   const me = data.players.find((p) => p.id === data.currentUserId)!
   const saddam = saddamState(data)
   const holder = data.players.find((p) => p.id === saddam.holderId)
@@ -29,9 +40,28 @@ export default function Home() {
   const inProgress = rounds
     .filter((r) => r.date === TODAY && anyCards(r) && r.players.some((rp) => !cardComplete(rp)))
     .at(-1)
-  const inProgressHoles = inProgress
-    ? inProgress.players.reduce((sum, rp) => sum + holesEntered(rp), 0)
-    : 0
+  const inProgressHoles = inProgress ? inProgress.players.reduce((sum, rp) => sum + holesEntered(rp), 0) : 0
+
+  // The most recent round I played and haven't rated, if it's fresh.
+  // Two weeks, then it stops asking — an unrated round from March is
+  // not something anyone wants nagging about in September.
+  const fortnightAgo = daysAgoISO(14)
+  const toRate = [...rounds]
+    .reverse()
+    .find(
+      (r) =>
+        r.date >= fortnightAgo &&
+        r.players.some((rp) => rp.playerId === me.id) &&
+        (roundStandings(r).length > 0 || anyCards(r)) &&
+        !ratingFor(data, courseSlug(r.courseName)),
+    )
+
+  // This year, on the group's terms: who's winning group rounds.
+  const seasonRounds = rounds.filter((r) => r.date.startsWith(YEAR))
+  const board = leaderboard(data, seasonRounds).filter((row) => row.rounds > 0)
+  const myPlace = board.findIndex((row) => row.player.id === me.id)
+
+  const favourite = byGroupRank(courseSummaries(data)).find((c) => c.groupRank === 1)
 
   const visibleTrips = data.trips.filter((t) => canSeeTrip(t, me.id))
   const planning = visibleTrips.filter((t) => t.status === 'planning')
@@ -43,16 +73,55 @@ export default function Home() {
   const votesIn = heroIsPlanning ? new Set(heroTrip.options.flatMap((o) => o.votes)).size : 0
   const myVoteCast = heroIsPlanning && heroTrip.options.some((o) => o.votes.includes(me.id))
 
+  const tripCard = heroTrip && (
+    <Card onClick={() => navigate(`/trips/${heroTrip.id}`)} className="mt-3 overflow-hidden">
+      <div className="bg-green px-5 pt-4 pb-3.5 text-white relative overflow-hidden">
+        <svg className="absolute right-0 bottom-0 h-full w-40 opacity-15" viewBox="0 0 160 100" preserveAspectRatio="none">
+          <path d="M0 100 Q40 55 90 70 T160 45 V100 Z" fill="#fff" />
+          <path d="M20 100 Q70 70 120 85 T160 75 V100 Z" fill="#fff" opacity="0.7" />
+        </svg>
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/75">
+          {heroIsPlanning ? 'Trip in the works' : 'Next trip'}
+        </p>
+        <h2 className="text-[20px] font-extrabold leading-tight mt-0.5">{heroTrip.name}</h2>
+        <p className="text-[13px] text-white/85 mt-1">
+          {heroIsPlanning
+            ? `${heroTrip.options.length} destination${heroTrip.options.length === 1 ? '' : 's'} on the table`
+            : `${heroTrip.location}${heroTrip.startDate ? ` · ${shortDate(heroTrip.startDate)}` : ''}`}
+        </p>
+      </div>
+      <div className="px-5 py-3 flex items-center justify-between">
+        {heroIsPlanning ? (
+          <>
+            <p className="text-[13px] text-ink-dim">
+              {votesIn} of {heroTrip.attendeeIds.length} votes in
+            </p>
+            <span className={`text-[13.5px] font-bold ${myVoteCast ? 'text-ink-faint' : 'text-green'}`}>
+              {myVoteCast ? 'Vote cast ✓' : 'Cast your vote →'}
+            </span>
+          </>
+        ) : (
+          <>
+            <p className="text-[13px] text-ink-dim">Itinerary, tee times, standings</p>
+            <span className="text-[13.5px] font-bold text-green">Open →</span>
+          </>
+        )}
+      </div>
+    </Card>
+  )
+
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1 flex items-center justify-between">
-        <div>
-          <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-ink-faint">{data.group.name}</p>
-          <h1 className="text-[26px] font-extrabold tracking-tight text-ink">
+        <div className="min-w-0">
+          <Link to="/group" className="text-[12px] font-bold uppercase tracking-[0.14em] text-ink-faint">
+            {data.group.name}
+          </Link>
+          <h1 className="text-[26px] font-extrabold tracking-tight text-ink truncate">
             Hey, {me.name} <span className="align-middle">👋</span>
           </h1>
         </div>
-        <Link to="/profile">
+        <Link to="/profile" className="shrink-0">
           <Avatar player={me} size={40} />
         </Link>
       </header>
@@ -98,7 +167,7 @@ export default function Home() {
       {/* Money still on the table, wherever it came from. Each row goes
           to the round or trip it belongs to, where Pay and Mark paid live. */}
       {debts.length > 0 && (
-        <Card className="mt-3 overflow-hidden">
+        <Card className="mt-2 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-line">
             <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">💸 Money on the table</p>
             {netPosition !== 0 && (
@@ -139,81 +208,69 @@ export default function Home() {
         </Card>
       )}
 
-      {/* Next trip — the centerpiece */}
-      {heroTrip ? (
-        <Card onClick={() => navigate(`/trips/${heroTrip.id}`)} className="mt-2 overflow-hidden">
-          <div className="bg-green px-5 pt-5 pb-4 text-white relative overflow-hidden">
-            <svg className="absolute right-0 bottom-0 h-full w-40 opacity-15" viewBox="0 0 160 100" preserveAspectRatio="none">
-              <path d="M0 100 Q40 55 90 70 T160 45 V100 Z" fill="#fff" />
-              <path d="M20 100 Q70 70 120 85 T160 75 V100 Z" fill="#fff" opacity="0.7" />
-            </svg>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/75">
-              {heroIsPlanning ? 'Trip in the works' : 'Next trip'}
-            </p>
-            <h2 className="text-[22px] font-extrabold leading-tight mt-0.5">{heroTrip.name}</h2>
-            <p className="text-[13px] text-white/85 mt-1">
-              {heroIsPlanning
-                ? `${heroTrip.options.length} destination${heroTrip.options.length === 1 ? '' : 's'} on the table`
-                : `${heroTrip.location}${heroTrip.startDate ? ` · ${shortDate(heroTrip.startDate)}` : ''}`}
-            </p>
+      {/* A course to rate, while it's still fresh */}
+      {toRate && (
+        <Card onClick={() => navigate(`/rounds/${toRate.id}`)} className="mt-2 p-4 flex items-center gap-3.5">
+          <span className="text-[22px]">⭐</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14.5px] font-extrabold text-ink truncate">How was {toRate.courseName}?</p>
+            <p className="text-[12.5px] text-ink-dim mt-0.5">One tap for the stars, one for where it lands on your list.</p>
           </div>
-          <div className="px-5 py-3.5 flex items-center justify-between">
-            {heroIsPlanning ? (
-              <>
-                <p className="text-[13px] text-ink-dim">
-                  {votesIn} of {heroTrip.attendeeIds.length} votes in
-                </p>
-                <span className={`text-[13.5px] font-bold ${myVoteCast ? 'text-ink-faint' : 'text-green'}`}>
-                  {myVoteCast ? 'Vote cast ✓' : 'Cast your vote →'}
-                </span>
-              </>
-            ) : (
-              <>
-                <p className="text-[13px] text-ink-dim">Itinerary, tee times, standings</p>
-                <span className="text-[13.5px] font-bold text-green">Open →</span>
-              </>
-            )}
-          </div>
-        </Card>
-      ) : (
-        <Card className="mt-2 p-5 text-center">
-          <p className="font-extrabold text-[16px] text-ink">No trip on the calendar</p>
-          <p className="text-[13px] text-ink-dim mt-1">Start one and get the debate going.</p>
-          <button onClick={() => navigate('/trips/new')} className="mt-3 rounded-xl bg-green px-5 py-2.5 font-bold text-[14px] text-white">
-            Plan a trip
-          </button>
+          <span className="text-[13px] font-bold text-green shrink-0">Rate →</span>
         </Card>
       )}
 
-      {/* The Saddam — always shown, so it's obvious who's carrying it */}
-      <Card
-        onClick={() => navigate('/saddam')}
-        className="mt-3 p-4 flex items-center gap-3.5 border-gold/30 bg-gold-soft/40"
+      {/* A booked trip that's coming up earns the top; a trip still being
+          argued about waits its turn below. */}
+      {heroTrip && !heroIsPlanning && tripCard}
+
+      {/* The season, on the group's terms */}
+      <SectionLabel
+        action={
+          <Link to="/h2h" className="text-[12.5px] font-bold text-green">
+            Standings →
+          </Link>
+        }
       >
-        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-card border border-gold/30 text-ink shrink-0">
-          <SaddamIcon size={32} />
-        </span>
-        <div className="flex-1 min-w-0">
-          {holder ? (
-            <>
-              <p className="text-[14.5px] text-ink">
-                <span className="font-extrabold">{holder.name}</span> holds the Saddam
-              </p>
-              <p className="text-[12px] text-ink-dim mt-0.5">
-                {saddam.byHand ? 'Handed over' : 'Won'} {saddam.since && shortDate(saddam.since)}
-                {saddam.courseName && ` at ${saddam.courseName}`}
-                {saddam.defenses > 0 && ` · ${saddam.defenses} defense${saddam.defenses === 1 ? '' : 's'}`}
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-[14.5px] font-extrabold text-ink">The Saddam is up for grabs</p>
-              <p className="text-[12px] text-ink-dim mt-0.5">Win a group round to take it, or hand it to whoever has it.</p>
-            </>
+        {YEAR} · {seasonRounds.length} round{seasonRounds.length === 1 ? '' : 's'}
+      </SectionLabel>
+      {board.length === 0 ? (
+        <Card className="p-5 text-center">
+          <p className="text-[14px] font-bold text-ink">Nothing on the board yet this year</p>
+          <p className="text-[13px] text-ink-dim mt-1">The first group round starts the count.</p>
+        </Card>
+      ) : (
+        <Card>
+          <div className="divide-y divide-line">
+            {board.slice(0, 3).map((row, i) => (
+              <RowButton key={row.player.id} onClick={() => navigate('/h2h')} className="flex items-center gap-3 px-4 py-3">
+                <span className={`w-5 text-[15px] font-extrabold tabular-nums ${i === 0 ? 'text-gold' : 'text-ink-faint'}`}>{i + 1}</span>
+                <Avatar player={row.player} size={30} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-bold text-ink truncate">
+                    {row.player.name}
+                    {row.player.id === me.id && <span className="text-ink-faint font-semibold"> (you)</span>}
+                  </p>
+                  <p className="text-[11.5px] text-ink-faint tabular-nums">
+                    {row.rounds} round{row.rounds === 1 ? '' : 's'}
+                    {row.avgGross != null && ` · avg ${row.avgGross.toFixed(1)}`}
+                    {row.streak >= 2 && ` · ${row.streak} straight 🔥`}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[17px] font-extrabold text-ink tabular-nums leading-none">{row.wins}</p>
+                  <p className="text-[9.5px] font-bold uppercase tracking-wider text-ink-faint mt-0.5">wins</p>
+                </div>
+              </RowButton>
+            ))}
+          </div>
+          {myPlace >= 3 && (
+            <p className="px-4 py-2.5 border-t border-line text-[12px] text-ink-dim">
+              You're {myPlace + 1}th of {board.length} · {board[myPlace].wins} win{board[myPlace].wins === 1 ? '' : 's'}
+            </p>
           )}
-        </div>
-        <span className="text-[12.5px] font-bold text-green shrink-0">{holder ? 'History →' : 'Set it →'}</span>
-      </Card>
+        </Card>
+      )}
 
       {/* Recent rounds */}
       <SectionLabel
@@ -228,9 +285,7 @@ export default function Home() {
       {recent.length === 0 && (
         <Card className="p-5 text-center">
           <p className="text-[14px] font-bold text-ink">No rounds logged yet</p>
-          <p className="text-[13px] text-ink-dim mt-1">
-            Log one and the records start keeping themselves. Solo rounds count too.
-          </p>
+          <p className="text-[13px] text-ink-dim mt-1">Log one and the records start keeping themselves. Solo rounds count too.</p>
           <button onClick={() => navigate('/log')} className="mt-3 rounded-xl bg-green px-5 py-2.5 text-[14px] font-bold text-white">
             Log a round
           </button>
@@ -284,6 +339,53 @@ export default function Home() {
           )
         })}
       </div>
+
+      {/* The trophy and the group's favourite course, side by side */}
+      <div className="grid grid-cols-2 gap-3 mt-3">
+        <Card onClick={() => navigate('/saddam')} className="p-3.5 border-gold/30 bg-gold-soft/40">
+          <div className="flex items-center gap-2">
+            <SaddamIcon size={22} />
+            <p className="text-[10.5px] font-bold uppercase tracking-wider text-ink-faint">The Saddam</p>
+          </div>
+          {holder ? (
+            <>
+              <p className="text-[15px] font-extrabold text-ink mt-2 truncate">{holder.name}</p>
+              <p className="text-[11.5px] text-ink-dim mt-0.5 truncate">
+                {saddam.since ? `since ${shortDate(saddam.since)}` : 'holds it'}
+                {saddam.defenses > 0 && ` · ${saddam.defenses} def.`}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-[15px] font-extrabold text-ink mt-2">Up for grabs</p>
+              <p className="text-[11.5px] text-ink-dim mt-0.5">Win a group round</p>
+            </>
+          )}
+        </Card>
+        <Card onClick={() => navigate(favourite ? `/courses/${encodeURIComponent(favourite.slug)}` : '/courses')} className="p-3.5">
+          <p className="text-[10.5px] font-bold uppercase tracking-wider text-ink-faint">Group’s favourite</p>
+          {favourite ? (
+            <>
+              <p className="text-[15px] font-extrabold text-ink mt-2 truncate">{favourite.name}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {favourite.avg != null && (
+                  <>
+                    <StarRating value={favourite.avg} size={10} />
+                    <span className="text-[11.5px] text-ink-dim tabular-nums">{fmtStars(favourite.avg)}</span>
+                  </>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-[15px] font-extrabold text-ink mt-2">Not picked yet</p>
+              <p className="text-[11.5px] text-ink-dim mt-0.5">Rate a course →</p>
+            </>
+          )}
+        </Card>
+      </div>
+
+      {heroTrip && heroIsPlanning && tripCard}
       <div className="h-4" />
     </div>
   )

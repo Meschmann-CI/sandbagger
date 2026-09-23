@@ -24,6 +24,7 @@ import TripDetail from './pages/TripDetail'
 import Profile from './pages/Profile'
 import Saddam from './pages/Saddam'
 import Courses from './pages/Courses'
+import Group from './pages/Group'
 import CourseDetail from './pages/CourseDetail'
 import CourseEdit from './pages/CourseEdit'
 import SignIn from './pages/SignIn'
@@ -49,6 +50,7 @@ function AppRoutes() {
             <Route path="/trips/new" element={<TripNew />} />
             <Route path="/trips/:id" element={<TripDetail />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/group" element={<Group />} />
             <Route path="/saddam" element={<Saddam />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:slug" element={<CourseDetail />} />

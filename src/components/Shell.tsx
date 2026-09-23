@@ -2,12 +2,19 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { Avatar } from './ui'
 
+// The tab order is the app's opinion about what matters most often.
+// Logging rounds, arguing about courses, and settling bets happen every
+// weekend; a trip happens twice a year. So Trips sits fourth, and the
+// Home screen only leads with it when one is actually coming up.
+
+const stroke = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' } as const
+
 const tabs = [
   {
     to: '/',
     label: 'Home',
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
         <path d="M3 11.5 L12 4 L21 11.5" />
         <path d="M5.5 10 V20 H18.5 V10" />
         <path d="M10 20 V14.5 H14 V20" />
@@ -15,21 +22,10 @@ const tabs = [
     ),
   },
   {
-    to: '/trips',
-    label: 'Trips',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="4" y="8" width="16" height="12" rx="2.5" />
-        <path d="M9 8 V6 a2 2 0 0 1 2-2 h2 a2 2 0 0 1 2 2 V8" />
-        <path d="M4 13 H20" />
-      </svg>
-    ),
-  },
-  {
     to: '/rounds',
     label: 'Rounds',
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
         <path d="M8 3 V16" />
         <path d="M8 3 L15.5 5.75 L8 8.5" fill="currentColor" stroke="none" />
         <circle cx="8" cy="19" r="2.4" />
@@ -37,8 +33,29 @@ const tabs = [
     ),
   },
   {
+    to: '/courses',
+    label: 'Courses',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
+        <path d="M12 21 C12 21 5 14.5 5 9.5 A7 7 0 0 1 19 9.5 C19 14.5 12 21 12 21 Z" />
+        <circle cx="12" cy="9.5" r="2.4" />
+      </svg>
+    ),
+  },
+  {
+    to: '/trips',
+    label: 'Trips',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
+        <rect x="4" y="8" width="16" height="12" rx="2.5" />
+        <path d="M9 8 V6 a2 2 0 0 1 2-2 h2 a2 2 0 0 1 2 2 V8" />
+        <path d="M4 13 H20" />
+      </svg>
+    ),
+  },
+  {
     to: '/profile',
-    label: 'Profile',
+    label: 'You',
     icon: null, // avatar rendered inline
   },
 ]
@@ -48,7 +65,15 @@ export default function Shell() {
   const { pathname } = useLocation()
   const { data, syncError, pendingWrites } = useStore()
   const me = data.players.find((p) => p.id === data.currentUserId) ?? data.players[0]
-  const hideFab = pathname.startsWith('/log') || pathname.startsWith('/rounds/') || pathname.startsWith('/trips/new')
+  // Off wherever there's a form with its own save button at the bottom,
+  // or a card being scored — the button would sit on top of the thing
+  // you're trying to tap.
+  const hideFab =
+    pathname.startsWith('/log') ||
+    pathname.startsWith('/rounds/') ||
+    pathname.startsWith('/trips/new') ||
+    pathname.startsWith('/courses/') ||
+    pathname.startsWith('/group')
 
   return (
     <div className="mx-auto max-w-md min-h-dvh flex flex-col relative">
@@ -95,7 +120,7 @@ export default function Shell() {
 
       <nav className="fixed bottom-0 inset-x-0 z-40">
         <div className="mx-auto max-w-md border-t border-line bg-card/95 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]">
-          <div className="grid grid-cols-4">
+          <div className="grid grid-cols-5">
             {tabs.map((t) => (
               <NavLink
                 key={t.to}
@@ -108,7 +133,7 @@ export default function Shell() {
                 }
               >
                 {t.icon ?? (
-                  <span className={`rounded-full ${pathname.startsWith('/profile') ? 'ring-2 ring-green ring-offset-1' : ''}`}>
+                  <span className={`rounded-full ${pathname.startsWith('/profile') || pathname.startsWith('/group') ? 'ring-2 ring-green ring-offset-1' : ''}`}>
                     <Avatar player={me} size={22} />
                   </span>
                 )}
