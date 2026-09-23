@@ -53,6 +53,7 @@ function AppRoutes() {
             <Route path="/group" element={<Group />} />
             <Route path="/saddam" element={<Saddam />} />
             <Route path="/courses" element={<Courses />} />
+            <Route path="/courses/new" element={<CourseEdit />} />
             <Route path="/courses/:slug" element={<CourseDetail />} />
             <Route path="/courses/:slug/card" element={<CourseEdit />} />
             <Route path="/ledger" element={<Navigate to="/h2h" replace />} />

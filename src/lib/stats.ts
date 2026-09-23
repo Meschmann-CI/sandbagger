@@ -12,7 +12,7 @@ import {
   type ScoredRoundPlayer,
 } from '../types'
 import { cardOf, hasCard } from './holes'
-import { findCourse, hasPars, padded, scoreKind, type ScoreKind } from './courses'
+import { courseSlug, findCourse, hasPars, padded, scoreKind, type ScoreKind } from './courses'
 
 export const byDate = (rounds: Round[]) =>
   [...rounds].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
@@ -463,5 +463,11 @@ export function courseSuggestions(data: AppData): string[] {
   for (const r of byDate(data.rounds).reverse()) {
     seen.set(r.courseName, (seen.get(r.courseName) ?? 0) + 1)
   }
-  return [...seen.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c)
+  const played = [...seen.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c)
+  // A course added ahead of playing it has no rounds yet. It goes to
+  // the FRONT: somebody entered its card this week because they're
+  // about to play it, which makes it the likeliest answer of all.
+  const playedSlugs = new Set(played.map(courseSlug))
+  const fresh = data.courses.filter((c) => !playedSlugs.has(c.slug)).map((c) => c.name)
+  return [...fresh, ...played]
 }

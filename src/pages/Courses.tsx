@@ -28,17 +28,27 @@ export default function Courses() {
 
   return (
     <div className="rise">
-      <header className="pt-4 pb-2 px-1">
-        <h1 className="text-[26px] font-extrabold tracking-tight text-ink">Courses</h1>
-        <p className="text-[13px] text-ink-dim">
-          {rows.length === 0
-            ? 'Every course you log a round at turns up here.'
-            : `${rows.length} played · ${rated} rated${needCard ? ` · ${needCard} without a scorecard` : ''}`}
-        </p>
+      <header className="pt-4 pb-2 px-1 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-[26px] font-extrabold tracking-tight text-ink">Courses</h1>
+          <p className="text-[13px] text-ink-dim">
+            {rows.length === 0
+              ? 'Add one ahead of playing it, or log a round and it turns up here.'
+              : `${rows.length} played · ${rated} rated${needCard ? ` · ${needCard} without a scorecard` : ''}`}
+          </p>
+        </div>
+        {/* Adding ahead of time: the card, stroke index and slope go in
+            before the first tee, and the round finds them by name. */}
+        <button
+          onClick={() => navigate('/courses/new')}
+          className="rounded-xl bg-green px-4 py-2.5 text-[13.5px] font-bold text-white active:scale-95 transition shrink-0 mt-1"
+        >
+          + Add course
+        </button>
       </header>
 
       {rows.length === 0 ? (
-        <EmptyState title="No courses yet" sub="Log a round and the course you played turns up here, ready to be rated." />
+        <EmptyState title="No courses yet" sub="Add the course you're about to play, or log a round and it turns up here, ready to be rated." />
       ) : (
         <>
           <div className="flex rounded-xl border border-line-strong overflow-hidden mt-2">

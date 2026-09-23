@@ -20,17 +20,24 @@ import { useConfirm } from '../components/Confirm'
 const PAR_CHOICES = [3, 4, 5]
 
 export default function CourseEdit() {
-  const { slug = '' } = useParams()
+  const { slug: slugParam } = useParams()
   const navigate = useNavigate()
+  // No slug means /courses/new: a course being added ahead of playing
+  // it, so the card, stroke index, and slope are all in before the
+  // first tee. The name is typed here and the slug follows from it.
+  const isNew = !slugParam
+  const [typedName, setTypedName] = useState('')
+  const slug = isNew ? courseSlug(typedName) : slugParam
   // The scorecard hangs off the course's own page now.
-  const goBack = useGoBack(`/courses/${encodeURIComponent(slug)}`)
+  const goBack = useGoBack(isNew ? '/courses' : `/courses/${encodeURIComponent(slug)}`)
   const { data, saveCourse, deleteCourse } = useStore()
   const confirm = useConfirm()
 
-  // A course reached from a round it hasn't got a record for yet.
-  const existing = data.courses.find((c) => c.slug === slug)
+  // A course reached from a round it hasn't got a record for yet — or,
+  // when adding, one that already exists under the name being typed.
+  const existing = data.courses.find((c) => !!slug && c.slug === slug)
   const nameFromRounds = data.rounds.find((r) => courseSlug(r.courseName) === slug)?.courseName
-  const name = existing?.name ?? nameFromRounds ?? ''
+  const name = isNew ? typedName.trim() : (existing?.name ?? nameFromRounds ?? '')
 
   const [pars, setPars] = useState<(number | null)[]>(() => padded(existing?.pars ?? emptyPars()))
   const [index, setIndex] = useState<(number | null)[]>(() => padded(existing?.strokeIndex))
@@ -39,7 +46,7 @@ export default function CourseEdit() {
   const [rating, setRating] = useState(() => (existing?.rating != null ? String(existing.rating) : ''))
   const [slope, setSlope] = useState(() => (existing?.slope != null ? String(existing.slope) : ''))
 
-  if (!name) {
+  if (!isNew && !name) {
     return (
       <div className="pt-16 text-center text-ink-dim">
         Course not found.{' '}
@@ -77,12 +84,21 @@ export default function CourseEdit() {
   const ratingBad = ratingNum != null && (Number.isNaN(ratingNum) || ratingNum < 50 || ratingNum > 90)
   const slopeBad = slopeNum != null && (Number.isNaN(slopeNum) || slopeNum < 55 || slopeNum > 155)
 
+  // Adding a course under a name the group already has would overwrite
+  // that course's card with this blank one. Send them to the real one.
+  const duplicate = isNew && !!existing
+
   const save = () => {
+    if (duplicate) {
+      navigate(`/courses/${encodeURIComponent(slug)}/card`, { replace: true })
+      return
+    }
     saveCourse(name, pars, indexIn > 0 ? index : undefined, {
       rating: ratingBad ? null : ratingNum,
       slope: slopeBad ? null : slopeNum,
     })
-    goBack()
+    if (isNew) navigate(`/courses/${encodeURIComponent(slug)}`, { replace: true })
+    else goBack()
   }
 
   const sum = (list: (number | null)[]) => list.reduce<number>((s, p) => s + (p ?? 0), 0)
@@ -95,10 +111,31 @@ export default function CourseEdit() {
         <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-2">
           ← Back
         </button>
-        <h1 className="text-[24px] font-extrabold tracking-tight text-ink leading-tight">{name}</h1>
-        <p className="text-[13px] text-ink-dim mt-1">
-          Straight off the scorecard. Every round here, past and future, picks it up.
-        </p>
+        {isNew ? (
+          <>
+            <h1 className="text-[24px] font-extrabold tracking-tight text-ink leading-tight">New course</h1>
+            <input
+              value={typedName}
+              onChange={(e) => setTypedName(e.target.value)}
+              placeholder="Course name, as it reads on the sign"
+              autoFocus
+              aria-label="Course name"
+              className="mt-2.5 w-full rounded-xl border border-line-strong bg-card px-3.5 py-3 text-[16px] font-bold text-ink placeholder:font-normal placeholder:text-ink-faint focus:border-green focus:outline-none"
+            />
+            <p className={`text-[12.5px] mt-1.5 ${duplicate ? 'text-gold font-semibold' : 'text-ink-dim'}`}>
+              {duplicate
+                ? `You already have ${existing.name}. Save opens its card instead.`
+                : 'Add it before you play. Log the round under this name and it picks up the card, strokes, and slope.'}
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-[24px] font-extrabold tracking-tight text-ink leading-tight">{name}</h1>
+            <p className="text-[13px] text-ink-dim mt-1">
+              Straight off the scorecard. Every round here, past and future, picks it up.
+            </p>
+          </>
+        )}
       </header>
 
       {/* Running totals, so a typo in the composition is obvious */}
@@ -249,8 +286,20 @@ export default function CourseEdit() {
       </Card>
 
       <div className="flex gap-3 mt-5">
-        <PrimaryButton onClick={save} disabled={parsIn === 0 || ratingBad || slopeBad} className="flex-1 !py-4">
-          {complete ? 'Save scorecard' : `Save ${parsIn} of ${HOLE_COUNT}`}
+        <PrimaryButton
+          onClick={save}
+          disabled={(isNew ? name.length < 2 : parsIn === 0) || ratingBad || slopeBad}
+          className="flex-1 !py-4"
+        >
+          {duplicate
+            ? `Open ${existing.name} →`
+            : complete
+              ? isNew
+                ? 'Add course'
+                : 'Save scorecard'
+              : parsIn > 0
+                ? `Save ${parsIn} of ${HOLE_COUNT}`
+                : 'Add course'}
         </PrimaryButton>
         <button onClick={() => goBack()} className="px-5 text-[13px] font-bold text-ink-faint">
           Cancel
@@ -262,7 +311,7 @@ export default function CourseEdit() {
         </p>
       )}
 
-      {existing && (
+      {existing && !isNew && (
         <div className="mt-8 mb-4 text-center">
           <button
             onClick={async () => {
