@@ -16,7 +16,7 @@ import { Avatar, Card, GhostButton, PrimaryButton, SaddamIcon } from '../compone
 export default function LogRound() {
   const navigate = useNavigate()
   const goBack = useGoBack('/')
-  const { data, addRound, addPlayer } = useStore()
+  const { data, addRound, addPlayer, addTrip } = useStore()
   const members = useMembers()
 
   const [step, setStep] = useState(0)
@@ -24,6 +24,11 @@ export default function LogRound() {
   const [date, setDate] = useState(todayISO)
   const [tee, setTee] = useState('')
   const [tripId, setTripId] = useState<string>('')
+  // Most rounds are just rounds. The trip picker stays folded until
+  // somebody says otherwise, rather than listing every trip the group
+  // has ever taken under every Sunday round.
+  const [tripMode, setTripMode] = useState<'none' | 'pick' | 'new'>('none')
+  const [newTripName, setNewTripName] = useState('')
   const [playerIds, setPlayerIds] = useState<string[]>([data.currentUserId])
   const [scores, setScores] = useState<Record<string, number>>({})
   const [addingGuest, setAddingGuest] = useState(false)
@@ -49,7 +54,29 @@ export default function LogRound() {
   const filteredSuggestions = courseName
     ? suggestions.filter((c) => c.toLowerCase().includes(courseName.toLowerCase()) && c.toLowerCase() !== courseName.toLowerCase())
     : suggestions
-  const bookedTrips = data.trips.filter((t) => t.status === 'booked')
+  // Trips this round could belong to, the one happening now first.
+  const bookedTrips = data.trips
+    .filter((t) => t.status === 'booked')
+    .sort((a, b) => (b.startDate ?? '').localeCompare(a.startDate ?? ''))
+  const chosenTrip = data.trips.find((t) => t.id === tripId)
+
+  // A trip created from here is one you're on right now, so it's
+  // booked, starts today, and everyone in the group is on it.
+  const createTrip = () => {
+    if (!newTripName.trim()) return
+    const trip = addTrip({
+      name: newTripName.trim(),
+      status: 'booked',
+      startDate: date,
+      attendeeIds: members.map((m) => m.id),
+      createdById: data.currentUserId,
+      options: [],
+      itinerary: [],
+    })
+    setTripId(trip.id)
+    setTripMode('none')
+    setNewTripName('')
+  }
 
   const togglePlayer = (id: string) =>
     setPlayerIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
@@ -155,28 +182,104 @@ export default function LogRound() {
             </div>
           </div>
 
-          {bookedTrips.length > 0 && (
-            <div>
-              <label className="block text-[12px] font-bold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">Part of a trip?</label>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setTripId('')}
-                  className={`rounded-full px-4 py-2.5 text-[13.5px] font-bold border transition ${!tripId ? 'bg-ink text-white border-ink' : 'border-line-strong bg-card text-ink-dim'}`}
-                >
-                  Just a round
+          {/* Trips, folded. Just a round is the default and needs no tap. */}
+          <div>
+            {tripMode === 'none' && !chosenTrip && (
+              <button onClick={() => setTripMode('pick')} className="px-1 text-[13px] font-bold text-green">
+                Part of a trip? →
+              </button>
+            )}
+
+            {chosenTrip && tripMode !== 'new' && (
+              <div className="flex items-center gap-2 px-1">
+                <span className="text-[13px] text-ink-dim">
+                  Part of <span className="font-bold text-ink">{chosenTrip.name}</span>
+                </span>
+                <button onClick={() => setTripMode('pick')} className="text-[12.5px] font-bold text-green">
+                  Change
                 </button>
-                {bookedTrips.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setTripId(t.id)}
-                    className={`rounded-full px-4 py-2.5 text-[13.5px] font-bold border transition ${tripId === t.id ? 'bg-ink text-white border-ink' : 'border-line-strong bg-card text-ink-dim'}`}
-                  >
-                    {t.name}
-                  </button>
-                ))}
+                <button
+                  onClick={() => {
+                    setTripId('')
+                    setTripMode('none')
+                  }}
+                  className="text-[12.5px] font-bold text-ink-faint"
+                >
+                  Not a trip
+                </button>
               </div>
-            </div>
-          )}
+            )}
+
+            {tripMode === 'pick' && (
+              <div>
+                <label className="block text-[12px] font-bold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">
+                  Which trip?
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {bookedTrips.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setTripId(t.id)
+                        setTripMode('none')
+                      }}
+                      className={`rounded-full px-4 py-2.5 text-[13.5px] font-bold border transition ${
+                        tripId === t.id ? 'bg-ink text-white border-ink' : 'border-line-strong bg-card text-ink-dim'
+                      }`}
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setTripMode('new')}
+                    className="rounded-full px-4 py-2.5 text-[13.5px] font-bold border border-dashed border-green/50 text-green"
+                  >
+                    + New trip
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTripId('')
+                      setTripMode('none')
+                    }}
+                    className="px-2 text-[12.5px] font-bold text-ink-faint"
+                  >
+                    {chosenTrip ? 'Cancel' : 'Never mind'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {tripMode === 'new' && (
+              <div>
+                <label className="block text-[12px] font-bold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">
+                  New trip
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    value={newTripName}
+                    onChange={(e) => setNewTripName(e.target.value)}
+                    placeholder="e.g. Myrtle Beach 2026"
+                    autoFocus
+                    onKeyDown={(e) => e.key === 'Enter' && createTrip()}
+                    className="flex-1 rounded-xl border border-line-strong bg-card px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+                  />
+                  <button
+                    onClick={createTrip}
+                    disabled={!newTripName.trim()}
+                    className="rounded-xl bg-green px-4 py-2.5 text-[13.5px] font-bold text-white disabled:opacity-30"
+                  >
+                    Create
+                  </button>
+                  <button onClick={() => setTripMode('pick')} className="px-2 text-[12.5px] font-bold text-ink-faint">
+                    Back
+                  </button>
+                </div>
+                <p className="text-[11.5px] text-ink-faint mt-1.5 px-1">
+                  Booked, starting today, everyone in the group on it. Dates, lodging and costs can be filled in from Trips later.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
