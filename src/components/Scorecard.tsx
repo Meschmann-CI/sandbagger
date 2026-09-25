@@ -30,7 +30,7 @@ export default function Scorecard({ round }: { round: Round }) {
   // low handicap in the round. Only when there's a stroke index to say
   // which holes, and only when there's someone to give strokes against.
   const strokeDots =
-    hasStrokeIndex(course) && round.players.length > 1 ? strokesOffLow(course, round.players) : null
+    hasStrokeIndex(course) && round.players.length > 1 ? strokesOffLow(course, round.players, round.tee) : null
   const sumPars = (from: number, to: number) => (pars ?? []).slice(from, to).reduce<number>((s, p) => s + (p ?? 0), 0)
 
   // Best score on each hole, so the low number stands out. Only used when

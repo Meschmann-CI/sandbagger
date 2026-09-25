@@ -148,7 +148,7 @@ export default function LogRound() {
             />
             {filteredSuggestions.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2.5 px-1">
-                {filteredSuggestions.slice(0, 4).map((c) => (
+                {filteredSuggestions.slice(0, courseName ? 6 : 4).map((c) => (
                   <button
                     key={c}
                     onClick={() => setCourseName(c)}

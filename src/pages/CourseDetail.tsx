@@ -54,6 +54,7 @@ export default function CourseDetail() {
         </button>
         <h1 className="text-[24px] font-extrabold tracking-tight text-ink leading-tight">{summary.name}</h1>
         <p className="text-[13px] text-ink-dim mt-1 tabular-nums">
+          {course?.town && `${course.town} · `}
           {summary.rounds > 0 ? `${summary.rounds} round${summary.rounds === 1 ? '' : 's'}` : 'No rounds logged'}
           {summary.lastPlayed && ` · last ${shortDate(summary.lastPlayed)}`}
           {par != null && ` · par ${par}`}
@@ -222,6 +223,45 @@ export default function CourseDetail() {
         </div>
         {par == null ? <Pill tone="gold">Add par</Pill> : <span className="text-[13px] font-bold text-green shrink-0">Edit →</span>}
       </Card>
+
+      {/* Every tee box, so "which tees are we playing" has an answer on
+          the first one. Men's sets only; the women's ratings are stored
+          but this group doesn't play off them. */}
+      {course?.tees && course.tees.some((t) => (t.gender ?? 'M') === 'M') && (
+        <>
+          <SectionLabel>Tees</SectionLabel>
+          <Card>
+            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 px-4 py-2 border-b border-line text-[9.5px] font-bold uppercase tracking-wider text-ink-faint">
+              <span>Tee</span>
+              <span className="text-right">Yards</span>
+              <span className="text-right">Rating / slope</span>
+            </div>
+            {course.tees
+              .filter((t) => (t.gender ?? 'M') === 'M')
+              .map((t) => {
+                const isDefault = course.rating === t.rating && course.slope === t.slope
+                return (
+                  <div
+                    key={t.name}
+                    className="grid grid-cols-[1fr_auto_auto] gap-x-4 items-center px-4 py-2.5 border-b border-line last:border-0 text-[13px]"
+                  >
+                    <span className={`truncate ${isDefault ? 'font-extrabold text-ink' : 'font-bold text-ink-dim'}`}>
+                      {t.name}
+                      {isDefault && <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wider text-green">default</span>}
+                    </span>
+                    <span className="text-right tabular-nums text-ink-dim">{t.yards ?? '—'}</span>
+                    <span className="text-right tabular-nums font-bold text-ink">
+                      {t.rating} / {t.slope}
+                    </span>
+                  </div>
+                )
+              })}
+          </Card>
+          <p className="text-[11px] text-ink-faint px-2 mt-2">
+            A round that names its tee plays off that tee’s numbers. Rounds that don’t use the default.
+          </p>
+        </>
+      )}
 
       {rounds.length > 0 && (
         <>

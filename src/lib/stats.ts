@@ -464,10 +464,14 @@ export function courseSuggestions(data: AppData): string[] {
     seen.set(r.courseName, (seen.get(r.courseName) ?? 0) + 1)
   }
   const played = [...seen.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c)
-  // A course added ahead of playing it has no rounds yet. It goes to
-  // the FRONT: somebody entered its card this week because they're
-  // about to play it, which makes it the likeliest answer of all.
+  // Courses on the books but never played come after, alphabetically.
+  // With thirty imported public courses this is a search list, not a
+  // chip row: the first few chips are where the group actually plays,
+  // and typing three letters finds anything else.
   const playedSlugs = new Set(played.map(courseSlug))
-  const fresh = data.courses.filter((c) => !playedSlugs.has(c.slug)).map((c) => c.name)
-  return [...fresh, ...played]
+  const unplayed = data.courses
+    .filter((c) => !playedSlugs.has(c.slug))
+    .map((c) => c.name)
+    .sort((a, b) => a.localeCompare(b))
+  return [...played, ...unplayed]
 }

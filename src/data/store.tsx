@@ -183,6 +183,9 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         // Undefined tees means the editor didn't touch them; keep what's stored.
         rating: tees ? tees.rating : existing?.rating,
         slope: tees ? tees.slope : existing?.slope,
+        // The editor doesn't touch the imported tee list or the town.
+        tees: existing?.tees,
+        town: existing?.town,
       }
       commit({ kind: 'course.upsert', course }, (d) => ({
         ...d,

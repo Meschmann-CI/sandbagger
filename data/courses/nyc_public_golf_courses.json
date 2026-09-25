@@ -1,0 +1,6831 @@
+[
+ {
+  "name": "Forest Park Golf Course",
+  "town": "Woodhaven, NY",
+  "lat": 40.699,
+  "lon": -73.86,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   3,
+   5,
+   4,
+   3,
+   4,
+   4,
+   3,
+   4,
+   5,
+   4,
+   3,
+   4,
+   3,
+   4,
+   4,
+   5
+  ],
+  "hcp": [
+   7,
+   9,
+   15,
+   3,
+   1,
+   17,
+   11,
+   5,
+   13,
+   4,
+   6,
+   2,
+   14,
+   12,
+   16,
+   18,
+   10,
+   8
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   380,
+   340,
+   172,
+   475,
+   412,
+   135,
+   325,
+   395,
+   175,
+   409,
+   510,
+   435,
+   210,
+   400,
+   145,
+   310,
+   350,
+   475
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6053,
+    "rating": 68.4,
+    "slope": 117
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 5635,
+    "rating": 66.5,
+    "slope": 112
+   },
+   {
+    "tee": "Red",
+    "gender": "M",
+    "yards": 5300,
+    "rating": 64.9,
+    "slope": 107
+   },
+   {
+    "tee": "Blue",
+    "gender": "W",
+    "yards": 6053,
+    "rating": 74.1,
+    "slope": 130
+   },
+   {
+    "tee": "White",
+    "gender": "W",
+    "yards": 5635,
+    "rating": 71.9,
+    "slope": 125
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 5300,
+    "rating": 68.9,
+    "slope": 115
+   }
+  ],
+  "source": "https://18birdies.com/golf-courses/club/986b1910-86ac-11e4-8c28-020000005b00/forest-park",
+  "miles_from_11103": 5.3,
+  "total_par": 70,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 7,
+    "yards": 380
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 9,
+    "yards": 340
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 15,
+    "yards": 172
+   },
+   {
+    "hole": 4,
+    "par": 5,
+    "hcp": 3,
+    "yards": 475
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 1,
+    "yards": 412
+   },
+   {
+    "hole": 6,
+    "par": 3,
+    "hcp": 17,
+    "yards": 135
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 11,
+    "yards": 325
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 5,
+    "yards": 395
+   },
+   {
+    "hole": 9,
+    "par": 3,
+    "hcp": 13,
+    "yards": 175
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 4,
+    "yards": 409
+   },
+   {
+    "hole": 11,
+    "par": 5,
+    "hcp": 6,
+    "yards": 510
+   },
+   {
+    "hole": 12,
+    "par": 4,
+    "hcp": 2,
+    "yards": 435
+   },
+   {
+    "hole": 13,
+    "par": 3,
+    "hcp": 14,
+    "yards": 210
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 12,
+    "yards": 400
+   },
+   {
+    "hole": 15,
+    "par": 3,
+    "hcp": 16,
+    "yards": 145
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 18,
+    "yards": 310
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 10,
+    "yards": 350
+   },
+   {
+    "hole": 18,
+    "par": 5,
+    "hcp": 8,
+    "yards": 475
+   }
+  ]
+ },
+ {
+  "name": "Bally's Golf Links at Ferry Point",
+  "town": "Bronx, NY",
+  "lat": 40.811,
+  "lon": -73.829,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   3,
+   5,
+   4,
+   4,
+   4,
+   3,
+   4,
+   4,
+   4,
+   3,
+   4,
+   4,
+   5,
+   4,
+   3,
+   5
+  ],
+  "hcp": [
+   9,
+   1,
+   15,
+   3,
+   7,
+   5,
+   13,
+   17,
+   11,
+   6,
+   14,
+   18,
+   8,
+   10,
+   2,
+   4,
+   16,
+   12
+  ],
+  "yards_tee": "Black",
+  "yards": [
+   444,
+   518,
+   243,
+   561,
+   458,
+   468,
+   334,
+   214,
+   425,
+   460,
+   352,
+   166,
+   441,
+   471,
+   596,
+   487,
+   193,
+   576
+  ],
+  "tees": [
+   {
+    "tee": "Black",
+    "gender": "M",
+    "yards": 7407,
+    "rating": 76.1,
+    "slope": 141
+   },
+   {
+    "tee": "Gold",
+    "gender": "M",
+    "yards": 6867,
+    "rating": 73.8,
+    "slope": 137
+   },
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6404,
+    "rating": 71.7,
+    "slope": 131
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 6038,
+    "rating": 69.8,
+    "slope": 131
+   },
+   {
+    "tee": "White",
+    "gender": "W",
+    "yards": 6038,
+    "rating": 75.8,
+    "slope": 135
+   },
+   {
+    "tee": "Green",
+    "gender": "W",
+    "yards": 5227,
+    "rating": 71.4,
+    "slope": 124
+   }
+  ],
+  "source": "https://www.golfpass.com/travel-advisor/courses/34980-ballys-golf-links-at-ferry-point",
+  "miles_from_11103": 5.6,
+  "total_par": 71,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 9,
+    "yards": 444
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 1,
+    "yards": 518
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 15,
+    "yards": 243
+   },
+   {
+    "hole": 4,
+    "par": 5,
+    "hcp": 3,
+    "yards": 561
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 7,
+    "yards": 458
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 5,
+    "yards": 468
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 13,
+    "yards": 334
+   },
+   {
+    "hole": 8,
+    "par": 3,
+    "hcp": 17,
+    "yards": 214
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 11,
+    "yards": 425
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 6,
+    "yards": 460
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 14,
+    "yards": 352
+   },
+   {
+    "hole": 12,
+    "par": 3,
+    "hcp": 18,
+    "yards": 166
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 8,
+    "yards": 441
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 10,
+    "yards": 471
+   },
+   {
+    "hole": 15,
+    "par": 5,
+    "hcp": 2,
+    "yards": 596
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 4,
+    "yards": 487
+   },
+   {
+    "hole": 17,
+    "par": 3,
+    "hcp": 16,
+    "yards": 193
+   },
+   {
+    "hole": 18,
+    "par": 5,
+    "hcp": 12,
+    "yards": 576
+   }
+  ]
+ },
+ {
+  "name": "Kissena Park Golf Course",
+  "town": "Flushing, NY",
+  "lat": 40.7424,
+  "lon": -73.8016,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   4,
+   3,
+   3,
+   4,
+   3,
+   4,
+   3,
+   3,
+   4,
+   3,
+   4,
+   3,
+   4,
+   3,
+   4,
+   4
+  ],
+  "hcp": [
+   15,
+   1,
+   5,
+   17,
+   13,
+   11,
+   7,
+   9,
+   3,
+   16,
+   6,
+   8,
+   14,
+   4,
+   10,
+   18,
+   2,
+   12
+  ],
+  "yards_tee": "Black",
+  "yards": [
+   320,
+   358,
+   371,
+   119,
+   157,
+   312,
+   162,
+   334,
+   190,
+   115,
+   312,
+   188,
+   317,
+   161,
+   329,
+   119,
+   329,
+   318
+  ],
+  "tees": [
+   {
+    "tee": "Black",
+    "gender": "M",
+    "yards": 4511,
+    "rating": 61.6,
+    "slope": 104
+   },
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 4240,
+    "rating": 60.8,
+    "slope": 102
+   },
+   {
+    "tee": "Blue",
+    "gender": "W",
+    "yards": 4240,
+    "rating": 63.9,
+    "slope": 103
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 3947,
+    "rating": 62.6,
+    "slope": 102
+   }
+  ],
+  "source": "https://18birdies.com/golf-courses/club/98f334d0-86ac-11e4-8c28-020000005b00/kissena-park",
+  "miles_from_11103": 6.1,
+  "total_par": 64,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 15,
+    "yards": 320
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 1,
+    "yards": 358
+   },
+   {
+    "hole": 3,
+    "par": 4,
+    "hcp": 5,
+    "yards": 371
+   },
+   {
+    "hole": 4,
+    "par": 3,
+    "hcp": 17,
+    "yards": 119
+   },
+   {
+    "hole": 5,
+    "par": 3,
+    "hcp": 13,
+    "yards": 157
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 11,
+    "yards": 312
+   },
+   {
+    "hole": 7,
+    "par": 3,
+    "hcp": 7,
+    "yards": 162
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 9,
+    "yards": 334
+   },
+   {
+    "hole": 9,
+    "par": 3,
+    "hcp": 3,
+    "yards": 190
+   },
+   {
+    "hole": 10,
+    "par": 3,
+    "hcp": 16,
+    "yards": 115
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 6,
+    "yards": 312
+   },
+   {
+    "hole": 12,
+    "par": 3,
+    "hcp": 8,
+    "yards": 188
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 14,
+    "yards": 317
+   },
+   {
+    "hole": 14,
+    "par": 3,
+    "hcp": 4,
+    "yards": 161
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 10,
+    "yards": 329
+   },
+   {
+    "hole": 16,
+    "par": 3,
+    "hcp": 18,
+    "yards": 119
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 2,
+    "yards": 329
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 12,
+    "yards": 318
+   }
+  ]
+ },
+ {
+  "name": "Clearview Park Golf Course",
+  "town": "Bayside, NY",
+  "lat": 40.7869,
+  "lon": -73.79,
+  "holes": 18,
+  "par": [
+   4,
+   5,
+   4,
+   3,
+   4,
+   4,
+   3,
+   4,
+   4,
+   4,
+   4,
+   3,
+   4,
+   4,
+   5,
+   3,
+   4,
+   4
+  ],
+  "hcp": [
+   9,
+   5,
+   13,
+   15,
+   3,
+   1,
+   17,
+   11,
+   7,
+   8,
+   6,
+   18,
+   14,
+   2,
+   4,
+   16,
+   10,
+   12
+  ],
+  "yards_tee": "Black",
+  "yards": [
+   370,
+   450,
+   441,
+   179,
+   405,
+   401,
+   147,
+   430,
+   430,
+   325,
+   358,
+   151,
+   357,
+   450,
+   460,
+   174,
+   405,
+   395
+  ],
+  "tees": [
+   {
+    "tee": "Black",
+    "gender": "M",
+    "yards": 6328,
+    "rating": 70.2,
+    "slope": 119
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 6066,
+    "rating": 69.0,
+    "slope": 116
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 5105,
+    "rating": 69.3,
+    "slope": 115
+   }
+  ],
+  "source": "https://www.golfpass.com/travel-advisor/courses/16686-clearview-park-golf-course",
+  "miles_from_11103": 6.8,
+  "total_par": 70,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 9,
+    "yards": 370
+   },
+   {
+    "hole": 2,
+    "par": 5,
+    "hcp": 5,
+    "yards": 450
+   },
+   {
+    "hole": 3,
+    "par": 4,
+    "hcp": 13,
+    "yards": 441
+   },
+   {
+    "hole": 4,
+    "par": 3,
+    "hcp": 15,
+    "yards": 179
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 3,
+    "yards": 405
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 1,
+    "yards": 401
+   },
+   {
+    "hole": 7,
+    "par": 3,
+    "hcp": 17,
+    "yards": 147
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 11,
+    "yards": 430
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 7,
+    "yards": 430
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 8,
+    "yards": 325
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 6,
+    "yards": 358
+   },
+   {
+    "hole": 12,
+    "par": 3,
+    "hcp": 18,
+    "yards": 151
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 14,
+    "yards": 357
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 2,
+    "yards": 450
+   },
+   {
+    "hole": 15,
+    "par": 5,
+    "hcp": 4,
+    "yards": 460
+   },
+   {
+    "hole": 16,
+    "par": 3,
+    "hcp": 16,
+    "yards": 174
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 10,
+    "yards": 405
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 12,
+    "yards": 395
+   }
+  ]
+ },
+ {
+  "name": "Mosholu Golf Course (9 holes)",
+  "town": "Bronx, NY",
+  "lat": 40.8836,
+  "lon": -73.879,
+  "holes": 9,
+  "par": [
+   4,
+   3,
+   3,
+   4,
+   3,
+   4,
+   4,
+   4,
+   3
+  ],
+  "hcp": [
+   5,
+   15,
+   17,
+   7,
+   1,
+   3,
+   13,
+   9,
+   11
+  ],
+  "yards_tee": "Back",
+  "yards": [
+   397,
+   103,
+   193,
+   281,
+   160,
+   398,
+   323,
+   277,
+   180
+  ],
+  "tees": [
+   {
+    "tee": "Back (9-hole)",
+    "gender": "M",
+    "yards": 2312,
+    "rating": 31.2,
+    "slope": 101
+   }
+  ],
+  "source": "https://courses.opengolfapi.org/courses/ny/mosholu-golf-course ; rating from golfn.com 18-hole equivalent 62.4/101 halved",
+  "miles_from_11103": 8.6,
+  "total_par": 32,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 5,
+    "yards": 397
+   },
+   {
+    "hole": 2,
+    "par": 3,
+    "hcp": 15,
+    "yards": 103
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 17,
+    "yards": 193
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 7,
+    "yards": 281
+   },
+   {
+    "hole": 5,
+    "par": 3,
+    "hcp": 1,
+    "yards": 160
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 3,
+    "yards": 398
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 13,
+    "yards": 323
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 9,
+    "yards": 277
+   },
+   {
+    "hole": 9,
+    "par": 3,
+    "hcp": 11,
+    "yards": 180
+   }
+  ]
+ },
+ {
+  "name": "Pelham Bay Golf Course",
+  "town": "Bronx, NY",
+  "lat": 40.864,
+  "lon": -73.811,
+  "holes": 18,
+  "par": [
+   4,
+   5,
+   3,
+   4,
+   4,
+   4,
+   4,
+   3,
+   5,
+   4,
+   4,
+   3,
+   4,
+   5,
+   4,
+   3,
+   4,
+   4
+  ],
+  "hcp": [
+   3,
+   9,
+   13,
+   7,
+   1,
+   17,
+   5,
+   15,
+   11,
+   2,
+   12,
+   14,
+   8,
+   10,
+   16,
+   6,
+   18,
+   4
+  ],
+  "yards_tee": "Back",
+  "yards": [
+   409,
+   475,
+   190,
+   373,
+   432,
+   290,
+   393,
+   154,
+   472,
+   454,
+   374,
+   156,
+   441,
+   542,
+   331,
+   217,
+   338,
+   439
+  ],
+  "tees": [
+   {
+    "tee": "Back",
+    "gender": "M",
+    "yards": 6480,
+    "rating": 70.3,
+    "slope": 117
+   },
+   {
+    "tee": "Middle",
+    "gender": "M",
+    "yards": 6216,
+    "rating": 69.0,
+    "slope": 113
+   },
+   {
+    "tee": "Forward",
+    "gender": "W",
+    "yards": 5418,
+    "rating": 70.4,
+    "slope": 112
+   }
+  ],
+  "source": "https://www.americangolf.com/public-courses/new-york/pelham-bay-and-split-rock-golf-courses",
+  "miles_from_11103": 8.9,
+  "total_par": 71,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 3,
+    "yards": 409
+   },
+   {
+    "hole": 2,
+    "par": 5,
+    "hcp": 9,
+    "yards": 475
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 13,
+    "yards": 190
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 7,
+    "yards": 373
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 1,
+    "yards": 432
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 17,
+    "yards": 290
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 5,
+    "yards": 393
+   },
+   {
+    "hole": 8,
+    "par": 3,
+    "hcp": 15,
+    "yards": 154
+   },
+   {
+    "hole": 9,
+    "par": 5,
+    "hcp": 11,
+    "yards": 472
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 2,
+    "yards": 454
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 12,
+    "yards": 374
+   },
+   {
+    "hole": 12,
+    "par": 3,
+    "hcp": 14,
+    "yards": 156
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 8,
+    "yards": 441
+   },
+   {
+    "hole": 14,
+    "par": 5,
+    "hcp": 10,
+    "yards": 542
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 16,
+    "yards": 331
+   },
+   {
+    "hole": 16,
+    "par": 3,
+    "hcp": 6,
+    "yards": 217
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 18,
+    "yards": 338
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 4,
+    "yards": 439
+   }
+  ]
+ },
+ {
+  "name": "Van Cortlandt Park Golf Course",
+  "town": "Bronx, NY",
+  "lat": 40.8895,
+  "lon": -73.8905,
+  "holes": 18,
+  "par": [
+   4,
+   5,
+   3,
+   4,
+   4,
+   4,
+   3,
+   4,
+   4,
+   5,
+   3,
+   5,
+   3,
+   4,
+   4,
+   4,
+   3,
+   4
+  ],
+  "hcp": [
+   11,
+   1,
+   17,
+   5,
+   9,
+   13,
+   3,
+   15,
+   7,
+   6,
+   18,
+   2,
+   12,
+   4,
+   14,
+   16,
+   8,
+   10
+  ],
+  "yards_tee": "Back",
+  "yards": [
+   370,
+   619,
+   172,
+   364,
+   345,
+   295,
+   222,
+   318,
+   391,
+   475,
+   174,
+   572,
+   172,
+   391,
+   302,
+   292,
+   190,
+   338
+  ],
+  "tees": [
+   {
+    "tee": "Back",
+    "gender": "M",
+    "yards": 6002,
+    "rating": 68.5,
+    "slope": 120
+   },
+   {
+    "tee": "Middle",
+    "gender": "M",
+    "yards": 5558,
+    "rating": 66.7,
+    "slope": 118
+   },
+   {
+    "tee": "Back",
+    "gender": "W",
+    "yards": 6002,
+    "rating": 73.8,
+    "slope": 130
+   },
+   {
+    "tee": "Middle",
+    "gender": "W",
+    "yards": 5558,
+    "rating": 72.3,
+    "slope": 119
+   },
+   {
+    "tee": "Front",
+    "gender": "W",
+    "yards": 4799,
+    "rating": 66.8,
+    "slope": 113
+   }
+  ],
+  "source": "https://18birdies.com/golf-courses/club/989e8520-86ac-11e4-8c28-020000005b00/van-cortlandt-park-golf-course",
+  "miles_from_11103": 8.9,
+  "total_par": 70,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 11,
+    "yards": 370
+   },
+   {
+    "hole": 2,
+    "par": 5,
+    "hcp": 1,
+    "yards": 619
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 17,
+    "yards": 172
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 5,
+    "yards": 364
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 9,
+    "yards": 345
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 13,
+    "yards": 295
+   },
+   {
+    "hole": 7,
+    "par": 3,
+    "hcp": 3,
+    "yards": 222
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 15,
+    "yards": 318
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 7,
+    "yards": 391
+   },
+   {
+    "hole": 10,
+    "par": 5,
+    "hcp": 6,
+    "yards": 475
+   },
+   {
+    "hole": 11,
+    "par": 3,
+    "hcp": 18,
+    "yards": 174
+   },
+   {
+    "hole": 12,
+    "par": 5,
+    "hcp": 2,
+    "yards": 572
+   },
+   {
+    "hole": 13,
+    "par": 3,
+    "hcp": 12,
+    "yards": 172
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 4,
+    "yards": 391
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 14,
+    "yards": 302
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 16,
+    "yards": 292
+   },
+   {
+    "hole": 17,
+    "par": 3,
+    "hcp": 8,
+    "yards": 190
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 10,
+    "yards": 338
+   }
+  ]
+ },
+ {
+  "name": "Overpeck Golf Course",
+  "town": "Teaneck, NJ",
+  "lat": 40.883,
+  "lon": -73.996,
+  "holes": 18,
+  "par": [
+   5,
+   4,
+   3,
+   4,
+   4,
+   4,
+   5,
+   3,
+   4,
+   4,
+   4,
+   5,
+   4,
+   3,
+   4,
+   4,
+   5,
+   3
+  ],
+  "hcp": [
+   7,
+   13,
+   15,
+   11,
+   3,
+   1,
+   5,
+   17,
+   9,
+   4,
+   10,
+   8,
+   12,
+   6,
+   2,
+   16,
+   14,
+   18
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   524,
+   353,
+   179,
+   333,
+   433,
+   444,
+   482,
+   125,
+   336,
+   405,
+   385,
+   482,
+   366,
+   212,
+   429,
+   380,
+   507,
+   156
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6584,
+    "rating": 72.2,
+    "slope": 125
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 6195,
+    "rating": 70.7,
+    "slope": 121
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 5731,
+    "rating": 69.3,
+    "slope": 114
+   }
+  ],
+  "source": "https://courses.opengolfapi.org/courses/NJ/overpeck-golf-course ; tees from 1golf.eu. NOTE: 18Birdies lists 6584 yds 71.5/133 and hole yards sum to 6531 here, verify post-renovation card",
+  "miles_from_11103": 9.3,
+  "total_par": 72,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 5,
+    "hcp": 7,
+    "yards": 524
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 13,
+    "yards": 353
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 15,
+    "yards": 179
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 11,
+    "yards": 333
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 3,
+    "yards": 433
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 1,
+    "yards": 444
+   },
+   {
+    "hole": 7,
+    "par": 5,
+    "hcp": 5,
+    "yards": 482
+   },
+   {
+    "hole": 8,
+    "par": 3,
+    "hcp": 17,
+    "yards": 125
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 9,
+    "yards": 336
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 4,
+    "yards": 405
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 10,
+    "yards": 385
+   },
+   {
+    "hole": 12,
+    "par": 5,
+    "hcp": 8,
+    "yards": 482
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 12,
+    "yards": 366
+   },
+   {
+    "hole": 14,
+    "par": 3,
+    "hcp": 6,
+    "yards": 212
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 2,
+    "yards": 429
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 16,
+    "yards": 380
+   },
+   {
+    "hole": 17,
+    "par": 5,
+    "hcp": 14,
+    "yards": 507
+   },
+   {
+    "hole": 18,
+    "par": 3,
+    "hcp": 18,
+    "yards": 156
+   }
+  ]
+ },
+ {
+  "name": "Split Rock Golf Course",
+  "town": "Bronx, NY",
+  "lat": 40.8739,
+  "lon": -73.8085,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   4,
+   3,
+   5,
+   3,
+   4,
+   4,
+   4,
+   4,
+   4,
+   3,
+   5,
+   4,
+   4,
+   3,
+   4,
+   4
+  ],
+  "hcp": [
+   7,
+   15,
+   5,
+   17,
+   13,
+   11,
+   1,
+   3,
+   9,
+   8,
+   4,
+   16,
+   12,
+   10,
+   18,
+   14,
+   2,
+   6
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   432,
+   413,
+   410,
+   133,
+   515,
+   220,
+   447,
+   441,
+   392,
+   412,
+   439,
+   169,
+   496,
+   372,
+   347,
+   176,
+   448,
+   420
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6682,
+    "rating": 70.7,
+    "slope": 123
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 6304,
+    "rating": 69.6,
+    "slope": 120
+   },
+   {
+    "tee": "Red",
+    "gender": "M",
+    "yards": 5249,
+    "rating": 65.8,
+    "slope": 109
+   },
+   {
+    "tee": "Blue",
+    "gender": "W",
+    "yards": 6682,
+    "rating": 77.4,
+    "slope": 138
+   },
+   {
+    "tee": "White",
+    "gender": "W",
+    "yards": 6304,
+    "rating": 75.3,
+    "slope": 130
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 5249,
+    "rating": 71.0,
+    "slope": 116
+   }
+  ],
+  "source": "https://18birdies.com/golf-courses/club/989e3700-86ac-11e4-8c28-020000005b00/split-rock-golf-course-at-pelham-bay",
+  "miles_from_11103": 9.5,
+  "total_par": 70,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 7,
+    "yards": 432
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 15,
+    "yards": 413
+   },
+   {
+    "hole": 3,
+    "par": 4,
+    "hcp": 5,
+    "yards": 410
+   },
+   {
+    "hole": 4,
+    "par": 3,
+    "hcp": 17,
+    "yards": 133
+   },
+   {
+    "hole": 5,
+    "par": 5,
+    "hcp": 13,
+    "yards": 515
+   },
+   {
+    "hole": 6,
+    "par": 3,
+    "hcp": 11,
+    "yards": 220
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 1,
+    "yards": 447
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 3,
+    "yards": 441
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 9,
+    "yards": 392
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 8,
+    "yards": 412
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 4,
+    "yards": 439
+   },
+   {
+    "hole": 12,
+    "par": 3,
+    "hcp": 16,
+    "yards": 169
+   },
+   {
+    "hole": 13,
+    "par": 5,
+    "hcp": 12,
+    "yards": 496
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 10,
+    "yards": 372
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 18,
+    "yards": 347
+   },
+   {
+    "hole": 16,
+    "par": 3,
+    "hcp": 14,
+    "yards": 176
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 2,
+    "yards": 448
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 6,
+    "yards": 420
+   }
+  ]
+ },
+ {
+  "name": "Douglaston Golf Course",
+  "town": "Douglaston, NY",
+  "lat": 40.7547,
+  "lon": -73.7291,
+  "holes": 18,
+  "par": [
+   4,
+   3,
+   4,
+   4,
+   3,
+   4,
+   5,
+   4,
+   3,
+   4,
+   4,
+   3,
+   4,
+   4,
+   3,
+   3,
+   3,
+   5
+  ],
+  "hcp": [
+   11,
+   15,
+   5,
+   1,
+   17,
+   3,
+   9,
+   7,
+   13,
+   8,
+   10,
+   16,
+   6,
+   4,
+   12,
+   14,
+   18,
+   2
+  ],
+  "yards_tee": "Black",
+  "yards": [
+   385,
+   163,
+   369,
+   431,
+   140,
+   420,
+   470,
+   380,
+   202,
+   324,
+   297,
+   163,
+   370,
+   347,
+   181,
+   169,
+   125,
+   533
+  ],
+  "tees": [
+   {
+    "tee": "Black",
+    "gender": "M",
+    "yards": 5469,
+    "rating": 65.5,
+    "slope": 110
+   },
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 5071,
+    "rating": 63.7,
+    "slope": 108
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 4413,
+    "rating": 62.1,
+    "slope": 106
+   }
+  ],
+  "source": "https://www.golfpass.com/travel-advisor/courses/20360-douglaston-golf-club",
+  "miles_from_11103": 9.8,
+  "total_par": 67,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 11,
+    "yards": 385
+   },
+   {
+    "hole": 2,
+    "par": 3,
+    "hcp": 15,
+    "yards": 163
+   },
+   {
+    "hole": 3,
+    "par": 4,
+    "hcp": 5,
+    "yards": 369
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 1,
+    "yards": 431
+   },
+   {
+    "hole": 5,
+    "par": 3,
+    "hcp": 17,
+    "yards": 140
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 3,
+    "yards": 420
+   },
+   {
+    "hole": 7,
+    "par": 5,
+    "hcp": 9,
+    "yards": 470
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 7,
+    "yards": 380
+   },
+   {
+    "hole": 9,
+    "par": 3,
+    "hcp": 13,
+    "yards": 202
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 8,
+    "yards": 324
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 10,
+    "yards": 297
+   },
+   {
+    "hole": 12,
+    "par": 3,
+    "hcp": 16,
+    "yards": 163
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 6,
+    "yards": 370
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 4,
+    "yards": 347
+   },
+   {
+    "hole": 15,
+    "par": 3,
+    "hcp": 12,
+    "yards": 181
+   },
+   {
+    "hole": 16,
+    "par": 3,
+    "hcp": 14,
+    "yards": 169
+   },
+   {
+    "hole": 17,
+    "par": 3,
+    "hcp": 18,
+    "yards": 125
+   },
+   {
+    "hole": 18,
+    "par": 5,
+    "hcp": 2,
+    "yards": 533
+   }
+  ]
+ },
+ {
+  "name": "Skyway Golf Course (9 holes)",
+  "town": "Jersey City, NJ",
+  "lat": 40.727,
+  "lon": -74.098,
+  "holes": 9,
+  "par": [
+   4,
+   3,
+   5,
+   3,
+   4,
+   5,
+   4,
+   5,
+   3
+  ],
+  "hcp": [
+   3,
+   1,
+   9,
+   17,
+   13,
+   7,
+   15,
+   11,
+   5
+  ],
+  "yards_tee": "Black",
+  "yards": [
+   346,
+   200,
+   517,
+   130,
+   459,
+   532,
+   365,
+   523,
+   175
+  ],
+  "tees": [
+   {
+    "tee": "Black (9-hole)",
+    "gender": "M",
+    "yards": 3247,
+    "rating": 35.7,
+    "slope": 142
+   },
+   {
+    "tee": "Gold (9-hole)",
+    "gender": "M",
+    "yards": 3020,
+    "rating": 34.7,
+    "slope": 135
+   },
+   {
+    "tee": "White (9-hole)",
+    "gender": "M",
+    "yards": 2839,
+    "rating": 34.1,
+    "slope": 118
+   },
+   {
+    "tee": "Green (9-hole)",
+    "gender": "?",
+    "yards": 2643,
+    "rating": 34.1,
+    "slope": 112
+   },
+   {
+    "tee": "Blue (9-hole)",
+    "gender": "?",
+    "yards": 2468,
+    "rating": 32.7,
+    "slope": 111
+   }
+  ],
+  "source": "https://courses.opengolfapi.org/courses/NJ/skyway-golf-course-at-lincoln-park-west ; tee ratings from stymie.golf / golfingrecord.com (gender not labeled)",
+  "miles_from_11103": 9.9,
+  "total_par": 36,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 3,
+    "yards": 346
+   },
+   {
+    "hole": 2,
+    "par": 3,
+    "hcp": 1,
+    "yards": 200
+   },
+   {
+    "hole": 3,
+    "par": 5,
+    "hcp": 9,
+    "yards": 517
+   },
+   {
+    "hole": 4,
+    "par": 3,
+    "hcp": 17,
+    "yards": 130
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 13,
+    "yards": 459
+   },
+   {
+    "hole": 6,
+    "par": 5,
+    "hcp": 7,
+    "yards": 532
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 15,
+    "yards": 365
+   },
+   {
+    "hole": 8,
+    "par": 5,
+    "hcp": 11,
+    "yards": 523
+   },
+   {
+    "hole": 9,
+    "par": 3,
+    "hcp": 5,
+    "yards": 175
+   }
+  ]
+ },
+ {
+  "name": "Dyker Beach Golf Course",
+  "town": "Brooklyn, NY",
+  "lat": 40.615,
+  "lon": -74.017,
+  "holes": 18,
+  "par": [
+   4,
+   3,
+   4,
+   5,
+   4,
+   3,
+   5,
+   4,
+   4,
+   4,
+   3,
+   4,
+   4,
+   4,
+   5,
+   4,
+   3,
+   4
+  ],
+  "hcp": [
+   4,
+   14,
+   8,
+   12,
+   2,
+   10,
+   6,
+   18,
+   16,
+   11,
+   17,
+   13,
+   1,
+   3,
+   7,
+   9,
+   5,
+   15
+  ],
+  "yards_tee": "Back",
+  "yards": [
+   426,
+   200,
+   341,
+   458,
+   422,
+   175,
+   491,
+   370,
+   350,
+   400,
+   160,
+   334,
+   441,
+   428,
+   458,
+   388,
+   203,
+   393
+  ],
+  "tees": [
+   {
+    "tee": "Back",
+    "gender": "M",
+    "yards": 6438,
+    "rating": 70.5,
+    "slope": 122
+   },
+   {
+    "tee": "Middle",
+    "gender": "M",
+    "yards": 6176,
+    "rating": 69.5,
+    "slope": 119
+   },
+   {
+    "tee": "Forward",
+    "gender": "M",
+    "yards": 5366,
+    "rating": 65.6,
+    "slope": 111
+   },
+   {
+    "tee": "Back",
+    "gender": "W",
+    "yards": 6438,
+    "rating": 76.1,
+    "slope": 135
+   },
+   {
+    "tee": "Middle",
+    "gender": "W",
+    "yards": 6176,
+    "rating": 74.7,
+    "slope": 132
+   },
+   {
+    "tee": "Forward",
+    "gender": "W",
+    "yards": 5366,
+    "rating": 70.7,
+    "slope": 117
+   }
+  ],
+  "source": "https://18birdies.com/golf-courses/club/989f6f80-86ac-11e4-8c28-020000005b00/dyker-beach-golf-course",
+  "miles_from_11103": 11.5,
+  "total_par": 71,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 4,
+    "yards": 426
+   },
+   {
+    "hole": 2,
+    "par": 3,
+    "hcp": 14,
+    "yards": 200
+   },
+   {
+    "hole": 3,
+    "par": 4,
+    "hcp": 8,
+    "yards": 341
+   },
+   {
+    "hole": 4,
+    "par": 5,
+    "hcp": 12,
+    "yards": 458
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 2,
+    "yards": 422
+   },
+   {
+    "hole": 6,
+    "par": 3,
+    "hcp": 10,
+    "yards": 175
+   },
+   {
+    "hole": 7,
+    "par": 5,
+    "hcp": 6,
+    "yards": 491
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 18,
+    "yards": 370
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 16,
+    "yards": 350
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 11,
+    "yards": 400
+   },
+   {
+    "hole": 11,
+    "par": 3,
+    "hcp": 17,
+    "yards": 160
+   },
+   {
+    "hole": 12,
+    "par": 4,
+    "hcp": 13,
+    "yards": 334
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 1,
+    "yards": 441
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 3,
+    "yards": 428
+   },
+   {
+    "hole": 15,
+    "par": 5,
+    "hcp": 7,
+    "yards": 458
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 9,
+    "yards": 388
+   },
+   {
+    "hole": 17,
+    "par": 3,
+    "hcp": 5,
+    "yards": 203
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 15,
+    "yards": 393
+   }
+  ]
+ },
+ {
+  "name": "Marine Park Golf Course",
+  "town": "Brooklyn, NY",
+  "lat": 40.5965,
+  "lon": -73.914,
+  "holes": 18,
+  "par": [
+   5,
+   4,
+   4,
+   4,
+   3,
+   4,
+   4,
+   3,
+   4,
+   5,
+   4,
+   4,
+   3,
+   5,
+   4,
+   4,
+   3,
+   5
+  ],
+  "hcp": [
+   7,
+   3,
+   1,
+   15,
+   17,
+   9,
+   11,
+   13,
+   5,
+   10,
+   12,
+   14,
+   16,
+   8,
+   2,
+   6,
+   18,
+   4
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   509,
+   433,
+   455,
+   360,
+   178,
+   393,
+   382,
+   178,
+   415,
+   491,
+   381,
+   381,
+   181,
+   510,
+   439,
+   405,
+   213,
+   496
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6800,
+    "rating": 73.3,
+    "slope": 128
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 6329,
+    "rating": 71.7,
+    "slope": 125
+   },
+   {
+    "tee": "Gold",
+    "gender": "M",
+    "yards": 5717,
+    "rating": 67.5,
+    "slope": 117
+   },
+   {
+    "tee": "Red",
+    "gender": "M",
+    "yards": 4816,
+    "rating": 65.2,
+    "slope": 105
+   },
+   {
+    "tee": "Gold",
+    "gender": "W",
+    "yards": 5717,
+    "rating": 72.9,
+    "slope": 125
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 4816,
+    "rating": 68.8,
+    "slope": 115
+   }
+  ],
+  "source": "https://18birdies.com/golf-courses/club/e4ec0590-20b6-11e8-aa4b-0680a328ea36/marine-park-golf-course",
+  "miles_from_11103": 11.5,
+  "total_par": 72,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 5,
+    "hcp": 7,
+    "yards": 509
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 3,
+    "yards": 433
+   },
+   {
+    "hole": 3,
+    "par": 4,
+    "hcp": 1,
+    "yards": 455
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 15,
+    "yards": 360
+   },
+   {
+    "hole": 5,
+    "par": 3,
+    "hcp": 17,
+    "yards": 178
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 9,
+    "yards": 393
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 11,
+    "yards": 382
+   },
+   {
+    "hole": 8,
+    "par": 3,
+    "hcp": 13,
+    "yards": 178
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 5,
+    "yards": 415
+   },
+   {
+    "hole": 10,
+    "par": 5,
+    "hcp": 10,
+    "yards": 491
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 12,
+    "yards": 381
+   },
+   {
+    "hole": 12,
+    "par": 4,
+    "hcp": 14,
+    "yards": 381
+   },
+   {
+    "hole": 13,
+    "par": 3,
+    "hcp": 16,
+    "yards": 181
+   },
+   {
+    "hole": 14,
+    "par": 5,
+    "hcp": 8,
+    "yards": 510
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 2,
+    "yards": 439
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 6,
+    "yards": 405
+   },
+   {
+    "hole": 17,
+    "par": 3,
+    "hcp": 18,
+    "yards": 213
+   },
+   {
+    "hole": 18,
+    "par": 5,
+    "hcp": 4,
+    "yards": 496
+   }
+  ]
+ },
+ {
+  "name": "Dunwoodie Golf Course",
+  "town": "Yonkers, NY",
+  "lat": 40.939,
+  "lon": -73.868,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   4,
+   4,
+   4,
+   5,
+   3,
+   4,
+   4,
+   3,
+   5,
+   3,
+   4,
+   3,
+   4,
+   5,
+   4,
+   3
+  ],
+  "hcp": [
+   13,
+   9,
+   7,
+   1,
+   5,
+   11,
+   17,
+   3,
+   15,
+   14,
+   8,
+   16,
+   6,
+   12,
+   4,
+   10,
+   2,
+   18
+  ],
+  "yards_tee": "Black",
+  "yards": [
+   276,
+   329,
+   376,
+   386,
+   321,
+   505,
+   184,
+   390,
+   245,
+   175,
+   505,
+   135,
+   328,
+   172,
+   404,
+   519,
+   419,
+   164
+  ],
+  "tees": [
+   {
+    "tee": "Black",
+    "gender": "M",
+    "yards": 5833,
+    "rating": 68.1,
+    "slope": 123
+   },
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 5441,
+    "rating": 65.9,
+    "slope": 115
+   },
+   {
+    "tee": "Black (fwd set)",
+    "gender": "W",
+    "yards": 5666,
+    "rating": 73.4,
+    "slope": 124
+   },
+   {
+    "tee": "Blue (fwd set)",
+    "gender": "W",
+    "yards": 5337,
+    "rating": 70.4,
+    "slope": 120
+   }
+  ],
+  "source": "https://stymie.golf/golf-courses/new-york/westchester-county/yonkers/dunwoodie-golf-course ; par/hcp from opengolfapi; back-tee 68.1/123 matches golf.westchestergov.com",
+  "miles_from_11103": 12.4,
+  "total_par": 70,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 13,
+    "yards": 276
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 9,
+    "yards": 329
+   },
+   {
+    "hole": 3,
+    "par": 4,
+    "hcp": 7,
+    "yards": 376
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 1,
+    "yards": 386
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 5,
+    "yards": 321
+   },
+   {
+    "hole": 6,
+    "par": 5,
+    "hcp": 11,
+    "yards": 505
+   },
+   {
+    "hole": 7,
+    "par": 3,
+    "hcp": 17,
+    "yards": 184
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 3,
+    "yards": 390
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 15,
+    "yards": 245
+   },
+   {
+    "hole": 10,
+    "par": 3,
+    "hcp": 14,
+    "yards": 175
+   },
+   {
+    "hole": 11,
+    "par": 5,
+    "hcp": 8,
+    "yards": 505
+   },
+   {
+    "hole": 12,
+    "par": 3,
+    "hcp": 16,
+    "yards": 135
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 6,
+    "yards": 328
+   },
+   {
+    "hole": 14,
+    "par": 3,
+    "hcp": 12,
+    "yards": 172
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 4,
+    "yards": 404
+   },
+   {
+    "hole": 16,
+    "par": 5,
+    "hcp": 10,
+    "yards": 519
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 2,
+    "yards": 419
+   },
+   {
+    "hole": 18,
+    "par": 3,
+    "hcp": 18,
+    "yards": 164
+   }
+  ]
+ },
+ {
+  "name": "North Woodmere Golf Course (9 holes)",
+  "town": "Valley Stream, NY",
+  "lat": 40.638,
+  "lon": -73.724,
+  "holes": 9,
+  "par": [
+   4,
+   4,
+   4,
+   3,
+   3,
+   3,
+   3,
+   4,
+   3
+  ],
+  "hcp": [
+   3,
+   1,
+   7,
+   11,
+   13,
+   9,
+   15,
+   5,
+   17
+  ],
+  "yards_tee": "White",
+  "yards": [
+   390,
+   395,
+   310,
+   177,
+   167,
+   200,
+   143,
+   360,
+   140
+  ],
+  "tees": [
+   {
+    "tee": "White (9-hole)",
+    "gender": "M",
+    "yards": 2282,
+    "rating": 30.1,
+    "slope": 94
+   },
+   {
+    "tee": "White (9-hole)",
+    "gender": "W",
+    "yards": 2282,
+    "rating": 31.4,
+    "slope": 96
+   }
+  ],
+  "source": "https://nassaucountyny.gov/1788/North-Woodmere-Park (card; county hcp 1-9 converted to odd 1-17) ; ratings from golfadvisor.com/courses/9573",
+  "miles_from_11103": 13.2,
+  "total_par": 31,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 3,
+    "yards": 390
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 1,
+    "yards": 395
+   },
+   {
+    "hole": 3,
+    "par": 4,
+    "hcp": 7,
+    "yards": 310
+   },
+   {
+    "hole": 4,
+    "par": 3,
+    "hcp": 11,
+    "yards": 177
+   },
+   {
+    "hole": 5,
+    "par": 3,
+    "hcp": 13,
+    "yards": 167
+   },
+   {
+    "hole": 6,
+    "par": 3,
+    "hcp": 9,
+    "yards": 200
+   },
+   {
+    "hole": 7,
+    "par": 3,
+    "hcp": 15,
+    "yards": 143
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 5,
+    "yards": 360
+   },
+   {
+    "hole": 9,
+    "par": 3,
+    "hcp": 17,
+    "yards": 140
+   }
+  ]
+ },
+ {
+  "name": "Silver Lake Golf Course",
+  "town": "Staten Island, NY",
+  "lat": 40.6275,
+  "lon": -74.095,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   3,
+   4,
+   5,
+   3,
+   4,
+   4,
+   4,
+   4,
+   3,
+   4,
+   5,
+   4,
+   4,
+   3,
+   4,
+   4
+  ],
+  "hcp": [
+   8,
+   14,
+   12,
+   4,
+   10,
+   18,
+   16,
+   6,
+   2,
+   5,
+   17,
+   3,
+   7,
+   11,
+   15,
+   13,
+   9,
+   1
+  ],
+  "yards_tee": "Black",
+  "yards": [
+   355,
+   363,
+   235,
+   384,
+   480,
+   158,
+   316,
+   396,
+   379,
+   394,
+   168,
+   409,
+   563,
+   357,
+   333,
+   216,
+   382,
+   416
+  ],
+  "tees": [
+   {
+    "tee": "Black",
+    "gender": "M",
+    "yards": 6304,
+    "rating": 70.4,
+    "slope": 119
+   },
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 5709,
+    "rating": 67.4,
+    "slope": 114
+   },
+   {
+    "tee": "Silver",
+    "gender": "M",
+    "yards": 5375,
+    "rating": 65.6,
+    "slope": 110
+   },
+   {
+    "tee": "Black",
+    "gender": "W",
+    "yards": 6304,
+    "rating": 76.0,
+    "slope": 134
+   },
+   {
+    "tee": "Blue",
+    "gender": "W",
+    "yards": 5709,
+    "rating": 73.4,
+    "slope": 129
+   },
+   {
+    "tee": "Silver",
+    "gender": "W",
+    "yards": 5375,
+    "rating": 71.8,
+    "slope": 124
+   }
+  ],
+  "source": "https://www.golfpass.com/courses/1139-silver-lake-golf-course/scorecard-and-layout",
+  "miles_from_11103": 13.3,
+  "total_par": 70,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 8,
+    "yards": 355
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 14,
+    "yards": 363
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 12,
+    "yards": 235
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 4,
+    "yards": 384
+   },
+   {
+    "hole": 5,
+    "par": 5,
+    "hcp": 10,
+    "yards": 480
+   },
+   {
+    "hole": 6,
+    "par": 3,
+    "hcp": 18,
+    "yards": 158
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 16,
+    "yards": 316
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 6,
+    "yards": 396
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 2,
+    "yards": 379
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 5,
+    "yards": 394
+   },
+   {
+    "hole": 11,
+    "par": 3,
+    "hcp": 17,
+    "yards": 168
+   },
+   {
+    "hole": 12,
+    "par": 4,
+    "hcp": 3,
+    "yards": 409
+   },
+   {
+    "hole": 13,
+    "par": 5,
+    "hcp": 7,
+    "yards": 563
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 11,
+    "yards": 357
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 15,
+    "yards": 333
+   },
+   {
+    "hole": 16,
+    "par": 3,
+    "hcp": 13,
+    "yards": 216
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 9,
+    "yards": 382
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 1,
+    "yards": 416
+   }
+  ]
+ },
+ {
+  "name": "Harbor Links Golf Course (Championship)",
+  "town": "Port Washington, NY",
+  "lat": 40.815,
+  "lon": -73.67,
+  "holes": 18,
+  "par": [
+   5,
+   4,
+   3,
+   4,
+   4,
+   5,
+   4,
+   3,
+   4,
+   4,
+   4,
+   3,
+   5,
+   4,
+   4,
+   5,
+   3,
+   4
+  ],
+  "hcp": [
+   7,
+   5,
+   17,
+   13,
+   11,
+   1,
+   9,
+   15,
+   3,
+   2,
+   18,
+   16,
+   12,
+   8,
+   10,
+   6,
+   14,
+   4
+  ],
+  "yards_tee": "Back",
+  "yards": [
+   524,
+   437,
+   180,
+   396,
+   367,
+   521,
+   419,
+   220,
+   447,
+   440,
+   335,
+   172,
+   501,
+   400,
+   377,
+   540,
+   208,
+   454
+  ],
+  "tees": [
+   {
+    "tee": "Back (Green/Black)",
+    "gender": "M",
+    "yards": 6938,
+    "rating": 73.0,
+    "slope": 130
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 6503,
+    "rating": 71.0,
+    "slope": 128
+   },
+   {
+    "tee": "Gold",
+    "gender": "M",
+    "yards": 5676,
+    "rating": 67.3,
+    "slope": 117
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 4966,
+    "rating": 69.1,
+    "slope": 121
+   }
+  ],
+  "source": "https://courses.opengolfapi.org/courses/NY/championship-at-harbor-links-golf-course ; tees from golfnow listing. NOTE: current golfpass card shows Black 6886 / White 6412 / Gold 5578, so tee names and ratings may have been updated",
+  "miles_from_11103": 13.3,
+  "total_par": 72,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 5,
+    "hcp": 7,
+    "yards": 524
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 5,
+    "yards": 437
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 17,
+    "yards": 180
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 13,
+    "yards": 396
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 11,
+    "yards": 367
+   },
+   {
+    "hole": 6,
+    "par": 5,
+    "hcp": 1,
+    "yards": 521
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 9,
+    "yards": 419
+   },
+   {
+    "hole": 8,
+    "par": 3,
+    "hcp": 15,
+    "yards": 220
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 3,
+    "yards": 447
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 2,
+    "yards": 440
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 18,
+    "yards": 335
+   },
+   {
+    "hole": 12,
+    "par": 3,
+    "hcp": 16,
+    "yards": 172
+   },
+   {
+    "hole": 13,
+    "par": 5,
+    "hcp": 12,
+    "yards": 501
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 8,
+    "yards": 400
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 10,
+    "yards": 377
+   },
+   {
+    "hole": 16,
+    "par": 5,
+    "hcp": 6,
+    "yards": 540
+   },
+   {
+    "hole": 17,
+    "par": 3,
+    "hcp": 14,
+    "yards": 208
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 4,
+    "yards": 454
+   }
+  ]
+ },
+ {
+  "name": "Hendricks Field Golf Course",
+  "town": "Belleville, NJ",
+  "lat": 40.813,
+  "lon": -74.17,
+  "holes": 18,
+  "par": [
+   5,
+   4,
+   3,
+   5,
+   5,
+   3,
+   4,
+   3,
+   4,
+   4,
+   5,
+   3,
+   4,
+   3,
+   4,
+   4,
+   3,
+   4
+  ],
+  "hcp": [
+   9,
+   3,
+   11,
+   13,
+   5,
+   17,
+   1,
+   15,
+   7,
+   8,
+   2,
+   16,
+   12,
+   6,
+   10,
+   14,
+   18,
+   4
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   475,
+   424,
+   185,
+   495,
+   478,
+   162,
+   420,
+   190,
+   374,
+   364,
+   575,
+   154,
+   344,
+   210,
+   372,
+   335,
+   162,
+   431
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6113,
+    "rating": 69.1,
+    "slope": 120
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 5908,
+    "rating": 67.9,
+    "slope": 117
+   },
+   {
+    "tee": "Yellow",
+    "gender": "M",
+    "yards": 5281,
+    "rating": 64.7,
+    "slope": 108
+   },
+   {
+    "tee": "White",
+    "gender": "W",
+    "yards": 5908,
+    "rating": 73.6,
+    "slope": 125
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 5160,
+    "rating": 69.6,
+    "slope": 114
+   }
+  ],
+  "source": "https://courses.opengolfapi.org/courses/NJ/hendricks-field-golf-course ; tees from golfpass/golfnow listing. NOTE: hole yards sum 6150 vs Blue tee listed 6113",
+  "miles_from_11103": 13.8,
+  "total_par": 70,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 5,
+    "hcp": 9,
+    "yards": 475
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 3,
+    "yards": 424
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 11,
+    "yards": 185
+   },
+   {
+    "hole": 4,
+    "par": 5,
+    "hcp": 13,
+    "yards": 495
+   },
+   {
+    "hole": 5,
+    "par": 5,
+    "hcp": 5,
+    "yards": 478
+   },
+   {
+    "hole": 6,
+    "par": 3,
+    "hcp": 17,
+    "yards": 162
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 1,
+    "yards": 420
+   },
+   {
+    "hole": 8,
+    "par": 3,
+    "hcp": 15,
+    "yards": 190
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 7,
+    "yards": 374
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 8,
+    "yards": 364
+   },
+   {
+    "hole": 11,
+    "par": 5,
+    "hcp": 2,
+    "yards": 575
+   },
+   {
+    "hole": 12,
+    "par": 3,
+    "hcp": 16,
+    "yards": 154
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 12,
+    "yards": 344
+   },
+   {
+    "hole": 14,
+    "par": 3,
+    "hcp": 6,
+    "yards": 210
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 10,
+    "yards": 372
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 14,
+    "yards": 335
+   },
+   {
+    "hole": 17,
+    "par": 3,
+    "hcp": 18,
+    "yards": 162
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 4,
+    "yards": 431
+   }
+  ]
+ },
+ {
+  "name": "Christopher Morley Park Golf Course (9 holes)",
+  "town": "Roslyn-North Hills, NY",
+  "lat": 40.789,
+  "lon": -73.652,
+  "holes": 9,
+  "par": [
+   4,
+   3,
+   3,
+   3,
+   3,
+   3,
+   4,
+   3,
+   4
+  ],
+  "hcp": [
+   3,
+   13,
+   9,
+   11,
+   5,
+   7,
+   1,
+   17,
+   15
+  ],
+  "yards_tee": "White",
+  "yards": [
+   267,
+   143,
+   153,
+   119,
+   145,
+   152,
+   300,
+   97,
+   227
+  ],
+  "tees": [
+   {
+    "tee": "White (9-hole)",
+    "gender": "M",
+    "yards": 1603,
+    "rating": 29.1,
+    "slope": 88
+   },
+   {
+    "tee": "White (9-hole)",
+    "gender": "W",
+    "yards": 1603,
+    "rating": 30.2,
+    "slope": 100
+   }
+  ],
+  "source": "https://nassaucountyny.gov/1787/Christopher-Morley-Park (county hcp 1-9 converted to odd) ; ratings from golfadvisor.com/courses/9565",
+  "miles_from_11103": 13.9,
+  "total_par": 30,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 3,
+    "yards": 267
+   },
+   {
+    "hole": 2,
+    "par": 3,
+    "hcp": 13,
+    "yards": 143
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 9,
+    "yards": 153
+   },
+   {
+    "hole": 4,
+    "par": 3,
+    "hcp": 11,
+    "yards": 119
+   },
+   {
+    "hole": 5,
+    "par": 3,
+    "hcp": 5,
+    "yards": 145
+   },
+   {
+    "hole": 6,
+    "par": 3,
+    "hcp": 7,
+    "yards": 152
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 1,
+    "yards": 300
+   },
+   {
+    "hole": 8,
+    "par": 3,
+    "hcp": 17,
+    "yards": 97
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 15,
+    "yards": 227
+   }
+  ]
+ },
+ {
+  "name": "Sprain Lake Golf Course",
+  "town": "Yonkers, NY",
+  "lat": 40.966,
+  "lon": -73.841,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   4,
+   3,
+   4,
+   4,
+   4,
+   4,
+   3,
+   5,
+   4,
+   4,
+   3,
+   4,
+   4,
+   3,
+   5,
+   4
+  ],
+  "hcp": [
+   6,
+   2,
+   12,
+   18,
+   14,
+   10,
+   4,
+   8,
+   16,
+   7,
+   11,
+   5,
+   17,
+   13,
+   3,
+   15,
+   9,
+   1
+  ],
+  "yards_tee": "Back",
+  "yards": [
+   359,
+   380,
+   358,
+   135,
+   305,
+   320,
+   391,
+   346,
+   170,
+   510,
+   354,
+   415,
+   165,
+   325,
+   414,
+   165,
+   470,
+   428
+  ],
+  "tees": [
+   {
+    "tee": "Back",
+    "gender": "M",
+    "yards": 6010,
+    "rating": 69.3,
+    "slope": 122
+   }
+  ],
+  "source": "https://courses.opengolfapi.org/courses/NY/sprain-lake-golf-course",
+  "miles_from_11103": 14.6,
+  "total_par": 70,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 6,
+    "yards": 359
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 2,
+    "yards": 380
+   },
+   {
+    "hole": 3,
+    "par": 4,
+    "hcp": 12,
+    "yards": 358
+   },
+   {
+    "hole": 4,
+    "par": 3,
+    "hcp": 18,
+    "yards": 135
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 14,
+    "yards": 305
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 10,
+    "yards": 320
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 4,
+    "yards": 391
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 8,
+    "yards": 346
+   },
+   {
+    "hole": 9,
+    "par": 3,
+    "hcp": 16,
+    "yards": 170
+   },
+   {
+    "hole": 10,
+    "par": 5,
+    "hcp": 7,
+    "yards": 510
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 11,
+    "yards": 354
+   },
+   {
+    "hole": 12,
+    "par": 4,
+    "hcp": 5,
+    "yards": 415
+   },
+   {
+    "hole": 13,
+    "par": 3,
+    "hcp": 17,
+    "yards": 165
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 13,
+    "yards": 325
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 3,
+    "yards": 414
+   },
+   {
+    "hole": 16,
+    "par": 3,
+    "hcp": 15,
+    "yards": 165
+   },
+   {
+    "hole": 17,
+    "par": 5,
+    "hcp": 9,
+    "yards": 470
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 1,
+    "yards": 428
+   }
+  ]
+ },
+ {
+  "name": "Saxon Woods Golf Course",
+  "town": "Scarsdale, NY",
+  "lat": 40.979,
+  "lon": -73.766,
+  "holes": 18,
+  "par": [
+   4,
+   3,
+   5,
+   3,
+   4,
+   4,
+   3,
+   5,
+   4,
+   4,
+   4,
+   4,
+   5,
+   4,
+   4,
+   3,
+   4,
+   4
+  ],
+  "hcp": [
+   11,
+   9,
+   3,
+   17,
+   1,
+   13,
+   15,
+   5,
+   7,
+   4,
+   14,
+   8,
+   6,
+   12,
+   10,
+   18,
+   2,
+   16
+  ],
+  "yards_tee": "Card set (6168)",
+  "yards": [
+   315,
+   175,
+   511,
+   168,
+   390,
+   311,
+   161,
+   508,
+   366,
+   460,
+   308,
+   380,
+   460,
+   366,
+   375,
+   152,
+   402,
+   360
+  ],
+  "tees": [
+   {
+    "tee": "Back (NYSGA)",
+    "gender": "M",
+    "yards": 6452,
+    "rating": 70.8,
+    "slope": 122
+   },
+   {
+    "tee": "Card set shown",
+    "gender": "M",
+    "yards": 6168,
+    "rating": 70.2,
+    "slope": 122
+   }
+  ],
+  "source": "https://courses.opengolfapi.org/courses/NY/saxon-woods-golf-course ; back tee from nysga.org. NOTE: sources conflict (par 71 vs 72, 6168/6293/6452 yds); verify current card",
+  "miles_from_11103": 16.9,
+  "total_par": 71,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 11,
+    "yards": 315
+   },
+   {
+    "hole": 2,
+    "par": 3,
+    "hcp": 9,
+    "yards": 175
+   },
+   {
+    "hole": 3,
+    "par": 5,
+    "hcp": 3,
+    "yards": 511
+   },
+   {
+    "hole": 4,
+    "par": 3,
+    "hcp": 17,
+    "yards": 168
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 1,
+    "yards": 390
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 13,
+    "yards": 311
+   },
+   {
+    "hole": 7,
+    "par": 3,
+    "hcp": 15,
+    "yards": 161
+   },
+   {
+    "hole": 8,
+    "par": 5,
+    "hcp": 5,
+    "yards": 508
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 7,
+    "yards": 366
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 4,
+    "yards": 460
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 14,
+    "yards": 308
+   },
+   {
+    "hole": 12,
+    "par": 4,
+    "hcp": 8,
+    "yards": 380
+   },
+   {
+    "hole": 13,
+    "par": 5,
+    "hcp": 6,
+    "yards": 460
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 12,
+    "yards": 366
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 10,
+    "yards": 375
+   },
+   {
+    "hole": 16,
+    "par": 3,
+    "hcp": 18,
+    "yards": 152
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 2,
+    "yards": 402
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 16,
+    "yards": 360
+   }
+  ]
+ },
+ {
+  "name": "La Tourette Golf Course",
+  "town": "Staten Island, NY",
+  "lat": 40.5761,
+  "lon": -74.1472,
+  "holes": 18,
+  "par": [
+   5,
+   4,
+   3,
+   4,
+   4,
+   4,
+   4,
+   5,
+   4,
+   5,
+   4,
+   3,
+   4,
+   4,
+   4,
+   3,
+   4,
+   4
+  ],
+  "hcp": [
+   15,
+   13,
+   9,
+   1,
+   17,
+   3,
+   7,
+   11,
+   5,
+   14,
+   16,
+   18,
+   8,
+   2,
+   4,
+   12,
+   10,
+   6
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   511,
+   382,
+   200,
+   417,
+   354,
+   394,
+   397,
+   497,
+   398,
+   519,
+   325,
+   151,
+   380,
+   438,
+   408,
+   166,
+   370,
+   401
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6708,
+    "rating": 72.3,
+    "slope": 124
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 6338,
+    "rating": 70.6,
+    "slope": 122
+   },
+   {
+    "tee": "Red",
+    "gender": "M",
+    "yards": 5477,
+    "rating": 66.2,
+    "slope": 114
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 5477,
+    "rating": 72.1,
+    "slope": 122
+   }
+  ],
+  "source": "https://www.golfadvisor.com/courses/9770-latourette-golf-course (scorecard rows; older tee table shows 71.3/121, 69.6/118, W 70.9/115)",
+  "miles_from_11103": 17.7,
+  "total_par": 72,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 5,
+    "hcp": 15,
+    "yards": 511
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 13,
+    "yards": 382
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 9,
+    "yards": 200
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 1,
+    "yards": 417
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 17,
+    "yards": 354
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 3,
+    "yards": 394
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 7,
+    "yards": 397
+   },
+   {
+    "hole": 8,
+    "par": 5,
+    "hcp": 11,
+    "yards": 497
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 5,
+    "yards": 398
+   },
+   {
+    "hole": 10,
+    "par": 5,
+    "hcp": 14,
+    "yards": 519
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 16,
+    "yards": 325
+   },
+   {
+    "hole": 12,
+    "par": 3,
+    "hcp": 18,
+    "yards": 151
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 8,
+    "yards": 380
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 2,
+    "yards": 438
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 4,
+    "yards": 408
+   },
+   {
+    "hole": 16,
+    "par": 3,
+    "hcp": 12,
+    "yards": 166
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 10,
+    "yards": 370
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 6,
+    "yards": 401
+   }
+  ]
+ },
+ {
+  "name": "Eisenhower Park White Course",
+  "town": "East Meadow, NY",
+  "lat": 40.73,
+  "lon": -73.578,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   5,
+   4,
+   3,
+   4,
+   5,
+   3,
+   4,
+   4,
+   4,
+   5,
+   4,
+   3,
+   4,
+   4,
+   3,
+   5
+  ],
+  "hcp": [
+   7,
+   11,
+   1,
+   5,
+   15,
+   9,
+   13,
+   17,
+   3,
+   8,
+   14,
+   6,
+   4,
+   18,
+   2,
+   12,
+   16,
+   10
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   387,
+   421,
+   532,
+   418,
+   191,
+   386,
+   488,
+   164,
+   418,
+   408,
+   370,
+   554,
+   434,
+   157,
+   448,
+   429,
+   220,
+   546
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6972,
+    "rating": 73.5,
+    "slope": 130
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 6576,
+    "rating": 71.4,
+    "slope": 128
+   },
+   {
+    "tee": "Gold",
+    "gender": "M",
+    "yards": 5896,
+    "rating": 68.6,
+    "slope": 124
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 5382,
+    "rating": 69.7,
+    "slope": 117
+   }
+  ],
+  "source": "https://www.nassaucountyny.gov/1783/Eisenhower-White-Course",
+  "miles_from_11103": 17.8,
+  "total_par": 72,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 7,
+    "yards": 387
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 11,
+    "yards": 421
+   },
+   {
+    "hole": 3,
+    "par": 5,
+    "hcp": 1,
+    "yards": 532
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 5,
+    "yards": 418
+   },
+   {
+    "hole": 5,
+    "par": 3,
+    "hcp": 15,
+    "yards": 191
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 9,
+    "yards": 386
+   },
+   {
+    "hole": 7,
+    "par": 5,
+    "hcp": 13,
+    "yards": 488
+   },
+   {
+    "hole": 8,
+    "par": 3,
+    "hcp": 17,
+    "yards": 164
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 3,
+    "yards": 418
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 8,
+    "yards": 408
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 14,
+    "yards": 370
+   },
+   {
+    "hole": 12,
+    "par": 5,
+    "hcp": 6,
+    "yards": 554
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 4,
+    "yards": 434
+   },
+   {
+    "hole": 14,
+    "par": 3,
+    "hcp": 18,
+    "yards": 157
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 2,
+    "yards": 448
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 12,
+    "yards": 429
+   },
+   {
+    "hole": 17,
+    "par": 3,
+    "hcp": 16,
+    "yards": 220
+   },
+   {
+    "hole": 18,
+    "par": 5,
+    "hcp": 10,
+    "yards": 546
+   }
+  ]
+ },
+ {
+  "name": "Eisenhower Park Red Course",
+  "town": "East Meadow, NY",
+  "lat": 40.7345,
+  "lon": -73.5739,
+  "holes": 18,
+  "par": [
+   5,
+   3,
+   5,
+   4,
+   3,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   5,
+   3,
+   4,
+   4,
+   3,
+   5,
+   4
+  ],
+  "hcp": [
+   11,
+   15,
+   9,
+   1,
+   17,
+   5,
+   3,
+   7,
+   13,
+   6,
+   16,
+   14,
+   12,
+   8,
+   4,
+   18,
+   10,
+   2
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   488,
+   185,
+   515,
+   455,
+   164,
+   430,
+   452,
+   417,
+   346,
+   435,
+   410,
+   515,
+   211,
+   420,
+   454,
+   173,
+   582,
+   455
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 7107,
+    "rating": 73.2,
+    "slope": 124
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 6416,
+    "rating": 69.9,
+    "slope": 121
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 5470,
+    "rating": 71.6,
+    "slope": 123
+   }
+  ],
+  "source": "https://archive.nassaucountyny.gov/agencies/Parks/Golf/18hole/red.html (card; hole 2 alt 277 par 4) ; tee ratings golfguidesusa.com. NOTE: GolfPass lists Blue 7172 yds 74.4/136, likely current re-rating",
+  "miles_from_11103": 18.0,
+  "total_par": 72,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 5,
+    "hcp": 11,
+    "yards": 488
+   },
+   {
+    "hole": 2,
+    "par": 3,
+    "hcp": 15,
+    "yards": 185
+   },
+   {
+    "hole": 3,
+    "par": 5,
+    "hcp": 9,
+    "yards": 515
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 1,
+    "yards": 455
+   },
+   {
+    "hole": 5,
+    "par": 3,
+    "hcp": 17,
+    "yards": 164
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 5,
+    "yards": 430
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 3,
+    "yards": 452
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 7,
+    "yards": 417
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 13,
+    "yards": 346
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 6,
+    "yards": 435
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 16,
+    "yards": 410
+   },
+   {
+    "hole": 12,
+    "par": 5,
+    "hcp": 14,
+    "yards": 515
+   },
+   {
+    "hole": 13,
+    "par": 3,
+    "hcp": 12,
+    "yards": 211
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 8,
+    "yards": 420
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 4,
+    "yards": 454
+   },
+   {
+    "hole": 16,
+    "par": 3,
+    "hcp": 18,
+    "yards": 173
+   },
+   {
+    "hole": 17,
+    "par": 5,
+    "hcp": 10,
+    "yards": 582
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 2,
+    "yards": 455
+   }
+  ]
+ },
+ {
+  "name": "Eisenhower Park Blue Course",
+  "town": "East Meadow, NY",
+  "lat": 40.726,
+  "lon": -73.57,
+  "holes": 18,
+  "par": [
+   5,
+   4,
+   4,
+   3,
+   4,
+   5,
+   4,
+   3,
+   4,
+   4,
+   5,
+   4,
+   4,
+   4,
+   3,
+   4,
+   3,
+   5
+  ],
+  "hcp": [
+   14,
+   8,
+   2,
+   16,
+   4,
+   12,
+   10,
+   18,
+   6,
+   3,
+   7,
+   11,
+   15,
+   5,
+   13,
+   1,
+   17,
+   9
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   481,
+   359,
+   417,
+   172,
+   394,
+   462,
+   352,
+   117,
+   364,
+   394,
+   480,
+   356,
+   327,
+   384,
+   172,
+   401,
+   129,
+   467
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6228,
+    "rating": 68.3,
+    "slope": 117
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 5899,
+    "rating": 67.0,
+    "slope": 115
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 4887,
+    "rating": 69.7,
+    "slope": 117
+   }
+  ],
+  "source": "https://nassaucountyny.gov/1781/Eisenhower-Blue-Course",
+  "miles_from_11103": 18.3,
+  "total_par": 72,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 5,
+    "hcp": 14,
+    "yards": 481
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 8,
+    "yards": 359
+   },
+   {
+    "hole": 3,
+    "par": 4,
+    "hcp": 2,
+    "yards": 417
+   },
+   {
+    "hole": 4,
+    "par": 3,
+    "hcp": 16,
+    "yards": 172
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 4,
+    "yards": 394
+   },
+   {
+    "hole": 6,
+    "par": 5,
+    "hcp": 12,
+    "yards": 462
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 10,
+    "yards": 352
+   },
+   {
+    "hole": 8,
+    "par": 3,
+    "hcp": 18,
+    "yards": 117
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 6,
+    "yards": 364
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 3,
+    "yards": 394
+   },
+   {
+    "hole": 11,
+    "par": 5,
+    "hcp": 7,
+    "yards": 480
+   },
+   {
+    "hole": 12,
+    "par": 4,
+    "hcp": 11,
+    "yards": 356
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 15,
+    "yards": 327
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 5,
+    "yards": 384
+   },
+   {
+    "hole": 15,
+    "par": 3,
+    "hcp": 13,
+    "yards": 172
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 1,
+    "yards": 401
+   },
+   {
+    "hole": 17,
+    "par": 3,
+    "hcp": 17,
+    "yards": 129
+   },
+   {
+    "hole": 18,
+    "par": 5,
+    "hcp": 9,
+    "yards": 467
+   }
+  ]
+ },
+ {
+  "name": "The Golf Club at Middle Bay",
+  "town": "Oceanside, NY",
+  "lat": 40.619,
+  "lon": -73.619,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   3,
+   4,
+   5,
+   3,
+   4,
+   4,
+   5,
+   3,
+   4,
+   4,
+   5,
+   4,
+   4,
+   3,
+   4,
+   5
+  ],
+  "hcp": [
+   13,
+   9,
+   15,
+   1,
+   3,
+   17,
+   5,
+   11,
+   7,
+   12,
+   16,
+   2,
+   10,
+   8,
+   14,
+   18,
+   6,
+   4
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   344,
+   362,
+   185,
+   420,
+   592,
+   146,
+   422,
+   415,
+   561,
+   200,
+   331,
+   446,
+   533,
+   378,
+   346,
+   187,
+   402,
+   549
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6819,
+    "rating": 73.7,
+    "slope": 135
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 6521,
+    "rating": 72.4,
+    "slope": 132
+   }
+  ],
+  "source": "https://courses.opengolfapi.org/courses/NY/the-golf-club-at-middle-bay ; White from golfingrecord.com. NOTE: GolfPass shows a 6630 Blue set (M 72.2/131) plus Gold 6092 M 68.5/123, W 74.3/133",
+  "miles_from_11103": 18.4,
+  "total_par": 72,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 13,
+    "yards": 344
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 9,
+    "yards": 362
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 15,
+    "yards": 185
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 1,
+    "yards": 420
+   },
+   {
+    "hole": 5,
+    "par": 5,
+    "hcp": 3,
+    "yards": 592
+   },
+   {
+    "hole": 6,
+    "par": 3,
+    "hcp": 17,
+    "yards": 146
+   },
+   {
+    "hole": 7,
+    "par": 4,
+    "hcp": 5,
+    "yards": 422
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 11,
+    "yards": 415
+   },
+   {
+    "hole": 9,
+    "par": 5,
+    "hcp": 7,
+    "yards": 561
+   },
+   {
+    "hole": 10,
+    "par": 3,
+    "hcp": 12,
+    "yards": 200
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 16,
+    "yards": 331
+   },
+   {
+    "hole": 12,
+    "par": 4,
+    "hcp": 2,
+    "yards": 446
+   },
+   {
+    "hole": 13,
+    "par": 5,
+    "hcp": 10,
+    "yards": 533
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 8,
+    "yards": 378
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 14,
+    "yards": 346
+   },
+   {
+    "hole": 16,
+    "par": 3,
+    "hcp": 18,
+    "yards": 187
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 6,
+    "yards": 402
+   },
+   {
+    "hole": 18,
+    "par": 5,
+    "hcp": 4,
+    "yards": 549
+   }
+  ]
+ },
+ {
+  "name": "Maple Moor Golf Course",
+  "town": "White Plains, NY",
+  "lat": 41.008,
+  "lon": -73.74,
+  "holes": 18,
+  "par": [
+   4,
+   3,
+   5,
+   4,
+   4,
+   5,
+   3,
+   4,
+   4,
+   4,
+   3,
+   5,
+   4,
+   4,
+   3,
+   4,
+   4,
+   4
+  ],
+  "hcp": [
+   7,
+   9,
+   5,
+   16,
+   2,
+   11,
+   13,
+   14,
+   1,
+   6,
+   18,
+   12,
+   17,
+   4,
+   8,
+   15,
+   10,
+   3
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   383,
+   190,
+   548,
+   334,
+   401,
+   470,
+   202,
+   378,
+   434,
+   442,
+   142,
+   489,
+   265,
+   414,
+   202,
+   348,
+   349,
+   383
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6374,
+    "rating": 70.8,
+    "slope": 132
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 6065,
+    "rating": 69.4,
+    "slope": 128
+   },
+   {
+    "tee": "White",
+    "gender": "W",
+    "yards": 6015,
+    "rating": 76.1,
+    "slope": 135
+   },
+   {
+    "tee": "Gold",
+    "gender": "W",
+    "yards": 5309,
+    "rating": 72.0,
+    "slope": 127
+   }
+  ],
+  "source": "https://www.golfpass.com/courses/9850-maple-moor-golf-course/scorecard-and-layout (card) ; tee ratings stymie.golf. Older GolfPass tee table: Blue 71.0/129, White 69.2/121, Red W 5289 71.8/124",
+  "miles_from_11103": 19.3,
+  "total_par": 71,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 7,
+    "yards": 383
+   },
+   {
+    "hole": 2,
+    "par": 3,
+    "hcp": 9,
+    "yards": 190
+   },
+   {
+    "hole": 3,
+    "par": 5,
+    "hcp": 5,
+    "yards": 548
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 16,
+    "yards": 334
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 2,
+    "yards": 401
+   },
+   {
+    "hole": 6,
+    "par": 5,
+    "hcp": 11,
+    "yards": 470
+   },
+   {
+    "hole": 7,
+    "par": 3,
+    "hcp": 13,
+    "yards": 202
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 14,
+    "yards": 378
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 1,
+    "yards": 434
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 6,
+    "yards": 442
+   },
+   {
+    "hole": 11,
+    "par": 3,
+    "hcp": 18,
+    "yards": 142
+   },
+   {
+    "hole": 12,
+    "par": 5,
+    "hcp": 12,
+    "yards": 489
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 17,
+    "yards": 265
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 4,
+    "yards": 414
+   },
+   {
+    "hole": 15,
+    "par": 3,
+    "hcp": 8,
+    "yards": 202
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 15,
+    "yards": 348
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 10,
+    "yards": 349
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 3,
+    "yards": 383
+   }
+  ]
+ },
+ {
+  "name": "Bethpage Black",
+  "town": "Farmingdale, NY",
+  "lat": 40.745,
+  "lon": -73.455,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   3,
+   5,
+   4,
+   4,
+   5,
+   3,
+   4,
+   4,
+   4,
+   4,
+   5,
+   3,
+   4,
+   4,
+   3,
+   4
+  ],
+  "hcp": [
+   7,
+   13,
+   17,
+   1,
+   3,
+   11,
+   9,
+   15,
+   5,
+   8,
+   10,
+   4,
+   6,
+   18,
+   2,
+   12,
+   14,
+   16
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   430,
+   389,
+   230,
+   517,
+   478,
+   408,
+   553,
+   210,
+   460,
+   502,
+   435,
+   516,
+   608,
+   158,
+   484,
+   490,
+   207,
+   411
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 7465,
+    "rating": 77.5,
+    "slope": 155
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 6684,
+    "rating": 74.0,
+    "slope": 145
+   }
+  ],
+  "source": "https://courses.opengolfapi.org/courses/NY/black-at-bethpage-state-park-golf-course (card, sums 7486) ; Blue rating stymie.golf ; White golfingrecord.com. NOTE: golfingrecord shows a different hcp order; verify against the Bethpage card",
+  "miles_from_11103": 24.1,
+  "total_par": 71,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 7,
+    "yards": 430
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 13,
+    "yards": 389
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 17,
+    "yards": 230
+   },
+   {
+    "hole": 4,
+    "par": 5,
+    "hcp": 1,
+    "yards": 517
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 3,
+    "yards": 478
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 11,
+    "yards": 408
+   },
+   {
+    "hole": 7,
+    "par": 5,
+    "hcp": 9,
+    "yards": 553
+   },
+   {
+    "hole": 8,
+    "par": 3,
+    "hcp": 15,
+    "yards": 210
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 5,
+    "yards": 460
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 8,
+    "yards": 502
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 10,
+    "yards": 435
+   },
+   {
+    "hole": 12,
+    "par": 4,
+    "hcp": 4,
+    "yards": 516
+   },
+   {
+    "hole": 13,
+    "par": 5,
+    "hcp": 6,
+    "yards": 608
+   },
+   {
+    "hole": 14,
+    "par": 3,
+    "hcp": 18,
+    "yards": 158
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 2,
+    "yards": 484
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 12,
+    "yards": 490
+   },
+   {
+    "hole": 17,
+    "par": 3,
+    "hcp": 14,
+    "yards": 207
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 16,
+    "yards": 411
+   }
+  ]
+ },
+ {
+  "name": "Bethpage Red",
+  "town": "Farmingdale, NY",
+  "lat": 40.745,
+  "lon": -73.455,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   4,
+   3,
+   5,
+   4,
+   3,
+   4,
+   4,
+   4,
+   4,
+   3,
+   4,
+   4,
+   4,
+   5,
+   3,
+   4
+  ],
+  "hcp": [
+   3,
+   7,
+   11,
+   15,
+   5,
+   9,
+   17,
+   13,
+   1,
+   14,
+   12,
+   16,
+   6,
+   4,
+   2,
+   8,
+   18,
+   10
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   471,
+   401,
+   390,
+   181,
+   528,
+   350,
+   184,
+   418,
+   466,
+   492,
+   462,
+   208,
+   400,
+   466,
+   482,
+   565,
+   165,
+   463
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 7092,
+    "rating": 73.4,
+    "slope": 129
+   },
+   {
+    "tee": "Red",
+    "gender": "M",
+    "yards": 6206,
+    "rating": 69.7,
+    "slope": 119
+   },
+   {
+    "tee": "White",
+    "gender": "W",
+    "yards": 6555,
+    "rating": 77.8,
+    "slope": 135
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 6206,
+    "rating": 75.6,
+    "slope": 132
+   }
+  ],
+  "source": "https://www.golfingrecord.com/golf-scorecard/2691db83-ed97-48a4-903f-faaf83b79058 . NOTE: opengolfapi lists a 6570 set at 74.4/133 and slightly different hcp",
+  "miles_from_11103": 24.1,
+  "total_par": 70,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 3,
+    "yards": 471
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 7,
+    "yards": 401
+   },
+   {
+    "hole": 3,
+    "par": 4,
+    "hcp": 11,
+    "yards": 390
+   },
+   {
+    "hole": 4,
+    "par": 3,
+    "hcp": 15,
+    "yards": 181
+   },
+   {
+    "hole": 5,
+    "par": 5,
+    "hcp": 5,
+    "yards": 528
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 9,
+    "yards": 350
+   },
+   {
+    "hole": 7,
+    "par": 3,
+    "hcp": 17,
+    "yards": 184
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 13,
+    "yards": 418
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 1,
+    "yards": 466
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 14,
+    "yards": 492
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 12,
+    "yards": 462
+   },
+   {
+    "hole": 12,
+    "par": 3,
+    "hcp": 16,
+    "yards": 208
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 6,
+    "yards": 400
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 4,
+    "yards": 466
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 2,
+    "yards": 482
+   },
+   {
+    "hole": 16,
+    "par": 5,
+    "hcp": 8,
+    "yards": 565
+   },
+   {
+    "hole": 17,
+    "par": 3,
+    "hcp": 18,
+    "yards": 165
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 10,
+    "yards": 463
+   }
+  ]
+ },
+ {
+  "name": "Bethpage Blue",
+  "town": "Farmingdale, NY",
+  "lat": 40.745,
+  "lon": -73.455,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   3,
+   5,
+   4,
+   4,
+   3,
+   5,
+   4,
+   4,
+   3,
+   5,
+   4,
+   4,
+   4,
+   5,
+   3,
+   4
+  ],
+  "hcp": [
+   9,
+   5,
+   17,
+   7,
+   15,
+   1,
+   11,
+   3,
+   13,
+   14,
+   18,
+   6,
+   8,
+   10,
+   4,
+   2,
+   16,
+   12
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   437,
+   454,
+   190,
+   491,
+   307,
+   477,
+   186,
+   555,
+   346,
+   381,
+   187,
+   473,
+   362,
+   383,
+   387,
+   501,
+   175,
+   364
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6656,
+    "rating": 72.3,
+    "slope": 130
+   },
+   {
+    "tee": "Red",
+    "gender": "M",
+    "yards": 6186,
+    "rating": 69.0,
+    "slope": 125
+   },
+   {
+    "tee": "White",
+    "gender": "W",
+    "yards": 6406,
+    "rating": 76.4,
+    "slope": 130
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 6186,
+    "rating": 75.0,
+    "slope": 127
+   }
+  ],
+  "source": "https://www.golfingrecord.com/golf-scorecard/cbd777ce-6c0b-4a7f-9e25-75e79133d728 . NOTE: opengolfapi hcp order differs",
+  "miles_from_11103": 24.1,
+  "total_par": 72,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 9,
+    "yards": 437
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 5,
+    "yards": 454
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 17,
+    "yards": 190
+   },
+   {
+    "hole": 4,
+    "par": 5,
+    "hcp": 7,
+    "yards": 491
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 15,
+    "yards": 307
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 1,
+    "yards": 477
+   },
+   {
+    "hole": 7,
+    "par": 3,
+    "hcp": 11,
+    "yards": 186
+   },
+   {
+    "hole": 8,
+    "par": 5,
+    "hcp": 3,
+    "yards": 555
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 13,
+    "yards": 346
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 14,
+    "yards": 381
+   },
+   {
+    "hole": 11,
+    "par": 3,
+    "hcp": 18,
+    "yards": 187
+   },
+   {
+    "hole": 12,
+    "par": 5,
+    "hcp": 6,
+    "yards": 473
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 8,
+    "yards": 362
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 10,
+    "yards": 383
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 4,
+    "yards": 387
+   },
+   {
+    "hole": 16,
+    "par": 5,
+    "hcp": 2,
+    "yards": 501
+   },
+   {
+    "hole": 17,
+    "par": 3,
+    "hcp": 16,
+    "yards": 175
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 12,
+    "yards": 364
+   }
+  ]
+ },
+ {
+  "name": "Bethpage Green",
+  "town": "Farmingdale, NY",
+  "lat": 40.745,
+  "lon": -73.455,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   3,
+   4,
+   4,
+   3,
+   5,
+   4,
+   5,
+   4,
+   3,
+   4,
+   5,
+   4,
+   3,
+   4,
+   4,
+   4
+  ],
+  "hcp": [
+   15,
+   3,
+   17,
+   9,
+   5,
+   11,
+   7,
+   13,
+   1,
+   10,
+   18,
+   16,
+   2,
+   14,
+   12,
+   8,
+   4,
+   6
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   354,
+   380,
+   153,
+   363,
+   400,
+   190,
+   507,
+   347,
+   560,
+   343,
+   171,
+   291,
+   572,
+   366,
+   207,
+   358,
+   418,
+   398
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6378,
+    "rating": 70.2,
+    "slope": 129
+   },
+   {
+    "tee": "Red",
+    "gender": "M",
+    "yards": 5796,
+    "rating": 67.6,
+    "slope": 123
+   },
+   {
+    "tee": "White",
+    "gender": "W",
+    "yards": 6096,
+    "rating": 75.3,
+    "slope": 128
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 5796,
+    "rating": 73.5,
+    "slope": 126
+   }
+  ],
+  "source": "https://courses.opengolfapi.org/courses/NY/green-at-bethpage-state-park-golf-course ; tees golfingrecord.com",
+  "miles_from_11103": 24.1,
+  "total_par": 71,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 15,
+    "yards": 354
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 3,
+    "yards": 380
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 17,
+    "yards": 153
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 9,
+    "yards": 363
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 5,
+    "yards": 400
+   },
+   {
+    "hole": 6,
+    "par": 3,
+    "hcp": 11,
+    "yards": 190
+   },
+   {
+    "hole": 7,
+    "par": 5,
+    "hcp": 7,
+    "yards": 507
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 13,
+    "yards": 347
+   },
+   {
+    "hole": 9,
+    "par": 5,
+    "hcp": 1,
+    "yards": 560
+   },
+   {
+    "hole": 10,
+    "par": 4,
+    "hcp": 10,
+    "yards": 343
+   },
+   {
+    "hole": 11,
+    "par": 3,
+    "hcp": 18,
+    "yards": 171
+   },
+   {
+    "hole": 12,
+    "par": 4,
+    "hcp": 16,
+    "yards": 291
+   },
+   {
+    "hole": 13,
+    "par": 5,
+    "hcp": 2,
+    "yards": 572
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 14,
+    "yards": 366
+   },
+   {
+    "hole": 15,
+    "par": 3,
+    "hcp": 12,
+    "yards": 207
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 8,
+    "yards": 358
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 4,
+    "yards": 418
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 6,
+    "yards": 398
+   }
+  ]
+ },
+ {
+  "name": "Bethpage Yellow",
+  "town": "Farmingdale, NY",
+  "lat": 40.745,
+  "lon": -73.455,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   4,
+   3,
+   4,
+   5,
+   3,
+   4,
+   4,
+   5,
+   3,
+   4,
+   4,
+   3,
+   4,
+   4,
+   5,
+   4
+  ],
+  "hcp": [
+   3,
+   1,
+   7,
+   13,
+   9,
+   5,
+   17,
+   11,
+   15,
+   4,
+   14,
+   18,
+   2,
+   12,
+   8,
+   10,
+   6,
+   16
+  ],
+  "yards_tee": "Blue",
+  "yards": [
+   429,
+   398,
+   390,
+   166,
+   347,
+   487,
+   174,
+   338,
+   386,
+   524,
+   188,
+   313,
+   429,
+   188,
+   363,
+   353,
+   485,
+   366
+  ],
+  "tees": [
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 6324,
+    "rating": 69.6,
+    "slope": 120
+   },
+   {
+    "tee": "White",
+    "gender": "M",
+    "yards": 6085,
+    "rating": 68.6,
+    "slope": 118
+   },
+   {
+    "tee": "Red",
+    "gender": "M",
+    "yards": 5721,
+    "rating": 67.1,
+    "slope": 116
+   },
+   {
+    "tee": "White",
+    "gender": "W",
+    "yards": 6085,
+    "rating": 74.4,
+    "slope": 126
+   },
+   {
+    "tee": "Red",
+    "gender": "W",
+    "yards": 5721,
+    "rating": 72.2,
+    "slope": 121
+   }
+  ],
+  "source": "https://www.golfingrecord.com/golf-scorecard/0a1a3b0c-8877-4e68-93ae-57bef98668a3 . NOTE: White/Red tees use a different hcp order (2,4,6,14,10,8,16,12,18 | 3,11,17,1,9,7,13,5,15)",
+  "miles_from_11103": 24.1,
+  "total_par": 71,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 3,
+    "yards": 429
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 1,
+    "yards": 398
+   },
+   {
+    "hole": 3,
+    "par": 4,
+    "hcp": 7,
+    "yards": 390
+   },
+   {
+    "hole": 4,
+    "par": 3,
+    "hcp": 13,
+    "yards": 166
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 9,
+    "yards": 347
+   },
+   {
+    "hole": 6,
+    "par": 5,
+    "hcp": 5,
+    "yards": 487
+   },
+   {
+    "hole": 7,
+    "par": 3,
+    "hcp": 17,
+    "yards": 174
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 11,
+    "yards": 338
+   },
+   {
+    "hole": 9,
+    "par": 4,
+    "hcp": 15,
+    "yards": 386
+   },
+   {
+    "hole": 10,
+    "par": 5,
+    "hcp": 4,
+    "yards": 524
+   },
+   {
+    "hole": 11,
+    "par": 3,
+    "hcp": 14,
+    "yards": 188
+   },
+   {
+    "hole": 12,
+    "par": 4,
+    "hcp": 18,
+    "yards": 313
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 2,
+    "yards": 429
+   },
+   {
+    "hole": 14,
+    "par": 3,
+    "hcp": 12,
+    "yards": 188
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 8,
+    "yards": 363
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 10,
+    "yards": 353
+   },
+   {
+    "hole": 17,
+    "par": 5,
+    "hcp": 6,
+    "yards": 485
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 16,
+    "yards": 366
+   }
+  ]
+ },
+ {
+  "name": "Hudson Hills Golf Course",
+  "town": "Ossining, NY",
+  "lat": 41.184,
+  "lon": -73.836,
+  "holes": 18,
+  "par": [
+   4,
+   5,
+   3,
+   4,
+   4,
+   3,
+   5,
+   4,
+   3,
+   5,
+   3,
+   4,
+   4,
+   3,
+   5,
+   4,
+   4,
+   4
+  ],
+  "hcp": [
+   7,
+   5,
+   15,
+   3,
+   11,
+   17,
+   1,
+   9,
+   13,
+   12,
+   16,
+   8,
+   6,
+   14,
+   4,
+   18,
+   2,
+   10
+  ],
+  "yards_tee": "Black",
+  "yards": [
+   444,
+   530,
+   171,
+   456,
+   371,
+   155,
+   564,
+   389,
+   152,
+   521,
+   200,
+   435,
+   474,
+   187,
+   568,
+   407,
+   458,
+   453
+  ],
+  "tees": [
+   {
+    "tee": "Black",
+    "gender": "M",
+    "yards": 6935,
+    "rating": 73.7,
+    "slope": 139
+   },
+   {
+    "tee": "Green",
+    "gender": "M",
+    "yards": 6323,
+    "rating": 70.9,
+    "slope": 129
+   },
+   {
+    "tee": "Blue",
+    "gender": "M",
+    "yards": 5755,
+    "rating": 68.1,
+    "slope": 125
+   },
+   {
+    "tee": "Gold",
+    "gender": "M",
+    "yards": 5102,
+    "rating": 65.6,
+    "slope": 116
+   },
+   {
+    "tee": "Blue",
+    "gender": "W",
+    "yards": 5755,
+    "rating": 74.6,
+    "slope": 128
+   },
+   {
+    "tee": "Gold",
+    "gender": "W",
+    "yards": 5102,
+    "rating": 70.7,
+    "slope": 127
+   }
+  ],
+  "source": "https://courses.opengolfapi.org/courses/NY/hudson-hills-golf-course (card) ; tees from golfnow.com facility 3252",
+  "miles_from_11103": 29.4,
+  "total_par": 71,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 7,
+    "yards": 444
+   },
+   {
+    "hole": 2,
+    "par": 5,
+    "hcp": 5,
+    "yards": 530
+   },
+   {
+    "hole": 3,
+    "par": 3,
+    "hcp": 15,
+    "yards": 171
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 3,
+    "yards": 456
+   },
+   {
+    "hole": 5,
+    "par": 4,
+    "hcp": 11,
+    "yards": 371
+   },
+   {
+    "hole": 6,
+    "par": 3,
+    "hcp": 17,
+    "yards": 155
+   },
+   {
+    "hole": 7,
+    "par": 5,
+    "hcp": 1,
+    "yards": 564
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 9,
+    "yards": 389
+   },
+   {
+    "hole": 9,
+    "par": 3,
+    "hcp": 13,
+    "yards": 152
+   },
+   {
+    "hole": 10,
+    "par": 5,
+    "hcp": 12,
+    "yards": 521
+   },
+   {
+    "hole": 11,
+    "par": 3,
+    "hcp": 16,
+    "yards": 200
+   },
+   {
+    "hole": 12,
+    "par": 4,
+    "hcp": 8,
+    "yards": 435
+   },
+   {
+    "hole": 13,
+    "par": 4,
+    "hcp": 6,
+    "yards": 474
+   },
+   {
+    "hole": 14,
+    "par": 3,
+    "hcp": 14,
+    "yards": 187
+   },
+   {
+    "hole": 15,
+    "par": 5,
+    "hcp": 4,
+    "yards": 568
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 18,
+    "yards": 407
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 2,
+    "yards": 458
+   },
+   {
+    "hole": 18,
+    "par": 4,
+    "hcp": 10,
+    "yards": 453
+   }
+  ]
+ },
+ {
+  "name": "Mohansic Golf Course",
+  "town": "Yorktown Heights, NY",
+  "lat": 41.269,
+  "lon": -73.803,
+  "holes": 18,
+  "par": [
+   4,
+   4,
+   4,
+   4,
+   3,
+   4,
+   3,
+   4,
+   5,
+   5,
+   4,
+   4,
+   3,
+   4,
+   4,
+   4,
+   4,
+   3
+  ],
+  "hcp": [
+   14,
+   7,
+   2,
+   1,
+   17,
+   9,
+   16,
+   12,
+   3,
+   18,
+   6,
+   10,
+   13,
+   4,
+   5,
+   8,
+   11,
+   15
+  ],
+  "yards_tee": "Back",
+  "yards": [
+   353,
+   382,
+   425,
+   442,
+   150,
+   383,
+   168,
+   344,
+   592,
+   495,
+   428,
+   395,
+   208,
+   432,
+   373,
+   395,
+   402,
+   191
+  ],
+  "tees": [
+   {
+    "tee": "Back",
+    "gender": "M",
+    "yards": 6558,
+    "rating": 71.9,
+    "slope": 132
+   },
+   {
+    "tee": "Middle",
+    "gender": "M",
+    "yards": 6285,
+    "rating": 70.7,
+    "slope": 130
+   },
+   {
+    "tee": "Forward",
+    "gender": "M",
+    "yards": 5456,
+    "rating": 66.3,
+    "slope": 121
+   },
+   {
+    "tee": "Middle",
+    "gender": "W",
+    "yards": 6221,
+    "rating": 76.7,
+    "slope": 135
+   },
+   {
+    "tee": "Forward",
+    "gender": "W",
+    "yards": 5412,
+    "rating": 72.6,
+    "slope": 125
+   }
+  ],
+  "source": "https://courses.opengolfapi.org/courses/NY/mohansic-golf-course (card) ; tee ratings stymie.golf (genders inferred from rating spread)",
+  "miles_from_11103": 35.5,
+  "total_par": 70,
+  "holes_detail": [
+   {
+    "hole": 1,
+    "par": 4,
+    "hcp": 14,
+    "yards": 353
+   },
+   {
+    "hole": 2,
+    "par": 4,
+    "hcp": 7,
+    "yards": 382
+   },
+   {
+    "hole": 3,
+    "par": 4,
+    "hcp": 2,
+    "yards": 425
+   },
+   {
+    "hole": 4,
+    "par": 4,
+    "hcp": 1,
+    "yards": 442
+   },
+   {
+    "hole": 5,
+    "par": 3,
+    "hcp": 17,
+    "yards": 150
+   },
+   {
+    "hole": 6,
+    "par": 4,
+    "hcp": 9,
+    "yards": 383
+   },
+   {
+    "hole": 7,
+    "par": 3,
+    "hcp": 16,
+    "yards": 168
+   },
+   {
+    "hole": 8,
+    "par": 4,
+    "hcp": 12,
+    "yards": 344
+   },
+   {
+    "hole": 9,
+    "par": 5,
+    "hcp": 3,
+    "yards": 592
+   },
+   {
+    "hole": 10,
+    "par": 5,
+    "hcp": 18,
+    "yards": 495
+   },
+   {
+    "hole": 11,
+    "par": 4,
+    "hcp": 6,
+    "yards": 428
+   },
+   {
+    "hole": 12,
+    "par": 4,
+    "hcp": 10,
+    "yards": 395
+   },
+   {
+    "hole": 13,
+    "par": 3,
+    "hcp": 13,
+    "yards": 208
+   },
+   {
+    "hole": 14,
+    "par": 4,
+    "hcp": 4,
+    "yards": 432
+   },
+   {
+    "hole": 15,
+    "par": 4,
+    "hcp": 5,
+    "yards": 373
+   },
+   {
+    "hole": 16,
+    "par": 4,
+    "hcp": 8,
+    "yards": 395
+   },
+   {
+    "hole": 17,
+    "par": 4,
+    "hcp": 11,
+    "yards": 402
+   },
+   {
+    "hole": 18,
+    "par": 3,
+    "hcp": 15,
+    "yards": 191
+   }
+  ]
+ }
+]

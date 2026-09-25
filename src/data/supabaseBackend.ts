@@ -66,6 +66,8 @@ const courseRow = (c: Course) => ({
   stroke_index: c.strokeIndex ?? null,
   rating: c.rating ?? null,
   slope: c.slope ?? null,
+  tees: c.tees ?? null,
+  town: c.town ?? null,
 })
 
 const courseRatingRow = (r: CourseRating) => ({
@@ -244,6 +246,8 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           strokeIndex: c.stroke_index ?? undefined,
           rating: c.rating != null ? Number(c.rating) : undefined,
           slope: c.slope != null ? Number(c.slope) : undefined,
+          tees: Array.isArray(c.tees) && c.tees.length ? c.tees : undefined,
+          town: c.town ?? undefined,
         })),
         courseRatings: (ratingsRes.data ?? []).map(toCourseRating),
         courseRankings: (rankingsRes.data ?? []).map((r: any) => ({

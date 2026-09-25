@@ -85,6 +85,23 @@ export interface Course {
    */
   rating?: number | null
   slope?: number | null
+  /**
+   * Every tee box the course publishes, so a round played "from the
+   * whites" gets the whites' rating and slope. `rating`/`slope` above
+   * stay as the default for rounds that don't say which tee.
+   */
+  tees?: CourseTee[]
+  /** "Yonkers, NY" — for telling the two Eisenhower courses apart in a long list. */
+  town?: string
+}
+
+export interface CourseTee {
+  name: string
+  yards?: number
+  rating: number
+  slope: number
+  /** Men's ratings are the default; a women's set is kept but not used for strokes. */
+  gender?: 'M' | 'W'
 }
 
 // ---------- Course ratings ----------

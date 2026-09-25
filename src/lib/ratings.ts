@@ -20,6 +20,7 @@ export const RATING_ASPECTS: { key: RatingAspect; label: string; hint: string }[
 export interface CourseSummary {
   slug: string
   name: string
+  town?: string
   /** Rounds the group has logged there. */
   rounds: number
   lastPlayed?: string
@@ -114,6 +115,7 @@ export function courseSummaries(data: AppData): CourseSummary[] {
     return {
       slug,
       name: courseDisplayName(data, slug),
+      town: data.courses.find((c) => c.slug === slug)?.town,
       rounds: rounds.length,
       lastPlayed: rounds.map((r) => r.date).sort().at(-1),
       ratings,

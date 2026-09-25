@@ -72,6 +72,12 @@ create table if not exists courses (
   -- (index * slope/113 + rating - par) before handing out strokes.
   rating numeric(4,1),
   slope smallint,
+  -- Every tee box the course publishes: [{name, yards, rating, slope,
+  -- gender}]. A round that names its tee gets that tee's numbers;
+  -- rating/slope above stay the default. Loaded from
+  -- data/courses/*.json by scripts/import-courses.mjs.
+  tees jsonb,
+  town text,
   created_at timestamptz not null default now(),
   unique (group_id, slug)
 );

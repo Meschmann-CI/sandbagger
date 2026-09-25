@@ -246,6 +246,34 @@ export default function CourseEdit() {
       {/* Rating and slope, for GHIN course handicaps. Off the same card. */}
       <SectionLabel>Rating &amp; Slope</SectionLabel>
       <Card className="p-4">
+        {/* Imported tees: one tap copies a tee's numbers in as the default. */}
+        {existing?.tees && existing.tees.some((t) => (t.gender ?? 'M') === 'M') && (
+          <div className="mb-3">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-ink-faint mb-1.5">Default tee</p>
+            <div className="flex flex-wrap gap-2">
+              {existing.tees
+                .filter((t) => (t.gender ?? 'M') === 'M')
+                .map((t) => {
+                  const on = rating === String(t.rating) && slope === String(t.slope)
+                  return (
+                    <button
+                      key={t.name}
+                      onClick={() => {
+                        setRating(String(t.rating))
+                        setSlope(String(t.slope))
+                      }}
+                      className={`rounded-full px-3 py-1.5 text-[12.5px] font-bold border transition ${
+                        on ? 'bg-ink text-white border-ink' : 'border-line-strong bg-card text-ink-dim'
+                      }`}
+                    >
+                      {t.name}
+                      {t.yards != null && <span className="font-semibold opacity-70"> · {t.yards}y</span>}
+                    </button>
+                  )
+                })}
+            </div>
+          </div>
+        )}
         <div className="flex gap-3">
           <div className="flex-1">
             <label className="block text-[10px] font-bold uppercase tracking-wider text-ink-faint mb-1">

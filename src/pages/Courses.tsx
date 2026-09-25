@@ -20,11 +20,29 @@ export default function Courses() {
   const navigate = useNavigate()
   const [view, setView] = useState<View>('ratings')
 
+  const [query, setQuery] = useState('')
+
   const rows = courseSummaries(data)
+  const played = rows.filter((r) => r.rounds > 0)
   const rated = rows.filter((r) => r.ratings.length > 0).length
-  const needCard = rows.filter((r) => r.rounds > 0 && !hasPars(data.courses.find((c) => c.slug === r.slug))).length
+  const needCard = played.filter((r) => !hasPars(data.courses.find((c) => c.slug === r.slug))).length
   const mine = myRanking(data)
   const unranked = rows.filter((r) => !mine.includes(r.slug) && r.rounds > 0)
+
+  // Thirty-odd public courses came in from a data file, most never
+  // played. The list stays useful by keeping them out of the way: the
+  // courses the group has actually played lead, everything else sits
+  // below alphabetically with its town, and a search box reaches all
+  // of it. Two Eisenhower courses and five Bethpages want the town and
+  // the full name, not a truncated first word.
+  const q = query.trim().toLowerCase()
+  const matches = (r: (typeof rows)[number]) =>
+    !q || r.name.toLowerCase().includes(q) || (r.town ?? '').toLowerCase().includes(q)
+  const playedShown = byRating(played).filter(matches)
+  const unplayedShown = rows
+    .filter((r) => r.rounds === 0)
+    .filter(matches)
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <div className="rise">
@@ -34,7 +52,7 @@ export default function Courses() {
           <p className="text-[13px] text-ink-dim">
             {rows.length === 0
               ? 'Add one ahead of playing it, or log a round and it turns up here.'
-              : `${rows.length} played · ${rated} rated${needCard ? ` · ${needCard} without a scorecard` : ''}`}
+              : `${played.length} played · ${rated} rated · ${rows.length - played.length} more on the books${needCard ? ` · ${needCard} without a scorecard` : ''}`}
           </p>
         </div>
         {/* Adding ahead of time: the card, stroke index and slope go in
@@ -65,45 +83,97 @@ export default function Courses() {
 
           {view === 'ratings' ? (
             <>
-              <SectionLabel>How they rate</SectionLabel>
-              <Card className="divide-y divide-line">
-                {byRating(rows).map((row) => (
-                  <button
-                    key={row.slug}
-                    onClick={() => navigate(`/courses/${encodeURIComponent(row.slug)}`)}
-                    className="w-full text-left flex items-center gap-3 px-4 py-3.5 active:bg-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[14.5px] font-bold text-ink truncate">{row.name}</p>
-                      <p className="text-[11.5px] text-ink-faint tabular-nums">
-                        {row.rounds > 0 ? `${row.rounds} round${row.rounds === 1 ? '' : 's'}` : 'no rounds yet'}
-                        {row.ratings.length > 0 &&
-                          ` · ${row.ratings.length} rating${row.ratings.length === 1 ? '' : 's'}`}
-                        {row.groupRank != null && ` · group’s ${ordinal(row.groupRank)}`}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      {row.avg != null ? (
-                        <div className="flex items-center gap-1.5 justify-end">
-                          <StarRating value={row.avg} size={12} />
-                          <span className="text-[14px] font-extrabold text-ink tabular-nums">{fmtStars(row.avg)}</span>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search by course or town"
+                aria-label="Search courses"
+                className="mt-3 w-full rounded-xl border border-line-strong bg-card px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+              />
+
+              {playedShown.length > 0 && (
+                <>
+                  <SectionLabel>How they rate</SectionLabel>
+                  <Card className="divide-y divide-line">
+                    {playedShown.map((row) => (
+                      <button
+                        key={row.slug}
+                        onClick={() => navigate(`/courses/${encodeURIComponent(row.slug)}`)}
+                        className="w-full text-left flex items-center gap-3 px-4 py-3.5 active:bg-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[14.5px] font-bold text-ink truncate">{row.name}</p>
+                          <p className="text-[11.5px] text-ink-faint tabular-nums truncate">
+                            {row.rounds} round{row.rounds === 1 ? '' : 's'}
+                            {row.ratings.length > 0 &&
+                              ` · ${row.ratings.length} rating${row.ratings.length === 1 ? '' : 's'}`}
+                            {row.groupRank != null && ` · group’s ${ordinal(row.groupRank)}`}
+                            {row.town && ` · ${row.town}`}
+                          </p>
                         </div>
-                      ) : (
-                        <span className="text-[12px] text-ink-faint">no ratings</span>
-                      )}
-                      <p className="text-[11.5px] mt-0.5">
-                        {row.mine ? (
-                          <span className="text-ink-faint tabular-nums">You: {row.mine.overall}★</span>
-                        ) : (
-                          <span className="font-bold text-green">Rate →</span>
-                        )}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </Card>
+                        <div className="text-right shrink-0">
+                          {row.avg != null ? (
+                            <div className="flex items-center gap-1.5 justify-end">
+                              <StarRating value={row.avg} size={12} />
+                              <span className="text-[14px] font-extrabold text-ink tabular-nums">{fmtStars(row.avg)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-[12px] text-ink-faint">no ratings</span>
+                          )}
+                          <p className="text-[11.5px] mt-0.5">
+                            {row.mine ? (
+                              <span className="text-ink-faint tabular-nums">You: {row.mine.overall}★</span>
+                            ) : (
+                              <span className="font-bold text-green">Rate →</span>
+                            )}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </Card>
+                </>
+              )}
+
+              {unplayedShown.length > 0 && (
+                <>
+                  <SectionLabel>
+                    {q ? 'Not played yet' : `Not played yet · ${unplayedShown.length}`}
+                  </SectionLabel>
+                  <Card className="divide-y divide-line">
+                    {unplayedShown.map((row) => {
+                      const course = data.courses.find((c) => c.slug === row.slug)
+                      return (
+                        <button
+                          key={row.slug}
+                          onClick={() => navigate(`/courses/${encodeURIComponent(row.slug)}`)}
+                          className="w-full text-left flex items-center gap-3 px-4 py-2.5 active:bg-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13.5px] font-bold text-ink truncate">{row.name}</p>
+                            <p className="text-[11px] text-ink-faint truncate">
+                              {row.town ?? 'no town'}
+                              {hasPars(course) ? ' · card in' : ' · no par yet'}
+                              {course?.rating != null && course?.slope != null && ` · ${course.rating}/${course.slope}`}
+                            </p>
+                          </div>
+                          {row.ratings.length > 0 && row.avg != null && (
+                            <span className="text-[12px] font-bold text-ink-dim tabular-nums shrink-0">{fmtStars(row.avg)}★</span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </Card>
+                </>
+              )}
+
+              {playedShown.length === 0 && unplayedShown.length === 0 && (
+                <Card className="mt-3 p-4 text-[13px] text-ink-dim">
+                  Nothing matches “{query.trim()}”. Add it with the button above.
+                </Card>
+              )}
+
               <p className="text-[11.5px] text-ink-faint px-2 mt-2">
-                Tap a course for everyone’s take, the details, and its scorecard.
+                Tap a course for everyone’s take, the tees, and its scorecard.
               </p>
             </>
           ) : (

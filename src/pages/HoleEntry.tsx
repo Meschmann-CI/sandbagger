@@ -65,7 +65,7 @@ export default function HoleEntry() {
   // Who's getting a stroke where, off the low handicap — the dots a
   // paper card would carry, so nobody argues about it on the tee.
   const strokeDots =
-    hasStrokeIndex(course) && players.length > 1 ? strokesOffLow(course, players) : null
+    hasStrokeIndex(course) && players.length > 1 ? strokesOffLow(course, players, round?.tee) : null
 
   // The round as the cards stand right now, unsaved edits included —
   // it's what the live bet lines are judged against.

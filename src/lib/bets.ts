@@ -75,7 +75,7 @@ export function calcSkins(
 
   const strokes = new Map<string, number[]>()
   if (useNet && ranked) {
-    const given = strokesOffLow(ranked, entries)
+    const given = strokesOffLow(ranked, entries, round.tee)
     for (const rp of entries) strokes.set(rp.playerId, given[rp.playerId])
   }
 
@@ -182,7 +182,7 @@ export function calcNassau(
   if (ranked && useNet) {
     // Full handicap each in a nassau (not off the low), converted to the
     // course handicap when rating and slope are in.
-    for (const rp of entries) allocation.set(rp.playerId, strokesByHole(ranked, playingHandicap(ranked, rp.handicapSnapshot)))
+    for (const rp of entries) allocation.set(rp.playerId, strokesByHole(ranked, playingHandicap(ranked, rp.handicapSnapshot, round.tee)))
   }
 
   const segments: { label: string; from: number; to: number; allowance: number }[] = [
@@ -278,7 +278,7 @@ export function calcMatchPlay(
   let strokesB = Array<number>(HOLE_COUNT).fill(0)
   let diff = 0 // positive = A gets strokes
   if (useNet && ranked) {
-    diff = playingHandicap(ranked, a.handicapSnapshot) - playingHandicap(ranked, b.handicapSnapshot)
+    diff = playingHandicap(ranked, a.handicapSnapshot, round.tee) - playingHandicap(ranked, b.handicapSnapshot, round.tee)
     if (diff > 0) strokesA = strokesByHole(ranked, diff)
     else if (diff < 0) strokesB = strokesByHole(ranked, -diff)
   }
