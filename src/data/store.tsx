@@ -6,6 +6,7 @@ import {
   type Bet,
   type Course,
   type CourseRating,
+  type CourseTee,
   type Expense,
   type Payment,
   type Player,
@@ -40,6 +41,8 @@ interface StoreApi {
     pars: (number | null)[],
     strokeIndex?: (number | null)[],
     tees?: { rating: number | null; slope: number | null },
+    /** What a scanned card knows beyond par: the tee list, yardage, town. Omitted = keep what's stored. */
+    extras?: { tees?: CourseTee[]; yards?: (number | null)[]; yardsTee?: string; town?: string },
   ) => void
   deleteCourse: (courseId: string) => void
   /** My rating of a course, by name. One per golfer per course; rating again replaces it. */
@@ -169,7 +172,7 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     // Keyed on the slug rather than an id, so entering par from a round
     // updates the course the group already has rather than making a
     // second one with the same name.
-    saveCourse(name, pars, strokeIndex, tees) {
+    saveCourse(name, pars, strokeIndex, tees, extras) {
       const slug = courseSlug(name)
       const existing = dataRef.current.courses.find((c) => c.slug === slug)
       const anyIndex = strokeIndex?.some((n) => n != null)
@@ -183,9 +186,12 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         // Undefined tees means the editor didn't touch them; keep what's stored.
         rating: tees ? tees.rating : existing?.rating,
         slope: tees ? tees.slope : existing?.slope,
-        // The editor doesn't touch the imported tee list or the town.
-        tees: existing?.tees,
-        town: existing?.town,
+        // The tee list, yardage and town come from an import or a scanned
+        // card, never the hand editor; a save without them keeps what's stored.
+        tees: extras?.tees ?? existing?.tees,
+        town: extras?.town ?? existing?.town,
+        yards: extras?.yards ?? existing?.yards,
+        yardsTee: extras?.yardsTee ?? existing?.yardsTee,
       }
       commit({ kind: 'course.upsert', course }, (d) => ({
         ...d,

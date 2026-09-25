@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { HOLE_COUNT } from '../lib/holes'
 import { courseSlug, emptyPars, padded } from '../lib/courses'
+import { defaultTee, scanCard, scanSupported, type ScannedCard } from '../lib/scan'
 import { useGoBack } from '../lib/nav'
 import { Card, PrimaryButton, SectionLabel } from '../components/ui'
 import { useConfirm } from '../components/Confirm'
@@ -45,6 +46,43 @@ export default function CourseEdit() {
   // Kept as text while typing — "70." is a valid moment on the way to "70.6".
   const [rating, setRating] = useState(() => (existing?.rating != null ? String(existing.rating) : ''))
   const [slope, setSlope] = useState(() => (existing?.slope != null ? String(existing.slope) : ''))
+
+  // A photographed card, read by the scan-card function and laid into
+  // the fields above. Kept so Add can carry the tee list and yardage
+  // through — the hand editor has no fields for those.
+  const photoRef = useRef<HTMLInputElement>(null)
+  const [scanning, setScanning] = useState(false)
+  const [scanError, setScanError] = useState<string | null>(null)
+  const [scanned, setScanned] = useState<ScannedCard | null>(null)
+  const [scanWarnings, setScanWarnings] = useState<string[]>([])
+
+  const onPhoto = async (file: File | undefined) => {
+    if (!file) return
+    setScanning(true)
+    setScanError(null)
+    try {
+      const { card, warnings } = await scanCard(file)
+      if (isNew && !typedName.trim() && card.name) setTypedName(card.name)
+      setPars(card.holes.map((h) => h.par))
+      const anyIndex = card.holes.some((h) => h.strokeIndex != null)
+      if (anyIndex) {
+        setIndex(card.holes.map((h) => h.strokeIndex))
+        setShowIndex(true)
+      }
+      const def = defaultTee(card.tees)
+      if (def) {
+        setRating(String(def.rating))
+        setSlope(String(def.slope))
+      }
+      setScanned(card)
+      setScanWarnings(warnings)
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setScanning(false)
+      if (photoRef.current) photoRef.current.value = ''
+    }
+  }
 
   if (!isNew && !name) {
     return (
@@ -93,10 +131,29 @@ export default function CourseEdit() {
       navigate(`/courses/${encodeURIComponent(slug)}/card`, { replace: true })
       return
     }
-    saveCourse(name, pars, indexIn > 0 ? index : undefined, {
-      rating: ratingBad ? null : ratingNum,
-      slope: slopeBad ? null : slopeNum,
-    })
+    // Everything a scanned card knows beyond par rides along: the tee
+    // list, and per-hole yards from the default tee's row (or whichever
+    // tee had one).
+    const tees = scanned?.tees.filter((t) => t.rating != null && t.slope != null).map(({ holeYards: _drop, ...t }) => t)
+    // Per-hole yards from the default tee's row where the card had one,
+    // else from whichever tee did.
+    const defName = scanned ? defaultTee(scanned.tees)?.name : undefined
+    const yardsTee =
+      scanned?.tees.find((t) => t.name === defName && t.holeYards) ?? scanned?.tees.find((t) => t.holeYards)
+    saveCourse(
+      name,
+      pars,
+      indexIn > 0 ? index : undefined,
+      { rating: ratingBad ? null : ratingNum, slope: slopeBad ? null : slopeNum },
+      scanned
+        ? {
+            tees: tees && tees.length ? tees : undefined,
+            yards: yardsTee?.holeYards ?? undefined,
+            yardsTee: yardsTee?.holeYards ? yardsTee.name : undefined,
+            town: scanned.town ?? undefined,
+          }
+        : undefined,
+    )
     if (isNew) navigate(`/courses/${encodeURIComponent(slug)}`, { replace: true })
     else goBack()
   }
@@ -137,6 +194,66 @@ export default function CourseEdit() {
           </>
         )}
       </header>
+
+      {/* A photo of the card does the eighteen taps. Reviewed, not
+          trusted: the fields fill in and the golfer reads them against
+          the card before Add — a wrong stroke index changes who gets a
+          shot on which hole. */}
+      <Card className={`mt-2 p-3.5 ${scanned ? 'border-gold/40 bg-gold-soft/40' : 'border-green/30 bg-green-soft/40'}`}>
+        <input
+          ref={photoRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          aria-label="Photograph the scorecard"
+          onChange={(e) => void onPhoto(e.target.files?.[0])}
+        />
+        <div className="flex items-center gap-3">
+          <span className="text-[22px]">📷</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[14px] font-extrabold text-ink">
+              {scanning ? 'Reading the card…' : scanned ? 'Read from your photo' : 'Scan the card'}
+            </p>
+            <p className="text-[12px] text-ink-dim mt-0.5">
+              {scanning
+                ? 'Ten seconds or so. Par, stroke index, tees and yards.'
+                : scanned
+                  ? 'Check every row against the card before you save — especially the stroke index.'
+                  : scanSupported()
+                    ? 'Photograph the printed card and the fields fill in for you to check.'
+                    : 'Scanning needs the online app.'}
+            </p>
+          </div>
+          <button
+            onClick={() => photoRef.current?.click()}
+            disabled={scanning || !scanSupported()}
+            className="shrink-0 rounded-xl bg-green px-4 py-2.5 text-[13px] font-bold text-white disabled:opacity-40 active:scale-95 transition"
+          >
+            {scanned ? 'Rescan' : 'Take photo'}
+          </button>
+        </div>
+        {scanError && <p className="mt-2 text-[12.5px] font-semibold text-flag">{scanError}</p>}
+        {scanned && (scanWarnings.length > 0 || scanned.notes.length > 0) && (
+          <ul className="mt-2.5 space-y-1 border-t border-gold/30 pt-2.5">
+            {scanWarnings.map((w) => (
+              <li key={w} className="text-[12px] font-semibold text-flag">
+                ⚠ {w}
+              </li>
+            ))}
+            {scanned.notes.map((n) => (
+              <li key={n} className="text-[12px] text-ink-dim">
+                · {n}
+              </li>
+            ))}
+          </ul>
+        )}
+        {scanned && scanned.tees.length > 0 && (
+          <p className="mt-2 text-[11.5px] text-ink-faint">
+            Tees read: {scanned.tees.map((t) => `${t.name}${t.rating != null ? ` ${t.rating}/${t.slope ?? '?'}` : ''}`).join(' · ')}
+          </p>
+        )}
+      </Card>
 
       {/* Running totals, so a typo in the composition is obvious */}
       <Card className={`mt-2 p-4 ${complete ? 'border-green/30 bg-green-soft/40' : ''}`}>

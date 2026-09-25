@@ -50,15 +50,22 @@ for (const c of courses) {
     .filter((t) => (t.gender ?? 'M') === 'M')
     .map((t) => ({ name: t.tee, yards: t.yards ?? undefined, rating: t.rating, slope: t.slope }))
 
-  lines.push(`insert into courses (group_id, name, slug, pars, stroke_index, rating, slope, tees, town)
-values (${q(groupId)}, ${q(c.name)}, ${q(slug(c.name))}, ${arr(c.par)}, ${arr(c.hcp)}, ${def ? def.rating : 'null'}, ${def ? def.slope : 'null'}, ${q(JSON.stringify(tees))}::jsonb, ${q(c.town)})
+  // Per-hole yards come for one tee set in the file; keep whichever the
+  // row already has, since nobody re-measures a course.
+  const yards = Array.isArray(c.yards) && c.yards.length === 18 ? arr(c.yards) : 'null'
+  const yardsTee = c.yards_tee ? q(c.yards_tee) : 'null'
+
+  lines.push(`insert into courses (group_id, name, slug, pars, stroke_index, rating, slope, tees, town, yards, yards_tee)
+values (${q(groupId)}, ${q(c.name)}, ${q(slug(c.name))}, ${arr(c.par)}, ${arr(c.hcp)}, ${def ? def.rating : 'null'}, ${def ? def.slope : 'null'}, ${q(JSON.stringify(tees))}::jsonb, ${q(c.town)}, ${yards}, ${yardsTee})
 on conflict (group_id, slug) do update set
   pars = case when (select count(*) from unnest(courses.pars) p where p is not null) = 18 then courses.pars else excluded.pars end,
   stroke_index = case when (select count(*) from unnest(courses.stroke_index) s where s is not null) = 18 then courses.stroke_index else excluded.stroke_index end,
   rating = coalesce(courses.rating, excluded.rating),
   slope = coalesce(courses.slope, excluded.slope),
   tees = excluded.tees,
-  town = excluded.town;`)
+  town = excluded.town,
+  yards = coalesce(courses.yards, excluded.yards),
+  yards_tee = coalesce(courses.yards_tee, excluded.yards_tee);`)
 }
 
 process.stdout.write(lines.join('\n\n') + '\n')

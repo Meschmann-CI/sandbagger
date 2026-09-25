@@ -61,6 +61,34 @@ export default function Scorecard({ round }: { round: Round }) {
               <th className="w-9 px-1 py-2 font-extrabold text-ink">In</th>
               <th className="w-10 px-1 py-2 font-extrabold text-ink">Tot</th>
             </tr>
+            {/* Yardage, where the card came with it. One tee set; the
+                label says which. */}
+            {course?.yards && course.yards.length === HOLE_COUNT && (
+              <tr className="border-b border-line">
+                <td className="sticky left-0 z-10 bg-card px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">
+                  Yds{course.yardsTee ? ` · ${course.yardsTee}` : ''}
+                </td>
+                {course.yards.slice(0, 9).map((y, i) => (
+                  <td key={i} className="px-1 py-1 text-center text-[10px] text-ink-faint tabular-nums">
+                    {y ?? ''}
+                  </td>
+                ))}
+                <td className="px-1 text-center text-[10px] text-ink-faint tabular-nums">
+                  {course.yards.slice(0, 9).reduce<number>((s, y) => s + (y ?? 0), 0)}
+                </td>
+                {course.yards.slice(9).map((y, i) => (
+                  <td key={i + 9} className="px-1 py-1 text-center text-[10px] text-ink-faint tabular-nums">
+                    {y ?? ''}
+                  </td>
+                ))}
+                <td className="px-1 text-center text-[10px] text-ink-faint tabular-nums">
+                  {course.yards.slice(9).reduce<number>((s, y) => s + (y ?? 0), 0)}
+                </td>
+                <td className="px-1 text-center text-[10px] text-ink-faint tabular-nums">
+                  {course.yards.reduce<number>((s, y) => s + (y ?? 0), 0)}
+                </td>
+              </tr>
+            )}
             {pars && (
               <tr className="border-b border-line bg-paper/60">
                 <td className="sticky left-0 z-10 bg-paper px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-faint">

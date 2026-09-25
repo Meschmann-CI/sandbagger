@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { HOLE_COUNT, cardOf, cardTotal, holesEntered } from '../lib/holes'
-import { findCourse, hasPars, hasStrokeIndex, padded, strokesOffLow, toPar } from '../lib/courses'
+import { findCourse, hasPars, hasStrokeIndex, padded, scoreKind, strokesOffLow, toPar, type ScoreKind } from '../lib/courses'
 import { settleFromCard } from '../lib/bets'
 import { roundStandings } from '../lib/stats'
 import { notifyGroup } from '../lib/push'
@@ -10,19 +10,33 @@ import { fmt1, type Round } from '../types'
 import { Avatar, Card, HelpTip, PrimaryButton } from '../components/ui'
 import { betRules } from '../lib/betRules'
 
-// Hole by hole, everyone on one screen — the way you'd actually fill a
-// card walking off a green. The grid view is for fixing mistakes after.
+// The live card, laid out like the card in your pocket.
 //
-// This screen is a companion, not an editor. Every tap saves itself,
-// nothing jumps unless you tap it, and leaving mid-round costs nothing —
-// the first real round on a real course found the old version's save
-// button and auto-advance both fighting the person holding the phone.
+// One grid: hole, yards, par, stroke index across the top, then a row
+// per golfer, scrolling sideways with the labels pinned. Tap a cell,
+// type the number on the pad, tap Next. That's the GHIN posting screen,
+// borrowed on purpose — everyone in the group already knows it — with
+// the things it can't do: four golfers on one card, strokes marked on
+// the holes they land on, and the bets settling underneath as it fills.
+//
+// Still a companion, not an editor. Every tap saves itself, nothing
+// moves unless you tap Next, and leaving mid-round costs nothing.
 
-// Scores are picked, not stepped: one tap on the number. The row starts
-// at 1 — an ace is rare, but the day somebody makes one is exactly the
-// day it can't be hiding behind a menu. Steppers stay behind "…" for the
-// card that needs an 11+.
-const QUICK_SCORES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+// How a hole's score reads against its par, same marks as the finished card.
+const MARK: Record<ScoreKind, string> = {
+  albatross: 'ring-2 ring-gold rounded-full bg-gold-soft font-extrabold text-gold',
+  eagle: 'ring-2 ring-gold rounded-full bg-gold-soft font-extrabold text-gold',
+  birdie: 'rounded-full bg-green-soft font-extrabold text-green',
+  par: 'text-ink font-bold',
+  bogey: 'rounded-md bg-paper border border-line-strong text-ink font-bold',
+  double: 'rounded-md bg-flag-soft border border-flag/40 font-bold text-flag',
+  worse: 'rounded-md bg-flag-soft border-2 border-flag/60 font-extrabold text-flag',
+}
+
+interface Active {
+  playerId: string
+  hole: number
+}
 
 export default function HoleEntry() {
   const { id } = useParams()
@@ -35,22 +49,16 @@ export default function HoleEntry() {
   // so a score somebody posts from another phone mid-round shows up here
   // rather than being silently overwritten when this card is saved.
   const [edits, setEdits] = useState<Record<string, Record<number, number | null>>>({})
-  const [hole, setHole] = useState(() => {
-    // Open on the first hole nobody has filled in.
-    const filled = (round?.players ?? []).map((rp) => holesEntered(rp))
-    const most = filled.length ? Math.max(...filled) : 0
-    return Math.min(most, HOLE_COUNT - 1)
-  })
-  const [view, setView] = useState<'hole' | 'grid'>('hole')
-  // Which golfer has the stepper fallback open instead of the number row.
-  const [fallbackFor, setFallbackFor] = useState<string | null>(null)
-  // Autosave debounce. A ref so the timeout always runs the latest
-  // closure, and so it deliberately survives navigation — walking away
-  // mid-debounce still lands the write.
+  const [active, setActive] = useState<Active | null>(null)
+  // Digits typed into the active cell so far. "1" then "2" is a 12; any
+  // other pair, the second replaces the first. No timers — the first
+  // live round proved a clock is wrong for whoever is holding the phone.
+  const [buffer, setBuffer] = useState('')
   const commitRef = useRef<() => void>(() => {})
   const commitTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const scroller = useRef<HTMLDivElement>(null)
+  const columns = useRef<(HTMLTableCellElement | null)[]>([])
 
-  // The live card for each golfer: what's saved, plus this session's edits.
   const players = round?.players ?? []
   const cards: Record<string, (number | null)[]> = Object.fromEntries(
     players.map((rp) => {
@@ -62,13 +70,11 @@ export default function HoleEntry() {
 
   const course = findCourse(data, round?.courseName ?? '')
   const pars = hasPars(course) ? padded(course.pars) : null
-  // Who's getting a stroke where, off the low handicap — the dots a
-  // paper card would carry, so nobody argues about it on the tee.
+  const index = hasStrokeIndex(course) ? padded(course.strokeIndex) : null
+  const yards = course?.yards && course.yards.length === HOLE_COUNT ? course.yards : null
   const strokeDots =
     hasStrokeIndex(course) && players.length > 1 ? strokesOffLow(course, players, round?.tee) : null
 
-  // The round as the cards stand right now, unsaved edits included —
-  // it's what the live bet lines are judged against.
   const liveRound: Round | null = round
     ? { ...round, players: round.players.map((rp) => ({ ...rp, holes: cards[rp.playerId] })) }
     : null
@@ -76,11 +82,11 @@ export default function HoleEntry() {
     .map((bet) => ({ bet, outcome: settleFromCard(bet, liveRound!, course) }))
     .filter((x): x is { bet: (typeof x)['bet']; outcome: NonNullable<(typeof x)['outcome']> } => x.outcome != null)
 
-  // No auto-advance. The first live round proved any timer is wrong for
-  // somebody: it jumped while a fat-fingered + was being walked back.
-  // When the hole is complete the Next button turns green instead —
-  // moving on is always the scorekeeper's tap, never the app's.
-  const holeComplete = players.length > 0 && players.every((rp) => cards[rp.playerId]?.[hole] != null)
+  // Keep the column you're typing in on screen as Next walks across.
+  useEffect(() => {
+    if (!active) return
+    columns.current[active.hole]?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+  }, [active])
 
   if (!round) {
     return (
@@ -135,20 +141,45 @@ export default function HoleEntry() {
     commitTimer.current = setTimeout(() => commitRef.current(), 800)
   }
 
-  const setScore = (playerId: string, index: number, value: number | null) => {
+  const setScore = (playerId: string, hole: number, value: number | null) => {
     setEdits((all) => ({
       ...all,
-      [playerId]: {
-        ...(all[playerId] ?? {}),
-        [index]: value == null ? null : Math.max(1, Math.min(20, value)),
-      },
+      [playerId]: { ...(all[playerId] ?? {}), [hole]: value == null ? null : Math.max(1, Math.min(20, value)) },
     }))
     queueCommit()
   }
 
-  const bump = (playerId: string, index: number, delta: number) => {
-    const current = cards[playerId]?.[index]
-    setScore(playerId, index, current == null ? 4 : current + delta)
+  const select = (cell: Active) => {
+    setActive(cell)
+    setBuffer('')
+  }
+
+  // Down the golfers on this hole, then on to the next hole's first —
+  // the order a scorekeeper reads names off a green.
+  const advance = () => {
+    if (!active) return
+    const i = round.players.findIndex((rp) => rp.playerId === active.playerId)
+    if (i < round.players.length - 1) return select({ playerId: round.players[i + 1].playerId, hole: active.hole })
+    if (active.hole < HOLE_COUNT - 1) return select({ playerId: round.players[0].playerId, hole: active.hole + 1 })
+    setActive(null)
+  }
+
+  const typeDigit = (d: number) => {
+    if (!active) return
+    if (buffer === '1' && d >= 0 && d <= 9) {
+      setScore(active.playerId, active.hole, 10 + d)
+      setBuffer('')
+      return
+    }
+    if (d === 0) return
+    setScore(active.playerId, active.hole, d)
+    setBuffer(String(d))
+  }
+
+  const clearActive = () => {
+    if (!active) return
+    setScore(active.playerId, active.hole, null)
+    setBuffer('')
   }
 
   // "Done" just leaves — with any pending write flushed first.
@@ -158,55 +189,78 @@ export default function HoleEntry() {
     navigate(`/rounds/${round.id}`, { replace: true })
   }
 
-  const runningTotal = (playerId: string) => {
-    const card = cards[playerId] ?? []
-    return card.slice(0, hole + 1).reduce<number>((sum, h) => sum + (h ?? 0), 0)
-  }
-
-  // Against par for the holes they've actually put a score on, which is
-  // the number you'd be keeping in your head walking down the fairway.
-  const runningToPar = (playerId: string): string | null => {
+  const sum = (card: (number | null)[], from: number, to: number) =>
+    card.slice(from, to).reduce<number>((s, h) => s + (h ?? 0), 0)
+  // Against par for the holes actually scored — the number you keep in
+  // your head walking down the fairway.
+  const toParThru = (card: (number | null)[]): string | null => {
     if (!pars) return null
-    const card = cards[playerId] ?? []
     let strokes = 0
     let par = 0
-    for (let i = 0; i <= hole; i++) {
-      if (card[i] == null) continue
-      strokes += card[i] as number
+    card.forEach((h, i) => {
+      if (h == null) return
+      strokes += h
       par += pars[i] ?? 0
-    }
+    })
     return par === 0 ? null : toPar(strokes - par)
   }
 
-  const enteredThisHole = round.players.filter((rp) => cards[rp.playerId]?.[hole] != null).length
-  const totalEntered = round.players.reduce((sum, rp) => sum + (cards[rp.playerId]?.filter((h) => h != null).length ?? 0), 0)
+  // Start on the first hole nobody has filled in.
+  const firstOpenHole = Math.min(
+    Math.max(0, ...round.players.map((rp) => holesEntered(rp))),
+    HOLE_COUNT - 1,
+  )
+  const totalEntered = round.players.reduce((n, rp) => n + (cards[rp.playerId]?.filter((h) => h != null).length ?? 0), 0)
+  const totalYards = yards ? yards.reduce<number>((s, y) => s + (y ?? 0), 0) : null
+  const coursePar = pars ? pars.reduce<number>((s, p) => s + (p ?? 0), 0) : null
+
+  const cellBase =
+    'w-11 h-11 flex flex-col items-center justify-center text-[14px] tabular-nums select-none active:bg-paper transition'
 
   return (
-    <div className="rise">
-      <header className="pt-4 pb-3 px-1 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <button onClick={done} className="text-[13px] font-bold text-ink-faint mb-1">
-            ← Back
-          </button>
-          <h1 className="text-[21px] font-extrabold tracking-tight text-ink truncate">{round.courseName}</h1>
-          <p className="text-[12.5px] text-ink-dim">{totalEntered} hole scores in</p>
-        </div>
-        <div className="flex rounded-xl border border-line-strong overflow-hidden shrink-0">
-          {(['hole', 'grid'] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`px-3.5 py-2 text-[12.5px] font-bold ${view === v ? 'bg-ink text-white' : 'bg-card text-ink-dim'}`}
-            >
-              {v === 'hole' ? 'Hole' : 'Card'}
-            </button>
-          ))}
-        </div>
+    // No entry animation here: it leaves a transform on the wrapper, and
+    // a fixed element inside a transformed box is fixed to the box, not
+    // the screen — the first cut had the tab bar drawn over the pad.
+    <div className={active ? 'pb-72' : ''}>
+      <header className="pt-4 pb-3 px-1">
+        <button onClick={done} className="text-[13px] font-bold text-ink-faint mb-1">
+          ← Back
+        </button>
+        <h1 className="text-[21px] font-extrabold tracking-tight text-ink truncate">{round.courseName}</h1>
+        <p className="text-[12.5px] text-ink-dim tabular-nums">
+          {round.tee ? `${round.tee} tees` : 'Tees not noted'}
+          {coursePar != null && ` · par ${coursePar}`}
+          {totalYards != null && ` · ${totalYards.toLocaleString()} yds${course?.yardsTee && round.tee && course.yardsTee.toLowerCase() !== round.tee.toLowerCase() ? ` (${course.yardsTee})` : ''}`}
+          {` · ${totalEntered} score${totalEntered === 1 ? '' : 's'} in`}
+        </p>
       </header>
+
+      {/* Where everyone stands, thru whatever they've scored */}
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
+        {round.players.map((rp) => {
+          const p = data.players.find((pl) => pl.id === rp.playerId)
+          if (!p) return null
+          const card = cards[rp.playerId]
+          const thru = card.filter((h) => h != null).length
+          const gross = sum(card, 0, HOLE_COUNT)
+          const vs = toParThru(card)
+          return (
+            <div key={rp.playerId} className="flex items-center gap-2 rounded-xl border border-line bg-card px-2.5 py-1.5 shrink-0">
+              <Avatar player={p} size={22} />
+              <div className="leading-tight">
+                <p className="text-[12px] font-bold text-ink">{p.name.split(' ')[0]}</p>
+                <p className="text-[11px] text-ink-faint tabular-nums">
+                  {thru === 0 ? 'no scores' : `${gross}${vs ? ` · ${vs}` : ''} thru ${thru}`}
+                </p>
+              </div>
+            </div>
+          )
+        })}
+      </div>
 
       {/* The bets riding on this card, as it stands right now */}
       {liveBets.length > 0 && (
-        <Card className="mb-3 p-3.5 bg-gold-soft/40 border-gold/30 space-y-1.5">
+        <Card className="mt-3 p-3.5 bg-gold-soft/40 border-gold/30 space-y-1.5">
           {liveBets.map(({ bet, outcome }) => (
             <div key={bet.id} className="flex items-start justify-between gap-2">
               <p className="text-[12.5px] text-ink">
@@ -215,7 +269,6 @@ export default function HoleEntry() {
                   .map((line) => {
                     const [text, playerId] = line.split('|')
                     const who = playerId ? data.players.find((p) => p.id === playerId)?.name : null
-                    // "2 up thru 14|barry" reads as "Barry 2 up thru 14".
                     return who ? `${who} ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text
                   })
                   .join(' · ')}
@@ -226,248 +279,130 @@ export default function HoleEntry() {
         </Card>
       )}
 
-      {view === 'hole' ? (
-        <>
-          {/* Hole picker */}
-          <Card className="p-3">
-            <div className="flex items-center justify-between gap-2">
-              <button
-                onClick={() => { setFallbackFor(null); setHole((h) => Math.max(0, h - 1)) }}
-                disabled={hole === 0}
-                className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-lg font-bold text-ink disabled:opacity-30 active:scale-95"
-              >
-                ←
-              </button>
-              <div className="text-center">
-                <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-faint">Hole</p>
-                <p className="text-[30px] font-extrabold text-ink leading-none tabular-nums">{hole + 1}</p>
-                {pars?.[hole] != null && (
-                  <p className="text-[11px] font-bold text-ink-faint tabular-nums mt-0.5">par {pars[hole]}</p>
-                )}
-              </div>
-              <button
-                onClick={() => { setFallbackFor(null); setHole((h) => Math.min(HOLE_COUNT - 1, h + 1)) }}
-                disabled={hole === HOLE_COUNT - 1}
-                className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-lg font-bold text-ink disabled:opacity-30 active:scale-95"
-              >
-                →
-              </button>
-            </div>
-            {/* Dots so you can jump around and see what's filled */}
-            <div className="grid grid-cols-9 gap-1.5 mt-3">
-              {Array.from({ length: HOLE_COUNT }, (_, i) => {
-                const filled = round.players.some((rp) => cards[rp.playerId]?.[i] != null)
-                return (
-                  <button
+      {/* The card */}
+      <Card className="mt-3 overflow-hidden">
+        <div ref={scroller} className="overflow-x-auto">
+          <table className="border-collapse tabular-nums">
+            <thead>
+              <tr className="bg-ink text-white">
+                <th className="sticky left-0 z-20 bg-ink px-3 text-left text-[10px] font-bold uppercase tracking-wider">Hole</th>
+                {Array.from({ length: HOLE_COUNT }, (_, i) => (
+                  <th
                     key={i}
-                    onClick={() => { setFallbackFor(null); setHole(i) }}
-                    className={`h-7 rounded-md text-[11px] font-bold tabular-nums transition ${
-                      i === hole
-                        ? 'bg-green text-white'
-                        : filled
-                          ? 'bg-green-soft text-green'
-                          : 'bg-paper text-ink-faint border border-line'
-                    }`}
+                    ref={(el) => {
+                      columns.current[i] = el
+                    }}
+                    onClick={() => select({ playerId: round.players[0].playerId, hole: i })}
+                    className={`w-11 h-9 text-[13px] font-extrabold cursor-pointer ${active?.hole === i ? 'bg-green' : ''}`}
                   >
                     {i + 1}
-                  </button>
+                  </th>
+                ))}
+                <th className="w-12 h-9 text-[11px] font-extrabold">Tot</th>
+              </tr>
+              {yards && (
+                <tr className="bg-paper/70">
+                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-[10px] font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">
+                    Yds{course?.yardsTee ? ` ${course.yardsTee}` : ''}
+                  </th>
+                  {yards.map((y, i) => (
+                    <td key={i} className="h-7 text-center text-[11px] text-ink-dim">{y ?? ''}</td>
+                  ))}
+                  <td className="h-7 text-center text-[11px] text-ink-dim">{totalYards?.toLocaleString()}</td>
+                </tr>
+              )}
+              {pars && (
+                <tr className="bg-paper/70">
+                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-[10px] font-bold uppercase tracking-wider text-ink-faint">Par</th>
+                  {pars.map((p, i) => (
+                    <td key={i} className="h-7 text-center text-[12px] font-bold text-ink-dim">{p}</td>
+                  ))}
+                  <td className="h-7 text-center text-[12px] font-extrabold text-ink-dim">{coursePar}</td>
+                </tr>
+              )}
+              {index && (
+                <tr className="bg-paper/70 border-b border-line">
+                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-[10px] font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">S. index</th>
+                  {index.map((n, i) => (
+                    <td key={i} className="h-7 text-center text-[11px] text-ink-faint">{n}</td>
+                  ))}
+                  <td />
+                </tr>
+              )}
+            </thead>
+            <tbody>
+              {round.players.map((rp) => {
+                const p = data.players.find((pl) => pl.id === rp.playerId)
+                if (!p) return null
+                const card = cards[rp.playerId]
+                const dots = strokeDots?.[rp.playerId]
+                const total = sum(card, 0, HOLE_COUNT)
+                const vs = toParThru(card)
+                return (
+                  <tr key={rp.playerId} className="border-b border-line last:border-0">
+                    <th className="sticky left-0 z-20 bg-card px-3 text-left">
+                      <div className="flex items-center gap-2">
+                        <Avatar player={p} size={22} />
+                        <span className="text-[12.5px] font-bold text-ink whitespace-nowrap">{p.name.split(' ')[0]}</span>
+                      </div>
+                    </th>
+                    {card.map((v, i) => {
+                      const isActive = active?.playerId === rp.playerId && active.hole === i
+                      const par = pars?.[i]
+                      const mark = v != null && par != null ? MARK[scoreKind(v, par)] : 'text-ink font-bold'
+                      return (
+                        <td key={i} className="p-0">
+                          <button
+                            onClick={() => select({ playerId: rp.playerId, hole: i })}
+                            aria-label={`${p.name}, hole ${i + 1}${v != null ? `, ${v}` : ''}`}
+                            className={`${cellBase} ${isActive ? 'ring-2 ring-inset ring-green bg-green-soft/40' : ''}`}
+                          >
+                            {/* The stroke dots a paper card would carry */}
+                            <span className="h-2 text-[8px] leading-none text-gold" aria-hidden>
+                              {dots?.[i] ? '•'.repeat(Math.min(dots[i], 3)) : ''}
+                            </span>
+                            {v == null ? (
+                              <span className="text-ink-faint">{isActive ? '_' : '·'}</span>
+                            ) : (
+                              <span className={`inline-flex h-7 w-7 items-center justify-center ${mark}`}>{v}</span>
+                            )}
+                          </button>
+                        </td>
+                      )
+                    })}
+                    <td className="text-center">
+                      <p className="text-[14px] font-extrabold text-ink">{total || '–'}</p>
+                      {vs && <p className="text-[10px] font-bold text-ink-faint -mt-0.5">{vs}</p>}
+                    </td>
+                  </tr>
                 )
               })}
-            </div>
-          </Card>
-
-          {/* One row per golfer */}
-          <div className="space-y-2.5 mt-3">
-            {round.players.map((rp) => {
-              const p = data.players.find((pl) => pl.id === rp.playerId)
-              if (!p) return null
-              const value = cards[rp.playerId]?.[hole] ?? null
-              const par = pars?.[hole]
-              const oddScore = value != null && !QUICK_SCORES.includes(value)
-              const usingFallback = fallbackFor === rp.playerId || oddScore
-              return (
-                <Card key={rp.playerId} className="p-3">
-                  <div className="flex items-center gap-2.5 mb-2">
-                    <Avatar player={p} size={30} />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-[14px] text-ink truncate">
-                        {p.name}
-                        {p.id === data.currentUserId && <span className="text-ink-faint font-semibold"> (you)</span>}
-                        {/* Getting a stroke on this hole — settled before
-                            anyone tees off, not argued after. */}
-                        {(strokeDots?.[rp.playerId]?.[hole] ?? 0) > 0 && (
-                          <span className="ml-1.5 text-[11px] font-bold text-gold whitespace-nowrap">
-                            {'•'.repeat(Math.min(strokeDots![rp.playerId][hole], 3))} stroke here
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    <p className="text-[11.5px] text-ink-faint tabular-nums shrink-0">
-                      {runningTotal(rp.playerId) > 0 ? (
-                        <>
-                          {runningTotal(rp.playerId)} thru {hole + 1}
-                          {runningToPar(rp.playerId) && (
-                            <span className="font-bold text-ink-dim"> · {runningToPar(rp.playerId)}</span>
-                          )}
-                        </>
-                      ) : (
-                        'no scores yet'
-                      )}
-                    </p>
-                  </div>
-                  {usingFallback ? (
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => bump(rp.playerId, hole, -1)}
-                        className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-xl font-bold text-ink active:scale-95"
-                        aria-label={`decrease ${p.name}`}
-                      >
-                        −
-                      </button>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        value={value ?? ''}
-                        placeholder="—"
-                        onChange={(e) => {
-                          const n = parseInt(e.target.value, 10)
-                          setScore(rp.playerId, hole, Number.isNaN(n) ? null : n)
-                        }}
-                        className="w-14 h-11 rounded-xl border border-line-strong bg-card text-center text-[20px] font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
-                      />
-                      <button
-                        onClick={() => bump(rp.playerId, hole, 1)}
-                        className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-xl font-bold text-ink active:scale-95"
-                        aria-label={`increase ${p.name}`}
-                      >
-                        +
-                      </button>
-                      {!oddScore && (
-                        <button
-                          onClick={() => setFallbackFor(null)}
-                          className="ml-auto px-3 text-[12px] font-bold text-green"
-                        >
-                          Numbers
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    /* One tap, straight on the number. Tapping it again
-                       clears it — the undo the auto-advance never allowed. */
-                    <div className="grid grid-cols-6 gap-1.5">
-                      {QUICK_SCORES.map((n) => {
-                        const on = value === n
-                        const isPar = par === n
-                        return (
-                          <button
-                            key={n}
-                            onClick={() => setScore(rp.playerId, hole, on ? null : n)}
-                            aria-label={`${p.name}, ${n} on hole ${hole + 1}`}
-                            aria-pressed={on}
-                            className={`h-10 rounded-xl border text-[16px] font-extrabold tabular-nums transition active:scale-95 ${
-                              on
-                                ? 'bg-green text-white border-green'
-                                : isPar
-                                  ? 'bg-green-soft/50 text-green border-green/40'
-                                  : 'bg-card text-ink-dim border-line-strong'
-                            }`}
-                          >
-                            {n}
-                          </button>
-                        )
-                      })}
-                      <button
-                        onClick={() => setFallbackFor(rp.playerId)}
-                        aria-label={`other score for ${p.name}`}
-                        className="h-10 rounded-xl border border-line-strong bg-card text-[16px] font-extrabold text-ink-faint active:scale-95"
-                      >
-                        …
-                      </button>
-                    </div>
-                  )}
-                </Card>
-              )
-            })}
-          </div>
-
-          {hole < HOLE_COUNT - 1 && (
+            </tbody>
+          </table>
+        </div>
+        <div className="flex items-center gap-x-3.5 gap-y-1 flex-wrap border-t border-line px-3 py-2 text-[10.5px] text-ink-faint">
+          {strokeDots && (
+            <span>
+              <span className="text-gold text-[12px] leading-none">•</span> stroke here
+            </span>
+          )}
+          {pars && (
+            <>
+              <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-green-soft" /> birdie</span>
+              <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-md border border-line-strong bg-paper" /> bogey</span>
+              <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-md border border-flag/40 bg-flag-soft" /> double+</span>
+            </>
+          )}
+          {!active && (
             <button
-              onClick={() => { setFallbackFor(null); setHole((h) => h + 1) }}
-              disabled={enteredThisHole === 0}
-              className={`w-full mt-3 rounded-xl py-3.5 text-[14.5px] font-bold transition disabled:opacity-40 active:scale-[0.99] ${
-                holeComplete
-                  ? 'bg-green text-white shadow-[0_2px_6px_rgba(28,124,74,0.35)]'
-                  : 'border border-line-strong bg-card text-ink-dim active:bg-paper'
-              }`}
+              onClick={() => select({ playerId: round.players[0].playerId, hole: firstOpenHole })}
+              className="ml-auto text-[12px] font-bold text-green"
             >
-              Next hole →
+              Score hole {firstOpenHole + 1} →
             </button>
           )}
-        </>
-      ) : (
-        /* Whole card, scrolls sideways */
-        <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="text-[12px] tabular-nums">
-              <thead>
-                <tr className="border-b border-line">
-                  <th className="sticky left-0 bg-card px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-ink-faint">
-                    Hole
-                  </th>
-                  {Array.from({ length: 9 }, (_, i) => (
-                    <th key={i} className="w-11 px-1 py-2 font-bold text-ink-faint">{i + 1}</th>
-                  ))}
-                  <th className="w-11 px-1 py-2 font-extrabold text-ink">Out</th>
-                  {Array.from({ length: 9 }, (_, i) => (
-                    <th key={i + 9} className="w-11 px-1 py-2 font-bold text-ink-faint">{i + 10}</th>
-                  ))}
-                  <th className="w-11 px-1 py-2 font-extrabold text-ink">In</th>
-                  <th className="w-12 px-1 py-2 font-extrabold text-ink">Tot</th>
-                </tr>
-              </thead>
-              <tbody>
-                {round.players.map((rp) => {
-                  const p = data.players.find((pl) => pl.id === rp.playerId)
-                  if (!p) return null
-                  const card = cards[rp.playerId] ?? []
-                  const out = card.slice(0, 9).reduce<number>((s, h) => s + (h ?? 0), 0)
-                  const inn = card.slice(9).reduce<number>((s, h) => s + (h ?? 0), 0)
-                  const cell = (i: number) => (
-                    <td key={i} className="px-0.5 py-1.5 text-center">
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        value={card[i] ?? ''}
-                        placeholder="–"
-                        onChange={(e) => {
-                          const n = parseInt(e.target.value, 10)
-                          setScore(rp.playerId, i, Number.isNaN(n) ? null : n)
-                        }}
-                        className="w-9 h-9 rounded-md border border-line bg-card text-center text-[13px] font-bold text-ink tabular-nums focus:border-green focus:outline-none"
-                      />
-                    </td>
-                  )
-                  return (
-                    <tr key={rp.playerId} className="border-b border-line last:border-0">
-                      <td className="sticky left-0 bg-card px-3 py-1.5">
-                        <div className="flex items-center gap-2">
-                          <Avatar player={p} size={22} />
-                          <span className="text-[12.5px] font-bold text-ink whitespace-nowrap">{p.name}</span>
-                        </div>
-                      </td>
-                      {Array.from({ length: 9 }, (_, i) => cell(i))}
-                      <td className="px-1 text-center font-extrabold text-ink">{out || '–'}</td>
-                      {Array.from({ length: 9 }, (_, i) => cell(i + 9))}
-                      <td className="px-1 text-center font-extrabold text-ink">{inn || '–'}</td>
-                      <td className="px-1 text-center font-extrabold text-ink">{out + inn || '–'}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
+        </div>
+      </Card>
 
       <div className="mt-4">
         <PrimaryButton onClick={done} className="w-full !py-4">
@@ -478,6 +413,52 @@ export default function HoleEntry() {
         Every tap saves by itself, so pocket the phone whenever — coming back picks up right where the card left off.
       </p>
       <div className="h-4" />
+
+      {/* The pad. Fixed to the bottom like a keyboard, over the tab bar,
+          and only there while a cell is picked. */}
+      {active && (
+        <div data-pad className="fixed inset-x-0 bottom-0 z-50 sheet-up">
+          <div className="mx-auto max-w-md bg-card border-t border-line shadow-[0_-8px_24px_rgba(24,32,25,0.12)] pb-[env(safe-area-inset-bottom)]">
+            <div className="flex items-center justify-between px-4 py-2 bg-paper border-b border-line">
+              <p className="text-[12.5px] text-ink-dim">
+                <span className="font-extrabold text-ink">
+                  {data.players.find((pl) => pl.id === active.playerId)?.name.split(' ')[0]}
+                </span>{' '}
+                · hole {active.hole + 1}
+                {pars?.[active.hole] != null && ` · par ${pars[active.hole]}`}
+                {(strokeDots?.[active.playerId]?.[active.hole] ?? 0) > 0 && (
+                  <span className="text-gold font-bold"> · {'•'.repeat(Math.min(strokeDots![active.playerId][active.hole], 3))} stroke</span>
+                )}
+              </p>
+              <button onClick={() => setActive(null)} className="text-[13px] font-bold text-green">
+                Done
+              </button>
+            </div>
+            <div className="grid grid-cols-3">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
+                <button
+                  key={d}
+                  onClick={() => typeDigit(d)}
+                  className={`h-14 border-b border-r border-line text-[24px] font-bold text-ink active:bg-paper ${
+                    pars?.[active.hole] === d ? 'bg-green-soft/40' : 'bg-card'
+                  }`}
+                >
+                  {d}
+                </button>
+              ))}
+              <button onClick={clearActive} aria-label="Clear" className="h-14 border-r border-line bg-paper text-[15px] font-bold text-ink-dim active:bg-line">
+                ⌫
+              </button>
+              <button onClick={() => typeDigit(0)} className="h-14 border-r border-line bg-card text-[24px] font-bold text-ink active:bg-paper">
+                0
+              </button>
+              <button onClick={advance} className="h-14 bg-green text-[15px] font-extrabold text-white active:bg-green-deep">
+                Next →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

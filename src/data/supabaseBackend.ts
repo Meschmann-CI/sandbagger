@@ -68,6 +68,8 @@ const courseRow = (c: Course) => ({
   slope: c.slope ?? null,
   tees: c.tees ?? null,
   town: c.town ?? null,
+  yards: c.yards ?? null,
+  yards_tee: c.yardsTee ?? null,
 })
 
 const courseRatingRow = (r: CourseRating) => ({
@@ -248,6 +250,8 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           slope: c.slope != null ? Number(c.slope) : undefined,
           tees: Array.isArray(c.tees) && c.tees.length ? c.tees : undefined,
           town: c.town ?? undefined,
+          yards: Array.isArray(c.yards) && c.yards.length ? c.yards : undefined,
+          yardsTee: c.yards_tee ?? undefined,
         })),
         courseRatings: (ratingsRes.data ?? []).map(toCourseRating),
         courseRankings: (rankingsRes.data ?? []).map((r: any) => ({

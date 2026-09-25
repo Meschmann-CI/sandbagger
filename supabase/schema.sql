@@ -78,6 +78,10 @@ create table if not exists courses (
   -- data/courses/*.json by scripts/import-courses.mjs.
   tees jsonb,
   town text,
+  -- Per-hole yardage for one tee set, so the live card shows the number
+  -- a paper card would. Imported alongside the tees.
+  yards smallint[],
+  yards_tee text,
   created_at timestamptz not null default now(),
   unique (group_id, slug)
 );

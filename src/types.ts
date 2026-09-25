@@ -93,6 +93,9 @@ export interface Course {
   tees?: CourseTee[]
   /** "Yonkers, NY" — for telling the two Eisenhower courses apart in a long list. */
   town?: string
+  /** Per-hole yardage for one tee set (`yardsTee`), the way a card prints it. Imported, not hand-entered. */
+  yards?: (number | null)[]
+  yardsTee?: string
 }
 
 export interface CourseTee {
