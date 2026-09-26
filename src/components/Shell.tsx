@@ -4,6 +4,11 @@ import { usePhotoOutboxFlush } from '../data/photoOutbox'
 import { useNewVersion } from '../lib/useNewVersion'
 import { Avatar } from './ui'
 import { CompactTitleBar, useNavRecorder } from './Nav'
+import { useMemo } from 'react'
+import { streakStates } from '../lib/delight'
+import { StreakContext } from './streakContext'
+import SaddamHandover from './SaddamHandover'
+import PullToRefresh from './PullToRefresh'
 
 // The tab order is the app's opinion about what matters most often.
 // Logging rounds, arguing about courses, and settling bets happen every
@@ -67,6 +72,9 @@ export default function Shell() {
   useNavRecorder()
   const current = tabFor(pathname)
   const { data, syncError, pendingWrites, updateRound } = useStore()
+  // Hot and cold runs, for the rings on every avatar. Worked out once
+  // per change to the rounds rather than by each of dozens of avatars.
+  const streaks = useMemo(() => streakStates(data), [data.rounds, data.players])
   const me = data.players.find((p) => p.id === data.currentUserId) ?? data.players[0]
   // Photos parked while there was no signal go out from here, whatever
   // screen is showing. And a build that's newer than the one running
@@ -92,70 +100,74 @@ export default function Shell() {
   )
 
   return (
-    <div className="mx-auto max-w-md min-h-dvh flex flex-col relative">
-      {/* Queued writes are fine, not broken — the app is doing what it
-          should on a course with no signal. Say so calmly. */}
-      {newVersion && (
-        <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-green/40 bg-green-soft px-4 py-2.5 flex items-center gap-3">
-          <p className="flex-1 text-footnote font-bold text-ink">A newer version of the app is ready.</p>
-          <button onClick={() => window.location.reload()} className="rounded-lg bg-green px-3 py-1.5 text-footnote font-bold text-white">
-            Reload
-          </button>
-        </div>
-      )}
-
-      {pendingWrites > 0 && (
-        <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-gold/40 bg-gold-soft px-4 py-2.5 flex items-center gap-2.5">
-          <span className="h-2 w-2 rounded-full bg-gold shrink-0" />
-          <p className="text-footnote font-bold text-ink">
-            {pendingWrites} change{pendingWrites === 1 ? '' : 's'} saved on this phone
-          </p>
-          <p className="text-footnote text-ink-dim">· sends when you're back online</p>
-        </div>
-      )}
-
-      {/* A write that failed has already been applied on screen, so say so
-          rather than letting it quietly reappear on the next refresh. */}
-      {syncError && (
-        <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-flag/40 bg-flag-soft px-4 py-3">
-          <p className="text-footnote font-bold text-flag">That didn't save to the group</p>
-          <p className="text-footnote text-ink-dim mt-0.5">
-            {syncError}. What you see may not have stuck — reload to check.
-          </p>
-          <button onClick={() => window.location.reload()} className="mt-1.5 text-footnote font-bold text-green">
-            Reload
-          </button>
-        </div>
-      )}
-      <main className="flex-1 px-4 pb-32 pt-3">
-        <Outlet />
-      </main>
-
-      <CompactTitleBar />
-
-      <nav className="fixed bottom-0 inset-x-0 z-40">
-        <div className="mx-auto max-w-md border-t border-line bg-card/95 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]">
-          <div className="grid grid-cols-5">
-            {tabs.slice(0, 2).map((t) => tabLink(t))}
-            {/* The middle of the bar: logging a round, raised above the rest. */}
-            <NavLink
-              to="/log"
-              aria-label="Log a round"
-              className={`flex flex-col items-center gap-1 pb-2.5 text-caption font-bold tracking-wide ${
-                current === '/log' ? 'text-green' : 'text-ink-faint'
-              }`}
-            >
-              <span className="-mt-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-forest text-on-forest shadow-[0_6px_16px_rgba(28,70,50,0.35)] ring-4 ring-card transition-transform active:scale-90">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-                  <path d="M12 5 V19 M5 12 H19" />
-                </svg>
-              </span>
-              Log
-            </NavLink>
-            {tabs.slice(2).map((t) => tabLink(t))}
+    <StreakContext.Provider value={streaks}>
+      <div className="mx-auto max-w-md min-h-dvh flex flex-col relative">
+        <PullToRefresh />
+        <SaddamHandover />
+        {/* Queued writes are fine, not broken — the app is doing what it
+            should on a course with no signal. Say so calmly. */}
+        {newVersion && (
+          <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-green/40 bg-green-soft px-4 py-2.5 flex items-center gap-3">
+            <p className="flex-1 text-footnote font-bold text-ink">A newer version of the app is ready.</p>
+            <button onClick={() => window.location.reload()} className="rounded-lg bg-green px-3 py-1.5 text-footnote font-bold text-white">
+              Reload
+            </button>
           </div>
-        </div>
-      </nav>
-    </div>
+        )}
+
+        {pendingWrites > 0 && (
+          <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-gold/40 bg-gold-soft px-4 py-2.5 flex items-center gap-2.5">
+            <span className="h-2 w-2 rounded-full bg-gold shrink-0" />
+            <p className="text-footnote font-bold text-ink">
+              {pendingWrites} change{pendingWrites === 1 ? '' : 's'} saved on this phone
+            </p>
+            <p className="text-footnote text-ink-dim">· sends when you're back online</p>
+          </div>
+        )}
+
+        {/* A write that failed has already been applied on screen, so say so
+            rather than letting it quietly reappear on the next refresh. */}
+        {syncError && (
+          <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-flag/40 bg-flag-soft px-4 py-3">
+            <p className="text-footnote font-bold text-flag">That didn't save to the group</p>
+            <p className="text-footnote text-ink-dim mt-0.5">
+              {syncError}. What you see may not have stuck — reload to check.
+            </p>
+            <button onClick={() => window.location.reload()} className="mt-1.5 text-footnote font-bold text-green">
+              Reload
+            </button>
+          </div>
+        )}
+        <main className="flex-1 px-4 pb-32 pt-3">
+          <Outlet />
+        </main>
+
+        <CompactTitleBar />
+
+        <nav className="fixed bottom-0 inset-x-0 z-40">
+          <div className="mx-auto max-w-md border-t border-line bg-card/95 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]">
+            <div className="grid grid-cols-5">
+              {tabs.slice(0, 2).map((t) => tabLink(t))}
+              {/* The middle of the bar: logging a round, raised above the rest. */}
+              <NavLink
+                to="/log"
+                aria-label="Log a round"
+                className={`flex flex-col items-center gap-1 pb-2.5 text-caption font-bold tracking-wide ${
+                  current === '/log' ? 'text-green' : 'text-ink-faint'
+                }`}
+              >
+                <span className="-mt-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-forest text-on-forest shadow-[0_6px_16px_rgba(28,70,50,0.35)] ring-4 ring-card transition-transform active:scale-90">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                    <path d="M12 5 V19 M5 12 H19" />
+                  </svg>
+                </span>
+                Log
+              </NavLink>
+              {tabs.slice(2).map((t) => tabLink(t))}
+            </div>
+          </div>
+        </nav>
+      </div>
+    </StreakContext.Provider>
   )
 }

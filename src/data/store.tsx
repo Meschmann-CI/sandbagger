@@ -32,6 +32,8 @@ interface StoreApi {
   syncError: string | null
   /** Writes sitting on this device, waiting for signal. */
   pendingWrites: number
+  /** Pull the latest from the group now, rather than waiting for the next push. */
+  refresh: () => Promise<void>
   addRound: (round: Omit<Round, 'id' | 'groupId'>) => Round
   updateRound: (round: Round) => void
   deleteRound: (roundId: string) => void
@@ -151,6 +153,12 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     syncError: syncError ?? outboxError,
     pendingWrites,
     newId: makeId,
+
+    async refresh() {
+      const fresh = await backend.load()
+      dataRef.current = fresh
+      setData(fresh)
+    },
 
     addRound(round) {
       const full: Round = { ...round, id: makeId(), groupId: data.group.id }

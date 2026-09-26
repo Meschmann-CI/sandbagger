@@ -21,6 +21,8 @@ import { roundBetSettlements } from '../lib/settlements'
 import { useConfirm } from '../components/Confirm'
 import { Avatar, Card, HelpTip, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SaddamIcon, SectionLabel } from '../components/ui'
 import { betRules } from '../lib/betRules'
+import { sandbaggers } from '../lib/delight'
+import { SandbagStamp } from '../components/Delight'
 import { Icon, type IconName } from '../components/icons'
 
 export default function RoundDetail() {
@@ -90,6 +92,10 @@ export default function RoundDetail() {
     .map((rp) => data.players.find((p) => p.id === rp.playerId)?.name)
     .filter(Boolean)
     .join(' and ')
+
+  // Anyone who played suspiciously far under their handicap gets stamped.
+  const bags = waiting.length === 0 ? sandbaggers(data, round) : []
+  const bagged = new Map(bags.map((b) => [b.playerId, b]))
 
   // The podium: a group round with every score in and two or more posted.
   const podium = !solo && waiting.length === 0 ? standings.slice(0, 3) : []
@@ -225,6 +231,7 @@ export default function RoundDetail() {
                     <span className={`max-w-full truncate text-footnote ${first ? 'font-extrabold text-ink' : 'font-bold text-ink-dim'}`}>
                       {p.name}
                     </span>
+                    {bagged.has(s.playerId) && <SandbagStamp />}
                     <span className="text-caption text-ink-faint tabular-nums">net {fmt1(s.netScore)}</span>
                     <div
                       className={`mt-1 flex w-full justify-center rounded-t-xl pt-1.5 text-headline font-extrabold text-on-forest tabular-nums ${
@@ -246,6 +253,12 @@ export default function RoundDetail() {
               <SaddamBadge size={16} /> The Saddam changed hands here. {top.name} carries it now.
             </p>
           )}
+          {bags.map((b) => (
+            <p key={b.playerId} className="mt-2 text-footnote text-ink-dim">
+              <span className="font-bold text-ink">{data.players.find((p) => p.id === b.playerId)?.name}</span> played {fmt1(b.by)}{' '}
+              {b.basis === 'handicap' ? 'better than the handicap says' : 'better than usual'}. Someone check the GHIN.
+            </p>
+          ))}
         </div>
       </Card>
 
@@ -291,7 +304,14 @@ export default function RoundDetail() {
               <div className="flex items-center gap-2.5 min-w-0">
                 {!solo && <span className={`font-extrabold w-4 tabular-nums ${s.rank === 1 ? 'text-gold' : 'text-ink-faint'}`}>{s.rank}</span>}
                 <Avatar player={p} size={30} />
-                <span className={`truncate text-body ${s.rank === 1 && !solo ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>{p.name}</span>
+                <span className="min-w-0">
+                  <span className={`block truncate text-body ${s.rank === 1 && !solo ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>{p.name}</span>
+                  {bagged.has(s.playerId) && (
+                    <span className="-ml-0.5 mt-0.5 block">
+                      <SandbagStamp />
+                    </span>
+                  )}
+                </span>
               </div>
               <span className="w-12 text-right text-headline font-extrabold text-ink tabular-nums">{fmt1(net(rp))}</span>
               <span className="w-10 text-right text-footnote text-ink-dim tabular-nums">

@@ -236,13 +236,13 @@ export default function Home() {
           <Card className="overflow-hidden">
             <div className="flex items-center gap-3 px-4 py-3">
               {debtors.length > 0 ? (
-                <AvatarStack players={debtors.map((id) => data.players.find((p) => p.id === id))} size={28} />
+                <AvatarStack players={debtors.map((id) => data.players.find((p) => p.id === id))} size={24} />
               ) : (
-                <AvatarStack players={iOweTo.map((id) => data.players.find((p) => p.id === id))} size={28} />
+                <AvatarStack players={iOweTo.map((id) => data.players.find((p) => p.id === id))} size={24} />
               )}
               <div className="min-w-0 flex-1">
                 <p
-                  className={`text-headline font-extrabold tabular-nums leading-tight ${
+                  className={`truncate text-headline font-extrabold tabular-nums leading-tight ${
                     netPosition > 0 ? 'text-green' : netPosition < 0 ? 'text-flag' : 'text-ink'
                   }`}
                 >

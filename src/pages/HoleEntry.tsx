@@ -15,6 +15,7 @@ import {
 } from '../lib/courses'
 import { settleFromCard } from '../lib/bets'
 import { BackButton } from '../components/Nav'
+import { Confetti, buzz } from '../components/Delight'
 import { MarkLegend, SCORE_MARK, StrokeDots } from '../components/scoreMarks'
 import { fmtDiff, ghostDiff, ghostFor, ghostOptions } from '../lib/ghost'
 import { scanScores, scanSupported, type ScannedScoreRow } from '../lib/scan'
@@ -63,6 +64,15 @@ export default function HoleEntry() {
   const commitTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const scroller = useRef<HTMLDivElement>(null)
   const columns = useRef<(HTMLTableCellElement | null)[]>([])
+  // The last score worth a reaction, so its cell can pop, and a counter
+  // that fires the confetti for the big ones.
+  const [cheer, setCheer] = useState<{ playerId: string; hole: number; label: string; big: boolean; n: number } | null>(null)
+  const [confetti, setConfetti] = useState(0)
+  useEffect(() => {
+    if (!cheer) return
+    const t = setTimeout(() => setCheer(null), 1500)
+    return () => clearTimeout(t)
+  }, [cheer])
 
   const players = round?.players ?? []
   const cards: Record<string, (number | null)[]> = Object.fromEntries(
@@ -154,7 +164,30 @@ export default function HoleEntry() {
     queueCommit()
   }
 
+  // Under par gets a reaction: a ring and "Birdie" for one under, the
+  // same plus confetti for anything better. Over par gets nothing; the
+  // square on the card says enough.
+  const celebrate = (playerId: string, hole: number, value: number) => {
+    const par = pars?.[hole]
+    if (par == null) return
+    const kind = value === 1 ? 'ace' : scoreKind(value, par)
+    const label =
+      kind === 'ace' ? 'Ace!' : kind === 'albatross' ? 'Albatross!' : kind === 'eagle' ? 'Eagle!' : kind === 'birdie' ? 'Birdie' : null
+    if (!label) return
+    const big = kind !== 'birdie'
+    setCheer((c) => ({ playerId, hole, label, big, n: (c?.n ?? 0) + 1 }))
+    if (big) setConfetti((n) => n + 1)
+    buzz(big ? [30, 50, 30, 50, 70] : 25)
+  }
+
+  // A lone "1" might be the start of a 12, so an ace only counts once
+  // the cell is left with the 1 still in it.
+  const leaveCell = () => {
+    if (active && buffer === '1') celebrate(active.playerId, active.hole, 1)
+  }
+
   const select = (cell: Active) => {
+    leaveCell()
     setActive(cell)
     setBuffer('')
   }
@@ -166,6 +199,7 @@ export default function HoleEntry() {
     const i = round.players.findIndex((rp) => rp.playerId === active.playerId)
     if (i < round.players.length - 1) return select({ playerId: round.players[i + 1].playerId, hole: active.hole })
     if (active.hole < HOLE_COUNT - 1) return select({ playerId: round.players[0].playerId, hole: active.hole + 1 })
+    leaveCell()
     setActive(null)
   }
 
@@ -179,6 +213,7 @@ export default function HoleEntry() {
     if (d === 0) return
     setScore(active.playerId, active.hole, d)
     setBuffer(String(d))
+    if (d !== 1) celebrate(active.playerId, active.hole, d)
   }
 
   const clearActive = () => {
@@ -310,6 +345,7 @@ export default function HoleEntry() {
     // a fixed element inside a transformed box is fixed to the box, not
     // the screen — the first cut had the tab bar drawn over the pad.
     <div className={active ? 'pb-72' : ''}>
+      <Confetti fire={confetti} originY={0.4} />
       <header className="pt-4 pb-3 px-1">
         <BackButton fallback={`/rounds/${round.id}`} onBack={done} label="Round" />
         <h1 className="text-title font-extrabold tracking-tight text-ink truncate">{round.courseName}</h1>
@@ -613,6 +649,7 @@ export default function HoleEntry() {
                       const isActive = active?.playerId === rp.playerId && active.hole === i
                       const par = pars?.[i]
                       const mark = v != null && par != null ? SCORE_MARK[scoreKind(v, par)] : 'text-ink font-bold'
+                      const cheering = cheer != null && cheer.playerId === rp.playerId && cheer.hole === i
                       return (
                         <td key={i} className="p-0">
                           <button
@@ -625,7 +662,30 @@ export default function HoleEntry() {
                             {v == null ? (
                               <span className="text-ink-faint">{isActive ? '_' : '·'}</span>
                             ) : (
-                              <span className={`mt-0.5 inline-flex h-7 w-7 items-center justify-center ${mark}`}>{v}</span>
+                              <span
+                                key={cheering ? `cheer-${cheer.n}` : 'mark'}
+                                className={`relative mt-0.5 inline-flex h-7 w-7 items-center justify-center ${mark} ${cheering ? 'cheer-pop' : ''}`}
+                              >
+                                {v}
+                                {cheering && (
+                                  <>
+                                    <i className="cheer-ring pointer-events-none absolute inset-0 rounded-full border-2 border-green" />
+                                    {cheer.big && (
+                                      <i
+                                        className="cheer-ring pointer-events-none absolute inset-0 rounded-full border-2 border-gold"
+                                        style={{ animationDelay: '0.15s' }}
+                                      />
+                                    )}
+                                    <span
+                                      className={`cheer-float pointer-events-none absolute left-1/2 -top-4 whitespace-nowrap text-caption font-extrabold uppercase tracking-wider ${
+                                        cheer.big ? 'text-gold' : 'text-green'
+                                      }`}
+                                    >
+                                      {cheer.label}
+                                    </span>
+                                  </>
+                                )}
+                              </span>
                             )}
                           </button>
                         </td>
@@ -649,7 +709,9 @@ export default function HoleEntry() {
                       {card.map((v, i) => {
                         const g = ghost.card[i]
                         const shown = v != null && g != null
-                        const tone = !shown ? 'text-ink-faint' : v < g ? 'text-green' : v > g ? 'text-flag' : 'text-ink-dim'
+                        // Beat the ghost on a hole and it flickers out there,
+                        // struck through; lose one and it stays, in red.
+                        const tone = !shown ? 'text-ink-faint' : v < g ? 'ghost-out text-ink-faint line-through' : v > g ? 'text-flag' : 'text-ink-dim'
                         return (
                           <td key={i} className={`h-8 text-center text-footnote font-bold tabular-nums ${tone}`}>
                             {shown ? g : '·'}
@@ -719,7 +781,13 @@ export default function HoleEntry() {
                   <span className="text-gold font-bold"> · {'•'.repeat(Math.min(strokeDots![active.playerId][active.hole], 3))} stroke</span>
                 )}
               </p>
-              <button onClick={() => setActive(null)} className="text-footnote font-bold text-green">
+              <button
+                onClick={() => {
+                  leaveCell()
+                  setActive(null)
+                }}
+                className="text-footnote font-bold text-green"
+              >
                 Done
               </button>
             </div>

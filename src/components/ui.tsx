@@ -1,20 +1,39 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useContext, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { Player } from '../types'
 import { money } from '../lib/money'
-import { IconTile } from './icons'
+import { Icon, IconTile } from './icons'
+import { StreakContext } from './streakContext'
 
+// A golfer on a hot run wears a gold ring everywhere their face shows up,
+// with a flame once the avatar is big enough to carry one. A cold run
+// gets an icy one. Both go the moment the run ends.
 export function Avatar({ player, size = 40 }: { player: Player; size?: number }) {
+  const streak = useContext(StreakContext).get(player.id)
+  const ring = streak
+    ? `0 0 0 2px var(--color-card), 0 0 0 ${size >= 30 ? 4 : 3.5}px ${streak.kind === 'hot' ? 'var(--color-gold)' : '#8fbfe0'}`
+    : undefined
   return (
     <div
-      className="flex items-center justify-center rounded-full font-bold shrink-0 text-white"
+      className="relative flex items-center justify-center rounded-full font-bold shrink-0 text-white"
       style={{
         width: size,
         height: size,
         fontSize: size * 0.36,
         background: player.color,
+        boxShadow: ring,
       }}
+      title={streak ? (streak.kind === 'hot' ? `${streak.count} group wins in a row` : `${streak.count} group rounds without a win`) : undefined}
     >
       {player.initials}
+      {streak?.kind === 'hot' && size >= 30 && (
+        <span
+          className="absolute -bottom-1 -right-1 flex items-center justify-center rounded-full bg-gold text-white ring-2 ring-card"
+          style={{ width: Math.round(size * 0.42), height: Math.round(size * 0.42) }}
+          aria-hidden
+        >
+          <Icon name="flame" size={Math.round(size * 0.28)} strokeWidth={2.4} />
+        </span>
+      )}
     </div>
   )
 }
@@ -74,7 +93,7 @@ export function Card({ children, className = '', onClick }: { children: ReactNod
       <button
         type="button"
         onClick={onClick}
-        className={`${CARD_BASE} w-full text-left cursor-pointer active:scale-[0.99] transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green ${className}`}
+        className={`${CARD_BASE} press w-full text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green ${className}`}
       >
         {children}
       </button>
