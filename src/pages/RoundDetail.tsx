@@ -15,6 +15,7 @@ import CourseRatingEditor from '../components/CourseRatingEditor'
 import { StarRating } from '../components/Stars'
 import { courseSummaries, fmtStars } from '../lib/ratings'
 import Scorecard from '../components/Scorecard'
+import RoundPhotos from '../components/RoundPhotos'
 import SettleUp from '../components/SettleUp'
 import { roundBetSettlements } from '../lib/settlements'
 import { useConfirm } from '../components/Confirm'
@@ -342,6 +343,8 @@ export default function RoundDetail() {
           </p>
         </Card>
       )}
+
+      <RoundPhotos round={round} />
 
       <SectionLabel
         action={

@@ -132,6 +132,7 @@ export default function Rounds() {
                     {solo && waiting.length === 0 && <Pill>Solo</Pill>}
                     {trip && <Pill tone="green">Trip</Pill>}
                     {hasBets && <Pill tone="gold">$</Pill>}
+                    {(r.photos?.length ?? 0) > 0 && <Pill>📷 {r.photos!.length}</Pill>}
                   </div>
                 </div>
               </Card>

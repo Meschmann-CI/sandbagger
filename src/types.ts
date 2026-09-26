@@ -167,6 +167,18 @@ export interface Round {
    * Purely a view: the earlier round is never changed.
    */
   ghosts?: Ghost[]
+  /** Pictures from the day. Cloud: URLs into the round-photos bucket. Local: data URLs. */
+  photos?: RoundPhoto[]
+}
+
+export interface RoundPhoto {
+  id: string
+  url: string
+  /** Storage object path, so the file can be removed with the photo. Absent in local mode. */
+  path?: string
+  byId: string
+  takenAt: string // ISO instant
+  caption?: string
 }
 
 export interface Ghost {

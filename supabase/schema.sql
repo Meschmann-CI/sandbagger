@@ -229,6 +229,32 @@ alter table rounds add column if not exists saddam boolean;
 -- earlier cards at this course. A view over the earlier round, which
 -- is never changed.
 alter table rounds add column if not exists ghosts jsonb;
+-- Photos from the day: [{id, url, path, byId, takenAt, caption}]. The
+-- files live in the round-photos storage bucket (below); the round only
+-- carries URLs, so loading rounds stays light.
+alter table rounds add column if not exists photos jsonb;
+
+-- ============================================================
+-- Storage: round photos
+-- ============================================================
+-- Public-read bucket (a friend group's golf photos, at unguessable
+-- paths), written and deleted only by members of the group whose id
+-- is the first folder of the path: <group_id>/<round_id>/<photo_id>.jpg
+insert into storage.buckets (id, name, public)
+values ('round-photos', 'round-photos', true)
+on conflict (id) do nothing;
+
+drop policy if exists round_photos_read on storage.objects;
+create policy round_photos_read on storage.objects for select
+  using (bucket_id = 'round-photos');
+
+drop policy if exists round_photos_insert on storage.objects;
+create policy round_photos_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'round-photos' and (storage.foldername(name))[1] = current_group_id()::text);
+
+drop policy if exists round_photos_delete on storage.objects;
+create policy round_photos_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'round-photos' and (storage.foldername(name))[1] = current_group_id()::text);
 -- Paybacks used to belong to a trip. A bet on a single round needs
 -- settling too, so a payment now hangs off whichever it cleared.
 alter table payments alter column trip_id drop not null;
