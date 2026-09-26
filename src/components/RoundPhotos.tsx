@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from '../data/store'
 import { looksLikeConnectivity } from '../data/outbox'
 import { enqueuePhoto, usePendingPhotos } from '../data/photoOutbox'
-import type { Round, RoundPhoto } from '../types'
+import type { Player, Round, RoundPhoto } from '../types'
 import { blobToDataUrl, newPhotoId, removeRoundPhotoFile, shrinkPhoto, uploadRoundPhoto } from '../lib/photos'
 import { shortDate } from '../lib/stats'
 import { useConfirm } from './Confirm'
@@ -11,7 +11,8 @@ import { Avatar, Card, SectionLabel } from './ui'
 
 // Pictures from the day, on the round they belong to. A grid of
 // thumbnails, a picker that offers the camera or the library, and a
-// full-screen viewer with who took it and a way to take it down.
+// full-screen viewer you swipe through, with who took each one and a
+// way to take it down.
 //
 // No signal on the course is normal, so a photo that can't upload waits
 // on the phone (photoOutbox.ts) and shows here greyed as "waiting for
@@ -28,7 +29,7 @@ export default function RoundPhotos({ round }: { round: Round }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(0) // photos still being shrunk/uploaded
   const [error, setError] = useState<string | null>(null)
-  const [open, setOpen] = useState<RoundPhoto | null>(null)
+  const [open, setOpen] = useState<number | null>(null) // index into photos
   const pending = usePendingPhotos(round.id)
 
   const photos = round.photos ?? []
@@ -79,8 +80,10 @@ export default function RoundPhotos({ round }: { round: Round }) {
       setError(err instanceof Error ? err.message : String(err))
       return
     }
-    updateRound({ ...round, photos: photos.filter((p) => p.id !== photo.id) })
-    setOpen(null)
+    const left = photos.filter((p) => p.id !== photo.id)
+    updateRound({ ...round, photos: left })
+    // Stay in the viewer on the next photo unless that was the last one.
+    if (left.length === 0) setOpen(null)
   }
 
   const who = (id: string) => data.players.find((p) => p.id === id)
@@ -120,10 +123,10 @@ export default function RoundPhotos({ round }: { round: Round }) {
         </Card>
       ) : (
         <div className="grid grid-cols-3 gap-1.5">
-          {photos.map((photo) => (
+          {photos.map((photo, i) => (
             <button
               key={photo.id}
-              onClick={() => setOpen(photo)}
+              onClick={() => setOpen(i)}
               className="aspect-square overflow-hidden rounded-xl bg-paper border border-line active:scale-[0.98] transition"
               aria-label={`Photo by ${who(photo.byId)?.name ?? 'someone'}`}
             >
@@ -146,31 +149,96 @@ export default function RoundPhotos({ round }: { round: Round }) {
       )}
       {error && <p className="mt-2 px-1 text-[12.5px] font-semibold text-flag">{error}</p>}
 
-      {open &&
+      {open !== null &&
+        photos.length > 0 &&
         createPortal(
-          <div className="fixed inset-0 z-[60] bg-black/95 flex flex-col" onClick={() => setOpen(null)}>
-            <div className="flex-1 flex items-center justify-center p-3 min-h-0">
-              <img src={open.url} alt="" className="max-h-full max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
-            </div>
-            <div
-              className="flex items-center gap-3 px-4 py-3 pb-[max(env(safe-area-inset-bottom),12px)] bg-black/60 text-white"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {who(open.byId) && <Avatar player={who(open.byId)!} size={26} />}
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold truncate">{who(open.byId)?.name ?? 'Someone'}</p>
-                <p className="text-[11px] text-white/70 tabular-nums">{shortDate(open.takenAt.slice(0, 10))}</p>
-              </div>
-              <button onClick={() => void remove(open)} className="text-[12.5px] font-bold text-red-300 px-2">
-                Remove
-              </button>
-              <button onClick={() => setOpen(null)} className="text-[13px] font-bold text-white px-2">
-                Close
-              </button>
-            </div>
-          </div>,
+          <PhotoViewer photos={photos} start={open} who={who} onRemove={(p) => void remove(p)} onClose={() => setOpen(null)} />,
           document.body,
         )}
     </>
+  )
+}
+
+// Every photo on the round in one horizontal strip, so a swipe moves to
+// the next one instead of closing and reopening. Native scroll-snap does
+// the swiping: it follows the finger, and `snap-always` stops a hard
+// flick at the next photo rather than skipping several.
+function PhotoViewer({
+  photos,
+  start,
+  who,
+  onRemove,
+  onClose,
+}: {
+  photos: RoundPhoto[]
+  start: number
+  who: (id: string) => Player | undefined
+  onRemove: (photo: RoundPhoto) => void
+  onClose: () => void
+}) {
+  const stripRef = useRef<HTMLDivElement>(null)
+  const [at, setAt] = useState(start)
+
+  // Land on the tapped photo before the first paint, with no slide-in.
+  useLayoutEffect(() => {
+    const el = stripRef.current
+    if (el) el.scrollLeft = start * el.clientWidth
+  }, [start])
+
+  const step = (dir: 1 | -1) => {
+    const el = stripRef.current
+    if (el) el.scrollBy({ left: dir * el.clientWidth, behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // The remove confirmation has its own Escape; leave it to that.
+      if (document.querySelector('[role="alertdialog"]')) return
+      if (e.key === 'ArrowRight') step(1)
+      else if (e.key === 'ArrowLeft') step(-1)
+      else if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  // After a removal the strip is shorter; clamp so the caption follows
+  // whichever photo slid into place.
+  const current = photos[Math.min(at, photos.length - 1)]
+  const by = who(current.byId)
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/95 flex flex-col" onClick={onClose}>
+      <div
+        ref={stripRef}
+        onScroll={(e) => setAt(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
+        className="flex-1 min-h-0 flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {photos.map((photo) => (
+          <div key={photo.id} className="w-full h-full shrink-0 snap-center snap-always flex items-center justify-center p-3">
+            <img src={photo.url} alt="" className="max-h-full max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
+          </div>
+        ))}
+      </div>
+      <div
+        className="flex items-center gap-3 px-4 py-3 pb-[max(env(safe-area-inset-bottom),12px)] bg-black/60 text-white"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {by && <Avatar player={by} size={26} />}
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-bold truncate">{by?.name ?? 'Someone'}</p>
+          <p className="text-[11px] text-white/70 tabular-nums">
+            {shortDate(current.takenAt.slice(0, 10))}
+            {photos.length > 1 && ` · ${Math.min(at, photos.length - 1) + 1} of ${photos.length}`}
+          </p>
+        </div>
+        <button onClick={() => onRemove(current)} className="text-[12.5px] font-bold text-red-300 px-2">
+          Remove
+        </button>
+        <button onClick={onClose} className="text-[13px] font-bold text-white px-2">
+          Close
+        </button>
+      </div>
+    </div>
   )
 }

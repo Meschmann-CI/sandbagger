@@ -55,7 +55,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     <ConfirmContext.Provider value={ask}>
       {children}
       {pending && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center">
+        // Above the z-[60] photo viewer, which asks before removing a photo.
+        <div className="fixed inset-0 z-[70] flex items-end justify-center">
           <button
             aria-label="Cancel"
             onClick={() => settle(false)}
