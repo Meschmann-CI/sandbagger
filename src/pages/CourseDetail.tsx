@@ -6,6 +6,7 @@ import { HOLE_COUNT } from '../lib/holes'
 import { RATING_ASPECTS, courseSummaries, fmtStars, ordinal } from '../lib/ratings'
 import { roundStandings, shortDate } from '../lib/stats'
 import { useGoBack } from '../lib/nav'
+import { BackButton } from '../components/Nav'
 import { useConfirm } from '../components/Confirm'
 import CourseRatingEditor from '../components/CourseRatingEditor'
 import { StarRating } from '../components/Stars'
@@ -50,9 +51,7 @@ export default function CourseDetail() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-2">
-          ← Back
-        </button>
+        <BackButton fallback="/courses" onBack={goBack} />
         <h1 className="text-large font-extrabold tracking-tight text-ink leading-tight">{summary.name}</h1>
         <p className="text-footnote text-ink-dim mt-1 tabular-nums">
           {course?.town && `${course.town} · `}

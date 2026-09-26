@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useGoBack } from '../lib/nav'
+import { BackButton } from '../components/Nav'
 import { useMembers, useStore } from '../data/store'
 import { headToHead, leaderboard, saddamState, shortDate, trashTalk } from '../lib/stats'
 import { Avatar, Card, MoneyBadge, SaddamBadge, SectionLabel } from '../components/ui'
@@ -31,7 +32,7 @@ export default function Ledger() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-2">← Back</button>
+        <BackButton fallback="/rounds" onBack={goBack} />
         <h1 className="text-large font-extrabold tracking-tight text-ink">Head-to-Head</h1>
         <p className="text-footnote text-ink-dim">Group rounds only. The record is permanent.</p>
       </header>
@@ -68,7 +69,7 @@ export default function Ledger() {
         </Card>
       )}
 
-      <SectionLabel>Group Leaderboard</SectionLabel>
+      <SectionLabel>Group leaderboard</SectionLabel>
       <Card>
         <div className="grid grid-cols-[1fr_repeat(4,auto)] gap-x-3.5 px-4 py-2.5 border-b border-line text-caption font-bold uppercase tracking-wider text-ink-faint">
           <span>Player</span>
@@ -103,7 +104,7 @@ export default function Ledger() {
       </Card>
       <p className="text-caption text-ink-faint px-2 mt-1.5">W = group-round wins. Solo rounds count toward Rds, Avg, and Best.</p>
 
-      <SectionLabel>All-Time Money</SectionLabel>
+      <SectionLabel>All-time money</SectionLabel>
       <Card className="divide-y divide-line">
         {[...board]
           .sort((a, b) => b.money - a.money)

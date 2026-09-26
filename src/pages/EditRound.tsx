@@ -243,7 +243,7 @@ export default function EditRound() {
               navigate('/rounds')
             }
           }}
-          className="w-full rounded-xl border border-flag/40 bg-flag-soft py-3 text-body font-bold text-flag active:bg-flag/10"
+          className="w-full py-3 text-footnote font-bold text-flag active:opacity-60"
         >
           Delete this round
         </button>

@@ -6,6 +6,7 @@ import { canSeeTrip } from '../types'
 import { useMembers } from '../data/store'
 import { Avatar, AvatarStack, Card, EmptyState, Pill, SectionLabel } from '../components/ui'
 import { Icon, IconTile } from '../components/icons'
+import { BackButton } from '../components/Nav'
 
 export default function Trips() {
   const { data } = useStore()
@@ -37,17 +38,20 @@ export default function Trips() {
 
   return (
     <div className="rise">
-      <header className="pt-4 pb-2 px-1 flex items-center justify-between">
-        <div>
-          <h1 className="text-large font-extrabold tracking-tight text-ink">Trips</h1>
-          <p className="text-footnote text-ink-dim">Past, present, and hotly debated</p>
+      <header className="pt-4 pb-2 px-1">
+        <BackButton fallback="/" />
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h1 className="text-large font-extrabold tracking-tight text-ink">Trips</h1>
+            <p className="text-footnote text-ink-dim">Past, present, and hotly debated</p>
+          </div>
+          <button
+            onClick={() => navigate('/trips/new')}
+            className="shrink-0 rounded-xl bg-green px-4 py-2.5 text-footnote font-bold text-white active:scale-95 transition"
+          >
+            + New trip
+          </button>
         </div>
-        <button
-          onClick={() => navigate('/trips/new')}
-          className="rounded-xl bg-green px-4 py-2.5 text-footnote font-bold text-white active:scale-95 transition"
-        >
-          + New trip
-        </button>
       </header>
 
       {data.trips.length === 0 && (
@@ -56,7 +60,7 @@ export default function Trips() {
 
       {planning.length > 0 && (
         <>
-          <SectionLabel>In the Works</SectionLabel>
+          <SectionLabel>In the works</SectionLabel>
           <div className="space-y-3">
             {planning.map((trip) => {
               const votesIn = new Set(trip.options.flatMap((o) => o.votes)).size
@@ -90,7 +94,7 @@ export default function Trips() {
 
       {upcoming.length > 0 && (
         <>
-          <SectionLabel>Up Next</SectionLabel>
+          <SectionLabel>Up next</SectionLabel>
           <div className="space-y-3">
             {upcoming.map((trip) => (
               <Card key={trip.id} onClick={() => navigate(`/trips/${trip.id}`)} className="overflow-hidden">
@@ -115,7 +119,7 @@ export default function Trips() {
 
       {past.length > 0 && (
         <>
-          <SectionLabel>The Archive</SectionLabel>
+          <SectionLabel>The archive</SectionLabel>
           <div className="space-y-3">
             {past.map((trip) => {
               const rounds = data.rounds.filter((r) => r.tripId === trip.id)

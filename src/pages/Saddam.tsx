@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGoBack } from '../lib/nav'
+import { BackButton } from '../components/Nav'
 import { useMembers, useStore } from '../data/store'
 import { prettyDate, saddamHistory, saddamState, shortDate } from '../lib/stats'
 import { Avatar, Card, PrimaryButton, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
@@ -35,7 +36,7 @@ export default function Saddam() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-2">← Back</button>
+        <BackButton fallback="/h2h" onBack={goBack} />
         <h1 className="text-large font-extrabold tracking-tight text-ink">The Saddam</h1>
         <p className="text-footnote text-ink-dim">Held by whoever won the last group round.</p>
       </header>

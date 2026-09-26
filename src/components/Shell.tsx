@@ -1,13 +1,15 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { usePhotoOutboxFlush } from '../data/photoOutbox'
 import { useNewVersion } from '../lib/useNewVersion'
 import { Avatar } from './ui'
+import { CompactTitleBar, useNavRecorder } from './Nav'
 
 // The tab order is the app's opinion about what matters most often.
 // Logging rounds, arguing about courses, and settling bets happen every
-// weekend; a trip happens twice a year. So Trips sits fourth, and the
-// Home screen only leads with it when one is actually coming up.
+// weekend; a trip happens twice a year. So Trips has no tab: it lives on
+// Home (up top when one is being planned or is close) and under You, and
+// the middle of the bar goes to the thing done most, logging a round.
 
 const stroke = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' } as const
 
@@ -45,26 +47,25 @@ const tabs = [
     ),
   },
   {
-    to: '/trips',
-    label: 'Trips',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
-        <rect x="4" y="8" width="16" height="12" rx="2.5" />
-        <path d="M9 8 V6 a2 2 0 0 1 2-2 h2 a2 2 0 0 1 2 2 V8" />
-        <path d="M4 13 H20" />
-      </svg>
-    ),
-  },
-  {
     to: '/profile',
     label: 'You',
     icon: null, // avatar rendered inline
   },
 ]
 
+// Which tab a screen belongs to, for the highlight. Trips hang off Home.
+function tabFor(pathname: string) {
+  if (pathname.startsWith('/rounds') || pathname.startsWith('/h2h') || pathname.startsWith('/saddam')) return '/rounds'
+  if (pathname.startsWith('/courses')) return '/courses'
+  if (pathname.startsWith('/profile') || pathname.startsWith('/group')) return '/profile'
+  if (pathname.startsWith('/log')) return '/log'
+  return '/'
+}
+
 export default function Shell() {
-  const navigate = useNavigate()
   const { pathname } = useLocation()
+  useNavRecorder()
+  const current = tabFor(pathname)
   const { data, syncError, pendingWrites, updateRound } = useStore()
   const me = data.players.find((p) => p.id === data.currentUserId) ?? data.players[0]
   // Photos parked while there was no signal go out from here, whatever
@@ -72,15 +73,23 @@ export default function Shell() {
   // gets a banner rather than a close-and-reopen ritual.
   usePhotoOutboxFlush(data.rounds, updateRound)
   const newVersion = useNewVersion()
-  // Off wherever there's a form with its own save button at the bottom,
-  // or a card being scored — the button would sit on top of the thing
-  // you're trying to tap.
-  const hideFab =
-    pathname.startsWith('/log') ||
-    pathname.startsWith('/rounds/') ||
-    pathname.startsWith('/trips/new') ||
-    pathname.startsWith('/courses/') ||
-    pathname.startsWith('/group')
+
+  const tabLink = (t: (typeof tabs)[number]) => (
+    <NavLink
+      key={t.to}
+      to={t.to}
+      className={`flex flex-col items-center gap-1 py-2.5 text-caption font-bold tracking-wide transition-colors ${
+        current === t.to ? 'text-green' : 'text-ink-faint hover:text-ink-dim'
+      }`}
+    >
+      {t.icon ?? (
+        <span className={`rounded-full ${current === '/profile' ? 'ring-2 ring-green ring-offset-1' : ''}`}>
+          <Avatar player={me} size={22} />
+        </span>
+      )}
+      {t.label}
+    </NavLink>
+  )
 
   return (
     <div className="mx-auto max-w-md min-h-dvh flex flex-col relative">
@@ -122,40 +131,28 @@ export default function Shell() {
         <Outlet />
       </main>
 
-      {!hideFab && (
-        <button
-          onClick={() => navigate('/log')}
-          aria-label="Log a round"
-          className="fixed bottom-24 right-1/2 translate-x-[calc(min(28rem,100vw)/2-1.25rem)] z-40 h-14 w-14 rounded-full bg-green text-white shadow-[0_6px_20px_rgba(28,124,74,0.4)] flex items-center justify-center active:scale-90 transition-transform"
-        >
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-            <path d="M12 5 V19 M5 12 H19" />
-          </svg>
-        </button>
-      )}
+      <CompactTitleBar />
 
       <nav className="fixed bottom-0 inset-x-0 z-40">
         <div className="mx-auto max-w-md border-t border-line bg-card/95 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]">
           <div className="grid grid-cols-5">
-            {tabs.map((t) => (
-              <NavLink
-                key={t.to}
-                to={t.to}
-                end={t.to === '/'}
-                className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 py-2.5 text-caption font-bold tracking-wide transition-colors ${
-                    isActive ? 'text-green' : 'text-ink-faint hover:text-ink-dim'
-                  }`
-                }
-              >
-                {t.icon ?? (
-                  <span className={`rounded-full ${pathname.startsWith('/profile') || pathname.startsWith('/group') ? 'ring-2 ring-green ring-offset-1' : ''}`}>
-                    <Avatar player={me} size={22} />
-                  </span>
-                )}
-                {t.label}
-              </NavLink>
-            ))}
+            {tabs.slice(0, 2).map((t) => tabLink(t))}
+            {/* The middle of the bar: logging a round, raised above the rest. */}
+            <NavLink
+              to="/log"
+              aria-label="Log a round"
+              className={`flex flex-col items-center gap-1 pb-2.5 text-caption font-bold tracking-wide ${
+                current === '/log' ? 'text-green' : 'text-ink-faint'
+              }`}
+            >
+              <span className="-mt-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-forest text-on-forest shadow-[0_6px_16px_rgba(28,70,50,0.35)] ring-4 ring-card transition-transform active:scale-90">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                  <path d="M12 5 V19 M5 12 H19" />
+                </svg>
+              </span>
+              Log
+            </NavLink>
+            {tabs.slice(2).map((t) => tabLink(t))}
           </div>
         </div>
       </nav>

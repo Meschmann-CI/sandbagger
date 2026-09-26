@@ -103,6 +103,8 @@ const PATHS = {
       <path d="M17.5 16.5l-1.2 3.3 3.4-1.1M6.5 16.5l1.2 3.3-3.4-1.1" />
     </>
   ),
+  chevronLeft: <path d="M15 5l-7 7 7 7" />,
+  chevronRight: <path d="M9 5l7 7-7 7" />,
   mail: (
     <>
       <rect x="3" y="5" width="18" height="14" rx="2.5" />

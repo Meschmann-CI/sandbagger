@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useMembers, useStore } from '../data/store'
 import { HANDICAP_NUDGE_AFTER, holeStats, playerStats, roundsAtCurrentHandicap, shortDate } from '../lib/stats'
 import { disablePush, enablePush, pushEnabled, pushSupported } from '../lib/push'
-import { fmt1, isSoloRound, round1 } from '../types'
+import { canSeeTrip, fmt1, isSoloRound, round1 } from '../types'
 import { supabase } from '../lib/supabase'
 import EditGolfer from '../components/EditGolfer'
 import { Avatar, AvatarStack, Card, MoneyBadge, Pill, PrimaryButton, RowButton, SaddamBadge, SectionLabel } from '../components/ui'
 import { useConfirm } from '../components/Confirm'
-import { IconTile } from '../components/icons'
+import { Icon, IconTile } from '../components/icons'
 
 // You. Your index, your numbers, your phone's settings. The group roster
 // used to live at the bottom of this screen and the Courses and
@@ -25,6 +25,7 @@ export default function Profile() {
   const members = useMembers()
   const navigate = useNavigate()
   const me = data.players.find((p) => p.id === data.currentUserId)!
+  const myTrips = data.trips.filter((t) => canSeeTrip(t, me.id)).length
   const stats = playerStats(data, me.id)
   const game = holeStats(data, me.id)
   const [editingMe, setEditingMe] = useState(false)
@@ -211,7 +212,7 @@ export default function Profile() {
           can't be gamed by an uncarded 88. */}
       {game.holes > 0 ? (
         <>
-          <SectionLabel>Your Game · {game.holes} holes</SectionLabel>
+          <SectionLabel>Your game · {game.holes} holes</SectionLabel>
           <div className="grid grid-cols-3 gap-3">
             {([3, 4, 5] as const).map((par) => (
               <Card key={par} className="p-3.5 text-center">
@@ -273,7 +274,7 @@ export default function Profile() {
           </button>
         }
       >
-        My Last {stats.last5.length === 1 ? 'Round' : `${stats.last5.length} Rounds`}
+        Your last {stats.last5.length === 1 ? 'round' : `${stats.last5.length} rounds`}
       </SectionLabel>
       {stats.last5.length === 0 ? (
         <Card className="p-5 text-center text-footnote text-ink-dim">Nothing logged yet. Get out there.</Card>
@@ -306,6 +307,19 @@ export default function Profile() {
       ) : (
         <Card className="p-4 text-footnote text-ink-dim">Notifications switch on once the app is online.</Card>
       )}
+
+      {/* Trips have no tab; this and the row on Home are the way in. */}
+      <SectionLabel>Trips</SectionLabel>
+      <Card onClick={() => navigate('/trips')} className="p-4 flex items-center gap-3.5">
+        <IconTile name="suitcase" tone="forest" size={38} />
+        <div className="min-w-0 flex-1">
+          <p className="text-body font-bold text-ink">Your trips</p>
+          <p className="text-footnote text-ink-dim mt-0.5">
+            {myTrips === 0 ? 'None yet. Plan the first one.' : `${myTrips} trip${myTrips === 1 ? '' : 's'} · plans, costs, the archive`}
+          </p>
+        </div>
+        <Icon name="chevronRight" size={18} className="text-ink-faint" />
+      </Card>
 
       <SectionLabel>The group</SectionLabel>
       <Card onClick={() => navigate('/group')} className="p-4 flex items-center justify-between gap-3">

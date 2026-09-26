@@ -118,7 +118,7 @@ export default function TripBooked({ trip }: { trip: Trip }) {
       {/* Standings */}
       {board.length > 0 && (
         <>
-          <SectionLabel>{isPast ? 'Final Standings' : 'Trip Leaderboard'}</SectionLabel>
+          <SectionLabel>{isPast ? 'Final standings' : 'Trip leaderboard'}</SectionLabel>
           <Card>
             <div className="grid grid-cols-[1fr_repeat(3,auto)] gap-x-3 px-4 py-2.5 border-b border-line text-caption font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">
               <span>Player</span>

@@ -1,5 +1,6 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useGoBack } from '../lib/nav'
+import { BackButton } from '../components/Nav'
 import { useStore } from '../data/store'
 import { shortDate } from '../lib/stats'
 import { todayISO } from '../lib/dates'
@@ -52,7 +53,7 @@ export default function TripDetail() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-2">← Back</button>
+        <BackButton fallback="/trips" onBack={goBack} />
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-large font-extrabold tracking-tight text-ink leading-tight">{trip.name}</h1>
           {trip.status === 'planning' ? <Pill tone="green">Planning</Pill> : isPast ? <Pill>Archived</Pill> : <Pill tone="gold">Booked</Pill>}

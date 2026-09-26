@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { byDate, leaderboard, playerStats, roundStandings, saddamState, shortDate } from '../lib/stats'
@@ -7,33 +8,51 @@ import { anyCards, cardComplete, holesEntered } from '../lib/holes'
 import { money } from '../lib/money'
 import { courseSlug } from '../lib/courses'
 import { byGroupRank, courseSummaries, fmtStars, ratingFor } from '../lib/ratings'
-import { canSeeTrip, fmt1, isSoloRound, pending } from '../types'
+import { canSeeTrip, fmt1, hasScore, isSoloRound, pending, type Round, type Trip } from '../types'
 import { StarRating } from '../components/Stars'
 import { Icon, IconTile } from '../components/icons'
-import { Avatar, AvatarStack, Card, Pill, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
+import { Avatar, AvatarStack, Card, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
 
 // The front door. Anything that needs doing comes first (a card mid-
-// round, a score you owe, money on the table, a course to rate), then
-// where the season stands, then what's happened lately. A trip only
-// takes the top when one is actually booked and coming up; the rest of
-// the year it sits below the rounds, because that's how often it's the
-// point.
+// round, a score you owe), then the one hero: your season, with the
+// Saddam riding along underneath it so the trophy is on the first
+// screen every time. Money is one line until you ask for the list.
+// Trips have no tab, so they live here: up top when one is close or
+// being argued about, and always reachable at the bottom.
+
+const DAY = 86_400_000
+const fromISO = (iso: string) => {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).getTime()
+}
+const daysBetween = (a: string, b: string) => Math.round((fromISO(b) - fromISO(a)) / DAY)
+const ordinal = (n: number) => {
+  const s = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'
+  return `${n}${s}`
+}
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 export default function Home() {
   const { data } = useStore()
   const navigate = useNavigate()
+  const [moneyOpen, setMoneyOpen] = useState(false)
   const TODAY = todayISO()
   const YEAR = TODAY.slice(0, 4)
   const me = data.players.find((p) => p.id === data.currentUserId)!
   const saddam = saddamState(data)
   const holder = data.players.find((p) => p.id === saddam.holderId)
   const rounds = byDate(data.rounds)
-  const recent = rounds.slice(-3).reverse()
+  const recent = rounds.slice(-8).reverse()
   const awaiting = playerStats(data, me.id).awaitingScore.slice().reverse()
 
   // What I owe and what I'm owed, everywhere.
   const debts = myOutstanding(data, me.id)
   const netPosition = debts.reduce((sum, d) => sum + (d.toId === me.id ? d.amount : -d.amount), 0)
+  const owedToMe = debts.filter((d) => d.toId === me.id)
+  const iOwe = debts.filter((d) => d.fromId === me.id)
+  const debtors = [...new Set(owedToMe.map((d) => d.fromId))]
+  const iOweTotal = iOwe.reduce((s, d) => s + d.amount, 0)
+  const iOweTo = [...new Set(iOwe.map((d) => d.toId))]
 
   // A card being filled in today — one tap back to scoring, since coming
   // back to the app mid-round is the single most common thing on a
@@ -61,6 +80,14 @@ export default function Home() {
   const seasonRounds = rounds.filter((r) => r.date.startsWith(YEAR))
   const board = leaderboard(data, seasonRounds).filter((row) => row.rounds > 0)
   const myPlace = board.findIndex((row) => row.player.id === me.id)
+  const myRow = myPlace >= 0 ? board[myPlace] : undefined
+
+  // My last few posted scores, oldest first, for the line in the hero.
+  const myScores = rounds
+    .map((r) => r.players.find((rp) => rp.playerId === me.id))
+    .filter((rp): rp is NonNullable<typeof rp> => !!rp && hasScore(rp))
+    .map((rp) => rp.gross as number)
+    .slice(-6)
 
   const favourite = byGroupRank(courseSummaries(data)).find((c) => c.groupRank === 1)
 
@@ -69,174 +96,271 @@ export default function Home() {
   const upcoming = visibleTrips
     .filter((t) => t.status === 'booked' && t.startDate && t.startDate >= TODAY)
     .sort((a, b) => (a.startDate ?? '').localeCompare(b.startDate ?? ''))
-  const heroTrip = upcoming[0] ?? planning[0]
-  const heroIsPlanning = heroTrip?.status === 'planning'
-  const votesIn = heroIsPlanning ? new Set(heroTrip.options.flatMap((o) => o.votes)).size : 0
-  const myVoteCast = heroIsPlanning && heroTrip.options.some((o) => o.votes.includes(me.id))
+  const past = visibleTrips.filter((t) => t.status === 'booked' && (!t.startDate || t.startDate < TODAY))
+  // A booked trip inside two weeks goes above the season; one still being
+  // planned goes just under the money. Anything further out waits in the
+  // Trips row at the bottom.
+  const soonTrip = upcoming.find((t) => daysBetween(TODAY, t.startDate!) <= 14)
+  const planningTrip = planning[0]
 
-  const tripCard = heroTrip && (
-    <Card onClick={() => navigate(`/trips/${heroTrip.id}`)} className="mt-3 overflow-hidden">
-      <div className="bg-green px-5 pt-4 pb-3.5 text-white relative overflow-hidden">
-        <svg className="absolute right-0 bottom-0 h-full w-40 opacity-15" viewBox="0 0 160 100" preserveAspectRatio="none">
-          <path d="M0 100 Q40 55 90 70 T160 45 V100 Z" fill="#fff" />
-          <path d="M20 100 Q70 70 120 85 T160 75 V100 Z" fill="#fff" opacity="0.7" />
-        </svg>
-        <p className="text-caption font-bold uppercase tracking-[0.16em] text-white/75">
-          {heroIsPlanning ? 'Trip in the works' : 'Next trip'}
-        </p>
-        <h2 className="text-headline font-extrabold leading-tight mt-0.5">{heroTrip.name}</h2>
-        <p className="text-footnote text-white/85 mt-1">
-          {heroIsPlanning
-            ? `${heroTrip.options.length} destination${heroTrip.options.length === 1 ? '' : 's'} on the table`
-            : `${heroTrip.location}${heroTrip.startDate ? ` · ${shortDate(heroTrip.startDate)}` : ''}`}
-        </p>
-      </div>
-      <div className="px-5 py-3 flex items-center justify-between">
-        {heroIsPlanning ? (
-          <>
-            <p className="text-footnote text-ink-dim">
-              {votesIn} of {heroTrip.attendeeIds.length} votes in
-            </p>
-            <span className={`text-footnote font-bold ${myVoteCast ? 'text-ink-faint' : 'text-green'}`}>
-              {myVoteCast ? 'Vote cast ✓' : 'Cast your vote →'}
-            </span>
-          </>
-        ) : (
-          <>
-            <p className="text-footnote text-ink-dim">Itinerary, tee times, standings</p>
-            <span className="text-footnote font-bold text-green">Open →</span>
-          </>
-        )}
-      </div>
-    </Card>
-  )
+  // One live line under the greeting: the most pressing fact there is.
+  const hour = new Date().getHours()
+  const hello = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening'
+  const saddamDays = saddam.since ? daysBetween(saddam.since, TODAY) : null
+  const subline = soonTrip
+    ? (() => {
+        const n = daysBetween(TODAY, soonTrip.startDate!)
+        return n === 0 ? `${soonTrip.name} starts today.` : `${soonTrip.name} in ${plural(n, 'day')}.`
+      })()
+    : holder && saddamDays != null
+      ? holder.id === me.id
+        ? `You've had the Saddam for ${plural(saddamDays, 'day')}.`
+        : `${holder.name} has had the Saddam for ${plural(saddamDays, 'day')}.`
+      : null
 
   return (
     <div className="rise">
-      <header className="pt-4 pb-2 px-1 flex items-center justify-between">
+      <header className="pt-4 pb-1 px-1 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <Link to="/group" className="text-footnote font-bold uppercase tracking-[0.14em] text-ink-faint">
+          <Link to="/group" className="text-caption font-bold uppercase tracking-[0.14em] text-ink-faint">
             {data.group.name}
           </Link>
-          <h1 className="text-large font-extrabold tracking-tight text-ink truncate">
-            Hey, {me.name}
+          <h1 className="text-large font-extrabold text-ink truncate">
+            {hello}, {me.name}
           </h1>
+          {subline && <p className="text-footnote text-ink-dim mt-0.5">{subline}</p>}
         </div>
         <Link to="/profile" className="shrink-0">
           <Avatar player={me} size={40} />
         </Link>
       </header>
 
-      {/* Straight back onto the card — the app's front door mid-round */}
-      {inProgress && (
-        <Card
-          onClick={() => navigate(`/rounds/${inProgress.id}/card`)}
-          className="mt-2 p-4 border-green/40 bg-green-soft/50 flex items-center gap-3.5"
-        >
-          <IconTile name="flag" />
-          <div className="flex-1 min-w-0">
-            <p className="text-body font-extrabold text-ink">Round in progress</p>
-            <p className="text-footnote text-ink-dim mt-0.5 truncate">
-              {inProgress.courseName} · {inProgressHoles} hole score{inProgressHoles === 1 ? '' : 's'} in
-            </p>
-          </div>
-          <span className="text-footnote font-bold text-green shrink-0">Keep scoring →</span>
-        </Card>
-      )}
+      <div className="mt-3 space-y-2.5">
+        {/* Straight back onto the card — the app's front door mid-round */}
+        {inProgress && (
+          <Card
+            onClick={() => navigate(`/rounds/${inProgress.id}/card`)}
+            className="p-4 border-green/40 bg-green-soft/50 flex items-center gap-3.5"
+          >
+            <IconTile name="flag" />
+            <div className="flex-1 min-w-0">
+              <p className="text-body font-extrabold text-ink">Round in progress</p>
+              <p className="text-footnote text-ink-dim mt-0.5 truncate">
+                {inProgress.courseName} · {plural(inProgressHoles, 'hole score')} in
+              </p>
+            </div>
+            <Icon name="chevronRight" size={18} className="text-ink-faint" />
+          </Card>
+        )}
 
-      {/* Rounds someone logged you into without your score */}
-      {awaiting.length > 0 && (
-        <Card
-          onClick={() => navigate(`/rounds/${awaiting[0].id}`)}
-          className="mt-2 p-4 border-gold/40 bg-gold-soft/60 flex items-center gap-3.5"
-        >
-          <IconTile name="pencil" tone="gold" />
-          <div className="flex-1 min-w-0">
-            <p className="text-body font-extrabold text-ink">
-              {awaiting.length === 1 ? 'You owe a score' : `You owe ${awaiting.length} scores`}
-            </p>
-            <p className="text-footnote text-ink-dim mt-0.5 truncate">
-              {awaiting.length === 1
-                ? `${awaiting[0].courseName}, ${shortDate(awaiting[0].date)}`
-                : `Starting with ${awaiting[0].courseName}, ${shortDate(awaiting[0].date)}`}
-            </p>
-          </div>
-          <span className="text-footnote font-bold text-green shrink-0">Add it →</span>
-        </Card>
-      )}
+        {/* Rounds someone logged you into without your score */}
+        {awaiting.length > 0 && (
+          <Card onClick={() => navigate(`/rounds/${awaiting[0].id}`)} className="p-4 border-gold/40 bg-gold-soft/60 flex items-center gap-3.5">
+            <IconTile name="pencil" tone="gold" />
+            <div className="flex-1 min-w-0">
+              <p className="text-body font-extrabold text-ink">
+                {awaiting.length === 1 ? 'You owe a score' : `You owe ${awaiting.length} scores`}
+              </p>
+              <p className="text-footnote text-ink-dim mt-0.5 truncate">
+                {awaiting.length === 1
+                  ? `${awaiting[0].courseName}, ${shortDate(awaiting[0].date)}`
+                  : `Starting with ${awaiting[0].courseName}, ${shortDate(awaiting[0].date)}`}
+              </p>
+            </div>
+            <Icon name="chevronRight" size={18} className="text-ink-faint" />
+          </Card>
+        )}
 
-      {/* Money still on the table, wherever it came from. Each row goes
-          to the round or trip it belongs to, where Pay and Mark paid live. */}
-      {debts.length > 0 && (
-        <Card className="mt-2 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-line">
-            <p className="flex items-center gap-1.5 text-caption font-bold uppercase tracking-[0.12em] text-ink-faint">
-              <Icon name="cash" size={15} className="text-green" />
-              Money on the table
-            </p>
-            {netPosition !== 0 && (
-              <span className={`text-footnote font-extrabold tabular-nums ${netPosition > 0 ? 'text-green' : 'text-flag'}`}>
-                {netPosition > 0 ? `+${money(netPosition)} coming` : `${money(-netPosition)} owed`}
+        {soonTrip && <TripHero trip={soonTrip} today={TODAY} meId={me.id} />}
+
+        {/* The hero: my season, and the trophy underneath it */}
+        <div className="overflow-hidden rounded-3xl bg-forest text-on-forest shadow-[0_10px_30px_rgba(28,70,50,0.22)]">
+          <button type="button" onClick={() => navigate('/h2h')} className="relative block w-full px-5 pt-4 pb-4 text-left active:opacity-90">
+            <div className="flex items-center justify-between">
+              <p className="text-caption font-bold uppercase tracking-[0.16em] text-on-forest/70">Your {YEAR}</p>
+              {myRow && (
+                <span className="rounded-full bg-on-forest/15 px-2.5 py-0.5 text-caption font-extrabold tabular-nums">
+                  {ordinal(myPlace + 1)} of {board.length}
+                </span>
+              )}
+            </div>
+            <div className="mt-2 flex items-end justify-between gap-4">
+              <div className="min-w-0">
+                <p className="flex items-baseline gap-2">
+                  <span className="text-hero font-extrabold leading-[0.9] tabular-nums">{myRow?.wins ?? 0}</span>
+                  <span className="text-body font-bold text-on-forest/85">group {myRow?.wins === 1 ? 'win' : 'wins'}</span>
+                </p>
+                <p className="mt-1.5 text-footnote text-on-forest/75 tabular-nums">
+                  {myRow
+                    ? [
+                        plural(myRow.rounds, 'round'),
+                        myRow.avgGross != null && `avg ${myRow.avgGross.toFixed(1)}`,
+                        myRow.bestGross != null && `best ${myRow.bestGross}`,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')
+                    : 'No rounds yet this year. The first one starts the count.'}
+                </p>
+              </div>
+              {myScores.length >= 3 && <Sparkline scores={myScores} />}
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/saddam')}
+            className="flex w-full items-center gap-3 bg-cream px-5 py-3 text-left text-ink active:bg-cream-deep/40"
+          >
+            <SaddamIcon size={34} />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-footnote font-extrabold">
+                {holder ? `The Saddam · ${holder.id === me.id ? 'You' : holder.name}` : 'The Saddam is up for grabs'}
               </span>
+              <span className="block truncate text-caption text-ink-dim">
+                {!holder
+                  ? 'Win a group round and it’s yours'
+                  : saddam.byHand
+                    ? `Handed over ${saddam.since ? shortDate(saddam.since) : ''}`
+                    : `Took it at ${saddam.courseName}${saddam.since ? `, ${shortDate(saddam.since)}` : ''}`}
+                {holder && saddam.defenses > 0 && ` · ${plural(saddam.defenses, 'defense')}`}
+              </span>
+            </span>
+            <span className="shrink-0 text-footnote font-extrabold text-forest">
+              {holder?.id === me.id ? 'Defend it' : 'Go get it'}
+            </span>
+          </button>
+        </div>
+
+        {/* Money: one line until you want the list. Each row in the list
+            goes to the round or trip it belongs to, where Pay lives. */}
+        {debts.length > 0 && (
+          <Card className="overflow-hidden">
+            <div className="flex items-center gap-3 px-4 py-3">
+              {debtors.length > 0 ? (
+                <AvatarStack players={debtors.map((id) => data.players.find((p) => p.id === id))} size={28} />
+              ) : (
+                <AvatarStack players={iOweTo.map((id) => data.players.find((p) => p.id === id))} size={28} />
+              )}
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`text-headline font-extrabold tabular-nums leading-tight ${
+                    netPosition > 0 ? 'text-green' : netPosition < 0 ? 'text-flag' : 'text-ink'
+                  }`}
+                >
+                  {netPosition > 0 ? `+${money(netPosition)} coming` : netPosition < 0 ? `${money(-netPosition)} to pay` : 'All square'}
+                </p>
+                <p className="truncate text-caption text-ink-dim">
+                  {[
+                    debtors.length > 0 && `${debtors.length} owe${debtors.length === 1 ? 's' : ''} you`,
+                    iOwe.length > 0 &&
+                      `you owe ${iOweTo.length === 1 ? `${data.players.find((p) => p.id === iOweTo[0])?.name} ` : ''}${money(iOweTotal)}`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMoneyOpen((o) => !o)}
+                aria-expanded={moneyOpen}
+                className={`shrink-0 rounded-xl px-3.5 py-2 text-footnote font-bold transition ${
+                  moneyOpen ? 'bg-paper text-ink-dim border border-line-strong' : 'bg-green text-white'
+                }`}
+              >
+                {moneyOpen ? 'Done' : 'Settle up'}
+              </button>
+            </div>
+            {moneyOpen && (
+              <div className="divide-y divide-line border-t border-line">
+                {debts.map((d, i) => {
+                  const mine = d.fromId === me.id
+                  const other = data.players.find((p) => p.id === (mine ? d.toId : d.fromId))
+                  return (
+                    <RowButton key={i} onClick={() => navigate(d.href)} className="flex items-center gap-3 px-4 py-3">
+                      {other && <Avatar player={other} size={26} />}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-footnote text-ink truncate">
+                          {mine ? (
+                            <>
+                              You owe <span className="font-extrabold">{other?.name}</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="font-extrabold">{other?.name}</span> owes you
+                            </>
+                          )}
+                        </p>
+                        <p className="text-caption text-ink-faint truncate">{d.label}</p>
+                      </div>
+                      <span className={`text-body font-extrabold tabular-nums shrink-0 ${mine ? 'text-flag' : 'text-green'}`}>
+                        {money(d.amount)}
+                      </span>
+                      <Icon name="chevronRight" size={16} className="text-ink-faint" />
+                    </RowButton>
+                  )
+                })}
+              </div>
             )}
-          </div>
-          <div className="divide-y divide-line">
-            {debts.map((d, i) => {
-              const iOwe = d.fromId === me.id
-              const other = data.players.find((p) => p.id === (iOwe ? d.toId : d.fromId))
-              return (
-                <RowButton key={i} onClick={() => navigate(d.href)} className="flex items-center gap-3 px-4 py-3">
-                  {other && <Avatar player={other} size={26} />}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-footnote text-ink truncate">
-                      {iOwe ? (
-                        <>
-                          You owe <span className="font-extrabold">{other?.name}</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="font-extrabold">{other?.name}</span> owes you
-                        </>
-                      )}
-                    </p>
-                    <p className="text-caption text-ink-faint truncate">{d.label}</p>
-                  </div>
-                  <span className={`text-body font-extrabold tabular-nums shrink-0 ${iOwe ? 'text-flag' : 'text-green'}`}>
-                    {money(d.amount)}
-                  </span>
-                  <span className="text-footnote font-bold text-green shrink-0">{iOwe ? 'Settle →' : 'Nudge →'}</span>
-                </RowButton>
-              )
-            })}
-          </div>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      {/* A course to rate, while it's still fresh */}
-      {toRate && (
-        <Card onClick={() => navigate(`/rounds/${toRate.id}`)} className="mt-2 p-4 flex items-center gap-3.5">
-          <IconTile name="star" tone="gold" />
-          <div className="flex-1 min-w-0">
-            <p className="text-body font-extrabold text-ink truncate">How was {toRate.courseName}?</p>
-            <p className="text-footnote text-ink-dim mt-0.5">One tap for the stars, one for where it lands on your list.</p>
-          </div>
-          <span className="text-footnote font-bold text-green shrink-0">Rate →</span>
-        </Card>
-      )}
+        {/* A course to rate, while it's still fresh */}
+        {toRate && (
+          <Card onClick={() => navigate(`/rounds/${toRate.id}`)} className="p-4 flex items-center gap-3.5">
+            <IconTile name="star" tone="gold" />
+            <div className="flex-1 min-w-0">
+              <p className="text-body font-extrabold text-ink truncate">How was {toRate.courseName}?</p>
+              <p className="text-footnote text-ink-dim mt-0.5">One tap for the stars, one for where it lands on your list.</p>
+            </div>
+            <Icon name="chevronRight" size={18} className="text-ink-faint" />
+          </Card>
+        )}
 
-      {/* A booked trip that's coming up earns the top; a trip still being
-          argued about waits its turn below. */}
-      {heroTrip && !heroIsPlanning && tripCard}
+        {planningTrip && planningTrip.id !== soonTrip?.id && <TripHero trip={planningTrip} today={TODAY} meId={me.id} />}
+      </div>
+
+      {/* Recent rounds, as pictures you swipe through */}
+      <SectionLabel
+        action={
+          <Link to="/rounds" className="text-footnote font-bold text-green">
+            All rounds
+          </Link>
+        }
+      >
+        Recent rounds
+      </SectionLabel>
+      {recent.length === 0 ? (
+        <Card className="p-5 text-center">
+          <p className="text-body font-bold text-ink">No rounds logged yet</p>
+          <p className="text-footnote text-ink-dim mt-1">Log one and the records start keeping themselves. Solo rounds count too.</p>
+          <button onClick={() => navigate('/log')} className="mt-3 rounded-xl bg-green px-5 py-2.5 text-body font-bold text-white">
+            Log a round
+          </button>
+        </Card>
+      ) : (
+        <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {recent.map((r) => (
+            <RoundTile key={r.id} round={r} onOpen={() => navigate(`/rounds/${r.id}`)} />
+          ))}
+          <button
+            type="button"
+            onClick={() => navigate('/rounds')}
+            className="flex w-[108px] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-line-strong text-footnote font-bold text-green active:bg-card"
+          >
+            <IconTile name="chevronRight" size={36} />
+            All rounds
+          </button>
+        </div>
+      )}
 
       {/* The season, on the group's terms */}
       <SectionLabel
         action={
           <Link to="/h2h" className="text-footnote font-bold text-green">
-            Standings →
+            Head-to-Head
           </Link>
         }
       >
-        {YEAR} · {seasonRounds.length} round{seasonRounds.length === 1 ? '' : 's'}
+        Standings
       </SectionLabel>
       {board.length === 0 ? (
         <Card className="p-5 text-center">
@@ -256,7 +380,7 @@ export default function Home() {
                     {row.player.id === me.id && <span className="text-ink-faint font-semibold"> (you)</span>}
                   </p>
                   <p className="text-caption text-ink-faint tabular-nums">
-                    {row.rounds} round{row.rounds === 1 ? '' : 's'}
+                    {plural(row.rounds, 'round')}
                     {row.avgGross != null && ` · avg ${row.avgGross.toFixed(1)}`}
                     {row.streak >= 2 && (
                       <>
@@ -267,125 +391,188 @@ export default function Home() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-headline font-extrabold text-ink tabular-nums leading-none">{row.wins}</p>
-                  <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-0.5">wins</p>
+                  <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-0.5">{row.wins === 1 ? 'win' : 'wins'}</p>
                 </div>
               </RowButton>
             ))}
           </div>
           {myPlace >= 3 && (
             <p className="px-4 py-2.5 border-t border-line text-footnote text-ink-dim">
-              You're {myPlace + 1}th of {board.length} · {board[myPlace].wins} win{board[myPlace].wins === 1 ? '' : 's'}
+              You're {ordinal(myPlace + 1)} of {board.length} · {plural(board[myPlace].wins, 'win')}
             </p>
           )}
         </Card>
       )}
 
-      {/* Recent rounds */}
-      <SectionLabel
-        action={
-          <Link to="/rounds" className="text-footnote font-bold text-green">
-            All rounds →
-          </Link>
-        }
-      >
-        Recent Rounds
-      </SectionLabel>
-      {recent.length === 0 && (
-        <Card className="p-5 text-center">
-          <p className="text-body font-bold text-ink">No rounds logged yet</p>
-          <p className="text-footnote text-ink-dim mt-1">Log one and the records start keeping themselves. Solo rounds count too.</p>
-          <button onClick={() => navigate('/log')} className="mt-3 rounded-xl bg-green px-5 py-2.5 text-body font-bold text-white">
-            Log a round
-          </button>
-        </Card>
-      )}
-      <div className="space-y-3">
-        {recent.map((r) => {
-          const standings = roundStandings(r)
-          const top = standings.length ? data.players.find((p) => p.id === standings[0].playerId) : undefined
-          const solo = isSoloRound(r)
-          const waiting = pending(r)
-          return (
-            <Card key={r.id} onClick={() => navigate(`/rounds/${r.id}`)} className="p-4">
-              <div className="flex items-baseline justify-between gap-3">
-                <p className="font-bold text-body text-ink truncate">{r.courseName}</p>
-                <p className="text-caption text-ink-faint shrink-0 tabular-nums">{shortDate(r.date)}</p>
-              </div>
-              <div className="mt-2 flex items-center gap-2.5">
-                <AvatarStack players={r.players.map((rp) => data.players.find((pl) => pl.id === rp.playerId))} />
-                <p className="flex-1 text-footnote text-ink-dim truncate">
-                  {!top ? (
-                    'No scores in yet'
-                  ) : waiting.length > 0 ? (
-                    <>
-                      {top.name} posted <span className="font-bold tabular-nums">{standings[0].gross}</span> · waiting on{' '}
-                      {waiting.length === 1 ? data.players.find((p) => p.id === waiting[0].playerId)?.name : `${waiting.length} more`}
-                    </>
-                  ) : solo ? (
-                    <>
-                      {top.name} shot <span className="font-bold tabular-nums">{standings[0].gross}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="font-bold text-ink">{top.name}</span> took it · net{' '}
-                      <span className="font-bold tabular-nums">{fmt1(standings[0].netScore)}</span>
-                    </>
-                  )}
-                </p>
-                {waiting.length > 0 ? <Pill tone="flag">Pending</Pill> : solo ? <Pill>Solo</Pill> : null}
-              </div>
-            </Card>
-          )
-        })}
-      </div>
-
-      {/* The trophy and the group's favourite course, side by side */}
-      <div className="grid grid-cols-2 gap-3 mt-3">
-        <Card onClick={() => navigate('/saddam')} className="p-3.5 border-cream-deep/60 bg-cream">
-          <div className="flex items-center gap-2">
-            <SaddamIcon size={22} />
-            <p className="text-caption font-bold uppercase tracking-wider text-ink-faint">The Saddam</p>
-          </div>
-          {holder ? (
-            <>
-              <p className="text-body font-extrabold text-ink mt-2 truncate">{holder.name}</p>
-              <p className="text-caption text-ink-dim mt-0.5 truncate">
-                {saddam.since ? `since ${shortDate(saddam.since)}` : 'holds it'}
-                {saddam.defenses > 0 && ` · ${saddam.defenses} def.`}
+      {/* Where to next, and where we've been */}
+      <SectionLabel>More</SectionLabel>
+      <Card>
+        <div className="divide-y divide-line">
+          <RowButton onClick={() => navigate('/trips')} className="flex items-center gap-3.5 px-4 py-3.5">
+            <IconTile name="suitcase" tone="forest" size={38} />
+            <div className="flex-1 min-w-0">
+              <p className="text-body font-bold text-ink">Trips</p>
+              <p className="text-caption text-ink-faint truncate">
+                {[
+                  planning.length > 0 && `${planning.length} in the works`,
+                  upcoming.length > 0 && `${upcoming.length} coming up`,
+                  past.length > 0 && `${past.length} in the archive`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || 'Plan the first one'}
               </p>
-            </>
-          ) : (
-            <>
-              <p className="text-body font-extrabold text-ink mt-2">Up for grabs</p>
-              <p className="text-caption text-ink-dim mt-0.5">Win a group round</p>
-            </>
-          )}
-        </Card>
-        <Card onClick={() => navigate(favourite ? `/courses/${encodeURIComponent(favourite.slug)}` : '/courses')} className="p-3.5">
-          <p className="text-caption font-bold uppercase tracking-wider text-ink-faint">Group’s favourite</p>
-          {favourite ? (
-            <>
-              <p className="text-body font-extrabold text-ink mt-2 truncate">{favourite.name}</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                {favourite.avg != null && (
+            </div>
+            <Icon name="chevronRight" size={18} className="text-ink-faint" />
+          </RowButton>
+          <RowButton
+            onClick={() => navigate(favourite ? `/courses/${encodeURIComponent(favourite.slug)}` : '/courses')}
+            className="flex items-center gap-3.5 px-4 py-3.5"
+          >
+            <IconTile name="star" tone="gold" size={38} />
+            <div className="flex-1 min-w-0">
+              <p className="text-body font-bold text-ink truncate">{favourite ? favourite.name : 'No favourite yet'}</p>
+              <p className="flex items-center gap-1.5 text-caption text-ink-faint">
+                The group’s favourite
+                {favourite?.avg != null && (
                   <>
+                    <span aria-hidden>·</span>
                     <StarRating value={favourite.avg} size={10} />
-                    <span className="text-caption text-ink-dim tabular-nums">{fmtStars(favourite.avg)}</span>
+                    <span className="tabular-nums">{fmtStars(favourite.avg)}</span>
                   </>
                 )}
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-body font-extrabold text-ink mt-2">Not picked yet</p>
-              <p className="text-caption text-ink-dim mt-0.5">Rate a course →</p>
-            </>
-          )}
-        </Card>
-      </div>
-
-      {heroTrip && heroIsPlanning && tripCard}
+              </p>
+            </div>
+            <Icon name="chevronRight" size={18} className="text-ink-faint" />
+          </RowButton>
+        </div>
+      </Card>
       <div className="h-4" />
     </div>
+  )
+}
+
+/** The last few scores as a line: lower is better, so lower draws higher. */
+function Sparkline({ scores }: { scores: number[] }) {
+  const W = 112
+  const H = 40
+  const min = Math.min(...scores)
+  const max = Math.max(...scores)
+  const span = Math.max(1, max - min)
+  const pts = scores.map((s, i) => [4 + (i * (W - 8)) / (scores.length - 1), 4 + ((s - min) / span) * (H - 8)] as const)
+  const last = pts[pts.length - 1]
+  return (
+    <svg width={W} height={H + 12} viewBox={`0 0 ${W} ${H + 12}`} className="shrink-0" aria-label={`Last ${scores.length} scores: ${scores.join(', ')}`}>
+      <polyline
+        points={pts.map((p) => p.join(',')).join(' ')}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.8"
+      />
+      <circle cx={last[0]} cy={last[1]} r="3.4" fill="currentColor" />
+      <text x={W - 2} y={H + 10} textAnchor="end" fontSize="8.5" fontWeight="800" letterSpacing="1" fill="currentColor" opacity="0.6">
+        LAST {scores.length} · {scores[scores.length - 1]}
+      </text>
+    </svg>
+  )
+}
+
+/** A round as a card in the carousel: its first photo, or the flag. */
+function RoundTile({ round: r, onOpen }: { round: Round; onOpen: () => void }) {
+  const { data } = useStore()
+  const standings = roundStandings(r)
+  const top = standings.length ? data.players.find((p) => p.id === standings[0].playerId) : undefined
+  const solo = isSoloRound(r)
+  const waiting = pending(r)
+  const photo = r.photos?.[0]
+  const line = !top
+    ? 'No scores yet'
+    : waiting.length > 0
+      ? `Waiting on ${waiting.length}`
+      : solo
+        ? `Solo · ${standings[0].gross}`
+        : `${top.name} · net ${fmt1(standings[0].netScore)}`
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-[152px] shrink-0 snap-start overflow-hidden rounded-2xl border border-line bg-card text-left shadow-[0_1px_2px_rgba(24,32,25,0.05)] transition-transform active:scale-[0.98]"
+    >
+      <div className="relative h-[92px] bg-forest">
+        {photo ? (
+          <img src={photo.url} alt="" loading="lazy" className="h-full w-full object-cover" />
+        ) : (
+          <>
+            <svg className="absolute inset-0 h-full w-full text-forest-soft" viewBox="0 0 152 92" preserveAspectRatio="none" aria-hidden>
+              <ellipse cx="120" cy="96" rx="92" ry="44" fill="none" stroke="currentColor" strokeWidth="1.5" />
+              <ellipse cx="120" cy="96" rx="64" ry="28" fill="none" stroke="currentColor" strokeWidth="1.5" />
+              <ellipse cx="120" cy="96" rx="36" ry="14" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+            <Icon name="flag" size={26} className="absolute left-3 top-3 text-on-forest/80" />
+          </>
+        )}
+        {(r.photos?.length ?? 0) > 1 && (
+          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/45 px-1.5 py-0.5 text-caption font-bold text-white">
+            <Icon name="camera" size={11} strokeWidth={2.2} /> {r.photos!.length}
+          </span>
+        )}
+        <div className="absolute -bottom-3 left-2.5">
+          <AvatarStack players={r.players.map((rp) => data.players.find((p) => p.id === rp.playerId))} size={24} />
+        </div>
+      </div>
+      <div className="px-3 pb-3 pt-4">
+        <p className="truncate text-footnote font-extrabold text-ink">{r.courseName}</p>
+        <p className="truncate text-caption text-ink-dim tabular-nums">{line}</p>
+        <p className="text-caption text-ink-faint tabular-nums">{shortDate(r.date)}</p>
+      </div>
+    </button>
+  )
+}
+
+/** A trip on Home: booked and close, or still being planned. */
+function TripHero({ trip, today, meId }: { trip: Trip; today: string; meId: string }) {
+  const navigate = useNavigate()
+  const isPlanning = trip.status === 'planning'
+  const votesIn = isPlanning ? new Set(trip.options.flatMap((o) => o.votes)).size : 0
+  const myVoteCast = isPlanning && trip.options.some((o) => o.votes.includes(meId))
+  const days = trip.startDate ? daysBetween(today, trip.startDate) : null
+  return (
+    <Card onClick={() => navigate(`/trips/${trip.id}`)} className="overflow-hidden">
+      <div className="relative overflow-hidden bg-forest px-5 pt-4 pb-3.5 text-on-forest">
+        <svg className="absolute right-0 bottom-0 h-full w-40 text-forest-soft" viewBox="0 0 160 100" preserveAspectRatio="none" aria-hidden>
+          <path d="M0 100 Q40 55 90 70 T160 45 V100 Z" fill="currentColor" />
+          <path d="M20 100 Q70 70 120 85 T160 75 V100 Z" fill="currentColor" opacity="0.7" />
+        </svg>
+        <p className="relative flex items-center gap-1.5 text-caption font-bold uppercase tracking-[0.16em] text-on-forest/70">
+          <Icon name="suitcase" size={13} strokeWidth={2.2} />
+          {isPlanning ? 'Trip in the works' : days === 0 ? 'Trip starts today' : `Trip in ${plural(days ?? 0, 'day')}`}
+        </p>
+        <h2 className="relative mt-0.5 text-title font-extrabold leading-tight">{trip.name}</h2>
+        <p className="relative mt-1 text-footnote text-on-forest/80">
+          {isPlanning
+            ? `${plural(trip.options.length, 'destination')} on the table`
+            : `${trip.location}${trip.startDate ? ` · ${shortDate(trip.startDate)}` : ''}`}
+        </p>
+      </div>
+      <div className="flex items-center justify-between px-5 py-3">
+        {isPlanning ? (
+          <>
+            <p className="text-footnote text-ink-dim">
+              {votesIn} of {trip.attendeeIds.length} votes in
+            </p>
+            <span className={`text-footnote font-bold ${myVoteCast ? 'text-ink-faint' : 'text-green'}`}>
+              {myVoteCast ? 'Vote cast ✓' : 'Cast your vote'}
+            </span>
+          </>
+        ) : (
+          <>
+            <p className="text-footnote text-ink-dim">Itinerary, tee times, standings</p>
+            <Icon name="chevronRight" size={18} className="text-ink-faint" />
+          </>
+        )}
+      </div>
+    </Card>
   )
 }

@@ -5,6 +5,7 @@ import { HOLE_COUNT } from '../lib/holes'
 import { courseSlug, emptyPars, padded } from '../lib/courses'
 import { defaultTee, scanCard, scanSupported, type ScannedCard } from '../lib/scan'
 import { useGoBack } from '../lib/nav'
+import { BackButton } from '../components/Nav'
 import { Card, PrimaryButton, SectionLabel } from '../components/ui'
 import { useConfirm } from '../components/Confirm'
 import { Icon, IconTile } from '../components/icons'
@@ -166,9 +167,7 @@ export default function CourseEdit() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-2">
-          ← Back
-        </button>
+        <BackButton fallback={isNew ? '/courses' : `/courses/${encodeURIComponent(slug)}`} onBack={goBack} />
         {isNew ? (
           <>
             <h1 className="text-large font-extrabold tracking-tight text-ink leading-tight">New course</h1>
@@ -314,7 +313,7 @@ export default function CourseEdit() {
           ) : undefined
         }
       >
-        Stroke Index
+        Stroke index
       </SectionLabel>
 
       {!showIndex ? (
@@ -363,7 +362,7 @@ export default function CourseEdit() {
       )}
 
       {/* Rating and slope, for GHIN course handicaps. Off the same card. */}
-      <SectionLabel>Rating &amp; Slope</SectionLabel>
+      <SectionLabel>Rating &amp; slope</SectionLabel>
       <Card className="p-4">
         {/* Imported tees: one tap copies a tee's numbers in as the default. */}
         {existing?.tees && existing.tees.some((t) => (t.gender ?? 'M') === 'M') && (

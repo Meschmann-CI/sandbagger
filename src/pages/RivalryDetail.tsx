@@ -1,5 +1,6 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useGoBack } from '../lib/nav'
+import { BackButton } from '../components/Nav'
 import { useStore } from '../data/store'
 import { fmt1, hasScore, net, type ScoredRoundPlayer } from '../types'
 import { byDate, headToHead, prettyDate, shortDate } from '../lib/stats'
@@ -55,7 +56,7 @@ export default function RivalryDetail() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-3">← Back</button>
+        <BackButton fallback="/h2h" onBack={goBack} />
       </header>
 
       {/* Tale of the tape */}
@@ -98,7 +99,7 @@ export default function RivalryDetail() {
         </Card>
       )}
 
-      <SectionLabel>Every Meeting</SectionLabel>
+      <SectionLabel>Every meeting</SectionLabel>
       <Card className="divide-y divide-line">
         {meetings.length === 0 && <p className="p-5 text-center text-footnote text-ink-dim">These two have never been in the same round.</p>}
         {meetings.map((r) => {

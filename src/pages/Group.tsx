@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMembers, useStore } from '../data/store'
 import { useGoBack } from '../lib/nav'
+import { BackButton } from '../components/Nav'
 import { fmt1 } from '../types'
 import EditGolfer from '../components/EditGolfer'
 import { Avatar, Card, Pill, PrimaryButton, SectionLabel } from '../components/ui'
@@ -31,9 +32,7 @@ export default function Group() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-2">
-          ← Back
-        </button>
+        <BackButton fallback="/profile" onBack={goBack} />
         <h1 className="text-large font-extrabold tracking-tight text-ink">{data.group.name}</h1>
         <p className="text-footnote text-ink-dim">
           {members.length} golfer{members.length === 1 ? '' : 's'}

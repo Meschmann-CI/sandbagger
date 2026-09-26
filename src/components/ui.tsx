@@ -96,10 +96,13 @@ export function RowButton({ children, onClick, className = '' }: { children: Rea
   )
 }
 
+// A section's heading, in sentence case at row-title size, the way iOS
+// heads a grouped list. Small uppercase labels are for metadata inside a
+// card, not for splitting up a screen.
 export function SectionLabel({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between px-1 mb-2.5 mt-7">
-      <h2 className="text-footnote font-bold uppercase tracking-[0.12em] text-ink-faint">{children}</h2>
+    <div className="flex items-baseline justify-between gap-3 px-1 mb-2.5 mt-8">
+      <h2 className="text-headline font-extrabold tracking-tight text-ink">{children}</h2>
       {action}
     </div>
   )

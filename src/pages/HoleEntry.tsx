@@ -14,6 +14,7 @@ import {
   toPar,
 } from '../lib/courses'
 import { settleFromCard } from '../lib/bets'
+import { BackButton } from '../components/Nav'
 import { MarkLegend, SCORE_MARK, StrokeDots } from '../components/scoreMarks'
 import { fmtDiff, ghostDiff, ghostFor, ghostOptions } from '../lib/ghost'
 import { scanScores, scanSupported, type ScannedScoreRow } from '../lib/scan'
@@ -310,9 +311,7 @@ export default function HoleEntry() {
     // the screen — the first cut had the tab bar drawn over the pad.
     <div className={active ? 'pb-72' : ''}>
       <header className="pt-4 pb-3 px-1">
-        <button onClick={done} className="text-footnote font-bold text-ink-faint mb-1">
-          ← Back
-        </button>
+        <BackButton fallback={`/rounds/${round.id}`} onBack={done} label="Round" />
         <h1 className="text-title font-extrabold tracking-tight text-ink truncate">{round.courseName}</h1>
         <p className="text-footnote text-ink-dim tabular-nums">
           {round.tee ? `${round.tee} tees` : 'Tees not noted'}

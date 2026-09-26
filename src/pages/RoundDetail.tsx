@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useGoBack } from '../lib/nav'
+import { BackButton } from '../components/Nav'
 import { useStore } from '../data/store'
-import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, saddamCounts, type ScoredRoundPlayer } from '../types'
+import { canSeeTrip, fmt1, isSoloRound, net, pending, round1, saddamCounts, type ScoredRoundPlayer } from '../types'
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
 import { anyCards, cardComplete, holesEntered } from '../lib/holes'
 import { settleFromCard } from '../lib/bets'
@@ -12,22 +13,21 @@ import { grossWarning } from '../lib/scores'
 import { money } from '../lib/money'
 import BetEditor from '../components/BetEditor'
 import CourseRatingEditor from '../components/CourseRatingEditor'
-import { StarRating } from '../components/Stars'
 import { courseSummaries, fmtStars } from '../lib/ratings'
 import Scorecard from '../components/Scorecard'
 import RoundPhotos from '../components/RoundPhotos'
 import SettleUp from '../components/SettleUp'
 import { roundBetSettlements } from '../lib/settlements'
 import { useConfirm } from '../components/Confirm'
-import { Avatar, Card, HelpTip, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
+import { Avatar, Card, HelpTip, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SaddamIcon, SectionLabel } from '../components/ui'
 import { betRules } from '../lib/betRules'
-import { Icon, IconTile } from '../components/icons'
+import { Icon, type IconName } from '../components/icons'
 
 export default function RoundDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const goBack = useGoBack('/rounds')
-  const { data, deleteRound, updateRound, addBet, deleteBet, addPayment, deletePayment } = useStore()
+  const { data, updateRound, addBet, deleteBet, addPayment, deletePayment } = useStore()
   const confirm = useConfirm()
   const [entering, setEntering] = useState<string | null>(null)
   const [draftScore, setDraftScore] = useState('')
@@ -91,6 +91,30 @@ export default function RoundDetail() {
     .filter(Boolean)
     .join(' and ')
 
+  // The podium: a group round with every score in and two or more posted.
+  const podium = !solo && waiting.length === 0 ? standings.slice(0, 3) : []
+  const podiumOrder = podium.length === 3 ? [podium[1], podium[0], podium[2]] : podium
+
+  const chips: { key: string; label: string; icon: IconName; hot?: boolean; onClick: () => void }[] = []
+  if (askForRating) chips.push({ key: 'rate', label: 'Rate it', icon: 'star', hot: true, onClick: () => setRating(true) })
+  if (iPlayed && courseTake?.mine)
+    chips.push({
+      key: 'rated',
+      label: `You gave it ${courseTake.mine.overall}${courseTake.avg != null && courseTake.ratings.length > 1 ? ` · group ${fmtStars(courseTake.avg)}` : ''}`,
+      icon: 'star',
+      onClick: () => navigate(`/courses/${encodeURIComponent(slug)}`),
+    })
+  // Par is entered once per course and reaches back through every round
+  // already played there, so it's worth asking for here.
+  if (!par) chips.push({ key: 'par', label: 'Add par', icon: 'flag', onClick: () => navigate(`/courses/${encodeURIComponent(slug)}/card`) })
+  if ((round.photos?.length ?? 0) === 0)
+    chips.push({
+      key: 'photos',
+      label: 'Add photos',
+      icon: 'camera',
+      onClick: () => document.getElementById('photos')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+    })
+
   const holesIn = round.players.reduce((sum, rp) => sum + holesEntered(rp), 0)
   const blurb = !top
     ? anyCards(round)
@@ -111,7 +135,7 @@ export default function RoundDetail() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-2">← Back</button>
+        <BackButton fallback="/rounds" onBack={goBack} />
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-large font-extrabold tracking-tight leading-tight text-ink">{round.courseName}</h1>
@@ -180,64 +204,74 @@ export default function RoundDetail() {
         </Card>
       )}
 
-      {/* How was it? Asked once, right where the round lands. */}
-      {askForRating && !rating && (
-        <Card onClick={() => setRating(true)} className="mt-3 p-4 border-green/30 bg-green-soft/40 flex items-center gap-3.5">
-          <IconTile name="star" tone="gold" />
-          <div className="flex-1 min-w-0">
-            <p className="text-body font-extrabold text-ink">How was {round.courseName}?</p>
-            <p className="text-footnote text-ink-dim mt-0.5">
-              Rate it while it’s fresh. One tap for the stars, one more for where it lands on your list.
-            </p>
+      {/* Who won comes first. A settled group round gets the podium; a
+          solo round, or one still waiting on scores, gets the line. */}
+      <Card className="mt-3 overflow-hidden">
+        {podium.length >= 2 && (
+          <div className="px-4 pt-4">
+            <div className={`grid items-end gap-2 ${podium.length === 3 ? 'grid-cols-[1fr_1.15fr_1fr]' : 'grid-cols-2'}`}>
+              {podiumOrder.map((s) => {
+                const p = data.players.find((pl) => pl.id === s.playerId)
+                if (!p) return null
+                const first = s.rank === 1
+                return (
+                  <div key={s.playerId} className="flex min-w-0 flex-col items-center gap-1">
+                    {first && saddamChangedHere && (
+                      <span className="-mb-1.5 rounded-[10px] ring-2 ring-card">
+                        <SaddamIcon size={26} />
+                      </span>
+                    )}
+                    <Avatar player={p} size={first ? 46 : 38} />
+                    <span className={`max-w-full truncate text-footnote ${first ? 'font-extrabold text-ink' : 'font-bold text-ink-dim'}`}>
+                      {p.name}
+                    </span>
+                    <span className="text-caption text-ink-faint tabular-nums">net {fmt1(s.netScore)}</span>
+                    <div
+                      className={`mt-1 flex w-full justify-center rounded-t-xl pt-1.5 text-headline font-extrabold text-on-forest tabular-nums ${
+                        s.rank === 1 ? 'h-16 bg-forest' : s.rank === 2 ? 'h-11 bg-forest-soft' : 'h-8 bg-forest/55'
+                      }`}
+                    >
+                      {s.rank}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-          <span className="text-footnote font-bold text-green shrink-0">Rate →</span>
-        </Card>
+        )}
+        <div className={`px-4 py-3.5 ${podium.length >= 2 ? 'border-t border-line' : ''}`}>
+          <p className="text-body font-bold text-ink leading-snug">{blurb}</p>
+          {saddamChangedHere && top && (
+            <p className="mt-2 flex items-center gap-2 text-footnote text-ink-dim">
+              <SaddamBadge size={16} /> The Saddam changed hands here. {top.name} carries it now.
+            </p>
+          )}
+        </div>
+      </Card>
+
+      {/* The chores, as one row of chips instead of a stack of cards */}
+      {chips.length > 0 && !rating && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {chips.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              onClick={c.onClick}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-footnote font-bold transition active:scale-95 ${
+                c.hot ? 'border-green/25 bg-green-soft text-green-deep' : 'border-line-strong bg-card text-ink-dim'
+              }`}
+            >
+              <Icon name={c.icon} size={15} strokeWidth={2.1} className={c.hot ? '' : 'text-ink-faint'} />
+              {c.label}
+            </button>
+          ))}
+        </div>
       )}
       {rating && (
         <div className="mt-3">
           <CourseRatingEditor courseName={round.courseName} onDone={() => setRating(false)} />
         </div>
       )}
-      {iPlayed && courseTake?.mine && !rating && (
-        <Card
-          onClick={() => navigate(`/courses/${encodeURIComponent(slug)}`)}
-          className="mt-3 px-4 py-3 flex items-center gap-3"
-        >
-          <StarRating value={courseTake.mine.overall} size={13} />
-          <p className="flex-1 min-w-0 text-footnote text-ink-dim truncate tabular-nums">
-            You gave it {courseTake.mine.overall}
-            {courseTake.avg != null && courseTake.ratings.length > 1 && ` · group ${fmtStars(courseTake.avg)}`}
-          </p>
-          <span className="text-footnote font-bold text-green shrink-0">All ratings →</span>
-        </Card>
-      )}
-
-      {/* Par is entered once per course and reaches back through every
-          round already played there, so it's worth asking for here. */}
-      {!par && (
-        <Card
-          onClick={() => navigate(`/courses/${encodeURIComponent(slug)}/card`)}
-          className="mt-3 p-4 flex items-center gap-3.5"
-        >
-          <IconTile name="flag" tone="flag" />
-          <div className="flex-1 min-w-0">
-            <p className="text-footnote font-bold text-ink">No par for {round.courseName} yet</p>
-            <p className="text-footnote text-ink-dim mt-0.5">
-              Eighteen taps off the scorecard, and every round here starts showing scores against par.
-            </p>
-          </div>
-          <span className="text-footnote font-bold text-green shrink-0">Add it →</span>
-        </Card>
-      )}
-
-      <Card className="mt-3 p-4">
-        <p className="text-body font-bold text-ink leading-snug">{blurb}</p>
-        {saddamChangedHere && top && (
-          <p className="mt-2 flex items-center gap-2 text-footnote text-ink-dim">
-            <SaddamBadge size={16} /> The Saddam changed hands here. {top.name} carries it now.
-          </p>
-        )}
-      </Card>
 
       <SectionLabel>Scorecard</SectionLabel>
       <Card>
@@ -335,7 +369,7 @@ export default function RoundDetail() {
           </button>
         }
       >
-        Scorecard by Hole
+        Scorecard by hole
       </SectionLabel>
       {anyCards(round) ? (
         <Scorecard round={round} />
@@ -347,7 +381,9 @@ export default function RoundDetail() {
         </Card>
       )}
 
-      <RoundPhotos round={round} />
+      <div id="photos" className="scroll-mt-16">
+        <RoundPhotos round={round} />
+      </div>
 
       <SectionLabel
         action={
@@ -356,7 +392,7 @@ export default function RoundDetail() {
           ) : undefined
         }
       >
-        Money Games
+        Money games
       </SectionLabel>
 
       {addingBet && (
@@ -473,27 +509,8 @@ export default function RoundDetail() {
         </>
       )}
 
-      <div className="mt-8 mb-4">
-        <button
-          onClick={async () => {
-            const scores = round.players.filter(hasScore).length
-            const detail = scores > 0 ? `${scores} posted score${scores === 1 ? '' : 's'} will be erased, along with any bets on it. ` : ''
-            const ok = await confirm({
-              title: `Delete this round at ${round.courseName}?`,
-              body: `${detail}This can't be undone.`,
-              confirmLabel: 'Delete round',
-              danger: true,
-            })
-            if (ok) {
-              deleteRound(round.id)
-              navigate('/rounds')
-            }
-          }}
-          className="w-full rounded-xl border border-flag/40 bg-flag-soft py-3 text-body font-bold text-flag active:bg-flag/10"
-        >
-          Delete this round
-        </button>
-      </div>
+      {/* Deleting lives in Edit, out of reach of a stray thumb. */}
+      <div className="h-6" />
     </div>
   )
 }
