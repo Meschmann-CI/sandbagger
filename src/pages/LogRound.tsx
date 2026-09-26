@@ -7,6 +7,8 @@ import { todayISO } from '../lib/dates'
 import { GROSS_CEILING, GROSS_FLOOR, grossWarning } from '../lib/scores'
 import { notifyGroup } from '../lib/push'
 import { fmt1 } from '../types'
+import { findCourse } from '../lib/courses'
+import TeePicker from '../components/TeePicker'
 import { Avatar, Card, GhostButton, PrimaryButton, SaddamIcon } from '../components/ui'
 
 // The two-minute flow: where → who → scores → done.
@@ -173,10 +175,10 @@ export default function LogRound() {
             </div>
             <div>
               <label className="block text-footnote font-bold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">Tees (optional)</label>
-              <input
+              <TeePicker
                 value={tee}
-                onChange={(e) => setTee(e.target.value)}
-                placeholder="White"
+                onChange={setTee}
+                course={findCourse(data, courseName)}
                 className="w-full rounded-xl border border-line-strong bg-card px-4 py-3.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
               />
             </div>

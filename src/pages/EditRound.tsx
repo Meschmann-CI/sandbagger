@@ -4,6 +4,8 @@ import { useMembers, useStore } from '../data/store'
 import { fmt1, type RoundPlayer } from '../types'
 import { courseSuggestions } from '../lib/stats'
 import { hasCard } from '../lib/holes'
+import { findCourse } from '../lib/courses'
+import TeePicker from '../components/TeePicker'
 import { Avatar, Card, GhostButton, PrimaryButton, SaddamIcon } from '../components/ui'
 import { useConfirm } from '../components/Confirm'
 
@@ -108,7 +110,7 @@ export default function EditRound() {
           </div>
           <div>
             <label className={label}>Tees</label>
-            <input value={tee} onChange={(e) => setTee(e.target.value)} placeholder="White" className={field} />
+            <TeePicker value={tee} onChange={setTee} course={findCourse(data, courseName)} className={field} />
           </div>
         </div>
 
