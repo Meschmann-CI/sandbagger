@@ -9,6 +9,7 @@ import TripAttendees from '../components/TripAttendees'
 import { Card, Pill } from '../components/ui'
 import { useConfirm } from '../components/Confirm'
 import { canSeeTrip } from '../types'
+import { IconTile } from '../components/icons'
 
 export default function TripDetail() {
   const { id } = useParams()
@@ -31,12 +32,14 @@ export default function TripDetail() {
     return (
       <div className="rise pt-10">
         <Card className="p-6 text-center">
-          <p className="text-3xl mb-2">🔒</p>
-          <p className="text-[16px] font-extrabold text-ink">This trip is private</p>
-          <p className="text-[13px] text-ink-dim mt-1.5">
+          <div className="flex justify-center mb-3">
+            <IconTile name="lock" tone="plain" size={48} />
+          </div>
+          <p className="text-headline font-extrabold text-ink">This trip is private</p>
+          <p className="text-footnote text-ink-dim mt-1.5">
             You're not on the list for this one. Ask the organizer if that's a mistake.
           </p>
-          <button onClick={() => navigate('/trips')} className="mt-4 text-[13px] font-bold text-green">
+          <button onClick={() => navigate('/trips')} className="mt-4 text-footnote font-bold text-green">
             Back to trips
           </button>
         </Card>
@@ -49,19 +52,19 @@ export default function TripDetail() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
+        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-2">← Back</button>
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-[24px] font-extrabold tracking-tight text-ink leading-tight">{trip.name}</h1>
+          <h1 className="text-large font-extrabold tracking-tight text-ink leading-tight">{trip.name}</h1>
           {trip.status === 'planning' ? <Pill tone="green">Planning</Pill> : isPast ? <Pill>Archived</Pill> : <Pill tone="gold">Booked</Pill>}
         </div>
         {trip.status === 'booked' && (
-          <p className="text-[13px] text-ink-dim mt-1 tabular-nums">
+          <p className="text-footnote text-ink-dim mt-1 tabular-nums">
             {trip.location}
             {trip.startDate && ` · ${shortDate(trip.startDate)}`}
             {trip.endDate && ` – ${shortDate(trip.endDate)}`}
           </p>
         )}
-        {trip.note && <p className="text-[13px] text-ink-dim mt-1.5 italic">{trip.note}</p>}
+        {trip.note && <p className="text-footnote text-ink-dim mt-1.5 italic">{trip.note}</p>}
       </header>
 
       <div className="mt-2">
@@ -84,7 +87,7 @@ export default function TripDetail() {
               navigate('/trips')
             }
           }}
-          className="text-[12.5px] font-bold text-flag/80"
+          className="text-footnote font-bold text-flag/80"
         >
           Delete trip
         </button>

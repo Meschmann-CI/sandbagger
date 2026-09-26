@@ -24,8 +24,8 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
   const [error, setError] = useState<string | null>(null)
 
   const field =
-    'w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-[15px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5'
+    'w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
+  const label = 'block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5'
 
   const signOut = async () => {
     await requireSupabase().auth.signOut()
@@ -80,33 +80,33 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
   return (
     <div className="mx-auto max-w-md min-h-dvh px-5 py-10 rise">
       <div className="text-center mb-6">
-        <div className="text-4xl mb-2">⛳</div>
-        <h1 className="text-[24px] font-extrabold tracking-tight text-ink">
+        <img src="/sandbagger-icon-180.png" alt="" width={64} height={64} className="mx-auto rounded-2xl mb-3" />
+        <h1 className="text-large font-extrabold tracking-tight text-ink">
           {mode === 'create' ? 'Start your group' : mode === 'join' ? 'Join a group' : 'One more step'}
         </h1>
-        {email && <p className="text-[13px] text-ink-dim mt-1">Signed in as {email}</p>}
+        {email && <p className="text-footnote text-ink-dim mt-1">Signed in as {email}</p>}
       </div>
 
       {mode === 'choose' && (
         <div className="space-y-3">
           {groupExists && (
             <Card className="p-5">
-              <p className="text-[15px] font-extrabold text-ink">Waiting on an invite?</p>
-              <p className="text-[13.5px] text-ink-dim mt-1.5">
+              <p className="text-body font-extrabold text-ink">Waiting on an invite?</p>
+              <p className="text-footnote text-ink-dim mt-1.5">
                 A group already exists. Ask whoever set it up to add {email ? <span className="font-bold text-ink">{email}</span> : 'your email'} as a
                 golfer, then sign in again and you'll drop straight in.
               </p>
             </Card>
           )}
           <Card onClick={() => setMode('join')} className="p-5">
-            <p className="text-[15px] font-extrabold text-ink">I have an invite code</p>
-            <p className="text-[13.5px] text-ink-dim mt-1">Join an existing group with its six-character code.</p>
+            <p className="text-body font-extrabold text-ink">I have an invite code</p>
+            <p className="text-footnote text-ink-dim mt-1">Join an existing group with its six-character code.</p>
           </Card>
           <Card onClick={() => setMode('create')} className="p-5">
-            <p className="text-[15px] font-extrabold text-ink">Start a new group</p>
-            <p className="text-[13.5px] text-ink-dim mt-1">You'll be the organizer and can add everyone else.</p>
+            <p className="text-body font-extrabold text-ink">Start a new group</p>
+            <p className="text-footnote text-ink-dim mt-1">You'll be the organizer and can add everyone else.</p>
           </Card>
-          <button onClick={() => void signOut()} className="w-full text-[12.5px] font-bold text-ink-faint py-2">
+          <button onClick={() => void signOut()} className="w-full text-footnote font-bold text-ink-faint py-2">
             Sign out
           </button>
         </div>
@@ -148,8 +148,8 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
               )}
             </span>
             <span>
-              <span className="block text-[14px] font-bold text-ink">Load sample data</span>
-              <span className="block text-[12.5px] text-ink-dim mt-0.5">
+              <span className="block text-body font-bold text-ink">Load sample data</span>
+              <span className="block text-footnote text-ink-dim mt-0.5">
                 A worked example: one past trip with its itinerary and cost split, one in the planning stage, and a season of
                 rounds. Handy for a look around — delete it whenever.
               </span>
@@ -160,9 +160,9 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
             <PrimaryButton onClick={() => void createGroup()} disabled={!name.trim() || busy} className="flex-1 !py-3">
               {busy ? 'Setting up…' : 'Create group'}
             </PrimaryButton>
-            <button onClick={() => setMode('choose')} className="px-4 text-[13px] font-bold text-ink-faint">Back</button>
+            <button onClick={() => setMode('choose')} className="px-4 text-footnote font-bold text-ink-faint">Back</button>
           </div>
-          {error && <p className="text-[12.5px] text-flag font-semibold">{error}</p>}
+          {error && <p className="text-footnote text-flag font-semibold">{error}</p>}
         </Card>
       )}
 
@@ -196,9 +196,9 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
             <PrimaryButton onClick={() => void joinGroup()} disabled={!code.trim() || !name.trim() || busy} className="flex-1 !py-3">
               {busy ? 'Joining…' : 'Join group'}
             </PrimaryButton>
-            <button onClick={() => setMode('choose')} className="px-4 text-[13px] font-bold text-ink-faint">Back</button>
+            <button onClick={() => setMode('choose')} className="px-4 text-footnote font-bold text-ink-faint">Back</button>
           </div>
-          {error && <p className="text-[12.5px] text-flag font-semibold">{error}</p>}
+          {error && <p className="text-footnote text-flag font-semibold">{error}</p>}
         </Card>
       )}
     </div>

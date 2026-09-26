@@ -35,29 +35,29 @@ export default function Saddam() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
-        <h1 className="text-[26px] font-extrabold tracking-tight text-ink">The Saddam</h1>
-        <p className="text-[13px] text-ink-dim">Held by whoever won the last group round.</p>
+        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-2">← Back</button>
+        <h1 className="text-large font-extrabold tracking-tight text-ink">The Saddam</h1>
+        <p className="text-footnote text-ink-dim">Held by whoever won the last group round.</p>
       </header>
 
       {/* Current holder */}
       {holder ? (
         <Card className="mt-2 overflow-hidden">
-          <div className="bg-gold-soft border-b border-gold/25 px-5 py-6 flex items-center gap-4">
-            <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-card border border-gold/30 text-ink shrink-0">
-              <SaddamIcon size={44} />
+          <div className="bg-cream border-b border-cream-deep/60 px-5 py-6 flex items-center gap-4">
+            <span className="shrink-0 rounded-[18px] shadow-[0_4px_14px_rgba(28,70,50,0.18)]">
+              <SaddamIcon size={64} />
             </span>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-gold">Current holder</p>
-              <p className="text-[24px] font-extrabold text-ink leading-tight truncate">{holder.name}</p>
-              <p className="text-[12.5px] text-ink-dim mt-0.5">
+              <p className="text-caption font-bold uppercase tracking-[0.16em] text-forest/70">Current holder</p>
+              <p className="text-large font-extrabold text-ink leading-tight truncate">{holder.name}</p>
+              <p className="text-footnote text-ink-dim mt-0.5">
                 Since {state.since && prettyDate(state.since)}
               </p>
             </div>
             <Avatar player={holder} size={44} />
           </div>
           <div className="px-5 py-3.5">
-            <p className="text-[13px] text-ink-dim">
+            <p className="text-footnote text-ink-dim">
               {state.byHand
                 ? state.note
                   ? `Handed over: ${state.note}`
@@ -70,11 +70,11 @@ export default function Saddam() {
         </Card>
       ) : (
         <Card className="mt-2 px-5 py-7 text-center">
-          <span className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-paper border border-line text-ink-faint">
-            <SaddamIcon size={44} />
+          <span className="inline-flex opacity-60 grayscale">
+            <SaddamIcon size={64} />
           </span>
-          <p className="text-[17px] font-extrabold text-ink mt-3">Up for grabs</p>
-          <p className="text-[13px] text-ink-dim mt-1.5 max-w-[280px] mx-auto">
+          <p className="text-headline font-extrabold text-ink mt-3">Up for grabs</p>
+          <p className="text-footnote text-ink-dim mt-1.5 max-w-[280px] mx-auto">
             Nobody holds it. Win a round with at least one other golfer and it's yours, or hand it to whoever has it in real
             life.
           </p>
@@ -84,8 +84,8 @@ export default function Saddam() {
       {/* Hand it over */}
       {handingOver ? (
         <Card className="mt-3 p-4 space-y-3">
-          <p className="text-[14px] font-extrabold text-ink">Who has it?</p>
-          <p className="text-[12.5px] text-ink-dim">
+          <p className="text-body font-extrabold text-ink">Who has it?</p>
+          <p className="text-footnote text-ink-dim">
             Use this when it changed hands outside the app. From today on, whoever wins the next group round takes it back.
           </p>
           <div className="space-y-2">
@@ -98,25 +98,25 @@ export default function Saddam() {
                 }`}
               >
                 <Avatar player={p} size={30} />
-                <span className="flex-1 text-left text-[14px] font-bold text-ink">{p.name}</span>
-                {pick === p.id && <span className="text-[12px] font-bold text-green">Selected</span>}
+                <span className="flex-1 text-left text-body font-bold text-ink">{p.name}</span>
+                {pick === p.id && <span className="text-footnote font-bold text-green">Selected</span>}
               </button>
             ))}
           </div>
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5">Why (optional)</label>
+            <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5">Why (optional)</label>
             <input
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="Won it at the 2018 trip"
-              className="w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+              className="w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
             />
           </div>
           <div className="flex gap-2">
             <PrimaryButton onClick={handOver} disabled={!pick} className="flex-1 !py-2.5">
               Hand it over
             </PrimaryButton>
-            <button onClick={() => { setHandingOver(false); setPick(null) }} className="px-4 text-[13px] font-bold text-ink-faint">
+            <button onClick={() => { setHandingOver(false); setPick(null) }} className="px-4 text-footnote font-bold text-ink-faint">
               Cancel
             </button>
           </div>
@@ -124,7 +124,7 @@ export default function Saddam() {
       ) : (
         <button
           onClick={() => { setHandingOver(true); setPick(state.holderId) }}
-          className="w-full mt-3 rounded-xl border border-line-strong bg-card py-3 text-[13.5px] font-bold text-ink-dim active:bg-paper"
+          className="w-full mt-3 rounded-xl border border-line-strong bg-card py-3 text-footnote font-bold text-ink-dim active:bg-paper"
         >
           {holder ? 'Hand it to someone else' : 'Give it to someone'}
         </button>
@@ -133,7 +133,7 @@ export default function Saddam() {
       {/* Chain of custody */}
       <SectionLabel>How it's moved</SectionLabel>
       {history.length === 0 ? (
-        <Card className="p-5 text-center text-[13.5px] text-ink-dim">
+        <Card className="p-5 text-center text-footnote text-ink-dim">
           No handovers yet. The first group round with two scores in it starts the record.
         </Card>
       ) : (
@@ -150,11 +150,11 @@ export default function Saddam() {
               <>
                 <Avatar player={p} size={30} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold text-ink truncate">
+                  <p className="text-body font-bold text-ink truncate">
                     {p.name}
                     {current && <span className="text-gold"> · holds it now</span>}
                   </p>
-                  <p className="text-[11.5px] text-ink-faint truncate tabular-nums">
+                  <p className="text-caption text-ink-faint truncate tabular-nums">
                     {shortDate(change.date)}
                     {change.byHand ? ` · handed over${change.note ? `: ${change.note}` : ''}` : ` · ${change.courseName}`}
                   </p>
@@ -189,8 +189,8 @@ export default function Saddam() {
               return (
                 <div key={playerId} className="flex items-center gap-3 px-4 py-2.5">
                   <Avatar player={p} size={26} />
-                  <span className="flex-1 text-[13.5px] font-bold text-ink">{p.name}</span>
-                  <span className="text-[13.5px] font-extrabold text-ink tabular-nums">{count}</span>
+                  <span className="flex-1 text-footnote font-bold text-ink">{p.name}</span>
+                  <span className="text-footnote font-extrabold text-ink tabular-nums">{count}</span>
                 </div>
               )
             })}
@@ -198,7 +198,7 @@ export default function Saddam() {
         </>
       )}
 
-      <p className="text-[11.5px] text-ink-faint px-2 mt-3">
+      <p className="text-caption text-ink-faint px-2 mt-3">
         It only moves on a group round with at least two scores posted, and only on an outright win — a tie leaves it where it
         is.
       </p>

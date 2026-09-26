@@ -4,7 +4,8 @@ import { useStore } from '../data/store'
 import { byDate, leaderboard, roundStandings, shortDate } from '../lib/stats'
 import { todayISO } from '../lib/dates'
 import { fmt1, isSoloRound, pending } from '../types'
-import { Avatar, Card, EmptyState, Pill, PrimaryButton } from '../components/ui'
+import { AvatarStack, Card, EmptyState, Pill, PrimaryButton } from '../components/ui'
+import { Icon } from '../components/icons'
 
 type Filter = 'all' | 'mine' | 'group'
 
@@ -40,13 +41,13 @@ export default function Rounds() {
     <div className="rise">
       <header className="pt-4 pb-3 px-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[26px] font-extrabold tracking-tight text-ink">Rounds</h1>
-          <p className="text-[13px] text-ink-dim">
+          <h1 className="text-large font-extrabold tracking-tight text-ink">Rounds</h1>
+          <p className="text-footnote text-ink-dim">
             {season.length} this year · {all.length} on the books
             {leader && ` · ${leader.player.name} leads with ${leader.wins}`}
           </p>
         </div>
-        <Link to="/h2h" className="text-[12.5px] font-bold text-green shrink-0 mt-2">
+        <Link to="/h2h" className="text-footnote font-bold text-green shrink-0 mt-2">
           Standings →
         </Link>
       </header>
@@ -56,8 +57,8 @@ export default function Rounds() {
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`rounded-full px-4 py-2 text-[13px] font-bold border transition ${
-              filter === f.key ? 'bg-ink text-white border-ink' : 'bg-card text-ink-dim border-line-strong'
+            className={`rounded-full px-4 py-2 text-footnote font-bold border transition ${
+              filter === f.key ? 'bg-forest text-on-forest border-forest' : 'bg-card text-ink-dim border-line-strong'
             }`}
           >
             {f.label}
@@ -88,27 +89,18 @@ export default function Rounds() {
           return (
             <div key={r.id}>
               {newMonth && (
-                <p className={`px-1 text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint ${i === 0 ? 'mt-3' : 'mt-6'} mb-2`}>
+                <p className={`px-1 text-caption font-bold uppercase tracking-[0.12em] text-ink-faint ${i === 0 ? 'mt-3' : 'mt-6'} mb-2`}>
                   {monthLabel(month)}
                 </p>
               )}
               <Card onClick={() => navigate(`/rounds/${r.id}`)} className="p-4">
                 <div className="flex items-baseline justify-between gap-3">
-                  <p className="font-bold text-[14.5px] text-ink truncate">{r.courseName}</p>
-                  <p className="text-[11.5px] text-ink-faint shrink-0 tabular-nums">{shortDate(r.date)}</p>
+                  <p className="font-bold text-body text-ink truncate">{r.courseName}</p>
+                  <p className="text-caption text-ink-faint shrink-0 tabular-nums">{shortDate(r.date)}</p>
                 </div>
                 <div className="mt-2.5 flex items-center gap-2">
-                  <div className="flex -space-x-1.5">
-                    {r.players.map((rp) => {
-                      const p = data.players.find((pl) => pl.id === rp.playerId)!
-                      return (
-                        <span key={rp.playerId} className="rounded-full ring-2 ring-card">
-                          <Avatar player={p} size={24} />
-                        </span>
-                      )
-                    })}
-                  </div>
-                  <p className="flex-1 text-[12.5px] text-ink-dim truncate">
+                  <AvatarStack players={r.players.map((rp) => data.players.find((pl) => pl.id === rp.playerId))} />
+                  <p className="flex-1 text-footnote text-ink-dim truncate">
                     {!top ? (
                       'No scores in yet'
                     ) : waiting.length > 0 ? (
@@ -132,7 +124,9 @@ export default function Rounds() {
                     {solo && waiting.length === 0 && <Pill>Solo</Pill>}
                     {trip && <Pill tone="green">Trip</Pill>}
                     {hasBets && <Pill tone="gold">$</Pill>}
-                    {(r.photos?.length ?? 0) > 0 && <Pill>📷 {r.photos!.length}</Pill>}
+                    {(r.photos?.length ?? 0) > 0 && <Pill>
+                        <Icon name="camera" size={12} strokeWidth={2.2} /> {r.photos!.length}
+                      </Pill>}
                   </div>
                 </div>
               </Card>

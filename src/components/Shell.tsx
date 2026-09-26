@@ -88,8 +88,8 @@ export default function Shell() {
           should on a course with no signal. Say so calmly. */}
       {newVersion && (
         <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-green/40 bg-green-soft px-4 py-2.5 flex items-center gap-3">
-          <p className="flex-1 text-[12.5px] font-bold text-ink">A newer version of the app is ready.</p>
-          <button onClick={() => window.location.reload()} className="rounded-lg bg-green px-3 py-1.5 text-[12.5px] font-bold text-white">
+          <p className="flex-1 text-footnote font-bold text-ink">A newer version of the app is ready.</p>
+          <button onClick={() => window.location.reload()} className="rounded-lg bg-green px-3 py-1.5 text-footnote font-bold text-white">
             Reload
           </button>
         </div>
@@ -98,10 +98,10 @@ export default function Shell() {
       {pendingWrites > 0 && (
         <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-gold/40 bg-gold-soft px-4 py-2.5 flex items-center gap-2.5">
           <span className="h-2 w-2 rounded-full bg-gold shrink-0" />
-          <p className="text-[12.5px] font-bold text-ink">
+          <p className="text-footnote font-bold text-ink">
             {pendingWrites} change{pendingWrites === 1 ? '' : 's'} saved on this phone
           </p>
-          <p className="text-[12px] text-ink-dim">· sends when you're back online</p>
+          <p className="text-footnote text-ink-dim">· sends when you're back online</p>
         </div>
       )}
 
@@ -109,11 +109,11 @@ export default function Shell() {
           rather than letting it quietly reappear on the next refresh. */}
       {syncError && (
         <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-flag/40 bg-flag-soft px-4 py-3">
-          <p className="text-[13px] font-bold text-flag">That didn't save to the group</p>
-          <p className="text-[12px] text-ink-dim mt-0.5">
+          <p className="text-footnote font-bold text-flag">That didn't save to the group</p>
+          <p className="text-footnote text-ink-dim mt-0.5">
             {syncError}. What you see may not have stuck — reload to check.
           </p>
-          <button onClick={() => window.location.reload()} className="mt-1.5 text-[12.5px] font-bold text-green">
+          <button onClick={() => window.location.reload()} className="mt-1.5 text-footnote font-bold text-green">
             Reload
           </button>
         </div>
@@ -143,7 +143,7 @@ export default function Shell() {
                 to={t.to}
                 end={t.to === '/'}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 py-2.5 text-[10.5px] font-bold tracking-wide transition-colors ${
+                  `flex flex-col items-center gap-1 py-2.5 text-caption font-bold tracking-wide transition-colors ${
                     isActive ? 'text-green' : 'text-ink-faint hover:text-ink-dim'
                   }`
                 }

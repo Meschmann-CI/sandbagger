@@ -5,17 +5,18 @@ import { money, settleUp, tripBalances } from '../lib/money'
 import { shortDate } from '../lib/stats'
 import { todayISO } from '../lib/dates'
 import SettleUp from './SettleUp'
-import { Avatar, Card, PrimaryButton, SectionLabel } from './ui'
+import { Icon, type IconName } from './icons'
+import { Avatar, AvatarStack, Card, PrimaryButton, SectionLabel } from './ui'
 
-const CATEGORIES: { key: ExpenseCategory; icon: string; label: string }[] = [
-  { key: 'lodging', icon: '🏠', label: 'Housing' },
-  { key: 'golf', icon: '⛳', label: 'Golf' },
-  { key: 'travel', icon: '✈️', label: 'Travel' },
-  { key: 'food', icon: '🍽️', label: 'Food' },
-  { key: 'other', icon: '📍', label: 'Other' },
+const CATEGORIES: { key: ExpenseCategory; icon: IconName; label: string }[] = [
+  { key: 'lodging', icon: 'house', label: 'Housing' },
+  { key: 'golf', icon: 'flag', label: 'Golf' },
+  { key: 'travel', icon: 'plane', label: 'Travel' },
+  { key: 'food', icon: 'meal', label: 'Food' },
+  { key: 'other', icon: 'pin', label: 'Other' },
 ]
 
-const ICON = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.icon])) as Record<ExpenseCategory, string>
+const ICON = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.icon])) as Record<ExpenseCategory, IconName>
 
 export default function TripCosts({ trip }: { trip: Trip }) {
   const { data, addExpense, deleteExpense, addPayment, deletePayment } = useStore()
@@ -34,7 +35,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
       <SectionLabel
         action={
           !adding ? (
-            <button onClick={() => setAdding(true)} className="text-[12.5px] font-bold text-green">+ Add cost</button>
+            <button onClick={() => setAdding(true)} className="text-footnote font-bold text-green">+ Add cost</button>
           ) : undefined
         }
       >
@@ -55,7 +56,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
       )}
 
       {expenses.length === 0 && !adding ? (
-        <Card className="p-5 text-center text-[13.5px] text-ink-dim">
+        <Card className="p-5 text-center text-footnote text-ink-dim">
           Nothing logged yet. Add what people paid and the app works out who owes who.
         </Card>
       ) : (
@@ -63,8 +64,8 @@ export default function TripCosts({ trip }: { trip: Trip }) {
           {/* Totals */}
           <Card className="p-4">
             <div className="flex items-baseline justify-between">
-              <p className="text-[12px] font-bold uppercase tracking-wider text-ink-faint">Trip total</p>
-              <p className="text-[24px] font-extrabold text-ink tabular-nums">{money(total)}</p>
+              <p className="text-footnote font-bold uppercase tracking-wider text-ink-faint">Trip total</p>
+              <p className="text-large font-extrabold text-ink tabular-nums">{money(total)}</p>
             </div>
             <div className="mt-3 pt-3 border-t border-line space-y-2">
               {balances
@@ -76,8 +77,8 @@ export default function TripCosts({ trip }: { trip: Trip }) {
                   return (
                     <div key={b.playerId} className="flex items-center gap-2.5">
                       <Avatar player={p} size={26} />
-                      <span className="flex-1 text-[13.5px] font-bold text-ink">{p.name}</span>
-                      <span className="text-[12px] text-ink-faint tabular-nums">
+                      <span className="flex-1 text-footnote font-bold text-ink">{p.name}</span>
+                      <span className="text-footnote text-ink-faint tabular-nums">
                         paid {money(b.paid)} · owes {money(b.share)}
                       </span>
                     </div>
@@ -88,7 +89,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
 
           {/* Settle up */}
           <Card className={`mt-3 p-4 ${owed.length === 0 ? 'bg-green-soft/50 border-green/25' : 'bg-gold-soft/40 border-gold/30'}`}>
-            <p className="text-[12px] font-bold uppercase tracking-wider text-ink-faint mb-2.5">Settle up</p>
+            <p className="text-footnote font-bold uppercase tracking-wider text-ink-faint mb-2.5">Settle up</p>
             <SettleUp
               url={`/trips/${trip.id}`}
               owed={owed}
@@ -110,31 +111,23 @@ export default function TripCosts({ trip }: { trip: Trip }) {
                 return (
                   <Card key={e.id} className="p-3.5">
                     <div className="flex items-start gap-3">
-                      <span className="text-[16px] mt-0.5">{ICON[e.category]}</span>
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-soft text-green">
+                        <Icon name={ICON[e.category]} size={17} />
+                      </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[14px] font-bold text-ink">{e.description}</p>
-                        <p className="text-[12px] text-ink-dim mt-0.5">
+                        <p className="text-body font-bold text-ink">{e.description}</p>
+                        <p className="text-footnote text-ink-dim mt-0.5">
                           {payer?.name ?? 'Someone'} paid · split {e.sharedByIds.length} ways ·{' '}
                           <span className="tabular-nums">{money(Math.round(each * 100) / 100)} each</span>
                         </p>
                         <div className="flex items-center gap-1.5 mt-1.5">
-                          <div className="flex -space-x-1.5">
-                            {e.sharedByIds.map((pid) => {
-                              const p = data.players.find((pl) => pl.id === pid)
-                              if (!p) return null
-                              return (
-                                <span key={pid} className="rounded-full ring-2 ring-card">
-                                  <Avatar player={p} size={19} />
-                                </span>
-                              )
-                            })}
-                          </div>
-                          {e.date && <span className="text-[11px] text-ink-faint tabular-nums ml-1">{shortDate(e.date)}</span>}
+                          <AvatarStack players={e.sharedByIds.map((pid) => data.players.find((pl) => pl.id === pid))} size={19} max={4} />
+                          {e.date && <span className="text-caption text-ink-faint tabular-nums ml-1">{shortDate(e.date)}</span>}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-[15px] font-extrabold text-ink tabular-nums">{money(e.amount)}</p>
-                        <button onClick={() => deleteExpense(e.id)} className="text-[11px] font-bold text-flag/70 mt-1">
+                        <p className="text-body font-extrabold text-ink tabular-nums">{money(e.amount)}</p>
+                        <button onClick={() => deleteExpense(e.id)} className="text-caption font-bold text-flag/70 mt-1">
                           Remove
                         </button>
                       </div>
@@ -147,16 +140,16 @@ export default function TripCosts({ trip }: { trip: Trip }) {
           {/* Paybacks already recorded */}
           {payments.length > 0 && (
             <Card className="mt-3 divide-y divide-line">
-              <p className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-ink-faint">Paybacks recorded</p>
+              <p className="px-4 py-2 text-caption font-bold uppercase tracking-wider text-ink-faint">Paybacks recorded</p>
               {payments.map((p) => (
                 <div key={p.id} className="flex items-center gap-2.5 px-4 py-2.5">
-                  <span className="text-[13px] text-ink-dim flex-1">
+                  <span className="text-footnote text-ink-dim flex-1">
                     <span className="font-bold text-ink">{name(p.fromId)}</span> paid{' '}
                     <span className="font-bold text-ink">{name(p.toId)}</span>{' '}
                     <span className="font-bold tabular-nums text-green">{money(p.amount)}</span>
                     {p.date && <span className="text-ink-faint"> · {shortDate(p.date)}</span>}
                   </span>
-                  <button onClick={() => deletePayment(p.id)} className="text-[11px] font-bold text-flag/70 shrink-0">
+                  <button onClick={() => deletePayment(p.id)} className="text-caption font-bold text-flag/70 shrink-0">
                     Undo
                   </button>
                 </div>
@@ -167,7 +160,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
       )}
 
       {attendees.length < 2 && (
-        <p className="text-[11.5px] text-ink-faint px-2 mt-2">Add more golfers to this trip to split costs between them.</p>
+        <p className="text-caption text-ink-faint px-2 mt-2">Add more golfers to this trip to split costs between them.</p>
       )}
     </>
   )
@@ -186,8 +179,8 @@ function ExpenseForm({ trip, onSave, onCancel }: { trip: Trip; onSave: (e: Omit<
   const value = Number(amount)
   const valid = description.trim() && value > 0 && sharedByIds.length > 0
 
-  const field = 'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5'
+  const field = 'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
+  const label = 'block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5'
 
   return (
     <div className="rounded-2xl border border-green/30 bg-card p-4 space-y-3.5">
@@ -196,9 +189,9 @@ function ExpenseForm({ trip, onSave, onCancel }: { trip: Trip; onSave: (e: Omit<
           <button
             key={c.key}
             onClick={() => setCategory(c.key)}
-            className={`rounded-lg py-2 text-[11px] font-bold border transition ${category === c.key ? 'bg-green text-white border-green' : 'border-line-strong text-ink-dim'}`}
+            className={`rounded-lg py-2 text-caption font-bold border transition ${category === c.key ? 'bg-green text-white border-green' : 'border-line-strong text-ink-dim'}`}
           >
-            <span className="block text-[15px] leading-tight">{c.icon}</span>
+            <Icon name={c.icon} size={18} className="mx-auto mb-0.5" />
             {c.label}
           </button>
         ))}
@@ -228,7 +221,7 @@ function ExpenseForm({ trip, onSave, onCancel }: { trip: Trip; onSave: (e: Omit<
             <button
               key={p.id}
               onClick={() => setPaidById(p.id)}
-              className={`flex items-center gap-1.5 rounded-full border pl-1 pr-3 py-1 text-[13px] font-bold transition ${
+              className={`flex items-center gap-1.5 rounded-full border pl-1 pr-3 py-1 text-footnote font-bold transition ${
                 paidById === p.id ? 'bg-green text-white border-green' : 'border-line-strong text-ink-dim'
               }`}
             >
@@ -248,7 +241,7 @@ function ExpenseForm({ trip, onSave, onCancel }: { trip: Trip; onSave: (e: Omit<
               <button
                 key={p.id}
                 onClick={() => setSharedByIds((ids) => (on ? ids.filter((x) => x !== p.id) : [...ids, p.id]))}
-                className={`flex items-center gap-1.5 rounded-full border pl-1 pr-3 py-1 text-[13px] font-bold transition ${
+                className={`flex items-center gap-1.5 rounded-full border pl-1 pr-3 py-1 text-footnote font-bold transition ${
                   on ? 'bg-green-soft text-green border-green/40' : 'border-line-strong text-ink-faint opacity-60'
                 }`}
               >
@@ -259,7 +252,7 @@ function ExpenseForm({ trip, onSave, onCancel }: { trip: Trip; onSave: (e: Omit<
           })}
         </div>
         {value > 0 && sharedByIds.length > 0 && (
-          <p className="text-[12px] text-ink-dim mt-2 tabular-nums">
+          <p className="text-footnote text-ink-dim mt-2 tabular-nums">
             {money(Math.round((value / sharedByIds.length) * 100) / 100)} each
           </p>
         )}
@@ -289,7 +282,7 @@ function ExpenseForm({ trip, onSave, onCancel }: { trip: Trip; onSave: (e: Omit<
         >
           Add cost
         </PrimaryButton>
-        <button onClick={onCancel} className="px-4 text-[13px] font-bold text-ink-faint">Cancel</button>
+        <button onClick={onCancel} className="px-4 text-footnote font-bold text-ink-faint">Cancel</button>
       </div>
     </div>
   )

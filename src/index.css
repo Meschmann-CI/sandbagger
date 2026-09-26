@@ -7,19 +7,46 @@
   --color-line: #e7e5dc;
   --color-line-strong: #d6d3c6;
 
+  /* Three steps of text that stay apart. Faint was #9aa39b, 2.4:1 on
+     paper, which is below readable for the small uppercase labels it
+     mostly sets; #68726a is 4.7:1. Dim moved down to keep its distance. */
   --color-ink: #182019;
-  --color-ink-dim: #5b665d;
-  --color-ink-faint: #9aa39b;
+  --color-ink-dim: #4a554d;
+  --color-ink-faint: #68726a;
 
+  /* Green is for doing things (buttons, links, the active tab). Forest,
+     from the app icon, is for surfaces that carry weight: heroes, the
+     scorecard header. Cream, also from the icon, belongs to the Saddam
+     and to winning, and nothing else. */
   --color-green: #1c7c4a;
   --color-green-deep: #14603a;
   --color-green-soft: #e9f4ee;
+  --color-forest: #1c4632;
+  --color-forest-soft: #2b5a43;
+  --color-cream: #efe3c8;
+  --color-cream-deep: #d9c697;
+  --color-on-forest: #f3ead4;
   --color-gold: #b98a24;
   --color-gold-soft: #faf2dd;
   --color-flag: #cf4a35;
   --color-flag-soft: #fbeae6;
 
   --font-sans: "Manrope", "Segoe UI", sans-serif;
+
+  /* Seven sizes, named for their job, replacing the 25 one-off pixel
+     values the screens had drifted into. No line-heights here on
+     purpose: the old text-[Npx] classes didn't set one either, so
+     swapping them in leaves every layout where it was. */
+  --text-caption: 11px;
+  --text-footnote: 13px;
+  --text-body: 15px;
+  --text-headline: 17px;
+  --text-title: 22px;
+  --text-title--letter-spacing: -0.02em;
+  --text-large: 28px;
+  --text-large--letter-spacing: -0.03em;
+  --text-hero: 44px;
+  --text-hero--letter-spacing: -0.04em;
 }
 
 html {

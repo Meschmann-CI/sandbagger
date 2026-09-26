@@ -4,7 +4,8 @@ import { shortDate, tripBoard } from '../lib/stats'
 import { todayISO } from '../lib/dates'
 import { canSeeTrip } from '../types'
 import { useMembers } from '../data/store'
-import { Avatar, Card, EmptyState, Pill, SectionLabel } from '../components/ui'
+import { Avatar, AvatarStack, Card, EmptyState, Pill, SectionLabel } from '../components/ui'
+import { Icon, IconTile } from '../components/icons'
 
 export default function Trips() {
   const { data } = useStore()
@@ -18,14 +19,8 @@ export default function Trips() {
     const isPrivate = ids.length < members.length
     return (
       <div className="flex items-center gap-1.5">
-        {isPrivate && <span className="text-[11px]" title="Private trip">🔒</span>}
-        <div className="flex -space-x-1.5">
-          {people.map((p) => (
-            <span key={p.id} className="rounded-full ring-2 ring-card">
-              <Avatar player={p} size={20} />
-            </span>
-          ))}
-        </div>
+        {isPrivate && <Icon name="lock" size={14} className="text-ink-faint" label="Private trip" />}
+        <AvatarStack players={people} size={20} max={4} />
       </div>
     )
   }
@@ -44,12 +39,12 @@ export default function Trips() {
     <div className="rise">
       <header className="pt-4 pb-2 px-1 flex items-center justify-between">
         <div>
-          <h1 className="text-[26px] font-extrabold tracking-tight text-ink">Trips</h1>
-          <p className="text-[13px] text-ink-dim">Past, present, and hotly debated</p>
+          <h1 className="text-large font-extrabold tracking-tight text-ink">Trips</h1>
+          <p className="text-footnote text-ink-dim">Past, present, and hotly debated</p>
         </div>
         <button
           onClick={() => navigate('/trips/new')}
-          className="rounded-xl bg-green px-4 py-2.5 text-[13.5px] font-bold text-white active:scale-95 transition"
+          className="rounded-xl bg-green px-4 py-2.5 text-footnote font-bold text-white active:scale-95 transition"
         >
           + New trip
         </button>
@@ -69,16 +64,16 @@ export default function Trips() {
               return (
                 <Card key={trip.id} onClick={() => navigate(`/trips/${trip.id}`)} className="p-4 border-green/25">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-extrabold text-[16px] text-ink">{trip.name}</p>
+                    <p className="font-extrabold text-headline text-ink">{trip.name}</p>
                     <Pill tone="green">Planning</Pill>
                   </div>
-                  <p className="text-[13px] text-ink-dim mt-1.5">
+                  <p className="text-footnote text-ink-dim mt-1.5">
                     {trip.options.length === 0
                       ? 'No destinations yet — add the first one'
                       : `${trip.options.length} destinations · ${votesIn} of ${trip.attendeeIds.length} votes in`}
                   </p>
                   {leadingOption && leadingOption.votes.length > 0 && (
-                    <p className="text-[13px] mt-1">
+                    <p className="text-footnote mt-1">
                       <span className="text-ink-faint">Front-runner:</span>{' '}
                       <span className="font-bold text-green">{leadingOption.title}</span>
                     </p>
@@ -103,11 +98,11 @@ export default function Trips() {
                   <svg className="absolute right-0 bottom-0 h-full w-36 opacity-15" viewBox="0 0 160 100" preserveAspectRatio="none">
                     <path d="M0 100 Q40 55 90 70 T160 45 V100 Z" fill="#fff" />
                   </svg>
-                  <h2 className="text-[18px] font-extrabold leading-tight">{trip.name}</h2>
-                  <p className="text-[12.5px] text-white/85 mt-0.5">{trip.location ?? 'Destination locked'}</p>
+                  <h2 className="text-headline font-extrabold leading-tight">{trip.name}</h2>
+                  <p className="text-footnote text-white/85 mt-0.5">{trip.location ?? 'Destination locked'}</p>
                 </div>
                 <div className="px-4 py-3 flex items-center justify-between gap-3">
-                  <p className="text-[12.5px] text-ink-dim tabular-nums">
+                  <p className="text-footnote text-ink-dim tabular-nums">
                     {trip.startDate ? `${shortDate(trip.startDate)}${trip.endDate ? ` – ${shortDate(trip.endDate)}` : ''}` : 'Dates TBD'}
                   </p>
                   <Attendees ids={trip.attendeeIds} />
@@ -129,20 +124,18 @@ export default function Trips() {
               const champ = tripBoard(data, rounds)[0]?.player
               return (
                 <Card key={trip.id} onClick={() => navigate(`/trips/${trip.id}`)} className="p-4 flex items-center gap-3.5">
-                  <div className="h-11 w-11 rounded-xl bg-paper border border-line flex items-center justify-center text-[19px] shrink-0">
-                    🏝️
-                  </div>
+                  <IconTile name="suitcase" tone="forest" size={44} />
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[15px] text-ink truncate">{trip.name}</p>
-                    <p className="text-[12px] text-ink-faint mt-0.5 tabular-nums">
+                    <p className="font-bold text-body text-ink truncate">{trip.name}</p>
+                    <p className="text-footnote text-ink-faint mt-0.5 tabular-nums">
                       {trip.location} · {trip.startDate && shortDate(trip.startDate)} · {rounds.length} round{rounds.length === 1 ? '' : 's'}
                     </p>
                   </div>
                   {champ && (
                     <div className="text-right shrink-0 flex items-center gap-2">
                       <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-gold">Champ</p>
-                        <p className="text-[13.5px] font-extrabold text-ink">{champ.name}</p>
+                        <p className="text-caption font-bold uppercase tracking-wider text-gold">Champ</p>
+                        <p className="text-footnote font-extrabold text-ink">{champ.name}</p>
                       </div>
                       <Avatar player={champ} size={30} />
                     </div>

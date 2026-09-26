@@ -12,9 +12,9 @@ import {
   strokesOffLow,
   teeFor,
   toPar,
-  type ScoreKind,
 } from '../lib/courses'
 import { settleFromCard } from '../lib/bets'
+import { MarkLegend, SCORE_MARK, StrokeDots } from '../components/scoreMarks'
 import { fmtDiff, ghostDiff, ghostFor, ghostOptions } from '../lib/ghost'
 import { scanScores, scanSupported, type ScannedScoreRow } from '../lib/scan'
 import { roundStandings, shortDate } from '../lib/stats'
@@ -22,6 +22,7 @@ import { notifyGroup } from '../lib/push'
 import { fmt1, type Round } from '../types'
 import { Avatar, Card, HelpTip, PrimaryButton } from '../components/ui'
 import { betRules } from '../lib/betRules'
+import { Icon, IconTile } from '../components/icons'
 
 // The live card, laid out like the card in your pocket.
 //
@@ -35,16 +36,6 @@ import { betRules } from '../lib/betRules'
 // Still a companion, not an editor. Every tap saves itself, nothing
 // moves unless you tap Next, and leaving mid-round costs nothing.
 
-// How a hole's score reads against its par, same marks as the finished card.
-const MARK: Record<ScoreKind, string> = {
-  albatross: 'ring-2 ring-gold rounded-full bg-gold-soft font-extrabold text-gold',
-  eagle: 'ring-2 ring-gold rounded-full bg-gold-soft font-extrabold text-gold',
-  birdie: 'rounded-full bg-green-soft font-extrabold text-green',
-  par: 'text-ink font-bold',
-  bogey: 'rounded-md bg-paper border border-line-strong text-ink font-bold',
-  double: 'rounded-md bg-flag-soft border border-flag/40 font-bold text-flag',
-  worse: 'rounded-md bg-flag-soft border-2 border-flag/60 font-extrabold text-flag',
-}
 
 interface Active {
   playerId: string
@@ -311,7 +302,7 @@ export default function HoleEntry() {
   const coursePar = pars ? pars.reduce<number>((s, p) => s + (p ?? 0), 0) : null
 
   const cellBase =
-    'w-11 h-11 flex flex-col items-center justify-center text-[14px] tabular-nums select-none active:bg-paper transition'
+    'w-11 h-11 flex flex-col items-center justify-center text-body tabular-nums select-none active:bg-paper transition'
 
   return (
     // No entry animation here: it leaves a transform on the wrapper, and
@@ -319,11 +310,11 @@ export default function HoleEntry() {
     // the screen — the first cut had the tab bar drawn over the pad.
     <div className={active ? 'pb-72' : ''}>
       <header className="pt-4 pb-3 px-1">
-        <button onClick={done} className="text-[13px] font-bold text-ink-faint mb-1">
+        <button onClick={done} className="text-footnote font-bold text-ink-faint mb-1">
           ← Back
         </button>
-        <h1 className="text-[21px] font-extrabold tracking-tight text-ink truncate">{round.courseName}</h1>
-        <p className="text-[12.5px] text-ink-dim tabular-nums">
+        <h1 className="text-title font-extrabold tracking-tight text-ink truncate">{round.courseName}</h1>
+        <p className="text-footnote text-ink-dim tabular-nums">
           {round.tee ? `${round.tee} tees` : 'Tees not noted'}
           {coursePar != null && ` · par ${coursePar}`}
           {totalYards != null && ` · ${totalYards.toLocaleString()} yds${course?.yardsTee && round.tee && course.yardsTee.toLowerCase() !== round.tee.toLowerCase() ? ` (${course.yardsTee})` : ''}`}
@@ -346,17 +337,18 @@ export default function HoleEntry() {
             <div key={rp.playerId} className="flex items-center gap-2 rounded-xl border border-line bg-card px-2.5 py-1.5 shrink-0">
               <Avatar player={p} size={22} />
               <div className="leading-tight">
-                <p className="text-[12px] font-bold text-ink">{p.name.split(' ')[0]}</p>
-                <p className="text-[11px] text-ink-faint tabular-nums">
+                <p className="text-footnote font-bold text-ink">{p.name.split(' ')[0]}</p>
+                <p className="text-caption text-ink-faint tabular-nums">
                   {thru === 0 ? 'no scores' : `${gross}${vs ? ` · ${vs}` : ''} thru ${thru}`}
                 </p>
                 {race && race.holes > 0 && (
                   <p
-                    className={`text-[11px] font-bold tabular-nums ${
+                    className={`text-caption font-bold tabular-nums ${
                       race.diff < 0 ? 'text-green' : race.diff > 0 ? 'text-flag' : 'text-ink-dim'
                     }`}
                   >
-                    👻 {fmtDiff(race.diff)} vs {shortDate(ghost!.round.date)}
+                    <Icon name="ghost" size={12} className="inline -mt-0.5 mr-0.5" />
+                    {fmtDiff(race.diff)} vs {shortDate(ghost!.round.date)}
                   </p>
                 )}
               </div>
@@ -367,7 +359,7 @@ export default function HoleEntry() {
 
       {/* Who gets what off this tee — the first-tee conversation, settled */}
       {tee && courseHandicaps.length > 0 && (
-        <p className="mt-2 px-1 text-[11.5px] text-ink-faint tabular-nums">
+        <p className="mt-2 px-1 text-caption text-ink-faint tabular-nums">
           Course handicaps{round.tee ? ` off the ${round.tee}s` : ''} ({tee.rating}/{tee.slope}):{' '}
           {courseHandicaps.map((c) => `${c.name} ${c.hcp}`).join(' · ')}
           {courseHandicaps.length > 1 &&
@@ -398,17 +390,18 @@ export default function HoleEntry() {
               <button
                 onClick={() => scanRef.current?.click()}
                 disabled={scanBusy}
-                className="text-[12.5px] font-bold text-green disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 text-footnote font-bold text-green disabled:opacity-50"
               >
-                {scanBusy ? '📷 Reading the card…' : '📷 Read scores off the paper card'}
+                <Icon name="camera" size={16} />
+                {scanBusy ? 'Reading the card…' : 'Read scores off the paper card'}
               </button>
-              {scanError && <span className="text-[12px] font-semibold text-flag">{scanError}</span>}
+              {scanError && <span className="text-footnote font-semibold text-flag">{scanError}</span>}
             </div>
           )}
           {scanRows && (
             <Card className="mt-3 p-3.5 border-gold/40 bg-gold-soft/40">
-              <p className="text-[13.5px] font-extrabold text-ink">Read from your photo</p>
-              <p className="text-[12px] text-ink-dim mt-0.5">
+              <p className="text-footnote font-extrabold text-ink">Read from your photo</p>
+              <p className="text-footnote text-ink-dim mt-0.5">
                 Match each row to a golfer, check the numbers, then Apply. Anything the reader couldn’t make out stays blank.
               </p>
               <div className="mt-2.5 space-y-2.5">
@@ -418,7 +411,7 @@ export default function HoleEntry() {
                   return (
                     <div key={idx} className="rounded-xl border border-line bg-card p-2.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-[12px] text-ink-faint truncate">“{row.name ?? 'no name'}” →</span>
+                        <span className="text-footnote text-ink-faint truncate">“{row.name ?? 'no name'}” →</span>
                         <select
                           value={row.playerId ?? ''}
                           onChange={(e) =>
@@ -426,7 +419,7 @@ export default function HoleEntry() {
                               rows ? rows.map((r, i) => (i === idx ? { ...r, playerId: e.target.value || null } : r)) : rows,
                             )
                           }
-                          className="flex-1 rounded-lg border border-line-strong bg-card px-2 py-1.5 text-[13px] font-bold text-ink"
+                          className="flex-1 rounded-lg border border-line-strong bg-card px-2 py-1.5 text-footnote font-bold text-ink"
                         >
                           <option value="">Skip this row</option>
                           {round.players.map((rp) => {
@@ -438,9 +431,9 @@ export default function HoleEntry() {
                             ) : null
                           })}
                         </select>
-                        <span className="text-[13px] font-extrabold text-ink tabular-nums shrink-0">{sum || '–'}</span>
+                        <span className="text-footnote font-extrabold text-ink tabular-nums shrink-0">{sum || '–'}</span>
                       </div>
-                      <div className="mt-1.5 grid grid-cols-9 gap-0.5 text-center text-[11px] tabular-nums">
+                      <div className="mt-1.5 grid grid-cols-9 gap-0.5 text-center text-caption tabular-nums">
                         {row.scores.map((s, i) => (
                           <span key={i} className={s == null ? 'text-flag font-bold' : 'text-ink-dim'}>
                             {s ?? '?'}
@@ -448,7 +441,7 @@ export default function HoleEntry() {
                         ))}
                       </div>
                       {row.total != null && filled.length === HOLE_COUNT && row.total !== sum && (
-                        <p className="mt-1 text-[11px] font-semibold text-flag">Written total {row.total} ≠ {sum} from the holes.</p>
+                        <p className="mt-1 text-caption font-semibold text-flag">Written total {row.total} ≠ {sum} from the holes.</p>
                       )}
                     </div>
                   )
@@ -457,7 +450,7 @@ export default function HoleEntry() {
               {scanWarnings.length > 0 && (
                 <ul className="mt-2.5 space-y-0.5">
                   {scanWarnings.map((w) => (
-                    <li key={w} className="text-[11.5px] text-ink-dim">
+                    <li key={w} className="text-caption text-ink-dim">
                       · {w}
                     </li>
                   ))}
@@ -471,7 +464,7 @@ export default function HoleEntry() {
                 >
                   Apply to the card
                 </PrimaryButton>
-                <button onClick={() => setScanRows(null)} className="px-4 text-[13px] font-bold text-ink-faint">
+                <button onClick={() => setScanRows(null)} className="px-4 text-footnote font-bold text-ink-faint">
                   Cancel
                 </button>
               </div>
@@ -487,22 +480,22 @@ export default function HoleEntry() {
         <Card className="mt-3 p-3.5">
           {myGhost ? (
             <div className="flex items-center gap-3">
-              <span className="text-[18px]">👻</span>
-              <p className="flex-1 min-w-0 text-[12.5px] text-ink-dim">
+              <IconTile name="ghost" tone="plain" size={34} />
+              <p className="flex-1 min-w-0 text-footnote text-ink-dim">
                 Racing your <span className="font-extrabold text-ink tabular-nums">{myGhost.card.reduce<number>((s, h) => s + (h ?? 0), 0)}</span> from{' '}
                 {shortDate(myGhost.round.date)}. Its scores show a hole at a time, as you post yours.
               </p>
-              <button onClick={() => setMyGhost(null)} className="text-[12px] font-bold text-ink-faint shrink-0">
+              <button onClick={() => setMyGhost(null)} className="text-footnote font-bold text-ink-faint shrink-0">
                 Drop it
               </button>
             </div>
           ) : (
             <>
               <div className="flex items-center gap-3">
-                <span className="text-[18px]">👻</span>
+                <IconTile name="ghost" tone="plain" size={34} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13.5px] font-extrabold text-ink">Race a ghost?</p>
-                  <p className="text-[12px] text-ink-dim">
+                  <p className="text-footnote font-extrabold text-ink">Race a ghost?</p>
+                  <p className="text-footnote text-ink-dim">
                     You’ve played here before. Put one of those cards under yours and chase it hole by hole.
                   </p>
                 </div>
@@ -512,12 +505,12 @@ export default function HoleEntry() {
                   <button
                     key={o.round.id}
                     onClick={() => setMyGhost(o.round.id)}
-                    className={`rounded-full px-3.5 py-2 text-[12.5px] font-bold border transition active:scale-95 ${
+                    className={`rounded-full px-3.5 py-2 text-footnote font-bold border transition active:scale-95 ${
                       o.best ? 'border-gold/50 bg-gold-soft text-ink' : 'border-line-strong bg-card text-ink-dim'
                     }`}
                   >
                     <span className="tabular-nums">{o.gross}</span> · {shortDate(o.round.date)}
-                    {o.best && <span className="ml-1 text-[10px] uppercase tracking-wider text-gold">best</span>}
+                    {o.best && <span className="ml-1 text-caption uppercase tracking-wider text-gold">best</span>}
                   </button>
                 ))}
               </div>
@@ -531,7 +524,7 @@ export default function HoleEntry() {
         <Card className="mt-3 p-3.5 bg-gold-soft/40 border-gold/30 space-y-1.5">
           {liveBets.map(({ bet, outcome }) => (
             <div key={bet.id} className="flex items-start justify-between gap-2">
-              <p className="text-[12.5px] text-ink">
+              <p className="text-footnote text-ink">
                 <span className="font-extrabold">{bet.name}:</span>{' '}
                 {outcome.detail
                   .map((line) => {
@@ -552,8 +545,8 @@ export default function HoleEntry() {
         <div ref={scroller} className="overflow-x-auto">
           <table className="border-collapse tabular-nums">
             <thead>
-              <tr className="bg-ink text-white">
-                <th className="sticky left-0 z-20 bg-ink px-3 text-left text-[10px] font-bold uppercase tracking-wider">Hole</th>
+              <tr className="bg-forest text-on-forest">
+                <th className="sticky left-0 z-20 bg-forest px-3 text-left text-caption font-bold uppercase tracking-wider">Hole</th>
                 {Array.from({ length: HOLE_COUNT }, (_, i) => (
                   <th
                     key={i}
@@ -561,38 +554,38 @@ export default function HoleEntry() {
                       columns.current[i] = el
                     }}
                     onClick={() => select({ playerId: round.players[0].playerId, hole: i })}
-                    className={`w-11 h-9 text-[13px] font-extrabold cursor-pointer ${active?.hole === i ? 'bg-green' : ''}`}
+                    className={`w-11 h-9 text-footnote font-extrabold cursor-pointer ${active?.hole === i ? 'bg-green' : ''}`}
                   >
                     {i + 1}
                   </th>
                 ))}
-                <th className="w-12 h-9 text-[11px] font-extrabold">Tot</th>
+                <th className="w-12 h-9 text-caption font-extrabold">Tot</th>
               </tr>
               {yards && (
                 <tr className="bg-paper/70">
-                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-[10px] font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">
+                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">
                     Yds{course?.yardsTee ? ` ${course.yardsTee}` : ''}
                   </th>
                   {yards.map((y, i) => (
-                    <td key={i} className="h-7 text-center text-[11px] text-ink-dim">{y ?? ''}</td>
+                    <td key={i} className="h-7 text-center text-caption text-ink-dim">{y ?? ''}</td>
                   ))}
-                  <td className="h-7 text-center text-[11px] text-ink-dim">{totalYards?.toLocaleString()}</td>
+                  <td className="h-7 text-center text-caption text-ink-dim">{totalYards?.toLocaleString()}</td>
                 </tr>
               )}
               {pars && (
                 <tr className="bg-paper/70">
-                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-[10px] font-bold uppercase tracking-wider text-ink-faint">Par</th>
+                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-bold uppercase tracking-wider text-ink-faint">Par</th>
                   {pars.map((p, i) => (
-                    <td key={i} className="h-7 text-center text-[12px] font-bold text-ink-dim">{p}</td>
+                    <td key={i} className="h-7 text-center text-footnote font-bold text-ink-dim">{p}</td>
                   ))}
-                  <td className="h-7 text-center text-[12px] font-extrabold text-ink-dim">{coursePar}</td>
+                  <td className="h-7 text-center text-footnote font-extrabold text-ink-dim">{coursePar}</td>
                 </tr>
               )}
               {index && (
                 <tr className="bg-paper/70 border-b border-line">
-                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-[10px] font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">S. index</th>
+                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">S. index</th>
                   {index.map((n, i) => (
-                    <td key={i} className="h-7 text-center text-[11px] text-ink-faint">{n}</td>
+                    <td key={i} className="h-7 text-center text-caption text-ink-faint">{n}</td>
                   ))}
                   <td />
                 </tr>
@@ -614,13 +607,13 @@ export default function HoleEntry() {
                     <th className="sticky left-0 z-20 bg-card px-3 text-left">
                       <div className="flex items-center gap-2">
                         <Avatar player={p} size={22} />
-                        <span className="text-[12.5px] font-bold text-ink whitespace-nowrap">{p.name.split(' ')[0]}</span>
+                        <span className="text-footnote font-bold text-ink whitespace-nowrap">{p.name.split(' ')[0]}</span>
                       </div>
                     </th>
                     {card.map((v, i) => {
                       const isActive = active?.playerId === rp.playerId && active.hole === i
                       const par = pars?.[i]
-                      const mark = v != null && par != null ? MARK[scoreKind(v, par)] : 'text-ink font-bold'
+                      const mark = v != null && par != null ? SCORE_MARK[scoreKind(v, par)] : 'text-ink font-bold'
                       return (
                         <td key={i} className="p-0">
                           <button
@@ -629,21 +622,19 @@ export default function HoleEntry() {
                             className={`${cellBase} ${isActive ? 'ring-2 ring-inset ring-green bg-green-soft/40' : ''}`}
                           >
                             {/* The stroke dots a paper card would carry */}
-                            <span className="h-2 text-[8px] leading-none text-gold" aria-hidden>
-                              {dots?.[i] ? '•'.repeat(Math.min(dots[i], 3)) : ''}
-                            </span>
+                            <StrokeDots count={dots?.[i]} />
                             {v == null ? (
                               <span className="text-ink-faint">{isActive ? '_' : '·'}</span>
                             ) : (
-                              <span className={`inline-flex h-7 w-7 items-center justify-center ${mark}`}>{v}</span>
+                              <span className={`mt-0.5 inline-flex h-7 w-7 items-center justify-center ${mark}`}>{v}</span>
                             )}
                           </button>
                         </td>
                       )
                     })}
                     <td className="text-center">
-                      <p className="text-[14px] font-extrabold text-ink">{total || '–'}</p>
-                      {vs && <p className="text-[10px] font-bold text-ink-faint -mt-0.5">{vs}</p>}
+                      <p className="text-body font-extrabold text-ink">{total || '–'}</p>
+                      {vs && <p className="text-caption font-bold text-ink-faint -mt-0.5">{vs}</p>}
                     </td>
                   </tr>
                   {/* The ghost's card, one hole at a time: a hole shows only
@@ -651,15 +642,17 @@ export default function HoleEntry() {
                   {ghost && race && (
                     <tr className="border-b border-line last:border-0 bg-paper/60">
                       <th className="sticky left-0 z-20 bg-paper px-3 text-left leading-tight">
-                        <span className="block text-[11.5px] font-bold text-ink-dim whitespace-nowrap">👻 Ghost {p.name.split(' ')[0]}</span>
-                        <span className="block text-[9.5px] text-ink-faint whitespace-nowrap tabular-nums">{shortDate(ghost.round.date)}</span>
+                        <span className="flex items-center gap-1 text-caption font-bold text-ink-dim whitespace-nowrap">
+                        <Icon name="ghost" size={13} /> Ghost {p.name.split(' ')[0]}
+                      </span>
+                        <span className="block text-caption text-ink-faint whitespace-nowrap tabular-nums">{shortDate(ghost.round.date)}</span>
                       </th>
                       {card.map((v, i) => {
                         const g = ghost.card[i]
                         const shown = v != null && g != null
                         const tone = !shown ? 'text-ink-faint' : v < g ? 'text-green' : v > g ? 'text-flag' : 'text-ink-dim'
                         return (
-                          <td key={i} className={`h-8 text-center text-[12px] font-bold tabular-nums ${tone}`}>
+                          <td key={i} className={`h-8 text-center text-footnote font-bold tabular-nums ${tone}`}>
                             {shown ? g : '·'}
                           </td>
                         )
@@ -667,9 +660,9 @@ export default function HoleEntry() {
                       <td className="text-center">
                         {race.holes > 0 ? (
                           <>
-                            <p className="text-[12px] font-bold text-ink-dim tabular-nums">{race.ghostSum}</p>
+                            <p className="text-footnote font-bold text-ink-dim tabular-nums">{race.ghostSum}</p>
                             <p
-                              className={`text-[10px] font-extrabold -mt-0.5 tabular-nums ${
+                              className={`text-caption font-extrabold -mt-0.5 tabular-nums ${
                                 race.diff < 0 ? 'text-green' : race.diff > 0 ? 'text-flag' : 'text-ink-faint'
                               }`}
                             >
@@ -677,7 +670,7 @@ export default function HoleEntry() {
                             </p>
                           </>
                         ) : (
-                          <p className="text-[12px] text-ink-faint">–</p>
+                          <p className="text-footnote text-ink-faint">–</p>
                         )}
                       </td>
                     </tr>
@@ -688,23 +681,12 @@ export default function HoleEntry() {
             </tbody>
           </table>
         </div>
-        <div className="flex items-center gap-x-3.5 gap-y-1 flex-wrap border-t border-line px-3 py-2 text-[10.5px] text-ink-faint">
-          {strokeDots && (
-            <span>
-              <span className="text-gold text-[12px] leading-none">•</span> stroke here
-            </span>
-          )}
-          {pars && (
-            <>
-              <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-green-soft" /> birdie</span>
-              <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-md border border-line-strong bg-paper" /> bogey</span>
-              <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-md border border-flag/40 bg-flag-soft" /> double+</span>
-            </>
-          )}
+        <div className="flex items-center gap-x-3.5 gap-y-1 flex-wrap border-t border-line px-3 py-2 text-caption text-ink-faint">
+          <MarkLegend pars={!!pars} strokeLabel={strokeDots ? 'stroke here' : undefined} />
           {!active && (
             <button
               onClick={() => select({ playerId: round.players[0].playerId, hole: firstOpenHole })}
-              className="ml-auto text-[12px] font-bold text-green"
+              className="ml-auto text-footnote font-bold text-green"
             >
               Score hole {firstOpenHole + 1} →
             </button>
@@ -717,7 +699,7 @@ export default function HoleEntry() {
           Done — back to the round
         </PrimaryButton>
       </div>
-      <p className="text-[11.5px] text-ink-faint px-1 mt-2">
+      <p className="text-caption text-ink-faint px-1 mt-2">
         Every tap saves by itself, so pocket the phone whenever — coming back picks up right where the card left off.
       </p>
       <div className="h-4" />
@@ -728,7 +710,7 @@ export default function HoleEntry() {
         <div data-pad className="fixed inset-x-0 bottom-0 z-50 sheet-up">
           <div className="mx-auto max-w-md bg-card border-t border-line shadow-[0_-8px_24px_rgba(24,32,25,0.12)] pb-[env(safe-area-inset-bottom)]">
             <div className="flex items-center justify-between px-4 py-2 bg-paper border-b border-line">
-              <p className="text-[12.5px] text-ink-dim">
+              <p className="text-footnote text-ink-dim">
                 <span className="font-extrabold text-ink">
                   {data.players.find((pl) => pl.id === active.playerId)?.name.split(' ')[0]}
                 </span>{' '}
@@ -738,7 +720,7 @@ export default function HoleEntry() {
                   <span className="text-gold font-bold"> · {'•'.repeat(Math.min(strokeDots![active.playerId][active.hole], 3))} stroke</span>
                 )}
               </p>
-              <button onClick={() => setActive(null)} className="text-[13px] font-bold text-green">
+              <button onClick={() => setActive(null)} className="text-footnote font-bold text-green">
                 Done
               </button>
             </div>
@@ -747,20 +729,20 @@ export default function HoleEntry() {
                 <button
                   key={d}
                   onClick={() => typeDigit(d)}
-                  className={`h-14 border-b border-r border-line text-[24px] font-bold text-ink active:bg-paper ${
+                  className={`h-14 border-b border-r border-line text-large font-bold text-ink active:bg-paper ${
                     pars?.[active.hole] === d ? 'bg-green-soft/40' : 'bg-card'
                   }`}
                 >
                   {d}
                 </button>
               ))}
-              <button onClick={clearActive} aria-label="Clear" className="h-14 border-r border-line bg-paper text-[15px] font-bold text-ink-dim active:bg-line">
+              <button onClick={clearActive} aria-label="Clear" className="h-14 border-r border-line bg-paper text-body font-bold text-ink-dim active:bg-line">
                 ⌫
               </button>
-              <button onClick={() => typeDigit(0)} className="h-14 border-r border-line bg-card text-[24px] font-bold text-ink active:bg-paper">
+              <button onClick={() => typeDigit(0)} className="h-14 border-r border-line bg-card text-large font-bold text-ink active:bg-paper">
                 0
               </button>
-              <button onClick={advance} className="h-14 bg-green text-[15px] font-extrabold text-white active:bg-green-deep">
+              <button onClick={advance} className="h-14 bg-green text-body font-extrabold text-white active:bg-green-deep">
                 Next →
               </button>
             </div>

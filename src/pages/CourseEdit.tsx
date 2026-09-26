@@ -7,6 +7,7 @@ import { defaultTee, scanCard, scanSupported, type ScannedCard } from '../lib/sc
 import { useGoBack } from '../lib/nav'
 import { Card, PrimaryButton, SectionLabel } from '../components/ui'
 import { useConfirm } from '../components/Confirm'
+import { Icon, IconTile } from '../components/icons'
 
 // Par and stroke index for one course, off the physical scorecard.
 //
@@ -165,21 +166,21 @@ export default function CourseEdit() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-2">
+        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-2">
           ← Back
         </button>
         {isNew ? (
           <>
-            <h1 className="text-[24px] font-extrabold tracking-tight text-ink leading-tight">New course</h1>
+            <h1 className="text-large font-extrabold tracking-tight text-ink leading-tight">New course</h1>
             <input
               value={typedName}
               onChange={(e) => setTypedName(e.target.value)}
               placeholder="Course name, as it reads on the sign"
               autoFocus
               aria-label="Course name"
-              className="mt-2.5 w-full rounded-xl border border-line-strong bg-card px-3.5 py-3 text-[16px] font-bold text-ink placeholder:font-normal placeholder:text-ink-faint focus:border-green focus:outline-none"
+              className="mt-2.5 w-full rounded-xl border border-line-strong bg-card px-3.5 py-3 text-headline font-bold text-ink placeholder:font-normal placeholder:text-ink-faint focus:border-green focus:outline-none"
             />
-            <p className={`text-[12.5px] mt-1.5 ${duplicate ? 'text-gold font-semibold' : 'text-ink-dim'}`}>
+            <p className={`text-footnote mt-1.5 ${duplicate ? 'text-gold font-semibold' : 'text-ink-dim'}`}>
               {duplicate
                 ? `You already have ${existing.name}. Save opens its card instead.`
                 : 'Add it before you play. Log the round under this name and it picks up the card, strokes, and slope.'}
@@ -187,8 +188,8 @@ export default function CourseEdit() {
           </>
         ) : (
           <>
-            <h1 className="text-[24px] font-extrabold tracking-tight text-ink leading-tight">{name}</h1>
-            <p className="text-[13px] text-ink-dim mt-1">
+            <h1 className="text-large font-extrabold tracking-tight text-ink leading-tight">{name}</h1>
+            <p className="text-footnote text-ink-dim mt-1">
               Straight off the scorecard. Every round here, past and future, picks it up.
             </p>
           </>
@@ -210,12 +211,12 @@ export default function CourseEdit() {
           onChange={(e) => void onPhoto(e.target.files?.[0])}
         />
         <div className="flex items-center gap-3">
-          <span className="text-[22px]">📷</span>
+          <IconTile name="camera" />
           <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-extrabold text-ink">
+            <p className="text-body font-extrabold text-ink">
               {scanning ? 'Reading the card…' : scanned ? 'Read from your photo' : 'Scan the card'}
             </p>
-            <p className="text-[12px] text-ink-dim mt-0.5">
+            <p className="text-footnote text-ink-dim mt-0.5">
               {scanning
                 ? 'Ten seconds or so. Par, stroke index, tees and yards.'
                 : scanned
@@ -228,28 +229,29 @@ export default function CourseEdit() {
           <button
             onClick={() => photoRef.current?.click()}
             disabled={scanning || !scanSupported()}
-            className="shrink-0 rounded-xl bg-green px-4 py-2.5 text-[13px] font-bold text-white disabled:opacity-40 active:scale-95 transition"
+            className="shrink-0 rounded-xl bg-green px-4 py-2.5 text-footnote font-bold text-white disabled:opacity-40 active:scale-95 transition"
           >
             {scanned ? 'Rescan' : 'Take photo'}
           </button>
         </div>
-        {scanError && <p className="mt-2 text-[12.5px] font-semibold text-flag">{scanError}</p>}
+        {scanError && <p className="mt-2 text-footnote font-semibold text-flag">{scanError}</p>}
         {scanned && (scanWarnings.length > 0 || scanned.notes.length > 0) && (
           <ul className="mt-2.5 space-y-1 border-t border-gold/30 pt-2.5">
             {scanWarnings.map((w) => (
-              <li key={w} className="text-[12px] font-semibold text-flag">
-                ⚠ {w}
+              <li key={w} className="flex items-start gap-1.5 text-footnote font-semibold text-flag">
+                <Icon name="alert" size={15} className="mt-0.5" />
+                {w}
               </li>
             ))}
             {scanned.notes.map((n) => (
-              <li key={n} className="text-[12px] text-ink-dim">
+              <li key={n} className="text-footnote text-ink-dim">
                 · {n}
               </li>
             ))}
           </ul>
         )}
         {scanned && scanned.tees.length > 0 && (
-          <p className="mt-2 text-[11.5px] text-ink-faint">
+          <p className="mt-2 text-caption text-ink-faint">
             Tees read: {scanned.tees.map((t) => `${t.name}${t.rating != null ? ` ${t.rating}/${t.slope ?? '?'}` : ''}`).join(' · ')}
           </p>
         )}
@@ -258,13 +260,13 @@ export default function CourseEdit() {
       {/* Running totals, so a typo in the composition is obvious */}
       <Card className={`mt-2 p-4 ${complete ? 'border-green/30 bg-green-soft/40' : ''}`}>
         <div className="flex items-baseline justify-between">
-          <p className="text-[12px] font-bold uppercase tracking-wider text-ink-faint">
+          <p className="text-footnote font-bold uppercase tracking-wider text-ink-faint">
             {complete ? 'Par' : `${parsIn} of ${HOLE_COUNT} holes`}
           </p>
-          <p className="text-[24px] font-extrabold text-ink tabular-nums">{total || '—'}</p>
+          <p className="text-large font-extrabold text-ink tabular-nums">{total || '—'}</p>
         </div>
         {complete && (
-          <p className="text-[12.5px] text-ink-dim mt-1 tabular-nums">
+          <p className="text-footnote text-ink-dim mt-1 tabular-nums">
             Out {frontPar} · In {backPar} ·{' '}
             {PAR_CHOICES.map((p) => `${pars.filter((v) => v === p).length}×${p}`).join(', ')}
           </p>
@@ -275,7 +277,7 @@ export default function CourseEdit() {
       <Card className="divide-y divide-line">
         {Array.from({ length: HOLE_COUNT }, (_, hole) => (
           <div key={hole} className="flex items-center gap-3 px-4 py-2.5">
-            <span className="w-6 text-[13px] font-bold text-ink-faint tabular-nums">{hole + 1}</span>
+            <span className="w-6 text-footnote font-bold text-ink-faint tabular-nums">{hole + 1}</span>
             <div className="flex-1 flex gap-2">
               {PAR_CHOICES.map((choice) => {
                 const on = pars[hole] === choice
@@ -285,7 +287,7 @@ export default function CourseEdit() {
                     onClick={() => setPar(hole, choice)}
                     aria-label={`Hole ${hole + 1}, par ${choice}`}
                     aria-pressed={on}
-                    className={`flex-1 h-11 rounded-xl border text-[16px] font-extrabold tabular-nums transition active:scale-95 ${
+                    className={`flex-1 h-11 rounded-xl border text-headline font-extrabold tabular-nums transition active:scale-95 ${
                       on ? 'bg-green text-white border-green' : 'bg-card text-ink-dim border-line-strong'
                     }`}
                   >
@@ -295,8 +297,8 @@ export default function CourseEdit() {
               })}
             </div>
             {/* The turn is worth marking; it's how a card is read. */}
-            {hole === 8 && <span className="w-9 text-right text-[11px] font-bold text-ink-faint">OUT</span>}
-            {hole === 17 && <span className="w-9 text-right text-[11px] font-bold text-ink-faint">IN</span>}
+            {hole === 8 && <span className="w-9 text-right text-caption font-bold text-ink-faint">OUT</span>}
+            {hole === 17 && <span className="w-9 text-right text-caption font-bold text-ink-faint">IN</span>}
             {hole !== 8 && hole !== 17 && <span className="w-9" />}
           </div>
         ))}
@@ -306,7 +308,7 @@ export default function CourseEdit() {
       <SectionLabel
         action={
           !showIndex ? (
-            <button onClick={() => setShowIndex(true)} className="text-[12.5px] font-bold text-green">
+            <button onClick={() => setShowIndex(true)} className="text-footnote font-bold text-green">
               + Add it
             </button>
           ) : undefined
@@ -317,7 +319,7 @@ export default function CourseEdit() {
 
       {!showIndex ? (
         <Card className="p-4">
-          <p className="text-[13px] text-ink-dim">
+          <p className="text-footnote text-ink-dim">
             The 1–18 difficulty ranking. Optional — it only changes how strokes are handed out in nassau and skins. Without
             it the bets split your handicap evenly over the nines, which is the usual casual shortcut.
           </p>
@@ -331,7 +333,7 @@ export default function CourseEdit() {
                 const clash = value != null && duplicates.has(value)
                 return (
                   <div key={hole}>
-                    <label className="block text-[10px] font-bold text-ink-faint text-center mb-0.5 tabular-nums">
+                    <label className="block text-caption font-bold text-ink-faint text-center mb-0.5 tabular-nums">
                       {hole + 1}
                     </label>
                     <input
@@ -341,7 +343,7 @@ export default function CourseEdit() {
                       onChange={(e) => setIndexAt(hole, e.target.value)}
                       placeholder="–"
                       aria-label={`Stroke index for hole ${hole + 1}`}
-                      className={`w-full h-10 rounded-lg border bg-card text-center text-[15px] font-bold text-ink tabular-nums focus:outline-none ${
+                      className={`w-full h-10 rounded-lg border bg-card text-center text-body font-bold text-ink tabular-nums focus:outline-none ${
                         clash ? 'border-flag bg-flag-soft' : 'border-line-strong focus:border-green'
                       }`}
                     />
@@ -350,7 +352,7 @@ export default function CourseEdit() {
               })}
             </div>
           </Card>
-          <p className={`text-[12px] px-2 mt-2 font-semibold ${duplicates.size ? 'text-flag' : 'text-ink-faint'}`}>
+          <p className={`text-footnote px-2 mt-2 font-semibold ${duplicates.size ? 'text-flag' : 'text-ink-faint'}`}>
             {duplicates.size > 0
               ? `Each hole gets its own rank — ${[...duplicates].sort((a, b) => a - b).join(' and ')} used more than once.`
               : indexComplete
@@ -366,7 +368,7 @@ export default function CourseEdit() {
         {/* Imported tees: one tap copies a tee's numbers in as the default. */}
         {existing?.tees && existing.tees.some((t) => (t.gender ?? 'M') === 'M') && (
           <div className="mb-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-ink-faint mb-1.5">Default tee</p>
+            <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5">Default tee</p>
             <div className="flex flex-wrap gap-2">
               {existing.tees
                 .filter((t) => (t.gender ?? 'M') === 'M')
@@ -379,8 +381,8 @@ export default function CourseEdit() {
                         setRating(String(t.rating))
                         setSlope(String(t.slope))
                       }}
-                      className={`rounded-full px-3 py-1.5 text-[12.5px] font-bold border transition ${
-                        on ? 'bg-ink text-white border-ink' : 'border-line-strong bg-card text-ink-dim'
+                      className={`rounded-full px-3 py-1.5 text-footnote font-bold border transition ${
+                        on ? 'bg-forest text-on-forest border-forest' : 'border-line-strong bg-card text-ink-dim'
                       }`}
                     >
                       {t.name}
@@ -393,7 +395,7 @@ export default function CourseEdit() {
         )}
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-ink-faint mb-1">
+            <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1">
               Course rating
             </label>
             <input
@@ -403,13 +405,13 @@ export default function CourseEdit() {
               onChange={(e) => setRating(e.target.value)}
               placeholder="70.6"
               aria-label="Course rating"
-              className={`w-full h-11 rounded-lg border bg-card text-center text-[16px] font-bold text-ink tabular-nums focus:outline-none ${
+              className={`w-full h-11 rounded-lg border bg-card text-center text-headline font-bold text-ink tabular-nums focus:outline-none ${
                 ratingBad ? 'border-flag bg-flag-soft' : 'border-line-strong focus:border-green'
               }`}
             />
           </div>
           <div className="flex-1">
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-ink-faint mb-1">Slope</label>
+            <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1">Slope</label>
             <input
               type="text"
               inputMode="numeric"
@@ -417,13 +419,13 @@ export default function CourseEdit() {
               onChange={(e) => setSlope(e.target.value)}
               placeholder="133"
               aria-label="Slope"
-              className={`w-full h-11 rounded-lg border bg-card text-center text-[16px] font-bold text-ink tabular-nums focus:outline-none ${
+              className={`w-full h-11 rounded-lg border bg-card text-center text-headline font-bold text-ink tabular-nums focus:outline-none ${
                 slopeBad ? 'border-flag bg-flag-soft' : 'border-line-strong focus:border-green'
               }`}
             />
           </div>
         </div>
-        <p className={`text-[12px] mt-2 ${ratingBad || slopeBad ? 'text-flag font-semibold' : 'text-ink-dim'}`}>
+        <p className={`text-footnote mt-2 ${ratingBad || slopeBad ? 'text-flag font-semibold' : 'text-ink-dim'}`}>
           {ratingBad || slopeBad
             ? 'That doesn’t look right — rating reads like 70.6, slope is a whole number from 55 to 155.'
             : 'From the tees you play, printed on the card next to the tee name. With both in, strokes come off GHIN course handicaps — the number the GHIN app shows for this course — instead of raw indexes.'}
@@ -446,12 +448,12 @@ export default function CourseEdit() {
                 ? `Save ${parsIn} of ${HOLE_COUNT}`
                 : 'Add course'}
         </PrimaryButton>
-        <button onClick={() => goBack()} className="px-5 text-[13px] font-bold text-ink-faint">
+        <button onClick={() => goBack()} className="px-5 text-footnote font-bold text-ink-faint">
           Cancel
         </button>
       </div>
       {!complete && parsIn > 0 && (
-        <p className="text-[11.5px] text-ink-faint px-2 mt-2">
+        <p className="text-caption text-ink-faint px-2 mt-2">
           Scores against par only appear once all eighteen are in — "+4" would be a lie with holes missing.
         </p>
       )}
@@ -471,7 +473,7 @@ export default function CourseEdit() {
                 goBack()
               }
             }}
-            className="text-[12.5px] font-bold text-flag/80"
+            className="text-footnote font-bold text-flag/80"
           >
             Clear this scorecard
           </button>

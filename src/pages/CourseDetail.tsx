@@ -10,6 +10,7 @@ import { useConfirm } from '../components/Confirm'
 import CourseRatingEditor from '../components/CourseRatingEditor'
 import { StarRating } from '../components/Stars'
 import { Avatar, Card, Pill, SectionLabel } from '../components/ui'
+import { IconTile } from '../components/icons'
 
 // One course: what the group thinks of it, what you think of it, and
 // the reference data (scorecard, rounds played) underneath.
@@ -49,11 +50,11 @@ export default function CourseDetail() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-2">
+        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-2">
           ← Back
         </button>
-        <h1 className="text-[24px] font-extrabold tracking-tight text-ink leading-tight">{summary.name}</h1>
-        <p className="text-[13px] text-ink-dim mt-1 tabular-nums">
+        <h1 className="text-large font-extrabold tracking-tight text-ink leading-tight">{summary.name}</h1>
+        <p className="text-footnote text-ink-dim mt-1 tabular-nums">
           {course?.town && `${course.town} · `}
           {summary.rounds > 0 ? `${summary.rounds} round${summary.rounds === 1 ? '' : 's'}` : 'No rounds logged'}
           {summary.lastPlayed && ` · last ${shortDate(summary.lastPlayed)}`}
@@ -67,11 +68,11 @@ export default function CourseDetail() {
         {summary.avg != null ? (
           <div className="flex items-center gap-4">
             <div>
-              <p className="text-[34px] font-extrabold text-ink tabular-nums leading-none">{fmtStars(summary.avg)}</p>
+              <p className="text-hero font-extrabold text-ink tabular-nums leading-none">{fmtStars(summary.avg)}</p>
               <StarRating value={summary.avg} size={14} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] text-ink-dim">
+              <p className="text-footnote text-ink-dim">
                 from {summary.ratings.length} of {members.length} golfers
               </p>
               <div className="flex flex-wrap gap-1.5 mt-1.5">
@@ -85,7 +86,7 @@ export default function CourseDetail() {
             </div>
           </div>
         ) : (
-          <p className="text-[13.5px] text-ink-dim">Nobody has rated it yet. Be the first — it takes one tap.</p>
+          <p className="text-footnote text-ink-dim">Nobody has rated it yet. Be the first — it takes one tap.</p>
         )}
       </Card>
 
@@ -93,7 +94,7 @@ export default function CourseDetail() {
       <SectionLabel
         action={
           summary.mine && !editing ? (
-            <button onClick={() => setEditing(true)} className="text-[12.5px] font-bold text-green">
+            <button onClick={() => setEditing(true)} className="text-footnote font-bold text-green">
               Edit
             </button>
           ) : undefined
@@ -107,14 +108,14 @@ export default function CourseDetail() {
         <Card className="p-4">
           <div className="flex items-center gap-2">
             <StarRating value={summary.mine.overall} size={16} />
-            <span className="text-[14px] font-extrabold text-ink tabular-nums">{summary.mine.overall}</span>
-            <span className="text-[11.5px] text-ink-faint ml-auto">{shortDate(summary.mine.date)}</span>
+            <span className="text-body font-extrabold text-ink tabular-nums">{summary.mine.overall}</span>
+            <span className="text-caption text-ink-faint ml-auto">{shortDate(summary.mine.date)}</span>
           </div>
-          {summary.mine.note && <p className="text-[13px] text-ink-dim mt-2">{summary.mine.note}</p>}
+          {summary.mine.note && <p className="text-footnote text-ink-dim mt-2">{summary.mine.note}</p>}
           {summary.mine.aspects && Object.keys(summary.mine.aspects).length > 0 && (
             <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
               {RATING_ASPECTS.filter((a) => summary.mine!.aspects?.[a.key] != null).map((a) => (
-                <div key={a.key} className="flex items-center justify-between text-[12px]">
+                <div key={a.key} className="flex items-center justify-between text-footnote">
                   <span className="text-ink-dim">{a.label}</span>
                   <span className="font-bold text-ink tabular-nums">{summary.mine!.aspects![a.key]}★</span>
                 </div>
@@ -131,19 +132,19 @@ export default function CourseDetail() {
               })
               if (ok && summary.mine) deleteCourseRating(summary.mine.id)
             }}
-            className="mt-3 text-[11.5px] font-bold text-flag/70"
+            className="mt-3 text-caption font-bold text-flag/70"
           >
             Remove rating
           </button>
         </Card>
       ) : (
         <Card onClick={() => setEditing(true)} className="p-4 border-green/30 bg-green-soft/40 flex items-center gap-3">
-          <span className="text-[20px]">⭐</span>
+          <IconTile name="star" tone="gold" />
           <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-extrabold text-ink">Rate {summary.name}</p>
-            <p className="text-[12px] text-ink-dim mt-0.5">One overall out of five. The details are optional.</p>
+            <p className="text-body font-extrabold text-ink">Rate {summary.name}</p>
+            <p className="text-footnote text-ink-dim mt-0.5">One overall out of five. The details are optional.</p>
           </div>
-          <span className="text-[13px] font-bold text-green shrink-0">Rate →</span>
+          <span className="text-footnote font-bold text-green shrink-0">Rate →</span>
         </Card>
       )}
 
@@ -157,11 +158,11 @@ export default function CourseDetail() {
               return (
                 <div key={a.key} className="flex items-center gap-3 px-4 py-2.5">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13.5px] font-bold text-ink">{a.label}</p>
-                    <p className="text-[11px] text-ink-faint">{a.hint}</p>
+                    <p className="text-footnote font-bold text-ink">{a.label}</p>
+                    <p className="text-caption text-ink-faint">{a.hint}</p>
                   </div>
                   <StarRating value={v} size={12} />
-                  <span className="w-8 text-right text-[13.5px] font-extrabold text-ink tabular-nums">{fmtStars(v)}</span>
+                  <span className="w-8 text-right text-footnote font-extrabold text-ink tabular-nums">{fmtStars(v)}</span>
                 </div>
               )
             })}
@@ -182,13 +183,13 @@ export default function CourseDetail() {
                   <Avatar player={p} size={28} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[13.5px] font-bold text-ink">{p.name}</span>
+                      <span className="text-footnote font-bold text-ink">{p.name}</span>
                       <StarRating value={r.overall} size={11} />
-                      <span className="text-[11px] text-ink-faint ml-auto tabular-nums">{shortDate(r.date)}</span>
+                      <span className="text-caption text-ink-faint ml-auto tabular-nums">{shortDate(r.date)}</span>
                     </div>
-                    {r.note && <p className="text-[12.5px] text-ink-dim mt-0.5">{r.note}</p>}
+                    {r.note && <p className="text-footnote text-ink-dim mt-0.5">{r.note}</p>}
                     {r.aspects && Object.keys(r.aspects).length > 0 && (
-                      <p className="text-[11px] text-ink-faint mt-1 tabular-nums">
+                      <p className="text-caption text-ink-faint mt-1 tabular-nums">
                         {RATING_ASPECTS.filter((a) => r.aspects?.[a.key] != null)
                           .map((a) => `${a.label} ${r.aspects![a.key]}★`)
                           .join(' · ')}
@@ -209,10 +210,10 @@ export default function CourseDetail() {
         className="p-4 flex items-center justify-between gap-3"
       >
         <div className="min-w-0">
-          <p className="text-[14px] font-bold text-ink">
+          <p className="text-body font-bold text-ink">
             {par != null ? `Par ${par}` : parsIn > 0 ? `${parsIn} of ${HOLE_COUNT} holes` : 'No par yet'}
           </p>
-          <p className="text-[12px] text-ink-dim mt-0.5">
+          <p className="text-footnote text-ink-dim mt-0.5">
             {par == null
               ? 'Eighteen taps off the card, and every round here shows scores against par.'
               : [
@@ -221,7 +222,7 @@ export default function CourseDetail() {
                 ].join(' · ')}
           </p>
         </div>
-        {par == null ? <Pill tone="gold">Add par</Pill> : <span className="text-[13px] font-bold text-green shrink-0">Edit →</span>}
+        {par == null ? <Pill tone="gold">Add par</Pill> : <span className="text-footnote font-bold text-green shrink-0">Edit →</span>}
       </Card>
 
       {/* Every tee box, so "which tees are we playing" has an answer on
@@ -231,7 +232,7 @@ export default function CourseDetail() {
         <>
           <SectionLabel>Tees</SectionLabel>
           <Card>
-            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 px-4 py-2 border-b border-line text-[9.5px] font-bold uppercase tracking-wider text-ink-faint">
+            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 px-4 py-2 border-b border-line text-caption font-bold uppercase tracking-wider text-ink-faint">
               <span>Tee</span>
               <span className="text-right">Yards</span>
               <span className="text-right">Rating / slope</span>
@@ -243,11 +244,11 @@ export default function CourseDetail() {
                 return (
                   <div
                     key={t.name}
-                    className="grid grid-cols-[1fr_auto_auto] gap-x-4 items-center px-4 py-2.5 border-b border-line last:border-0 text-[13px]"
+                    className="grid grid-cols-[1fr_auto_auto] gap-x-4 items-center px-4 py-2.5 border-b border-line last:border-0 text-footnote"
                   >
                     <span className={`truncate ${isDefault ? 'font-extrabold text-ink' : 'font-bold text-ink-dim'}`}>
                       {t.name}
-                      {isDefault && <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wider text-green">default</span>}
+                      {isDefault && <span className="ml-1.5 text-caption font-bold uppercase tracking-wider text-green">default</span>}
                     </span>
                     <span className="text-right tabular-nums text-ink-dim">{t.yards ?? '—'}</span>
                     <span className="text-right tabular-nums font-bold text-ink">
@@ -257,7 +258,7 @@ export default function CourseDetail() {
                 )
               })}
           </Card>
-          <p className="text-[11px] text-ink-faint px-2 mt-2">
+          <p className="text-caption text-ink-faint px-2 mt-2">
             A round that names its tee plays off that tee’s numbers. Rounds that don’t use the default.
           </p>
         </>
@@ -277,19 +278,19 @@ export default function CourseDetail() {
                   className="w-full text-left flex items-center gap-3 px-4 py-3 active:bg-paper"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13.5px] font-bold text-ink tabular-nums">{shortDate(r.date)}</p>
-                    <p className="text-[11.5px] text-ink-faint">
+                    <p className="text-footnote font-bold text-ink tabular-nums">{shortDate(r.date)}</p>
+                    <p className="text-caption text-ink-faint">
                       {r.players.length} golfer{r.players.length === 1 ? '' : 's'}
                       {winner && standings.length > 1 && ` · ${winner.name} took it`}
                     </p>
                   </div>
-                  <span className="text-[12px] font-bold text-green shrink-0">Open →</span>
+                  <span className="text-footnote font-bold text-green shrink-0">Open →</span>
                 </button>
               )
             })}
           </Card>
           {rounds.length > 6 && (
-            <p className="text-[11.5px] text-ink-faint px-2 mt-2">Showing the latest six of {rounds.length}.</p>
+            <p className="text-caption text-ink-faint px-2 mt-2">Showing the latest six of {rounds.length}.</p>
           )}
         </>
       )}

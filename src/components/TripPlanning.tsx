@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../data/store'
 import type { Trip, TripOption } from '../types'
-import { Avatar, Card, Pill, PrimaryButton, SectionLabel } from './ui'
+import { AvatarStack, Card, Pill, PrimaryButton, SectionLabel } from './ui'
 import { useConfirm } from './Confirm'
 
 export default function TripPlanning({ trip }: { trip: Trip }) {
@@ -37,7 +37,7 @@ export default function TripPlanning({ trip }: { trip: Trip }) {
   return (
     <>
       <Card className="p-4 bg-green-soft/60 border-green/20">
-        <p className="text-[13.5px] text-ink">
+        <p className="text-footnote text-ink">
           <span className="font-extrabold">Where are we going?</span> Add contenders, stack up the pros and cons, and vote.
           {votesIn > 0 && ` ${votesIn} of ${voterCount} votes are in.`}
         </p>
@@ -46,7 +46,7 @@ export default function TripPlanning({ trip }: { trip: Trip }) {
       <SectionLabel>Destinations</SectionLabel>
       <div className="space-y-3">
         {trip.options.length === 0 && (
-          <Card className="p-5 text-center text-[13.5px] text-ink-dim">Nothing on the table yet. Add the first contender below.</Card>
+          <Card className="p-5 text-center text-footnote text-ink-dim">Nothing on the table yet. Add the first contender below.</Card>
         )}
         {[...trip.options]
           .sort((a, b) => b.votes.length - a.votes.length)
@@ -61,7 +61,7 @@ export default function TripPlanning({ trip }: { trip: Trip }) {
           onChange={(e) => setNewDest(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && addOption()}
           placeholder="Add a destination…"
-          className="flex-1 rounded-xl border border-line-strong bg-card px-4 py-3 text-[15px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+          className="flex-1 rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
         />
         <PrimaryButton onClick={addOption} disabled={!newDest.trim()} className="px-4">
           Add
@@ -92,19 +92,19 @@ function OptionCard({ trip, option, onVote, onLockIn }: { trip: Trip; option: Tr
   return (
     <Card className={`p-4 ${leading ? 'border-green/40' : ''}`}>
       <div className="flex items-center justify-between gap-3">
-        <p className="font-extrabold text-[16px] text-ink">{option.title}</p>
+        <p className="font-extrabold text-headline text-ink">{option.title}</p>
         {leading && <Pill tone="green">Leading</Pill>}
       </div>
 
       {(option.pros.length > 0 || option.cons.length > 0) && (
         <div className="mt-2.5 space-y-1">
           {option.pros.map((p, i) => (
-            <p key={`p${i}`} className="text-[13px] text-ink-dim flex gap-2">
+            <p key={`p${i}`} className="text-footnote text-ink-dim flex gap-2">
               <span className="text-green font-extrabold shrink-0">+</span> {p}
             </p>
           ))}
           {option.cons.map((c, i) => (
-            <p key={`c${i}`} className="text-[13px] text-ink-dim flex gap-2">
+            <p key={`c${i}`} className="text-footnote text-ink-dim flex gap-2">
               <span className="text-flag font-extrabold shrink-0">−</span> {c}
             </p>
           ))}
@@ -118,22 +118,22 @@ function OptionCard({ trip, option, onVote, onLockIn }: { trip: Trip; option: Tr
             onChange={(e) => setDraft(e.target.value)}
             placeholder="e.g. 36 holes a day, cheap flights…"
             autoFocus
-            className="w-full rounded-xl border border-line-strong bg-card px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+            className="w-full rounded-xl border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
           />
           <div className="flex gap-2 mt-2">
-            <button onClick={() => addPoint('pros')} disabled={!draft.trim()} className="flex-1 rounded-lg bg-green-soft text-green font-bold text-[13px] py-2 disabled:opacity-40">
+            <button onClick={() => addPoint('pros')} disabled={!draft.trim()} className="flex-1 rounded-lg bg-green-soft text-green font-bold text-footnote py-2 disabled:opacity-40">
               + Add as pro
             </button>
-            <button onClick={() => addPoint('cons')} disabled={!draft.trim()} className="flex-1 rounded-lg bg-flag-soft text-flag font-bold text-[13px] py-2 disabled:opacity-40">
+            <button onClick={() => addPoint('cons')} disabled={!draft.trim()} className="flex-1 rounded-lg bg-flag-soft text-flag font-bold text-footnote py-2 disabled:opacity-40">
               − Add as con
             </button>
-            <button onClick={() => { setShowAdd(false); setDraft('') }} className="rounded-lg px-3 text-[13px] font-bold text-ink-faint">
+            <button onClick={() => { setShowAdd(false); setDraft('') }} className="rounded-lg px-3 text-footnote font-bold text-ink-faint">
               ✕
             </button>
           </div>
         </div>
       ) : (
-        <button onClick={() => setShowAdd(true)} className="mt-2.5 text-[12.5px] font-bold text-ink-faint">
+        <button onClick={() => setShowAdd(true)} className="mt-2.5 text-footnote font-bold text-ink-faint">
           + Add pro / con
         </button>
       )}
@@ -141,34 +141,24 @@ function OptionCard({ trip, option, onVote, onLockIn }: { trip: Trip; option: Tr
       <div className="mt-3.5 pt-3 border-t border-line flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           {option.votes.length === 0 ? (
-            <span className="text-[12px] text-ink-faint">No votes yet</span>
+            <span className="text-footnote text-ink-faint">No votes yet</span>
           ) : (
             <>
-              <div className="flex -space-x-1.5">
-                {option.votes.map((pid) => {
-                  const p = data.players.find((pl) => pl.id === pid)
-                  if (!p) return null
-                  return (
-                    <span key={pid} className="rounded-full ring-2 ring-card">
-                      <Avatar player={p} size={22} />
-                    </span>
-                  )
-                })}
-              </div>
-              <span className="text-[12px] text-ink-dim font-bold tabular-nums">{option.votes.length}</span>
+              <AvatarStack players={option.votes.map((pid) => data.players.find((pl) => pl.id === pid))} size={22} max={4} />
+              <span className="text-footnote text-ink-dim font-bold tabular-nums">{option.votes.length}</span>
             </>
           )}
         </div>
         <div className="flex gap-2 shrink-0">
           <button
             onClick={onVote}
-            className={`rounded-lg px-3.5 py-2 text-[13px] font-bold transition ${myPick ? 'bg-green text-white' : 'bg-green-soft text-green active:scale-95'}`}
+            className={`rounded-lg px-3.5 py-2 text-footnote font-bold transition ${myPick ? 'bg-green text-white' : 'bg-green-soft text-green active:scale-95'}`}
           >
             {myPick ? 'Your pick ✓' : 'Vote'}
           </button>
           {/* Only the organizer calls it, so nobody books the trip by mistake. */}
           {trip.createdById === me && (
-            <button onClick={onLockIn} className="rounded-lg border border-line-strong px-3.5 py-2 text-[13px] font-bold text-ink-dim">
+            <button onClick={onLockIn} className="rounded-lg border border-line-strong px-3.5 py-2 text-footnote font-bold text-ink-dim">
               Lock in
             </button>
           )}

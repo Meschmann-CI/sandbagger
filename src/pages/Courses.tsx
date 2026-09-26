@@ -48,8 +48,8 @@ export default function Courses() {
     <div className="rise">
       <header className="pt-4 pb-2 px-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[26px] font-extrabold tracking-tight text-ink">Courses</h1>
-          <p className="text-[13px] text-ink-dim">
+          <h1 className="text-large font-extrabold tracking-tight text-ink">Courses</h1>
+          <p className="text-footnote text-ink-dim">
             {rows.length === 0
               ? 'Add one ahead of playing it, or log a round and it turns up here.'
               : `${played.length} played · ${rated} rated · ${rows.length - played.length} more on the books${needCard ? ` · ${needCard} without a scorecard` : ''}`}
@@ -59,7 +59,7 @@ export default function Courses() {
             before the first tee, and the round finds them by name. */}
         <button
           onClick={() => navigate('/courses/new')}
-          className="rounded-xl bg-green px-4 py-2.5 text-[13.5px] font-bold text-white active:scale-95 transition shrink-0 mt-1"
+          className="rounded-xl bg-green px-4 py-2.5 text-footnote font-bold text-white active:scale-95 transition shrink-0 mt-1"
         >
           + Add course
         </button>
@@ -74,7 +74,7 @@ export default function Courses() {
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`flex-1 py-2.5 text-[13px] font-bold capitalize ${view === v ? 'bg-ink text-white' : 'bg-card text-ink-dim'}`}
+                className={`flex-1 py-2.5 text-footnote font-bold capitalize ${view === v ? 'bg-forest text-on-forest' : 'bg-card text-ink-dim'}`}
               >
                 {v}
               </button>
@@ -88,7 +88,7 @@ export default function Courses() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by course or town"
                 aria-label="Search courses"
-                className="mt-3 w-full rounded-xl border border-line-strong bg-card px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+                className="mt-3 w-full rounded-xl border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
               />
 
               {playedShown.length > 0 && (
@@ -102,8 +102,8 @@ export default function Courses() {
                         className="w-full text-left flex items-center gap-3 px-4 py-3.5 active:bg-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="text-[14.5px] font-bold text-ink truncate">{row.name}</p>
-                          <p className="text-[11.5px] text-ink-faint tabular-nums truncate">
+                          <p className="text-body font-bold text-ink truncate">{row.name}</p>
+                          <p className="text-caption text-ink-faint tabular-nums truncate">
                             {row.rounds} round{row.rounds === 1 ? '' : 's'}
                             {row.ratings.length > 0 &&
                               ` · ${row.ratings.length} rating${row.ratings.length === 1 ? '' : 's'}`}
@@ -115,12 +115,12 @@ export default function Courses() {
                           {row.avg != null ? (
                             <div className="flex items-center gap-1.5 justify-end">
                               <StarRating value={row.avg} size={12} />
-                              <span className="text-[14px] font-extrabold text-ink tabular-nums">{fmtStars(row.avg)}</span>
+                              <span className="text-body font-extrabold text-ink tabular-nums">{fmtStars(row.avg)}</span>
                             </div>
                           ) : (
-                            <span className="text-[12px] text-ink-faint">no ratings</span>
+                            <span className="text-footnote text-ink-faint">no ratings</span>
                           )}
-                          <p className="text-[11.5px] mt-0.5">
+                          <p className="text-caption mt-0.5">
                             {row.mine ? (
                               <span className="text-ink-faint tabular-nums">You: {row.mine.overall}★</span>
                             ) : (
@@ -149,15 +149,15 @@ export default function Courses() {
                           className="w-full text-left flex items-center gap-3 px-4 py-2.5 active:bg-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green"
                         >
                           <div className="flex-1 min-w-0">
-                            <p className="text-[13.5px] font-bold text-ink truncate">{row.name}</p>
-                            <p className="text-[11px] text-ink-faint truncate">
+                            <p className="text-footnote font-bold text-ink truncate">{row.name}</p>
+                            <p className="text-caption text-ink-faint truncate">
                               {row.town ?? 'no town'}
                               {hasPars(course) ? ' · card in' : ' · no par yet'}
                               {course?.rating != null && course?.slope != null && ` · ${course.rating}/${course.slope}`}
                             </p>
                           </div>
                           {row.ratings.length > 0 && row.avg != null && (
-                            <span className="text-[12px] font-bold text-ink-dim tabular-nums shrink-0">{fmtStars(row.avg)}★</span>
+                            <span className="text-footnote font-bold text-ink-dim tabular-nums shrink-0">{fmtStars(row.avg)}★</span>
                           )}
                         </button>
                       )
@@ -167,12 +167,12 @@ export default function Courses() {
               )}
 
               {playedShown.length === 0 && unplayedShown.length === 0 && (
-                <Card className="mt-3 p-4 text-[13px] text-ink-dim">
+                <Card className="mt-3 p-4 text-footnote text-ink-dim">
                   Nothing matches “{query.trim()}”. Add it with the button above.
                 </Card>
               )}
 
-              <p className="text-[11.5px] text-ink-faint px-2 mt-2">
+              <p className="text-caption text-ink-faint px-2 mt-2">
                 Tap a course for everyone’s take, the tees, and its scorecard.
               </p>
             </>
@@ -184,7 +184,7 @@ export default function Courses() {
                 The group’s order
               </SectionLabel>
               {rows.every((r) => r.groupRank == null) ? (
-                <Card className="p-4 text-[13px] text-ink-dim">
+                <Card className="p-4 text-footnote text-ink-dim">
                   Nobody has ranked a course yet. Rate one and you’ll be asked where it lands on your list.
                 </Card>
               ) : (
@@ -198,21 +198,21 @@ export default function Courses() {
                         className="w-full text-left flex items-center gap-3 px-4 py-3 active:bg-paper"
                       >
                         <span
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-extrabold tabular-nums shrink-0 ${
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-footnote font-extrabold tabular-nums shrink-0 ${
                             row.groupRank === 1 ? 'bg-gold-soft text-gold border border-gold/40' : 'bg-paper text-ink-dim border border-line'
                           }`}
                         >
                           {row.groupRank}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[14px] font-bold text-ink truncate">{row.name}</p>
-                          <p className="text-[11.5px] text-ink-faint">
+                          <p className="text-body font-bold text-ink truncate">{row.name}</p>
+                          <p className="text-caption text-ink-faint">
                             ranked by {row.rankedBy} of {members.length}
                             {row.myRank != null && ` · your ${ordinal(row.myRank)}`}
                           </p>
                         </div>
                         {row.avg != null && (
-                          <span className="text-[12.5px] font-bold text-ink-dim tabular-nums shrink-0">{fmtStars(row.avg)}★</span>
+                          <span className="text-footnote font-bold text-ink-dim tabular-nums shrink-0">{fmtStars(row.avg)}★</span>
                         )}
                       </button>
                     ))}
@@ -221,7 +221,7 @@ export default function Courses() {
 
               <SectionLabel>Your order</SectionLabel>
               {mine.length === 0 ? (
-                <Card className="p-4 text-[13px] text-ink-dim">
+                <Card className="p-4 text-footnote text-ink-dim">
                   Nothing on your list yet. Rate a course, or add one from below and sort it with the arrows.
                 </Card>
               ) : (
@@ -231,20 +231,20 @@ export default function Courses() {
                     if (!row) return null
                     return (
                       <div key={slug} className="flex items-center gap-2.5 px-3 py-2.5">
-                        <span className="w-6 text-right text-[13px] font-extrabold tabular-nums text-ink-faint">{i + 1}</span>
+                        <span className="w-6 text-right text-footnote font-extrabold tabular-nums text-ink-faint">{i + 1}</span>
                         <button
                           onClick={() => navigate(`/courses/${encodeURIComponent(slug)}`)}
                           className="flex-1 min-w-0 text-left"
                         >
-                          <p className="text-[14px] font-bold text-ink truncate">{row.name}</p>
-                          {row.mine && <p className="text-[11px] text-ink-faint tabular-nums">you gave it {row.mine.overall}★</p>}
+                          <p className="text-body font-bold text-ink truncate">{row.name}</p>
+                          {row.mine && <p className="text-caption text-ink-faint tabular-nums">you gave it {row.mine.overall}★</p>}
                         </button>
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             onClick={() => setMyRanking(moveBy(mine, slug, -1))}
                             disabled={i === 0}
                             aria-label={`Move ${row.name} up`}
-                            className="h-9 w-9 rounded-lg border border-line-strong bg-card text-[15px] font-bold text-ink disabled:opacity-25 active:bg-paper"
+                            className="h-9 w-9 rounded-lg border border-line-strong bg-card text-body font-bold text-ink disabled:opacity-25 active:bg-paper"
                           >
                             ↑
                           </button>
@@ -252,14 +252,14 @@ export default function Courses() {
                             onClick={() => setMyRanking(moveBy(mine, slug, 1))}
                             disabled={i === mine.length - 1}
                             aria-label={`Move ${row.name} down`}
-                            className="h-9 w-9 rounded-lg border border-line-strong bg-card text-[15px] font-bold text-ink disabled:opacity-25 active:bg-paper"
+                            className="h-9 w-9 rounded-lg border border-line-strong bg-card text-body font-bold text-ink disabled:opacity-25 active:bg-paper"
                           >
                             ↓
                           </button>
                           <button
                             onClick={() => setMyRanking(mine.filter((s) => s !== slug))}
                             aria-label={`Take ${row.name} off your list`}
-                            className="h-9 w-9 rounded-lg text-[15px] font-bold text-ink-faint active:bg-paper"
+                            className="h-9 w-9 rounded-lg text-body font-bold text-ink-faint active:bg-paper"
                           >
                             ×
                           </button>
@@ -277,22 +277,22 @@ export default function Courses() {
                     {unranked.map((row) => (
                       <div key={row.slug} className="flex items-center gap-3 px-4 py-3">
                         <div className="flex-1 min-w-0">
-                          <p className="text-[14px] font-bold text-ink truncate">{row.name}</p>
-                          <p className="text-[11.5px] text-ink-faint">
+                          <p className="text-body font-bold text-ink truncate">{row.name}</p>
+                          <p className="text-caption text-ink-faint">
                             {row.rounds} round{row.rounds === 1 ? '' : 's'}
                             {!row.mine && ' · not rated'}
                           </p>
                         </div>
                         <button
                           onClick={() => setMyRanking([...mine, row.slug])}
-                          className="text-[12.5px] font-bold text-green shrink-0"
+                          className="text-footnote font-bold text-green shrink-0"
                         >
                           + Add to the bottom
                         </button>
                       </div>
                     ))}
                   </Card>
-                  <p className="text-[11.5px] text-ink-faint px-2 mt-2">Then use the arrows to move it up to where it belongs.</p>
+                  <p className="text-caption text-ink-faint px-2 mt-2">Then use the arrows to move it up to where it belongs.</p>
                 </>
               )}
             </>
@@ -301,7 +301,7 @@ export default function Courses() {
           {needCard > 0 && view === 'ratings' && (
             <div className="mt-4 px-1 flex items-center gap-2">
               <Pill tone="gold">{needCard}</Pill>
-              <p className="text-[12px] text-ink-dim">
+              <p className="text-footnote text-ink-dim">
                 course{needCard === 1 ? '' : 's'} without par yet. Open one and add its scorecard.
               </p>
             </div>

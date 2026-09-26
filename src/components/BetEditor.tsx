@@ -76,9 +76,9 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
         ? outcome.computable
         : true)
 
-  const label = 'block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5'
+  const label = 'block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5'
   const field =
-    'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
+    'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
 
   const nameFor = (id: string) => data.players.find((p) => p.id === id)?.name ?? 'Someone'
 
@@ -90,7 +90,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
           <button
             key={t.key}
             onClick={() => { setType(t.key); setManualMode(false) }}
-            className={`rounded-lg py-2 text-[12.5px] font-bold border transition ${
+            className={`rounded-lg py-2 text-footnote font-bold border transition ${
               type === t.key ? 'bg-green text-white border-green' : 'border-line-strong text-ink-dim'
             }`}
           >
@@ -99,7 +99,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
         ))}
       </div>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[12px] text-ink-dim">{TYPES.find((t) => t.key === type)!.blurb}</p>
+        <p className="text-footnote text-ink-dim">{TYPES.find((t) => t.key === type)!.blurb}</p>
         <HelpTip {...betRules(type, { net: type === 'custom' ? undefined : useNet, winnerTakeAll })} />
       </div>
 
@@ -124,7 +124,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
         </div>
       </div>
       {type !== 'custom' && (
-        <p className="text-[11.5px] text-ink-faint">
+        <p className="text-caption text-ink-faint">
           {type === 'skins'
             ? winnerTakeAll
               ? `${money(stakeNum)} in from each player. Most skins at the end takes the pot; a tie for most splits it.`
@@ -147,8 +147,8 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
               <button
                 key={o.l}
                 onClick={() => setWinnerTakeAll(o.v)}
-                className={`flex-1 rounded-lg py-2 text-[13px] font-bold border transition ${
-                  winnerTakeAll === o.v ? 'bg-ink text-white border-ink' : 'border-line-strong text-ink-dim'
+                className={`flex-1 rounded-lg py-2 text-footnote font-bold border transition ${
+                  winnerTakeAll === o.v ? 'bg-forest text-on-forest border-forest' : 'border-line-strong text-ink-dim'
                 }`}
               >
                 {o.l}
@@ -171,13 +171,13 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
               <button
                 key={p.id}
                 onClick={() => setInIds((ids) => (on ? ids.filter((x) => x !== p.id) : [...ids, p.id]))}
-                className={`flex items-center gap-1.5 rounded-full border pl-1 pr-3 py-1 text-[13px] font-bold transition ${
+                className={`flex items-center gap-1.5 rounded-full border pl-1 pr-3 py-1 text-footnote font-bold transition ${
                   on ? 'bg-green-soft text-green border-green/40' : 'border-line-strong text-ink-faint opacity-60'
                 }`}
               >
                 <Avatar player={p} size={22} />
                 {p.name}
-                {noScore && <span className="text-[10px] font-semibold">(no score)</span>}
+                {noScore && <span className="text-caption font-semibold">(no score)</span>}
               </button>
             )
           })}
@@ -196,15 +196,15 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
               <button
                 key={o.l}
                 onClick={() => setUseNet(o.v)}
-                className={`flex-1 rounded-lg py-2 text-[13px] font-bold border transition ${
-                  useNet === o.v ? 'bg-ink text-white border-ink' : 'border-line-strong text-ink-dim'
+                className={`flex-1 rounded-lg py-2 text-footnote font-bold border transition ${
+                  useNet === o.v ? 'bg-forest text-on-forest border-forest' : 'border-line-strong text-ink-dim'
                 }`}
               >
                 {o.l}
               </button>
             ))}
           </div>
-          <p className="text-[11px] text-ink-faint mt-1.5">
+          <p className="text-caption text-ink-faint mt-1.5">
             {type === 'match'
               ? hasStrokeIndex(course)
                 ? 'Net gives the difference in handicaps as strokes on the hardest holes, off this course’s stroke index.'
@@ -232,7 +232,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
                 <button
                   key={id}
                   onClick={() => setCustomWinner(id)}
-                  className={`flex items-center gap-1.5 rounded-full border pl-1 pr-3 py-1 text-[13px] font-bold transition ${
+                  className={`flex items-center gap-1.5 rounded-full border pl-1 pr-3 py-1 text-footnote font-bold transition ${
                     customWinner === id ? 'bg-green text-white border-green' : 'border-line-strong text-ink-dim'
                   }`}
                 >
@@ -249,9 +249,9 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
       {!showManual ? (
         <Card className="p-3.5 bg-paper">
           <div className="flex items-baseline justify-between mb-2">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-ink-faint">Works out to</p>
+            <p className="text-caption font-bold uppercase tracking-wider text-ink-faint">Works out to</p>
             {type !== 'custom' && (
-              <button onClick={() => setManualMode(true)} className="text-[11.5px] font-bold text-green">
+              <button onClick={() => setManualMode(true)} className="text-caption font-bold text-green">
                 Enter by hand
               </button>
             )}
@@ -259,7 +259,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
           {outcome.detail.map((line, i) => {
             const [text, playerId] = line.split('|')
             return (
-              <p key={i} className="text-[12px] text-ink-dim">
+              <p key={i} className="text-footnote text-ink-dim">
                 {playerId ? `${text.replace(/^won$/, 'won')} — ${nameFor(playerId)}` : text}
               </p>
             )
@@ -274,9 +274,9 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
                 return (
                   <div key={r.playerId} className="flex items-center gap-2.5">
                     <Avatar player={p} size={22} />
-                    <span className="flex-1 text-[13px] font-bold text-ink">{p.name}</span>
+                    <span className="flex-1 text-footnote font-bold text-ink">{p.name}</span>
                     <span
-                      className={`text-[13.5px] font-extrabold tabular-nums ${
+                      className={`text-footnote font-extrabold tabular-nums ${
                         r.amount > 0 ? 'text-green' : r.amount < 0 ? 'text-flag' : 'text-ink-faint'
                       }`}
                     >
@@ -291,15 +291,15 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
       ) : (
         <Card className="p-3.5 bg-paper">
           <div className="flex items-baseline justify-between mb-2">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-ink-faint">Amounts</p>
+            <p className="text-caption font-bold uppercase tracking-wider text-ink-faint">Amounts</p>
             {outcome.computable && (
-              <button onClick={() => setManualMode(false)} className="text-[11.5px] font-bold text-green">
+              <button onClick={() => setManualMode(false)} className="text-caption font-bold text-green">
                 Work it out for me
               </button>
             )}
           </div>
           {!outcome.computable && (
-            <p className="text-[12px] text-ink-dim mb-2">
+            <p className="text-footnote text-ink-dim mb-2">
               {cardsExist
                 ? outcome.detail[0]
                 : 'No hole scores on this round, so enter what changed hands. Fill in the card and the app can do the maths.'}
@@ -312,19 +312,19 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
               return (
                 <div key={id} className="flex items-center gap-2.5">
                   <Avatar player={p} size={24} />
-                  <span className="flex-1 text-[13px] font-bold text-ink">{p.name}</span>
+                  <span className="flex-1 text-footnote font-bold text-ink">{p.name}</span>
                   <input
                     value={manual[id] ?? ''}
                     onChange={(e) => setManual((m) => ({ ...m, [id]: e.target.value.replace(/[^\d.-]/g, '') }))}
                     inputMode="decimal"
                     placeholder="0"
-                    className="w-24 rounded-lg border border-line-strong bg-card px-2 py-2 text-center text-[14px] font-bold text-ink tabular-nums focus:border-green focus:outline-none"
+                    className="w-24 rounded-lg border border-line-strong bg-card px-2 py-2 text-center text-body font-bold text-ink tabular-nums focus:border-green focus:outline-none"
                   />
                 </div>
               )
             })}
           </div>
-          <p className={`text-[11.5px] mt-2 font-semibold ${balanced ? 'text-ink-faint' : 'text-flag'}`}>
+          <p className={`text-caption mt-2 font-semibold ${balanced ? 'text-ink-faint' : 'text-flag'}`}>
             {balanced
               ? 'Winnings and losses cancel out. Use a minus sign for money lost.'
               : `Off by ${money(Math.abs(Math.round(manualSum * 100) / 100))} — winnings and losses have to cancel out.`}
@@ -354,7 +354,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
         >
           {liveSave ? 'Save — settles from the card' : 'Save bet'}
         </PrimaryButton>
-        <button onClick={onCancel} className="px-4 text-[13px] font-bold text-ink-faint">Cancel</button>
+        <button onClick={onCancel} className="px-4 text-footnote font-bold text-ink-faint">Cancel</button>
       </div>
     </div>
   )

@@ -72,14 +72,14 @@ export default function EditRound() {
   }
 
   const field =
-    'w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-[15px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-[12px] font-bold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1'
+    'w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
+  const label = 'block text-footnote font-bold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1'
 
   return (
     <div className="rise">
       <header className="pt-4 pb-4 px-1 flex items-center justify-between">
-        <h1 className="text-[24px] font-extrabold tracking-tight text-ink">Edit Round</h1>
-        <button onClick={() => navigate(`/rounds/${round.id}`)} className="text-[13px] font-bold text-ink-faint px-2 py-1">Cancel</button>
+        <h1 className="text-large font-extrabold tracking-tight text-ink">Edit Round</h1>
+        <button onClick={() => navigate(`/rounds/${round.id}`)} className="text-footnote font-bold text-ink-faint px-2 py-1">Cancel</button>
       </header>
 
       <div className="space-y-4">
@@ -92,7 +92,7 @@ export default function EditRound() {
                 <button
                   key={c}
                   onClick={() => setCourseName(c)}
-                  className="rounded-full border border-line-strong bg-card px-3.5 py-2 text-[13px] font-bold text-ink-dim active:bg-paper"
+                  className="rounded-full border border-line-strong bg-card px-3.5 py-2 text-footnote font-bold text-ink-dim active:bg-paper"
                 >
                   {c}
                 </button>
@@ -118,7 +118,7 @@ export default function EditRound() {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setTripId('')}
-                className={`rounded-full px-4 py-2.5 text-[13.5px] font-bold border transition ${!tripId ? 'bg-ink text-white border-ink' : 'border-line-strong bg-card text-ink-dim'}`}
+                className={`rounded-full px-4 py-2.5 text-footnote font-bold border transition ${!tripId ? 'bg-forest text-on-forest border-forest' : 'border-line-strong bg-card text-ink-dim'}`}
               >
                 Just a round
               </button>
@@ -126,7 +126,7 @@ export default function EditRound() {
                 <button
                   key={t.id}
                   onClick={() => setTripId(t.id)}
-                  className={`rounded-full px-4 py-2.5 text-[13.5px] font-bold border transition ${tripId === t.id ? 'bg-ink text-white border-ink' : 'border-line-strong bg-card text-ink-dim'}`}
+                  className={`rounded-full px-4 py-2.5 text-footnote font-bold border transition ${tripId === t.id ? 'bg-forest text-on-forest border-forest' : 'border-line-strong bg-card text-ink-dim'}`}
                 >
                   {t.name}
                 </button>
@@ -147,11 +147,11 @@ export default function EditRound() {
                     <button onClick={() => togglePlayer(p.id)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
                       <Avatar player={p} size={36} />
                       <div className="min-w-0">
-                        <p className="font-bold text-[14.5px] text-ink truncate">
+                        <p className="font-bold text-body text-ink truncate">
                           {p.name}
                           {p.id === data.currentUserId && <span className="text-ink-faint font-semibold"> (you)</span>}
                         </p>
-                        <p className="text-[11.5px] text-ink-faint tabular-nums">
+                        <p className="text-caption text-ink-faint tabular-nums">
                           {on ? `hcp ${fmt1(entry.handicapSnapshot)} at the time` : 'not in this round'}
                         </p>
                       </div>
@@ -163,14 +163,14 @@ export default function EditRound() {
                         onClick={() => navigate(`/rounds/${round.id}/card`)}
                         className="shrink-0 text-right"
                       >
-                        <span className="block text-[18px] font-extrabold text-ink tabular-nums">{entry.gross ?? '—'}</span>
-                        <span className="block text-[11px] font-bold text-green">from card →</span>
+                        <span className="block text-headline font-extrabold text-ink tabular-nums">{entry.gross ?? '—'}</span>
+                        <span className="block text-caption font-bold text-green">from card →</span>
                       </button>
                     ) : on ? (
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           onClick={() => bump(p.id, -1)}
-                          className="h-10 w-10 rounded-lg bg-paper border border-line-strong text-lg font-bold text-ink active:scale-95"
+                          className="h-10 w-10 rounded-lg bg-paper border border-line-strong text-headline font-bold text-ink active:scale-95"
                           aria-label={`decrease ${p.name}`}
                         >
                           −
@@ -181,11 +181,11 @@ export default function EditRound() {
                           value={entry.gross ?? ''}
                           placeholder="—"
                           onChange={(e) => setScore(p.id, e.target.value)}
-                          className="w-16 h-10 rounded-lg border border-line-strong bg-card text-center text-[18px] font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
+                          className="w-16 h-10 rounded-lg border border-line-strong bg-card text-center text-headline font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
                         />
                         <button
                           onClick={() => bump(p.id, 1)}
-                          className="h-10 w-10 rounded-lg bg-paper border border-line-strong text-lg font-bold text-ink active:scale-95"
+                          className="h-10 w-10 rounded-lg bg-paper border border-line-strong text-headline font-bold text-ink active:scale-95"
                           aria-label={`increase ${p.name}`}
                         >
                           +
@@ -197,7 +197,7 @@ export default function EditRound() {
               )
             })}
           </div>
-          <p className="text-[11.5px] text-ink-faint px-1 mt-2">
+          <p className="text-caption text-ink-faint px-1 mt-2">
             Clear a score to blank and it goes back on that golfer's list to fill in. Anyone with a hole-by-hole card gets
             their total from it — tap through to change that.
           </p>
@@ -206,12 +206,12 @@ export default function EditRound() {
         {entries.length >= 2 && (
           <Card
             onClick={() => setSaddamOn((v) => !v)}
-            className={`p-3.5 flex items-center gap-3 transition ${saddamOn ? 'border-gold/50 bg-gold-soft/50' : ''}`}
+            className={`p-3.5 flex items-center gap-3 transition ${saddamOn ? 'border-cream-deep bg-cream' : ''}`}
           >
             <SaddamIcon size={26} />
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-[14px] font-bold text-ink">The Saddam is on the line</p>
-              <p className="text-[11.5px] text-ink-faint">
+              <p className="text-body font-bold text-ink">The Saddam is on the line</p>
+              <p className="text-caption text-ink-faint">
                 {saddamOn ? 'Winner takes the trophy.' : 'Off — this round can’t move the trophy.'}
               </p>
             </div>
@@ -243,7 +243,7 @@ export default function EditRound() {
               navigate('/rounds')
             }
           }}
-          className="w-full rounded-xl border border-flag/40 bg-flag-soft py-3 text-[14px] font-bold text-flag active:bg-flag/10"
+          className="w-full rounded-xl border border-flag/40 bg-flag-soft py-3 text-body font-bold text-flag active:bg-flag/10"
         >
           Delete this round
         </button>

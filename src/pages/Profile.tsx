@@ -6,8 +6,9 @@ import { disablePush, enablePush, pushEnabled, pushSupported } from '../lib/push
 import { fmt1, isSoloRound, round1 } from '../types'
 import { supabase } from '../lib/supabase'
 import EditGolfer from '../components/EditGolfer'
-import { Avatar, Card, MoneyBadge, Pill, PrimaryButton, RowButton, SaddamBadge, SectionLabel } from '../components/ui'
+import { Avatar, AvatarStack, Card, MoneyBadge, Pill, PrimaryButton, RowButton, SaddamBadge, SectionLabel } from '../components/ui'
 import { useConfirm } from '../components/Confirm'
+import { IconTile } from '../components/icons'
 
 // You. Your index, your numbers, your phone's settings. The group roster
 // used to live at the bottom of this screen and the Courses and
@@ -73,15 +74,15 @@ export default function Profile() {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-[24px] font-extrabold tracking-tight text-ink truncate">{me.name}</h1>
-          <p className="text-[13px] text-ink-dim truncate">
+          <h1 className="text-large font-extrabold tracking-tight text-ink truncate">{me.name}</h1>
+          <p className="text-footnote text-ink-dim truncate">
             {me.homeCourse ? `Home course: ${me.homeCourse}` : 'No home course set'}
             {me.venmo && ` · @${me.venmo}`}
           </p>
-          {stats.saddamHeld && <Pill tone="gold">Holder of the Saddam</Pill>}
+          {stats.saddamHeld && <Pill tone="cream">Holder of the Saddam</Pill>}
         </div>
         {!editingMe && (
-          <button onClick={() => setEditingMe(true)} className="text-[13px] font-bold text-green shrink-0">
+          <button onClick={() => setEditingMe(true)} className="text-footnote font-bold text-green shrink-0">
             Edit
           </button>
         )}
@@ -99,7 +100,7 @@ export default function Profile() {
       <Card className="mt-3 p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[12px] font-bold uppercase tracking-wider text-ink-faint">Handicap index</p>
+            <p className="text-footnote font-bold uppercase tracking-wider text-ink-faint">Handicap index</p>
             {editingHcp ? (
               <input
                 value={hcpDraft}
@@ -107,10 +108,10 @@ export default function Profile() {
                 inputMode="decimal"
                 autoFocus
                 aria-label="Handicap index"
-                className="mt-1 w-28 rounded-xl border border-line-strong bg-card px-3 py-2 text-[24px] font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
+                className="mt-1 w-28 rounded-xl border border-line-strong bg-card px-3 py-2 text-large font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
               />
             ) : (
-              <p className="text-[26px] font-extrabold text-ink tabular-nums leading-tight">{fmt1(me.handicap)}</p>
+              <p className="text-large font-extrabold text-ink tabular-nums leading-tight">{fmt1(me.handicap)}</p>
             )}
           </div>
           {editingHcp ? (
@@ -118,14 +119,14 @@ export default function Profile() {
               <button
                 onClick={() => nudgeDraft(-0.1)}
                 aria-label="Lower handicap by a tenth"
-                className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-xl font-bold text-ink active:scale-95"
+                className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-headline font-bold text-ink active:scale-95"
               >
                 −
               </button>
               <button
                 onClick={() => nudgeDraft(0.1)}
                 aria-label="Raise handicap by a tenth"
-                className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-xl font-bold text-ink active:scale-95"
+                className="h-11 w-11 rounded-xl bg-paper border border-line-strong text-headline font-bold text-ink active:scale-95"
               >
                 +
               </button>
@@ -136,7 +137,7 @@ export default function Profile() {
                 setHcpDraft(me.handicap.toFixed(1))
                 setEditingHcp(true)
               }}
-              className="text-[13px] font-bold text-green"
+              className="text-footnote font-bold text-green"
             >
               Update
             </button>
@@ -147,7 +148,7 @@ export default function Profile() {
             <PrimaryButton onClick={saveHandicap} disabled={!hcpDraft.trim()} className="flex-1 !py-2.5">
               Save index
             </PrimaryButton>
-            <button onClick={() => setEditingHcp(false)} className="px-4 text-[13px] font-bold text-ink-faint">
+            <button onClick={() => setEditingHcp(false)} className="px-4 text-footnote font-bold text-ink-faint">
               Cancel
             </button>
           </div>
@@ -158,12 +159,12 @@ export default function Profile() {
           number here hasn't moved in a while. */}
       {showHandicapNudge && (
         <Card className="mt-3 p-4 border-gold/40 bg-gold-soft/50 flex items-start gap-3">
-          <span className="text-[18px] mt-0.5">📈</span>
+          <IconTile name="trend" tone="gold" size={34} />
           <div className="flex-1 min-w-0">
-            <p className="text-[13.5px] font-bold text-ink">
+            <p className="text-footnote font-bold text-ink">
               You've played {roundsAtIndex} rounds at {fmt1(me.handicap)}
             </p>
-            <p className="text-[12.5px] text-ink-dim mt-1">
+            <p className="text-footnote text-ink-dim mt-1">
               If GHIN has moved your index since then, update it here so net scores and bets stay honest.
             </p>
             <div className="flex gap-4 mt-2.5">
@@ -172,11 +173,11 @@ export default function Profile() {
                   setHcpDraft(me.handicap.toFixed(1))
                   setEditingHcp(true)
                 }}
-                className="text-[12.5px] font-bold text-green"
+                className="text-footnote font-bold text-green"
               >
                 Update it
               </button>
-              <button onClick={dismissHandicapNudge} className="text-[12.5px] font-bold text-ink-faint">
+              <button onClick={dismissHandicapNudge} className="text-footnote font-bold text-ink-faint">
                 Still right
               </button>
             </div>
@@ -187,22 +188,22 @@ export default function Profile() {
       {/* Stat grid */}
       <div className="grid grid-cols-3 gap-3 mt-3">
         <Card className="p-3.5 text-center">
-          <p className="text-[22px] font-extrabold text-ink tabular-nums">{stats.rounds}</p>
-          <p className="text-[10.5px] font-bold uppercase tracking-wider text-ink-faint mt-0.5">Rounds</p>
+          <p className="text-title font-extrabold text-ink tabular-nums">{stats.rounds}</p>
+          <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-0.5">Rounds</p>
         </Card>
         <Card className="p-3.5 text-center">
-          <p className="text-[22px] font-extrabold text-ink tabular-nums">{stats.bestGross ?? '—'}</p>
-          <p className="text-[10.5px] font-bold uppercase tracking-wider text-ink-faint mt-0.5">Best</p>
+          <p className="text-title font-extrabold text-ink tabular-nums">{stats.bestGross ?? '—'}</p>
+          <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-0.5">Best</p>
         </Card>
         <Card className="p-3.5 text-center">
-          <p className="text-[22px] font-extrabold text-ink tabular-nums">{stats.avgGross ? stats.avgGross.toFixed(1) : '—'}</p>
-          <p className="text-[10.5px] font-bold uppercase tracking-wider text-ink-faint mt-0.5">Average</p>
+          <p className="text-title font-extrabold text-ink tabular-nums">{stats.avgGross ? stats.avgGross.toFixed(1) : '—'}</p>
+          <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-0.5">Average</p>
         </Card>
       </div>
 
       <Card className="mt-3 p-4 flex items-center justify-between">
-        <p className="text-[13.5px] font-bold text-ink">All-time money</p>
-        <MoneyBadge amount={stats.money} className="text-[16px]" />
+        <p className="text-footnote font-bold text-ink">All-time money</p>
+        <MoneyBadge amount={stats.money} className="text-headline" />
       </Card>
 
       {/* What the hole-by-hole cards and course pars add up to. Only
@@ -214,10 +215,10 @@ export default function Profile() {
           <div className="grid grid-cols-3 gap-3">
             {([3, 4, 5] as const).map((par) => (
               <Card key={par} className="p-3.5 text-center">
-                <p className="text-[22px] font-extrabold text-ink tabular-nums">
+                <p className="text-title font-extrabold text-ink tabular-nums">
                   {game.avgByPar[par] != null ? game.avgByPar[par]!.toFixed(2) : '—'}
                 </p>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-ink-faint mt-0.5">on par {par}s</p>
+                <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-0.5">on par {par}s</p>
               </Card>
             ))}
           </div>
@@ -241,7 +242,7 @@ export default function Profile() {
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5">
                     {buckets.map((b) => (
-                      <span key={b.label} className="inline-flex items-center gap-1.5 text-[11px] text-ink-dim">
+                      <span key={b.label} className="inline-flex items-center gap-1.5 text-caption text-ink-dim">
                         <span className={`h-2.5 w-2.5 rounded-full ${b.cls}`} />
                         <span className="font-bold">{b.label}</span>
                         <span className="tabular-nums text-ink-faint">
@@ -257,7 +258,7 @@ export default function Profile() {
         </>
       ) : (
         <Card className="mt-3 p-4">
-          <p className="text-[13px] text-ink-dim">
+          <p className="text-footnote text-ink-dim">
             <span className="font-bold text-ink">Want the real breakdown?</span> Score rounds hole by hole and fill in
             course pars, and this turns into your par-3/4/5 averages and birdie-to-blowup rates.
           </p>
@@ -267,7 +268,7 @@ export default function Profile() {
       {/* My recent rounds */}
       <SectionLabel
         action={
-          <button onClick={() => navigate('/log')} className="text-[12.5px] font-bold text-green">
+          <button onClick={() => navigate('/log')} className="text-footnote font-bold text-green">
             + Log a round
           </button>
         }
@@ -275,22 +276,22 @@ export default function Profile() {
         My Last {stats.last5.length === 1 ? 'Round' : `${stats.last5.length} Rounds`}
       </SectionLabel>
       {stats.last5.length === 0 ? (
-        <Card className="p-5 text-center text-[13.5px] text-ink-dim">Nothing logged yet. Get out there.</Card>
+        <Card className="p-5 text-center text-footnote text-ink-dim">Nothing logged yet. Get out there.</Card>
       ) : (
         <Card className="divide-y divide-line">
           {stats.last5.map(({ round, gross }) => (
             <RowButton key={round.id} onClick={() => navigate(`/rounds/${round.id}`)} className="flex items-center gap-3 px-4 py-3">
               <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-bold text-ink truncate">{round.courseName}</p>
-                <p className="text-[11.5px] text-ink-faint tabular-nums">
+                <p className="text-body font-bold text-ink truncate">{round.courseName}</p>
+                <p className="text-caption text-ink-faint tabular-nums">
                   {shortDate(round.date)}
                   {isSoloRound(round) && ' · solo'}
                 </p>
               </div>
               {gross == null ? (
-                <span className="text-[12px] font-bold text-flag shrink-0">Add score</span>
+                <span className="text-footnote font-bold text-flag shrink-0">Add score</span>
               ) : (
-                <p className="text-[18px] font-extrabold text-ink tabular-nums">{gross}</p>
+                <p className="text-headline font-extrabold text-ink tabular-nums">{gross}</p>
               )}
             </RowButton>
           ))}
@@ -303,31 +304,25 @@ export default function Profile() {
       {cloud ? (
         <PushToggle playerId={me.id} />
       ) : (
-        <Card className="p-4 text-[12.5px] text-ink-dim">Notifications switch on once the app is online.</Card>
+        <Card className="p-4 text-footnote text-ink-dim">Notifications switch on once the app is online.</Card>
       )}
 
       <SectionLabel>The group</SectionLabel>
       <Card onClick={() => navigate('/group')} className="p-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[14.5px] font-bold text-ink">{data.group.name}</p>
-          <p className="text-[12.5px] text-ink-dim mt-0.5">
+          <p className="text-body font-bold text-ink">{data.group.name}</p>
+          <p className="text-footnote text-ink-dim mt-0.5">
             {members.length} golfer{members.length === 1 ? '' : 's'} · roster, emails, invite code
           </p>
         </div>
-        <div className="flex -space-x-1.5 shrink-0">
-          {members.slice(0, 4).map((p) => (
-            <span key={p.id} className="rounded-full ring-2 ring-card">
-              <Avatar player={p} size={24} />
-            </span>
-          ))}
-        </div>
+        <AvatarStack players={members} />
       </Card>
 
       {cloud && (
         <>
           <SectionLabel>Account</SectionLabel>
           <Card className="p-4 flex items-center justify-between gap-3">
-            <p className="text-[13px] text-ink-dim">
+            <p className="text-footnote text-ink-dim">
               Everything syncs across everyone's phones.
               {syncError && <span className="block text-flag font-semibold mt-0.5">Last sync failed: {syncError}</span>}
             </p>
@@ -336,7 +331,7 @@ export default function Profile() {
                 await supabase?.auth.signOut()
                 window.location.reload()
               }}
-              className="text-[12.5px] font-bold text-flag shrink-0"
+              className="text-footnote font-bold text-flag shrink-0"
             >
               Sign out
             </button>
@@ -356,7 +351,7 @@ export default function Profile() {
               })
               if (ok) resetToSample()
             }}
-            className="text-[12px] font-bold text-ink-faint"
+            className="text-footnote font-bold text-ink-faint"
           >
             Reset to sample data
           </button>
@@ -401,8 +396,8 @@ function PushToggle({ playerId }: { playerId: string }) {
     <Card className="p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[13.5px] font-bold text-ink">Notifications</p>
-          <p className="text-[12px] text-ink-dim mt-0.5">
+          <p className="text-footnote font-bold text-ink">Notifications</p>
+          <p className="text-footnote text-ink-dim mt-0.5">
             {state === 'on'
               ? 'On for this phone — rounds, results, and money.'
               : state === 'denied'
@@ -415,7 +410,7 @@ function PushToggle({ playerId }: { playerId: string }) {
         {(state === 'off' || state === 'on') && (
           <button
             onClick={() => void (state === 'on' ? turnOff() : turnOn())}
-            className={`shrink-0 rounded-xl px-4 py-2 text-[13px] font-bold transition active:scale-95 ${
+            className={`shrink-0 rounded-xl px-4 py-2 text-footnote font-bold transition active:scale-95 ${
               state === 'on' ? 'border border-line-strong bg-card text-ink-dim' : 'bg-green text-white'
             }`}
           >

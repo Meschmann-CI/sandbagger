@@ -68,17 +68,17 @@ function AppRoutes() {
 function Splash({ message, error }: { message: string; error?: boolean }) {
   return (
     <div className="mx-auto max-w-md min-h-dvh flex flex-col items-center justify-center px-6 text-center">
-      <div className="text-4xl mb-3">⛳</div>
+      <img src="/sandbagger-icon-180.png" alt="" width={64} height={64} className="rounded-2xl mb-4" />
       {error ? (
         <Card className="p-5">
-          <p className="text-[15px] font-extrabold text-ink">Something went wrong</p>
-          <p className="text-[13px] text-ink-dim mt-1.5 break-words">{message}</p>
-          <button onClick={() => window.location.reload()} className="mt-4 text-[13px] font-bold text-green">
+          <p className="text-body font-extrabold text-ink">Something went wrong</p>
+          <p className="text-footnote text-ink-dim mt-1.5 break-words">{message}</p>
+          <button onClick={() => window.location.reload()} className="mt-4 text-footnote font-bold text-green">
             Try again
           </button>
         </Card>
       ) : (
-        <p className="text-[14px] font-bold text-ink-dim">{message}</p>
+        <p className="text-body font-bold text-ink-dim">{message}</p>
       )}
     </div>
   )

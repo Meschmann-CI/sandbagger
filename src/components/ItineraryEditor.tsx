@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ItineraryItem, ItineraryKind } from '../types'
 import { SPANNING_KINDS } from '../types'
+import { Icon, type IconName } from './icons'
 import { fetchLinkPreview, faviconFor, normalizeUrl } from '../lib/links'
 import { fileToDataUrl, imageFromClipboard } from '../lib/images'
 import { PrimaryButton } from './ui'
 
-export const KIND_META: Record<ItineraryKind, { icon: string; label: string; placeholder: string }> = {
-  tee: { icon: '⛳', label: 'Tee time', placeholder: 'Course name' },
-  meal: { icon: '🍽️', label: 'Food', placeholder: 'Where are we eating?' },
-  lodging: { icon: '🏠', label: 'Housing', placeholder: 'House, hotel, or resort' },
-  flight: { icon: '✈️', label: 'Flight', placeholder: 'e.g. JFK → MYR' },
-  other: { icon: '📍', label: 'Other', placeholder: 'What is it?' },
+export const KIND_META: Record<ItineraryKind, { icon: IconName; label: string; placeholder: string }> = {
+  tee: { icon: 'flag', label: 'Tee time', placeholder: 'Course name' },
+  meal: { icon: 'meal', label: 'Food', placeholder: 'Where are we eating?' },
+  lodging: { icon: 'house', label: 'Housing', placeholder: 'House, hotel, or resort' },
+  flight: { icon: 'plane', label: 'Flight', placeholder: 'e.g. JFK → MYR' },
+  other: { icon: 'pin', label: 'Other', placeholder: 'What is it?' },
 }
 
 const KIND_ORDER: ItineraryKind[] = ['tee', 'meal', 'lodging', 'flight', 'other']
@@ -100,8 +101,8 @@ export default function ItineraryEditor({ initial, defaultDate, onSave, onCancel
     })
   }
 
-  const field = 'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5'
+  const field = 'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
+  const label = 'block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5'
 
   return (
     <div className="rounded-2xl border border-green/30 bg-card p-4 space-y-3.5">
@@ -111,11 +112,11 @@ export default function ItineraryEditor({ initial, defaultDate, onSave, onCancel
           <button
             key={k}
             onClick={() => setKind(k)}
-            className={`rounded-lg py-2 text-[11px] font-bold border transition ${
+            className={`rounded-lg py-2 text-caption font-bold border transition ${
               kind === k ? 'bg-green text-white border-green' : 'border-line-strong text-ink-dim'
             }`}
           >
-            <span className="block text-[15px] leading-tight">{KIND_META[k].icon}</span>
+            <Icon name={KIND_META[k].icon} size={18} className="mx-auto mb-0.5" />
             {KIND_META[k].label}
           </button>
         ))}
@@ -171,14 +172,14 @@ export default function ItineraryEditor({ initial, defaultDate, onSave, onCancel
             />
           </div>
           {url.trim() && (
-            <button onClick={() => void lookupLink()} className="rounded-lg border border-line-strong px-3 text-[12.5px] font-bold text-ink-dim shrink-0">
+            <button onClick={() => void lookupLink()} className="rounded-lg border border-line-strong px-3 text-footnote font-bold text-ink-dim shrink-0">
               {linkState === 'loading' ? '…' : 'Get photo'}
             </button>
           )}
         </div>
-        {linkState === 'found' && previewImage && <p className="text-[11.5px] text-green font-bold mt-1.5">Photo pulled from the listing ✓</p>}
+        {linkState === 'found' && previewImage && <p className="text-caption text-green font-bold mt-1.5">Photo pulled from the listing ✓</p>}
         {linkState === 'unavailable' && (
-          <p className="text-[11.5px] text-ink-faint mt-1.5">
+          <p className="text-caption text-ink-faint mt-1.5">
             Couldn't read that page's photo (works once the app is on Netlify). Add one below instead.
           </p>
         )}
@@ -209,12 +210,12 @@ export default function ItineraryEditor({ initial, defaultDate, onSave, onCancel
               <img src={previewImage} alt="" className="h-20 w-28 rounded-lg object-cover border border-line" />
               <button
                 onClick={() => setPreviewImage('')}
-                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-ink text-white text-[11px] font-bold"
+                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-ink text-white text-caption font-bold"
                 aria-label="Remove listing photo"
               >
                 ✕
               </button>
-              <span className="absolute bottom-1 left-1 rounded bg-ink/75 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">From link</span>
+              <span className="absolute bottom-1 left-1 rounded bg-ink/75 px-1.5 py-0.5 text-caption font-bold uppercase text-white">From link</span>
             </div>
           )}
           {photos.map((src, i) => (
@@ -222,7 +223,7 @@ export default function ItineraryEditor({ initial, defaultDate, onSave, onCancel
               <img src={src} alt="" className="h-20 w-28 rounded-lg object-cover border border-line" />
               <button
                 onClick={() => setPhotos((p) => p.filter((_, idx) => idx !== i))}
-                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-ink text-white text-[11px] font-bold"
+                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-ink text-white text-caption font-bold"
                 aria-label="Remove photo"
               >
                 ✕
@@ -231,7 +232,7 @@ export default function ItineraryEditor({ initial, defaultDate, onSave, onCancel
           ))}
           <button
             onClick={() => fileRef.current?.click()}
-            className="h-20 w-28 rounded-lg border-2 border-dashed border-line-strong text-[12px] font-bold text-ink-faint active:bg-paper"
+            className="h-20 w-28 rounded-lg border-2 border-dashed border-line-strong text-footnote font-bold text-ink-faint active:bg-paper"
           >
             + Add photo
           </button>
@@ -244,14 +245,14 @@ export default function ItineraryEditor({ initial, defaultDate, onSave, onCancel
           className="hidden"
           onChange={(e) => e.target.files && void addFiles(e.target.files)}
         />
-        <p className="text-[11px] text-ink-faint mt-1.5">Pick a file, or just paste a screenshot.</p>
+        <p className="text-caption text-ink-faint mt-1.5">Pick a file, or just paste a screenshot.</p>
       </div>
 
       <div className="flex gap-2 pt-1">
         <PrimaryButton onClick={save} disabled={!title.trim() || !date} className="flex-1 !py-2.5">
           {initial ? 'Save changes' : 'Add to trip'}
         </PrimaryButton>
-        <button onClick={onCancel} className="px-4 text-[13px] font-bold text-ink-faint">
+        <button onClick={onCancel} className="px-4 text-footnote font-bold text-ink-faint">
           Cancel
         </button>
       </div>

@@ -3,6 +3,7 @@ import { useGoBack } from '../lib/nav'
 import { useMembers, useStore } from '../data/store'
 import { headToHead, leaderboard, saddamState, shortDate, trashTalk } from '../lib/stats'
 import { Avatar, Card, MoneyBadge, SaddamBadge, SectionLabel } from '../components/ui'
+import { Icon } from '../components/icons'
 
 // Head-to-head records. Deliberately tucked behind Home/Profile — the
 // receipts are all here for when the group actually plays together.
@@ -30,46 +31,46 @@ export default function Ledger() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
-        <h1 className="text-[26px] font-extrabold tracking-tight text-ink">Head-to-Head</h1>
-        <p className="text-[13px] text-ink-dim">Group rounds only. The record is permanent.</p>
+        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-2">← Back</button>
+        <h1 className="text-large font-extrabold tracking-tight text-ink">Head-to-Head</h1>
+        <p className="text-footnote text-ink-dim">Group rounds only. The record is permanent.</p>
       </header>
 
-      <Card onClick={() => navigate('/saddam')} className="mt-2 p-4 flex items-center gap-3.5 border-gold/30 bg-gold-soft/40">
+      <Card onClick={() => navigate('/saddam')} className="mt-2 p-4 flex items-center gap-3.5 border-cream-deep/60 bg-cream">
         <SaddamBadge size={24} />
         <div className="flex-1 min-w-0">
           {holder ? (
             <>
-              <p className="text-[14px] text-ink">
+              <p className="text-body text-ink">
                 <span className="font-extrabold">{holder.name}</span> holds the Saddam
               </p>
-              <p className="text-[12px] text-ink-dim mt-0.5">
+              <p className="text-footnote text-ink-dim mt-0.5">
                 Since {saddam.since && shortDate(saddam.since)}
                 {saddam.courseName && ` · ${saddam.courseName}`}
               </p>
             </>
           ) : (
             <>
-              <p className="text-[14px] font-extrabold text-ink">Nobody holds the Saddam</p>
-              <p className="text-[12px] text-ink-dim mt-0.5">Tap to hand it over or see the history</p>
+              <p className="text-body font-extrabold text-ink">Nobody holds the Saddam</p>
+              <p className="text-footnote text-ink-dim mt-0.5">Tap to hand it over or see the history</p>
             </>
           )}
         </div>
-        {holder ? <Avatar player={holder} size={34} /> : <span className="text-[12.5px] font-bold text-green">Set it →</span>}
+        {holder ? <Avatar player={holder} size={34} /> : <span className="text-footnote font-bold text-green">Set it →</span>}
       </Card>
 
       {talk.length > 0 && (
         <Card className="mt-3 p-4 border-l-4 border-l-flag/50">
-          <p className="text-[14px] font-bold text-ink leading-snug">
+          <p className="text-body font-bold text-ink leading-snug">
             {talk[(data.rounds.length + talk.length) % talk.length]}
           </p>
-          <p className="text-[10.5px] font-bold uppercase tracking-wider text-ink-faint mt-1.5">The ledger never lies</p>
+          <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-1.5">The ledger never lies</p>
         </Card>
       )}
 
       <SectionLabel>Group Leaderboard</SectionLabel>
       <Card>
-        <div className="grid grid-cols-[1fr_repeat(4,auto)] gap-x-3.5 px-4 py-2.5 border-b border-line text-[9.5px] font-bold uppercase tracking-wider text-ink-faint">
+        <div className="grid grid-cols-[1fr_repeat(4,auto)] gap-x-3.5 px-4 py-2.5 border-b border-line text-caption font-bold uppercase tracking-wider text-ink-faint">
           <span>Player</span>
           <span className="w-8 text-right">W</span>
           <span className="w-8 text-right">Rds</span>
@@ -79,24 +80,28 @@ export default function Ledger() {
         {board.map((row, i) => (
           <div key={row.player.id} className="grid grid-cols-[1fr_repeat(4,auto)] gap-x-3.5 items-center px-4 py-3.5 border-b border-line last:border-0">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className={`font-extrabold text-[15px] w-4 tabular-nums ${i === 0 ? 'text-gold' : 'text-ink-faint'}`}>{i + 1}</span>
+              <span className={`font-extrabold text-body w-4 tabular-nums ${i === 0 ? 'text-gold' : 'text-ink-faint'}`}>{i + 1}</span>
               <Avatar player={row.player} size={32} />
               <div className="min-w-0">
-                <p className="font-bold text-[14px] text-ink truncate flex items-center gap-1.5">
+                <p className="font-bold text-body text-ink truncate flex items-center gap-1.5">
                   {row.player.name}
                   {saddam.holderId === row.player.id && <SaddamBadge size={13} />}
                 </p>
-                {row.streak >= 2 && <p className="text-[10.5px] text-green font-bold">{row.streak} straight 🔥</p>}
+                {row.streak >= 2 && (
+                  <p className="flex items-center gap-0.5 text-caption text-green font-bold">
+                    {row.streak} straight <Icon name="flame" size={12} className="text-flag" />
+                  </p>
+                )}
               </div>
             </div>
-            <span className="w-8 text-right text-[15px] font-extrabold text-ink tabular-nums">{row.wins}</span>
-            <span className="w-8 text-right text-[13px] text-ink-dim tabular-nums">{row.rounds}</span>
-            <span className="w-9 text-right text-[13px] text-ink-dim tabular-nums">{row.avgGross ? row.avgGross.toFixed(1) : '—'}</span>
-            <span className="w-9 text-right text-[13px] font-bold text-green tabular-nums">{row.bestGross ?? '—'}</span>
+            <span className="w-8 text-right text-body font-extrabold text-ink tabular-nums">{row.wins}</span>
+            <span className="w-8 text-right text-footnote text-ink-dim tabular-nums">{row.rounds}</span>
+            <span className="w-9 text-right text-footnote text-ink-dim tabular-nums">{row.avgGross ? row.avgGross.toFixed(1) : '—'}</span>
+            <span className="w-9 text-right text-footnote font-bold text-green tabular-nums">{row.bestGross ?? '—'}</span>
           </div>
         ))}
       </Card>
-      <p className="text-[11px] text-ink-faint px-2 mt-1.5">W = group-round wins. Solo rounds count toward Rds, Avg, and Best.</p>
+      <p className="text-caption text-ink-faint px-2 mt-1.5">W = group-round wins. Solo rounds count toward Rds, Avg, and Best.</p>
 
       <SectionLabel>All-Time Money</SectionLabel>
       <Card className="divide-y divide-line">
@@ -105,15 +110,15 @@ export default function Ledger() {
           .map((row) => (
             <div key={row.player.id} className="flex items-center gap-3 px-4 py-3">
               <Avatar player={row.player} size={30} />
-              <span className="flex-1 text-[14px] font-bold text-ink">{row.player.name}</span>
-              <MoneyBadge amount={row.money} className="text-[15px]" />
+              <span className="flex-1 text-body font-bold text-ink">{row.player.name}</span>
+              <MoneyBadge amount={row.money} className="text-body" />
             </div>
           ))}
       </Card>
 
       <SectionLabel>Rivalries</SectionLabel>
       {pairs.length === 0 && (
-        <Card className="p-5 text-center text-[13.5px] text-ink-dim">
+        <Card className="p-5 text-center text-footnote text-ink-dim">
           Nothing to settle yet. Records start the first time two of you play the same round.
         </Card>
       )}
@@ -129,16 +134,16 @@ export default function Ledger() {
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <Avatar player={a} size={34} />
-                  <span className={`text-[14px] truncate ${leader?.id === a.id ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>{a.name}</span>
+                  <span className={`text-body truncate ${leader?.id === a.id ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>{a.name}</span>
                 </div>
                 <div className="text-center shrink-0">
-                  <p className="text-[19px] font-extrabold text-ink tracking-wide tabular-nums">
-                    {h.aWins}<span className="text-ink-faint text-[13px] mx-1">–</span>{h.bWins}
+                  <p className="text-headline font-extrabold text-ink tracking-wide tabular-nums">
+                    {h.aWins}<span className="text-ink-faint text-footnote mx-1">–</span>{h.bWins}
                   </p>
-                  {h.ties > 0 && <p className="text-[9.5px] text-ink-faint tabular-nums">{h.ties} tied</p>}
+                  {h.ties > 0 && <p className="text-caption text-ink-faint tabular-nums">{h.ties} tied</p>}
                 </div>
                 <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-                  <span className={`text-[14px] truncate ${leader?.id === b.id ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>{b.name}</span>
+                  <span className={`text-body truncate ${leader?.id === b.id ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>{b.name}</span>
                   <Avatar player={b} size={34} />
                 </div>
               </div>

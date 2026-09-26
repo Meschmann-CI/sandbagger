@@ -8,6 +8,7 @@ import { blobToDataUrl, newPhotoId, removeRoundPhotoFile, shrinkPhoto, uploadRou
 import { shortDate } from '../lib/stats'
 import { useConfirm } from './Confirm'
 import { Avatar, Card, SectionLabel } from './ui'
+import { IconTile } from './icons'
 
 // Pictures from the day, on the round they belong to. A grid of
 // thumbnails, a picker that offers the camera or the library, and a
@@ -93,7 +94,7 @@ export default function RoundPhotos({ round }: { round: Round }) {
     <>
       <SectionLabel
         action={
-          <button onClick={() => fileRef.current?.click()} disabled={busy > 0} className="text-[12.5px] font-bold text-green disabled:opacity-40">
+          <button onClick={() => fileRef.current?.click()} disabled={busy > 0} className="text-footnote font-bold text-green disabled:opacity-40">
             {busy > 0 ? `Adding ${busy}…` : '+ Add photo'}
           </button>
         }
@@ -114,12 +115,12 @@ export default function RoundPhotos({ round }: { round: Round }) {
 
       {count === 0 ? (
         <Card onClick={() => fileRef.current?.click()} className="p-4 flex items-center gap-3.5">
-          <span className="text-[22px]">📸</span>
+          <IconTile name="camera" />
           <div className="flex-1 min-w-0">
-            <p className="text-[13.5px] font-bold text-ink">No photos yet</p>
-            <p className="text-[12px] text-ink-dim mt-0.5">The scenery, the beers, the shank into the pond. Add a few.</p>
+            <p className="text-footnote font-bold text-ink">No photos yet</p>
+            <p className="text-footnote text-ink-dim mt-0.5">The scenery, the beers, the shank into the pond. Add a few.</p>
           </div>
-          <span className="text-[12.5px] font-bold text-green shrink-0">Add →</span>
+          <span className="text-footnote font-bold text-green shrink-0">Add →</span>
         </Card>
       ) : (
         <div className="grid grid-cols-3 gap-1.5">
@@ -140,14 +141,14 @@ export default function RoundPhotos({ round }: { round: Round }) {
               aria-label="Photo waiting for signal"
             >
               <img src={p.dataUrl} alt="" className="h-full w-full object-cover opacity-50" />
-              <span className="absolute inset-x-0 bottom-0 bg-gold-soft/95 px-1.5 py-1 text-center text-[9.5px] font-bold uppercase tracking-wider text-gold">
+              <span className="absolute inset-x-0 bottom-0 bg-gold-soft/95 px-1.5 py-1 text-center text-caption font-bold uppercase tracking-wider text-gold">
                 Waiting for signal
               </span>
             </div>
           ))}
         </div>
       )}
-      {error && <p className="mt-2 px-1 text-[12.5px] font-semibold text-flag">{error}</p>}
+      {error && <p className="mt-2 px-1 text-footnote font-semibold text-flag">{error}</p>}
 
       {open !== null &&
         photos.length > 0 &&
@@ -226,16 +227,16 @@ function PhotoViewer({
       >
         {by && <Avatar player={by} size={26} />}
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold truncate">{by?.name ?? 'Someone'}</p>
-          <p className="text-[11px] text-white/70 tabular-nums">
+          <p className="text-footnote font-bold truncate">{by?.name ?? 'Someone'}</p>
+          <p className="text-caption text-white/70 tabular-nums">
             {shortDate(current.takenAt.slice(0, 10))}
             {photos.length > 1 && ` · ${Math.min(at, photos.length - 1) + 1} of ${photos.length}`}
           </p>
         </div>
-        <button onClick={() => onRemove(current)} className="text-[12.5px] font-bold text-red-300 px-2">
+        <button onClick={() => onRemove(current)} className="text-footnote font-bold text-red-300 px-2">
           Remove
         </button>
-        <button onClick={onClose} className="text-[13px] font-bold text-white px-2">
+        <button onClick={onClose} className="text-footnote font-bold text-white px-2">
           Close
         </button>
       </div>

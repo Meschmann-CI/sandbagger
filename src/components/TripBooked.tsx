@@ -9,6 +9,7 @@ import ItineraryCard from './ItineraryCard'
 import ItineraryEditor from './ItineraryEditor'
 import TripCosts from './TripCosts'
 import { Avatar, Card, MoneyBadge, PrimaryButton, SectionLabel } from './ui'
+import { Icon } from './icons'
 
 export default function TripBooked({ trip }: { trip: Trip }) {
   const navigate = useNavigate()
@@ -88,28 +89,28 @@ export default function TripBooked({ trip }: { trip: Trip }) {
       {/* Dates */}
       {!trip.startDate && !editDates && (
         <Card className="p-4 flex items-center justify-between bg-gold-soft/50 border-gold/25">
-          <p className="text-[13.5px] font-bold text-ink">Dates not set yet</p>
-          <button onClick={() => setEditDates(true)} className="text-[13px] font-bold text-green">Set dates</button>
+          <p className="text-footnote font-bold text-ink">Dates not set yet</p>
+          <button onClick={() => setEditDates(true)} className="text-footnote font-bold text-green">Set dates</button>
         </Card>
       )}
       {trip.startDate && !editDates && !isPast && (
-        <button onClick={() => setEditDates(true)} className="text-[12px] font-bold text-ink-faint px-1">Edit dates</button>
+        <button onClick={() => setEditDates(true)} className="text-footnote font-bold text-ink-faint px-1">Edit dates</button>
       )}
       {editDates && (
         <Card className="p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5">First day</label>
-              <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="w-full rounded-lg border border-line-strong px-3 py-2.5 text-[14px] text-ink focus:border-green focus:outline-none" />
+              <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5">First day</label>
+              <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="w-full rounded-lg border border-line-strong px-3 py-2.5 text-body text-ink focus:border-green focus:outline-none" />
             </div>
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5">Last day</label>
-              <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="w-full rounded-lg border border-line-strong px-3 py-2.5 text-[14px] text-ink focus:border-green focus:outline-none" />
+              <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5">Last day</label>
+              <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="w-full rounded-lg border border-line-strong px-3 py-2.5 text-body text-ink focus:border-green focus:outline-none" />
             </div>
           </div>
           <div className="flex gap-2">
             <PrimaryButton onClick={saveDates} className="flex-1 !py-2.5">Save dates</PrimaryButton>
-            <button onClick={() => setEditDates(false)} className="px-4 text-[13px] font-bold text-ink-faint">Cancel</button>
+            <button onClick={() => setEditDates(false)} className="px-4 text-footnote font-bold text-ink-faint">Cancel</button>
           </div>
         </Card>
       )}
@@ -119,7 +120,7 @@ export default function TripBooked({ trip }: { trip: Trip }) {
         <>
           <SectionLabel>{isPast ? 'Final Standings' : 'Trip Leaderboard'}</SectionLabel>
           <Card>
-            <div className="grid grid-cols-[1fr_repeat(3,auto)] gap-x-3 px-4 py-2.5 border-b border-line text-[10px] font-bold uppercase tracking-wider text-ink-faint">
+            <div className="grid grid-cols-[1fr_repeat(3,auto)] gap-x-3 px-4 py-2.5 border-b border-line text-caption font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">
               <span>Player</span>
               <span className="w-14 text-right">Net Σ</span>
               <span className="w-12 text-right">Gross Σ</span>
@@ -131,26 +132,26 @@ export default function TripBooked({ trip }: { trip: Trip }) {
                   {/* The trophy IS the winner's rank, in the rank column —
                       next to the name it fights the score columns for
                       space on a phone, and one of them ends up clipped. */}
-                  <span className={`text-[15px] w-5 shrink-0 tabular-nums ${i === 0 ? '' : 'font-extrabold text-ink-faint'}`}>
-                    {i === 0 ? '🏆' : i + 1}
+                  <span className={`text-body w-5 shrink-0 tabular-nums ${i === 0 ? '' : 'font-extrabold text-ink-faint'}`}>
+                    {i === 0 ? <Icon name="trophy" size={18} className="text-gold" label="Winner" /> : i + 1}
                   </span>
                   <Avatar player={row.player} size={30} />
                   <div className="min-w-0">
-                    <p className={`text-[14px] truncate ${i === 0 ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>
+                    <p className={`text-body truncate ${i === 0 ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>
                       {row.player.name}
                     </p>
                     {/* A smaller total from fewer rounds isn't a lead, so say it. */}
                     {row.roundsPlayed < board[0].roundsPlayed && (
-                      <p className="text-[10.5px] text-ink-faint">
+                      <p className="text-caption text-ink-faint">
                         {row.roundsPlayed} of {rounds.length} rounds
                       </p>
                     )}
                   </div>
                 </div>
-                <span className="w-14 text-right font-extrabold text-[15px] text-ink tabular-nums">{fmt1(row.netTotal)}</span>
-                <span className="w-12 text-right text-[12.5px] text-ink-dim tabular-nums">{row.grossTotal}</span>
+                <span className="w-14 text-right font-extrabold text-body text-ink tabular-nums">{fmt1(row.netTotal)}</span>
+                <span className="w-12 text-right text-footnote text-ink-dim tabular-nums">{row.grossTotal}</span>
                 <span className="w-11 text-right">
-                  <MoneyBadge amount={money.get(row.player.id) ?? 0} className="text-[12.5px]" />
+                  <MoneyBadge amount={money.get(row.player.id) ?? 0} className="text-footnote" />
                 </span>
               </div>
             ))}
@@ -164,7 +165,7 @@ export default function TripBooked({ trip }: { trip: Trip }) {
       <SectionLabel
         action={
           !adding && !editingId ? (
-            <button onClick={() => setAdding(true)} className="text-[12.5px] font-bold text-green">+ Add to trip</button>
+            <button onClick={() => setAdding(true)} className="text-footnote font-bold text-green">+ Add to trip</button>
           ) : undefined
         }
       >
@@ -178,7 +179,7 @@ export default function TripBooked({ trip }: { trip: Trip }) {
       )}
 
       {logistics.length === 0 && !adding ? (
-        <Card className="p-5 text-center text-[13.5px] text-ink-dim">
+        <Card className="p-5 text-center text-footnote text-ink-dim">
           No flights or housing yet. Add them with links, confirmation numbers, and photos.
         </Card>
       ) : (
@@ -191,12 +192,12 @@ export default function TripBooked({ trip }: { trip: Trip }) {
 
       <SectionLabel>Schedule</SectionLabel>
       {days.length === 0 ? (
-        <Card className="p-5 text-center text-[13.5px] text-ink-dim">Nothing scheduled yet. Tee times, dinners, chaos — it all goes here.</Card>
+        <Card className="p-5 text-center text-footnote text-ink-dim">Nothing scheduled yet. Tee times, dinners, chaos — it all goes here.</Card>
       ) : (
         <div className="space-y-4">
           {days.map((day) => (
             <div key={day}>
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-green px-1 mb-2">{prettyDate(day)}</p>
+              <p className="text-caption font-bold uppercase tracking-[0.12em] text-green px-1 mb-2">{prettyDate(day)}</p>
               <Card className="divide-y divide-line">
                 {schedule
                   .filter((i) => i.date === day)
@@ -219,10 +220,10 @@ export default function TripBooked({ trip }: { trip: Trip }) {
               return (
                 <Card key={r.id} onClick={() => navigate(`/rounds/${r.id}`)} className="p-4 flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-bold text-[14px] text-ink truncate">{r.courseName}</p>
-                    <p className="text-[12px] text-ink-faint mt-0.5 tabular-nums">{shortDate(r.date)}</p>
+                    <p className="font-bold text-body text-ink truncate">{r.courseName}</p>
+                    <p className="text-footnote text-ink-faint mt-0.5 tabular-nums">{shortDate(r.date)}</p>
                   </div>
-                  <p className="text-[12.5px] text-ink-dim shrink-0">
+                  <p className="text-footnote text-ink-dim shrink-0">
                     <span className="font-extrabold text-ink">{winner.name}</span> · net{' '}
                     <span className="font-bold tabular-nums">{fmt1(standings[0].netScore)}</span>
                   </p>

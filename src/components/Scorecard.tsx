@@ -4,25 +4,17 @@ import type { Round } from '../types'
 import { HOLE_COUNT, cardOf, inTotal, outTotal } from '../lib/holes'
 import { fmtDiff, ghostDiff, ghostFor } from '../lib/ghost'
 import { shortDate } from '../lib/stats'
-import { findCourse, hasPars, hasStrokeIndex, padded, scoreKind, strokesOffLow, toPar, type ScoreKind } from '../lib/courses'
+import { findCourse, hasPars, hasStrokeIndex, padded, scoreKind, strokesOffLow, toPar } from '../lib/courses'
 import { Avatar, Card } from './ui'
+import { Icon } from './icons'
+import { MarkLegend, SCORE_MARK, StrokeDots } from './scoreMarks'
 
 // Read-only card. Scrolls sideways rather than squeezing eighteen holes
 // into a phone's width, with the golfer column pinned so you can tell
 // whose row you're reading.
 
 // A real card marks the good and bad holes rather than leaving you to do
-// the arithmetic: circles under par, squares over. Two rings for an
-// eagle, two boxes for a double, which is how they're drawn on paper.
-const MARK: Record<ScoreKind, string> = {
-  albatross: 'ring-2 ring-gold ring-offset-1 rounded-full bg-gold-soft font-extrabold text-gold',
-  eagle: 'ring-2 ring-gold ring-offset-1 rounded-full bg-gold-soft font-extrabold text-gold',
-  birdie: 'rounded-full bg-green-soft font-extrabold text-green',
-  par: 'text-ink',
-  bogey: 'rounded-md bg-paper border border-line-strong text-ink',
-  double: 'rounded-md bg-flag-soft border border-flag/40 font-bold text-flag',
-  worse: 'rounded-md bg-flag-soft border-2 border-flag/60 font-extrabold text-flag',
-}
+// the arithmetic; the marks themselves live in scoreMarks.tsx.
 
 export default function Scorecard({ round }: { round: Round }) {
   const { data } = useStore()
@@ -44,7 +36,7 @@ export default function Scorecard({ round }: { round: Round }) {
   })
 
   const headerCell = (i: number) => (
-    <th key={i} className="w-8 px-1 py-2 font-bold text-ink-faint">
+    <th key={i} className="w-8 px-1 py-2 font-bold text-on-forest/80">
       {i + 1}
     </th>
   )
@@ -52,64 +44,64 @@ export default function Scorecard({ round }: { round: Round }) {
   return (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="text-[12px] tabular-nums">
+        <table className="text-footnote tabular-nums">
           <thead>
-            <tr className="border-b border-line">
-              <th className="sticky left-0 z-10 bg-card px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-ink-faint">
+            <tr className="bg-forest text-on-forest">
+              <th className="sticky left-0 z-10 bg-forest px-3 py-2 text-left text-caption font-bold uppercase tracking-wider text-on-forest">
                 Hole
               </th>
               {Array.from({ length: 9 }, (_, i) => headerCell(i))}
-              <th className="w-9 px-1 py-2 font-extrabold text-ink">Out</th>
+              <th className="w-9 px-1 py-2 font-extrabold">Out</th>
               {Array.from({ length: 9 }, (_, i) => headerCell(i + 9))}
-              <th className="w-9 px-1 py-2 font-extrabold text-ink">In</th>
-              <th className="w-10 px-1 py-2 font-extrabold text-ink">Tot</th>
+              <th className="w-9 px-1 py-2 font-extrabold">In</th>
+              <th className="w-10 px-1 py-2 font-extrabold">Tot</th>
             </tr>
             {/* Yardage, where the card came with it. One tee set; the
                 label says which. */}
             {course?.yards && course.yards.length === HOLE_COUNT && (
               <tr className="border-b border-line">
-                <td className="sticky left-0 z-10 bg-card px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">
+                <td className="sticky left-0 z-10 bg-card px-3 py-1 text-caption font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">
                   Yds{course.yardsTee ? ` · ${course.yardsTee}` : ''}
                 </td>
                 {course.yards.slice(0, 9).map((y, i) => (
-                  <td key={i} className="px-1 py-1 text-center text-[10px] text-ink-faint tabular-nums">
+                  <td key={i} className="px-1 py-1 text-center text-caption text-ink-faint tabular-nums">
                     {y ?? ''}
                   </td>
                 ))}
-                <td className="px-1 text-center text-[10px] text-ink-faint tabular-nums">
+                <td className="px-1 text-center text-caption text-ink-faint tabular-nums">
                   {course.yards.slice(0, 9).reduce<number>((s, y) => s + (y ?? 0), 0)}
                 </td>
                 {course.yards.slice(9).map((y, i) => (
-                  <td key={i + 9} className="px-1 py-1 text-center text-[10px] text-ink-faint tabular-nums">
+                  <td key={i + 9} className="px-1 py-1 text-center text-caption text-ink-faint tabular-nums">
                     {y ?? ''}
                   </td>
                 ))}
-                <td className="px-1 text-center text-[10px] text-ink-faint tabular-nums">
+                <td className="px-1 text-center text-caption text-ink-faint tabular-nums">
                   {course.yards.slice(9).reduce<number>((s, y) => s + (y ?? 0), 0)}
                 </td>
-                <td className="px-1 text-center text-[10px] text-ink-faint tabular-nums">
+                <td className="px-1 text-center text-caption text-ink-faint tabular-nums">
                   {course.yards.reduce<number>((s, y) => s + (y ?? 0), 0)}
                 </td>
               </tr>
             )}
             {pars && (
               <tr className="border-b border-line bg-paper/60">
-                <td className="sticky left-0 z-10 bg-paper px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-faint">
+                <td className="sticky left-0 z-10 bg-paper px-3 py-1.5 text-caption font-bold uppercase tracking-wider text-ink-faint">
                   Par
                 </td>
                 {pars.slice(0, 9).map((p, i) => (
-                  <td key={i} className="px-1 py-1.5 text-center text-[11px] font-bold text-ink-dim">
+                  <td key={i} className="px-1 py-1.5 text-center text-caption font-bold text-ink-dim">
                     {p}
                   </td>
                 ))}
-                <td className="px-1 text-center text-[11px] font-extrabold text-ink-dim">{sumPars(0, 9)}</td>
+                <td className="px-1 text-center text-caption font-extrabold text-ink-dim">{sumPars(0, 9)}</td>
                 {pars.slice(9).map((p, i) => (
-                  <td key={i + 9} className="px-1 py-1.5 text-center text-[11px] font-bold text-ink-dim">
+                  <td key={i + 9} className="px-1 py-1.5 text-center text-caption font-bold text-ink-dim">
                     {p}
                   </td>
                 ))}
-                <td className="px-1 text-center text-[11px] font-extrabold text-ink-dim">{sumPars(9, 18)}</td>
-                <td className="px-1 text-center text-[11px] font-extrabold text-ink-dim">
+                <td className="px-1 text-center text-caption font-extrabold text-ink-dim">{sumPars(9, 18)}</td>
+                <td className="px-1 text-center text-caption font-extrabold text-ink-dim">
                   {sumPars(0, HOLE_COUNT)}
                 </td>
               </tr>
@@ -128,16 +120,14 @@ export default function Scorecard({ round }: { round: Round }) {
                 const par = pars?.[i]
                 // With par known, mark against par. Without it, fall back
                 // to highlighting the low score on the hole.
-                const style = v != null && par != null ? MARK[scoreKind(v, par)] : null
+                const style = v != null && par != null ? SCORE_MARK[scoreKind(v, par)] : null
                 const best = !pars && bestByHole[i] != null && v === bestByHole[i]
                 return (
                   <td key={i} className="px-1 py-1.5 text-center align-bottom">
                     {/* A row for the stroke dots keeps every cell the same
                         height whether or not this hole gives one. */}
                     {strokeDots && (
-                      <span className="block h-2 text-[8px] leading-none text-gold" aria-hidden>
-                        {dots?.[i] ? '•'.repeat(Math.min(dots[i], 3)) : ''}
-                      </span>
+                      <StrokeDots count={dots?.[i]} />
                     )}
                     {v == null ? (
                       <span className="text-ink-faint">–</span>
@@ -166,7 +156,7 @@ export default function Scorecard({ round }: { round: Round }) {
                   <td className="sticky left-0 z-10 bg-card px-3 py-2">
                     <div className="flex items-center gap-2">
                       <Avatar player={p} size={22} />
-                      <span className="text-[12.5px] font-bold text-ink whitespace-nowrap">{p.name}</span>
+                      <span className="text-footnote font-bold text-ink whitespace-nowrap">{p.name}</span>
                     </div>
                   </td>
                   {Array.from({ length: 9 }, (_, i) => cell(i))}
@@ -176,7 +166,7 @@ export default function Scorecard({ round }: { round: Round }) {
                   <td className="px-1 text-center font-extrabold text-ink">
                     {total || '–'}
                     {scoredPar != null && total > 0 && (
-                      <span className="block text-[10px] font-bold text-ink-faint">{toPar(total - scoredPar)}</span>
+                      <span className="block text-caption font-bold text-ink-faint">{toPar(total - scoredPar)}</span>
                     )}
                   </td>
                 </tr>
@@ -185,8 +175,10 @@ export default function Scorecard({ round }: { round: Round }) {
                 {ghost && race && (
                   <tr className="border-b border-line last:border-0 bg-paper/60">
                     <td className="sticky left-0 z-10 bg-paper px-3 py-1.5 leading-tight">
-                      <span className="block text-[11.5px] font-bold text-ink-dim whitespace-nowrap">👻 Ghost {p.name.split(' ')[0]}</span>
-                      <span className="block text-[9.5px] text-ink-faint whitespace-nowrap tabular-nums">{shortDate(ghost.round.date)}</span>
+                      <span className="flex items-center gap-1 text-caption font-bold text-ink-dim whitespace-nowrap">
+                        <Icon name="ghost" size={13} /> Ghost {p.name.split(' ')[0]}
+                      </span>
+                      <span className="block text-caption text-ink-faint whitespace-nowrap tabular-nums">{shortDate(ghost.round.date)}</span>
                     </td>
                     {Array.from({ length: HOLE_COUNT }, (_, i) => {
                       const g = ghost.card[i]
@@ -194,7 +186,7 @@ export default function Scorecard({ round }: { round: Round }) {
                       const shown = v != null && g != null
                       const tone = !shown ? 'text-ink-faint' : v < g ? 'text-green' : v > g ? 'text-flag' : 'text-ink-dim'
                       const cell = (
-                        <td key={i} className={`px-1 py-1 text-center text-[11px] font-bold tabular-nums ${tone}`}>
+                        <td key={i} className={`px-1 py-1 text-center text-caption font-bold tabular-nums ${tone}`}>
                           {shown ? g : '·'}
                         </td>
                       )
@@ -202,7 +194,7 @@ export default function Scorecard({ round }: { round: Round }) {
                       return i === 8 ? (
                         <Fragment key={i}>
                           {cell}
-                          <td className="px-1 text-center text-[11px] text-ink-faint tabular-nums">
+                          <td className="px-1 text-center text-caption text-ink-faint tabular-nums">
                             {ghost.card.slice(0, 9).reduce<number>((s, h, k) => s + (card[k] != null ? (h ?? 0) : 0), 0) || '–'}
                           </td>
                         </Fragment>
@@ -210,14 +202,14 @@ export default function Scorecard({ round }: { round: Round }) {
                         cell
                       )
                     })}
-                    <td className="px-1 text-center text-[11px] text-ink-faint tabular-nums">
+                    <td className="px-1 text-center text-caption text-ink-faint tabular-nums">
                       {ghost.card.slice(9).reduce<number>((s, h, k) => s + (card[k + 9] != null ? (h ?? 0) : 0), 0) || '–'}
                     </td>
                     <td className="px-1 text-center">
-                      <span className="text-[11px] font-bold text-ink-dim tabular-nums">{race.holes ? race.ghostSum : '–'}</span>
+                      <span className="text-caption font-bold text-ink-dim tabular-nums">{race.holes ? race.ghostSum : '–'}</span>
                       {race.holes > 0 && (
                         <span
-                          className={`block text-[10px] font-extrabold tabular-nums ${
+                          className={`block text-caption font-extrabold tabular-nums ${
                             race.diff < 0 ? 'text-green' : race.diff > 0 ? 'text-flag' : 'text-ink-faint'
                           }`}
                         >
@@ -234,28 +226,8 @@ export default function Scorecard({ round }: { round: Round }) {
         </table>
       </div>
       {(pars || strokeDots) && (
-        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 border-t border-line px-3 py-2 text-[10.5px] text-ink-faint">
-          {strokeDots && (
-            <span className="inline-flex items-center gap-1">
-              <span className="text-gold text-[12px] leading-none">•</span> stroke given, off the low handicap
-            </span>
-          )}
-          {pars && (
-            <>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3.5 w-3.5 rounded-full bg-green-soft" /> birdie
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3.5 w-3.5 rounded-full bg-gold-soft ring-1 ring-gold" /> eagle
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3.5 w-3.5 rounded-md border border-line-strong bg-paper" /> bogey
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3.5 w-3.5 rounded-md border border-flag/40 bg-flag-soft" /> double or worse
-          </span>
-            </>
-          )}
+        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 border-t border-line px-3 py-2 text-caption text-ink-faint">
+          <MarkLegend pars={!!pars} strokeLabel={strokeDots ? 'stroke given, off the low handicap' : undefined} />
         </div>
       )}
     </Card>

@@ -21,6 +21,7 @@ import { roundBetSettlements } from '../lib/settlements'
 import { useConfirm } from '../components/Confirm'
 import { Avatar, Card, HelpTip, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SectionLabel } from '../components/ui'
 import { betRules } from '../lib/betRules'
+import { Icon, IconTile } from '../components/icons'
 
 export default function RoundDetail() {
   const { id } = useParams()
@@ -110,11 +111,11 @@ export default function RoundDetail() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-2">← Back</button>
+        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-2">← Back</button>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-[24px] font-extrabold tracking-tight leading-tight text-ink">{round.courseName}</h1>
-            <p className="text-[13px] text-ink-dim mt-1">
+            <h1 className="text-large font-extrabold tracking-tight leading-tight text-ink">{round.courseName}</h1>
+            <p className="text-footnote text-ink-dim mt-1">
               {prettyDate(round.date)}
               {par != null && ` · par ${par}`}
               {round.tee && ` · ${round.tee} tees`}
@@ -122,18 +123,20 @@ export default function RoundDetail() {
           </div>
           <button
             onClick={() => navigate(`/rounds/${round.id}/edit`)}
-            className="shrink-0 rounded-xl border border-line-strong bg-card px-4 py-2 text-[13px] font-bold text-ink-dim active:bg-paper"
+            className="shrink-0 rounded-xl border border-line-strong bg-card px-4 py-2 text-footnote font-bold text-ink-dim active:bg-paper"
           >
             Edit
           </button>
         </div>
         <div className="flex flex-wrap gap-2 mt-2">
-          {!solo && round.players.length > 1 && saddamCounts(round) && <Pill tone="gold">Saddam on the line</Pill>}
+          {!solo && round.players.length > 1 && saddamCounts(round) && <Pill tone="cream">Saddam on the line</Pill>}
           {solo && standings.length > 0 && <Pill>Solo round</Pill>}
           {waiting.length > 0 && <Pill tone="flag">{waiting.length} score{waiting.length === 1 ? '' : 's'} outstanding</Pill>}
           {trip && (
             <Link to={`/trips/${trip.id}`}>
-              <Pill tone="green">⛳ {trip.name}</Pill>
+              <Pill tone="green">
+                <Icon name="suitcase" size={12} strokeWidth={2.2} /> {trip.name}
+              </Pill>
             </Link>
           )}
         </div>
@@ -142,8 +145,8 @@ export default function RoundDetail() {
       {/* Your own outstanding score gets top billing */}
       {iAmWaiting && (
         <Card className="mt-2 p-4 border-gold/40 bg-gold-soft/50">
-          <p className="text-[14.5px] font-extrabold text-ink">Your score is missing</p>
-          <p className="text-[13px] text-ink-dim mt-1">
+          <p className="text-body font-extrabold text-ink">Your score is missing</p>
+          <p className="text-footnote text-ink-dim mt-1">
             Someone logged this round and left yours blank. Add it and the records update.
           </p>
           {entering === data.currentUserId ? (
@@ -155,21 +158,21 @@ export default function RoundDetail() {
                 onChange={(e) => setDraftScore(e.target.value)}
                 placeholder="Gross"
                 autoFocus
-                className="w-24 h-12 rounded-xl border border-line-strong bg-card text-center text-[20px] font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
+                className="w-24 h-12 rounded-xl border border-line-strong bg-card text-center text-headline font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
               />
               <PrimaryButton onClick={() => saveScore(data.currentUserId)} disabled={!draftScore.trim()} className="flex-1 !py-3">
                 Post it
               </PrimaryButton>
-              <button onClick={() => setEntering(null)} className="px-3 text-[13px] font-bold text-ink-faint">Cancel</button>
+              <button onClick={() => setEntering(null)} className="px-3 text-footnote font-bold text-ink-faint">Cancel</button>
             </div>
           ) : null}
           {entering === data.currentUserId && draftWarning && (
-            <p className="text-[12px] font-semibold text-flag mt-2">{draftWarning}</p>
+            <p className="text-footnote font-semibold text-flag mt-2">{draftWarning}</p>
           )}
           {entering !== data.currentUserId && (
             <button
               onClick={() => { setEntering(data.currentUserId); setDraftScore('') }}
-              className="mt-3 rounded-xl bg-green px-5 py-2.5 text-[14px] font-bold text-white"
+              className="mt-3 rounded-xl bg-green px-5 py-2.5 text-body font-bold text-white"
             >
               Enter my score
             </button>
@@ -180,14 +183,14 @@ export default function RoundDetail() {
       {/* How was it? Asked once, right where the round lands. */}
       {askForRating && !rating && (
         <Card onClick={() => setRating(true)} className="mt-3 p-4 border-green/30 bg-green-soft/40 flex items-center gap-3.5">
-          <span className="text-[20px]">⭐</span>
+          <IconTile name="star" tone="gold" />
           <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-extrabold text-ink">How was {round.courseName}?</p>
-            <p className="text-[12.5px] text-ink-dim mt-0.5">
+            <p className="text-body font-extrabold text-ink">How was {round.courseName}?</p>
+            <p className="text-footnote text-ink-dim mt-0.5">
               Rate it while it’s fresh. One tap for the stars, one more for where it lands on your list.
             </p>
           </div>
-          <span className="text-[13px] font-bold text-green shrink-0">Rate →</span>
+          <span className="text-footnote font-bold text-green shrink-0">Rate →</span>
         </Card>
       )}
       {rating && (
@@ -201,11 +204,11 @@ export default function RoundDetail() {
           className="mt-3 px-4 py-3 flex items-center gap-3"
         >
           <StarRating value={courseTake.mine.overall} size={13} />
-          <p className="flex-1 min-w-0 text-[12.5px] text-ink-dim truncate tabular-nums">
+          <p className="flex-1 min-w-0 text-footnote text-ink-dim truncate tabular-nums">
             You gave it {courseTake.mine.overall}
             {courseTake.avg != null && courseTake.ratings.length > 1 && ` · group ${fmtStars(courseTake.avg)}`}
           </p>
-          <span className="text-[12px] font-bold text-green shrink-0">All ratings →</span>
+          <span className="text-footnote font-bold text-green shrink-0">All ratings →</span>
         </Card>
       )}
 
@@ -216,21 +219,21 @@ export default function RoundDetail() {
           onClick={() => navigate(`/courses/${encodeURIComponent(slug)}/card`)}
           className="mt-3 p-4 flex items-center gap-3.5"
         >
-          <span className="text-[20px]">🚩</span>
+          <IconTile name="flag" tone="flag" />
           <div className="flex-1 min-w-0">
-            <p className="text-[13.5px] font-bold text-ink">No par for {round.courseName} yet</p>
-            <p className="text-[12.5px] text-ink-dim mt-0.5">
+            <p className="text-footnote font-bold text-ink">No par for {round.courseName} yet</p>
+            <p className="text-footnote text-ink-dim mt-0.5">
               Eighteen taps off the scorecard, and every round here starts showing scores against par.
             </p>
           </div>
-          <span className="text-[12.5px] font-bold text-green shrink-0">Add it →</span>
+          <span className="text-footnote font-bold text-green shrink-0">Add it →</span>
         </Card>
       )}
 
       <Card className="mt-3 p-4">
-        <p className="text-[14.5px] font-bold text-ink leading-snug">{blurb}</p>
+        <p className="text-body font-bold text-ink leading-snug">{blurb}</p>
         {saddamChangedHere && top && (
-          <p className="mt-2 flex items-center gap-2 text-[13px] text-ink-dim">
+          <p className="mt-2 flex items-center gap-2 text-footnote text-ink-dim">
             <SaddamBadge size={16} /> The Saddam changed hands here. {top.name} carries it now.
           </p>
         )}
@@ -238,7 +241,7 @@ export default function RoundDetail() {
 
       <SectionLabel>Scorecard</SectionLabel>
       <Card>
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 px-4 py-2.5 border-b border-line text-[10px] font-bold uppercase tracking-wider text-ink-faint">
+        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 px-4 py-2.5 border-b border-line text-caption font-bold uppercase tracking-wider text-ink-faint">
           <span>Player</span>
           <span className="w-12 text-right">Net</span>
           <span className="w-10 text-right">Gross</span>
@@ -254,14 +257,14 @@ export default function RoundDetail() {
               <div className="flex items-center gap-2.5 min-w-0">
                 {!solo && <span className={`font-extrabold w-4 tabular-nums ${s.rank === 1 ? 'text-gold' : 'text-ink-faint'}`}>{s.rank}</span>}
                 <Avatar player={p} size={30} />
-                <span className={`truncate text-[14px] ${s.rank === 1 && !solo ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>{p.name}</span>
+                <span className={`truncate text-body ${s.rank === 1 && !solo ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>{p.name}</span>
               </div>
-              <span className="w-12 text-right text-[16px] font-extrabold text-ink tabular-nums">{fmt1(net(rp))}</span>
-              <span className="w-10 text-right text-[13px] text-ink-dim tabular-nums">
+              <span className="w-12 text-right text-headline font-extrabold text-ink tabular-nums">{fmt1(net(rp))}</span>
+              <span className="w-10 text-right text-footnote text-ink-dim tabular-nums">
                 {rp.gross}
-                {par != null && <span className="block text-[10.5px] text-ink-faint">{toPar(rp.gross - par)}</span>}
+                {par != null && <span className="block text-caption text-ink-faint">{toPar(rp.gross - par)}</span>}
               </span>
-              <span className="w-10 text-right text-[12px] text-ink-faint tabular-nums">{fmt1(rp.handicapSnapshot)}</span>
+              <span className="w-10 text-right text-footnote text-ink-faint tabular-nums">{fmt1(rp.handicapSnapshot)}</span>
             </div>
           )
         })}
@@ -277,8 +280,8 @@ export default function RoundDetail() {
                 {!solo && <span className="w-4" />}
                 <Avatar player={p} size={30} />
                 <div className="flex-1 min-w-0">
-                  <span className="text-[14px] text-ink-dim truncate">{p.name}</span>
-                  <p className="text-[11.5px] text-ink-faint">Score not in yet</p>
+                  <span className="text-body text-ink-dim truncate">{p.name}</span>
+                  <p className="text-caption text-ink-faint">Score not in yet</p>
                 </div>
                 {entering === rp.playerId ? (
                   <div className="flex items-center gap-1.5">
@@ -289,28 +292,28 @@ export default function RoundDetail() {
                       onChange={(e) => setDraftScore(e.target.value)}
                       placeholder="—"
                       autoFocus
-                      className="w-16 h-10 rounded-lg border border-line-strong bg-card text-center text-[16px] font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
+                      className="w-16 h-10 rounded-lg border border-line-strong bg-card text-center text-headline font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
                     />
                     <button
                       onClick={() => saveScore(rp.playerId)}
                       disabled={!draftScore.trim()}
-                      className="rounded-lg bg-green px-3 py-2 text-[12.5px] font-bold text-white disabled:opacity-30"
+                      className="rounded-lg bg-green px-3 py-2 text-footnote font-bold text-white disabled:opacity-30"
                     >
                       Save
                     </button>
-                    <button onClick={() => setEntering(null)} className="px-1 text-[12px] font-bold text-ink-faint">✕</button>
+                    <button onClick={() => setEntering(null)} className="px-1 text-footnote font-bold text-ink-faint">✕</button>
                   </div>
                 ) : (
                   <button
                     onClick={() => { setEntering(rp.playerId); setDraftScore('') }}
-                    className="shrink-0 rounded-lg border border-line-strong px-3 py-1.5 text-[12.5px] font-bold text-green"
+                    className="shrink-0 rounded-lg border border-line-strong px-3 py-1.5 text-footnote font-bold text-green"
                   >
                     {isMe ? 'Add mine' : 'Add it'}
                   </button>
                 )}
               </div>
               {entering === rp.playerId && draftWarning && (
-                <p className="text-[12px] font-semibold text-flag mt-1.5">{draftWarning}</p>
+                <p className="text-footnote font-semibold text-flag mt-1.5">{draftWarning}</p>
               )}
             </div>
           )
@@ -318,7 +321,7 @@ export default function RoundDetail() {
       </Card>
 
       {waiting.length > 0 && (
-        <p className="text-[11.5px] text-ink-faint px-2 mt-2">
+        <p className="text-caption text-ink-faint px-2 mt-2">
           Outstanding scores don't count toward records. This round starts affecting the leaderboard and the Saddam once at
           least two are in.
         </p>
@@ -327,7 +330,7 @@ export default function RoundDetail() {
       {/* Per-hole card */}
       <SectionLabel
         action={
-          <button onClick={() => navigate(`/rounds/${round.id}/card`)} className="text-[12.5px] font-bold text-green">
+          <button onClick={() => navigate(`/rounds/${round.id}/card`)} className="text-footnote font-bold text-green">
             {!anyCards(round) ? '+ Add hole scores' : round.players.some((rp) => !cardComplete(rp)) ? 'Keep scoring →' : 'Edit card'}
           </button>
         }
@@ -338,7 +341,7 @@ export default function RoundDetail() {
         <Scorecard round={round} />
       ) : (
         <Card className="p-4 text-center">
-          <p className="text-[13.5px] text-ink-dim">
+          <p className="text-footnote text-ink-dim">
             No hole-by-hole scores yet. Add them and skins and nassau work themselves out.
           </p>
         </Card>
@@ -349,7 +352,7 @@ export default function RoundDetail() {
       <SectionLabel
         action={
           !addingBet ? (
-            <button onClick={() => setAddingBet(true)} className="text-[12.5px] font-bold text-green">+ Add bet</button>
+            <button onClick={() => setAddingBet(true)} className="text-footnote font-bold text-green">+ Add bet</button>
           ) : undefined
         }
       >
@@ -370,7 +373,7 @@ export default function RoundDetail() {
       )}
 
       {bets.length === 0 && !addingBet && (
-        <Card className="p-4 text-center text-[13.5px] text-ink-dim">Nothing on this round. Yet.</Card>
+        <Card className="p-4 text-center text-footnote text-ink-dim">Nothing on this round. Yet.</Card>
       )}
 
       {/* What the bets add up to between people, and how to make it stop
@@ -378,12 +381,12 @@ export default function RoundDetail() {
           about whether it's actually changed hands. */}
       {bets.length > 0 && (
         <Card className={`mb-3 p-4 ${betsOwed.length === 0 ? 'bg-green-soft/50 border-green/25' : 'bg-gold-soft/40 border-gold/30'}`}>
-          <p className="text-[12px] font-bold uppercase tracking-wider text-ink-faint mb-2.5">Settle up</p>
+          <p className="text-footnote font-bold uppercase tracking-wider text-ink-faint mb-2.5">Settle up</p>
           <SettleUp
             url={`/rounds/${round.id}`}
             owed={betsOwed}
             note={`${round.courseName} (Sandbagger)`}
-            squareLabel="All settled. Nobody owes anybody for this one. 🎉"
+            squareLabel="All settled. Nobody owes anybody for this one."
             onMarkPaid={(s) =>
               addPayment({ roundId: round.id, fromId: s.fromId, toId: s.toId, amount: s.amount, date: todayISO() })
             }
@@ -391,13 +394,13 @@ export default function RoundDetail() {
           {roundPaybacks.length > 0 && (
             <div className="mt-3 pt-3 border-t border-gold/25 space-y-1.5">
               {roundPaybacks.map((p) => (
-                <div key={p.id} className="flex items-center gap-2 text-[12px]">
+                <div key={p.id} className="flex items-center gap-2 text-footnote">
                   <span className="flex-1 text-ink-dim">
                     <span className="font-bold text-ink">{data.players.find((x) => x.id === p.fromId)?.name}</span> paid{' '}
                     <span className="font-bold text-ink">{data.players.find((x) => x.id === p.toId)?.name}</span>{' '}
                     <span className="font-bold tabular-nums text-green">{money(p.amount)}</span>
                   </span>
-                  <button onClick={() => deletePayment(p.id)} className="text-[11px] font-bold text-flag/70 shrink-0">
+                  <button onClick={() => deletePayment(p.id)} className="text-caption font-bold text-flag/70 shrink-0">
                     Undo
                   </button>
                 </div>
@@ -424,10 +427,10 @@ export default function RoundDetail() {
               return (
               <Card key={bet.id} className="p-4">
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="font-bold text-[14px] text-ink min-w-0 truncate">{bet.name}</p>
+                  <p className="font-bold text-body text-ink min-w-0 truncate">{bet.name}</p>
                   <div className="flex items-center gap-3 shrink-0">
                     <HelpTip {...betRules(bet.type, { net: bet.net, winnerTakeAll: bet.winnerTakeAll })} />
-                    <p className="text-[11.5px] text-ink-faint tabular-nums">{money(bet.stake)} stake</p>
+                    <p className="text-caption text-ink-faint tabular-nums">{money(bet.stake)} stake</p>
                     <button
                       onClick={async () => {
                         const ok = await confirm({
@@ -438,14 +441,14 @@ export default function RoundDetail() {
                         })
                         if (ok) deleteBet(bet.id)
                       }}
-                      className="text-[11.5px] font-bold text-flag/70"
+                      className="text-caption font-bold text-flag/70"
                     >
                       Remove
                     </button>
                   </div>
                 </div>
                 {status && (
-                  <p className={`text-[12px] mt-1 font-semibold ${live?.computable ? 'text-ink-dim' : 'text-gold'}`}>
+                  <p className={`text-footnote mt-1 font-semibold ${live?.computable ? 'text-ink-dim' : 'text-gold'}`}>
                     {live?.computable ? status : `Live: ${status}`}
                   </p>
                 )}
@@ -456,7 +459,7 @@ export default function RoundDetail() {
                       const p = data.players.find((pl) => pl.id === res.playerId)
                       if (!p) return null
                       return (
-                        <div key={res.playerId} className="flex items-center justify-between text-[13.5px]">
+                        <div key={res.playerId} className="flex items-center justify-between text-footnote">
                           <span className="text-ink-dim">{p.name}</span>
                           <MoneyBadge amount={res.amount} />
                         </div>
@@ -486,7 +489,7 @@ export default function RoundDetail() {
               navigate('/rounds')
             }
           }}
-          className="w-full rounded-xl border border-flag/40 bg-flag-soft py-3 text-[14px] font-bold text-flag active:bg-flag/10"
+          className="w-full rounded-xl border border-flag/40 bg-flag-soft py-3 text-body font-bold text-flag active:bg-flag/10"
         >
           Delete this round
         </button>

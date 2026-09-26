@@ -36,14 +36,14 @@ export default function AttendeePicker({
           >
             <Avatar player={p} size={32} />
             <div className="flex-1 text-left min-w-0">
-              <p className="text-[14px] font-bold text-ink truncate">
+              <p className="text-body font-bold text-ink truncate">
                 {p.name}
                 {p.id === data.currentUserId && <span className="text-ink-faint font-semibold"> (you)</span>}
               </p>
-              <p className="text-[11.5px] text-ink-faint tabular-nums">Hcp {p.handicap.toFixed(1)}</p>
+              <p className="text-caption text-ink-faint tabular-nums">Hcp {p.handicap.toFixed(1)}</p>
             </div>
             {locked ? (
-              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-faint">Organizer</span>
+              <span className="text-caption font-bold uppercase tracking-wider text-ink-faint">Organizer</span>
             ) : (
               <span className={`h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 ${on ? 'border-green bg-green' : 'border-line-strong'}`}>
                 {on && (

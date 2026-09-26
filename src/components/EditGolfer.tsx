@@ -27,8 +27,8 @@ export default function EditGolfer({ player, cloud, onDone }: { player: Player; 
   }
 
   const field =
-    'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-[14px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5'
+    'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
+  const label = 'block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5'
 
   const save = () => {
     if (!name.trim()) return
@@ -49,7 +49,7 @@ export default function EditGolfer({ player, cloud, onDone }: { player: Player; 
       <div className="flex items-center gap-3">
         {/* Preview, so the avatar you're about to save is the one you see */}
         <Avatar player={{ ...player, name, initials: initials || deriveInitials(name) }} size={32} />
-        <p className="text-[14px] font-extrabold text-ink">Editing {player.name}</p>
+        <p className="text-body font-extrabold text-ink">Editing {player.name}</p>
       </div>
       <div className="grid grid-cols-[1fr_auto] gap-2.5">
         <div>
@@ -80,7 +80,7 @@ export default function EditGolfer({ player, cloud, onDone }: { player: Player; 
             placeholder="them@example.com"
             className={field}
           />
-          <p className="text-[11px] text-ink-faint mt-1.5">
+          <p className="text-caption text-ink-faint mt-1.5">
             Must match the address they sign in with, or they'll get a fresh empty profile instead of this one.
           </p>
         </div>
@@ -103,7 +103,7 @@ export default function EditGolfer({ player, cloud, onDone }: { player: Player; 
       <div>
         <label className={label}>Venmo</label>
         <div className="relative">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[14px] font-bold text-ink-faint">@</span>
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-body font-bold text-ink-faint">@</span>
           <input
             value={venmo}
             onChange={(e) => setVenmo(normalizeVenmo(e.target.value))}
@@ -114,7 +114,7 @@ export default function EditGolfer({ player, cloud, onDone }: { player: Player; 
             className={`${field} pl-7`}
           />
         </div>
-        <p className="text-[11px] text-ink-faint mt-1.5">
+        <p className="text-caption text-ink-faint mt-1.5">
           Just the username, so settling up is one tap. Nothing gets linked and no account is connected.
         </p>
       </div>
@@ -122,7 +122,7 @@ export default function EditGolfer({ player, cloud, onDone }: { player: Player; 
         <PrimaryButton onClick={save} disabled={!name.trim()} className="flex-1 !py-2.5">
           Save
         </PrimaryButton>
-        <button onClick={onDone} className="px-4 text-[13px] font-bold text-ink-faint">
+        <button onClick={onDone} className="px-4 text-footnote font-bold text-ink-faint">
           Cancel
         </button>
       </div>

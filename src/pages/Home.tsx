@@ -9,7 +9,8 @@ import { courseSlug } from '../lib/courses'
 import { byGroupRank, courseSummaries, fmtStars, ratingFor } from '../lib/ratings'
 import { canSeeTrip, fmt1, isSoloRound, pending } from '../types'
 import { StarRating } from '../components/Stars'
-import { Avatar, Card, Pill, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
+import { Icon, IconTile } from '../components/icons'
+import { Avatar, AvatarStack, Card, Pill, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
 
 // The front door. Anything that needs doing comes first (a card mid-
 // round, a score you owe, money on the table, a course to rate), then
@@ -80,11 +81,11 @@ export default function Home() {
           <path d="M0 100 Q40 55 90 70 T160 45 V100 Z" fill="#fff" />
           <path d="M20 100 Q70 70 120 85 T160 75 V100 Z" fill="#fff" opacity="0.7" />
         </svg>
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/75">
+        <p className="text-caption font-bold uppercase tracking-[0.16em] text-white/75">
           {heroIsPlanning ? 'Trip in the works' : 'Next trip'}
         </p>
-        <h2 className="text-[20px] font-extrabold leading-tight mt-0.5">{heroTrip.name}</h2>
-        <p className="text-[13px] text-white/85 mt-1">
+        <h2 className="text-headline font-extrabold leading-tight mt-0.5">{heroTrip.name}</h2>
+        <p className="text-footnote text-white/85 mt-1">
           {heroIsPlanning
             ? `${heroTrip.options.length} destination${heroTrip.options.length === 1 ? '' : 's'} on the table`
             : `${heroTrip.location}${heroTrip.startDate ? ` · ${shortDate(heroTrip.startDate)}` : ''}`}
@@ -93,17 +94,17 @@ export default function Home() {
       <div className="px-5 py-3 flex items-center justify-between">
         {heroIsPlanning ? (
           <>
-            <p className="text-[13px] text-ink-dim">
+            <p className="text-footnote text-ink-dim">
               {votesIn} of {heroTrip.attendeeIds.length} votes in
             </p>
-            <span className={`text-[13.5px] font-bold ${myVoteCast ? 'text-ink-faint' : 'text-green'}`}>
+            <span className={`text-footnote font-bold ${myVoteCast ? 'text-ink-faint' : 'text-green'}`}>
               {myVoteCast ? 'Vote cast ✓' : 'Cast your vote →'}
             </span>
           </>
         ) : (
           <>
-            <p className="text-[13px] text-ink-dim">Itinerary, tee times, standings</p>
-            <span className="text-[13.5px] font-bold text-green">Open →</span>
+            <p className="text-footnote text-ink-dim">Itinerary, tee times, standings</p>
+            <span className="text-footnote font-bold text-green">Open →</span>
           </>
         )}
       </div>
@@ -114,11 +115,11 @@ export default function Home() {
     <div className="rise">
       <header className="pt-4 pb-2 px-1 flex items-center justify-between">
         <div className="min-w-0">
-          <Link to="/group" className="text-[12px] font-bold uppercase tracking-[0.14em] text-ink-faint">
+          <Link to="/group" className="text-footnote font-bold uppercase tracking-[0.14em] text-ink-faint">
             {data.group.name}
           </Link>
-          <h1 className="text-[26px] font-extrabold tracking-tight text-ink truncate">
-            Hey, {me.name} <span className="align-middle">👋</span>
+          <h1 className="text-large font-extrabold tracking-tight text-ink truncate">
+            Hey, {me.name}
           </h1>
         </div>
         <Link to="/profile" className="shrink-0">
@@ -132,14 +133,14 @@ export default function Home() {
           onClick={() => navigate(`/rounds/${inProgress.id}/card`)}
           className="mt-2 p-4 border-green/40 bg-green-soft/50 flex items-center gap-3.5"
         >
-          <span className="text-[22px]">⛳</span>
+          <IconTile name="flag" />
           <div className="flex-1 min-w-0">
-            <p className="text-[14.5px] font-extrabold text-ink">Round in progress</p>
-            <p className="text-[12.5px] text-ink-dim mt-0.5 truncate">
+            <p className="text-body font-extrabold text-ink">Round in progress</p>
+            <p className="text-footnote text-ink-dim mt-0.5 truncate">
               {inProgress.courseName} · {inProgressHoles} hole score{inProgressHoles === 1 ? '' : 's'} in
             </p>
           </div>
-          <span className="text-[13px] font-bold text-green shrink-0">Keep scoring →</span>
+          <span className="text-footnote font-bold text-green shrink-0">Keep scoring →</span>
         </Card>
       )}
 
@@ -149,18 +150,18 @@ export default function Home() {
           onClick={() => navigate(`/rounds/${awaiting[0].id}`)}
           className="mt-2 p-4 border-gold/40 bg-gold-soft/60 flex items-center gap-3.5"
         >
-          <span className="text-[22px]">📝</span>
+          <IconTile name="pencil" tone="gold" />
           <div className="flex-1 min-w-0">
-            <p className="text-[14.5px] font-extrabold text-ink">
+            <p className="text-body font-extrabold text-ink">
               {awaiting.length === 1 ? 'You owe a score' : `You owe ${awaiting.length} scores`}
             </p>
-            <p className="text-[12.5px] text-ink-dim mt-0.5 truncate">
+            <p className="text-footnote text-ink-dim mt-0.5 truncate">
               {awaiting.length === 1
                 ? `${awaiting[0].courseName}, ${shortDate(awaiting[0].date)}`
                 : `Starting with ${awaiting[0].courseName}, ${shortDate(awaiting[0].date)}`}
             </p>
           </div>
-          <span className="text-[13px] font-bold text-green shrink-0">Add it →</span>
+          <span className="text-footnote font-bold text-green shrink-0">Add it →</span>
         </Card>
       )}
 
@@ -169,9 +170,12 @@ export default function Home() {
       {debts.length > 0 && (
         <Card className="mt-2 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-line">
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">💸 Money on the table</p>
+            <p className="flex items-center gap-1.5 text-caption font-bold uppercase tracking-[0.12em] text-ink-faint">
+              <Icon name="cash" size={15} className="text-green" />
+              Money on the table
+            </p>
             {netPosition !== 0 && (
-              <span className={`text-[12.5px] font-extrabold tabular-nums ${netPosition > 0 ? 'text-green' : 'text-flag'}`}>
+              <span className={`text-footnote font-extrabold tabular-nums ${netPosition > 0 ? 'text-green' : 'text-flag'}`}>
                 {netPosition > 0 ? `+${money(netPosition)} coming` : `${money(-netPosition)} owed`}
               </span>
             )}
@@ -184,7 +188,7 @@ export default function Home() {
                 <RowButton key={i} onClick={() => navigate(d.href)} className="flex items-center gap-3 px-4 py-3">
                   {other && <Avatar player={other} size={26} />}
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13.5px] text-ink truncate">
+                    <p className="text-footnote text-ink truncate">
                       {iOwe ? (
                         <>
                           You owe <span className="font-extrabold">{other?.name}</span>
@@ -195,12 +199,12 @@ export default function Home() {
                         </>
                       )}
                     </p>
-                    <p className="text-[11.5px] text-ink-faint truncate">{d.label}</p>
+                    <p className="text-caption text-ink-faint truncate">{d.label}</p>
                   </div>
-                  <span className={`text-[15px] font-extrabold tabular-nums shrink-0 ${iOwe ? 'text-flag' : 'text-green'}`}>
+                  <span className={`text-body font-extrabold tabular-nums shrink-0 ${iOwe ? 'text-flag' : 'text-green'}`}>
                     {money(d.amount)}
                   </span>
-                  <span className="text-[12px] font-bold text-green shrink-0">{iOwe ? 'Settle →' : 'Nudge →'}</span>
+                  <span className="text-footnote font-bold text-green shrink-0">{iOwe ? 'Settle →' : 'Nudge →'}</span>
                 </RowButton>
               )
             })}
@@ -211,12 +215,12 @@ export default function Home() {
       {/* A course to rate, while it's still fresh */}
       {toRate && (
         <Card onClick={() => navigate(`/rounds/${toRate.id}`)} className="mt-2 p-4 flex items-center gap-3.5">
-          <span className="text-[22px]">⭐</span>
+          <IconTile name="star" tone="gold" />
           <div className="flex-1 min-w-0">
-            <p className="text-[14.5px] font-extrabold text-ink truncate">How was {toRate.courseName}?</p>
-            <p className="text-[12.5px] text-ink-dim mt-0.5">One tap for the stars, one for where it lands on your list.</p>
+            <p className="text-body font-extrabold text-ink truncate">How was {toRate.courseName}?</p>
+            <p className="text-footnote text-ink-dim mt-0.5">One tap for the stars, one for where it lands on your list.</p>
           </div>
-          <span className="text-[13px] font-bold text-green shrink-0">Rate →</span>
+          <span className="text-footnote font-bold text-green shrink-0">Rate →</span>
         </Card>
       )}
 
@@ -227,7 +231,7 @@ export default function Home() {
       {/* The season, on the group's terms */}
       <SectionLabel
         action={
-          <Link to="/h2h" className="text-[12.5px] font-bold text-green">
+          <Link to="/h2h" className="text-footnote font-bold text-green">
             Standings →
           </Link>
         }
@@ -236,36 +240,40 @@ export default function Home() {
       </SectionLabel>
       {board.length === 0 ? (
         <Card className="p-5 text-center">
-          <p className="text-[14px] font-bold text-ink">Nothing on the board yet this year</p>
-          <p className="text-[13px] text-ink-dim mt-1">The first group round starts the count.</p>
+          <p className="text-body font-bold text-ink">Nothing on the board yet this year</p>
+          <p className="text-footnote text-ink-dim mt-1">The first group round starts the count.</p>
         </Card>
       ) : (
         <Card>
           <div className="divide-y divide-line">
             {board.slice(0, 3).map((row, i) => (
               <RowButton key={row.player.id} onClick={() => navigate('/h2h')} className="flex items-center gap-3 px-4 py-3">
-                <span className={`w-5 text-[15px] font-extrabold tabular-nums ${i === 0 ? 'text-gold' : 'text-ink-faint'}`}>{i + 1}</span>
+                <span className={`w-5 text-body font-extrabold tabular-nums ${i === 0 ? 'text-gold' : 'text-ink-faint'}`}>{i + 1}</span>
                 <Avatar player={row.player} size={30} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-bold text-ink truncate">
+                  <p className="text-body font-bold text-ink truncate">
                     {row.player.name}
                     {row.player.id === me.id && <span className="text-ink-faint font-semibold"> (you)</span>}
                   </p>
-                  <p className="text-[11.5px] text-ink-faint tabular-nums">
+                  <p className="text-caption text-ink-faint tabular-nums">
                     {row.rounds} round{row.rounds === 1 ? '' : 's'}
                     {row.avgGross != null && ` · avg ${row.avgGross.toFixed(1)}`}
-                    {row.streak >= 2 && ` · ${row.streak} straight 🔥`}
+                    {row.streak >= 2 && (
+                      <>
+                        {' '}· {row.streak} straight <Icon name="flame" size={12} className="inline -mt-0.5 text-flag" />
+                      </>
+                    )}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-[17px] font-extrabold text-ink tabular-nums leading-none">{row.wins}</p>
-                  <p className="text-[9.5px] font-bold uppercase tracking-wider text-ink-faint mt-0.5">wins</p>
+                  <p className="text-headline font-extrabold text-ink tabular-nums leading-none">{row.wins}</p>
+                  <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-0.5">wins</p>
                 </div>
               </RowButton>
             ))}
           </div>
           {myPlace >= 3 && (
-            <p className="px-4 py-2.5 border-t border-line text-[12px] text-ink-dim">
+            <p className="px-4 py-2.5 border-t border-line text-footnote text-ink-dim">
               You're {myPlace + 1}th of {board.length} · {board[myPlace].wins} win{board[myPlace].wins === 1 ? '' : 's'}
             </p>
           )}
@@ -275,7 +283,7 @@ export default function Home() {
       {/* Recent rounds */}
       <SectionLabel
         action={
-          <Link to="/rounds" className="text-[12.5px] font-bold text-green">
+          <Link to="/rounds" className="text-footnote font-bold text-green">
             All rounds →
           </Link>
         }
@@ -284,9 +292,9 @@ export default function Home() {
       </SectionLabel>
       {recent.length === 0 && (
         <Card className="p-5 text-center">
-          <p className="text-[14px] font-bold text-ink">No rounds logged yet</p>
-          <p className="text-[13px] text-ink-dim mt-1">Log one and the records start keeping themselves. Solo rounds count too.</p>
-          <button onClick={() => navigate('/log')} className="mt-3 rounded-xl bg-green px-5 py-2.5 text-[14px] font-bold text-white">
+          <p className="text-body font-bold text-ink">No rounds logged yet</p>
+          <p className="text-footnote text-ink-dim mt-1">Log one and the records start keeping themselves. Solo rounds count too.</p>
+          <button onClick={() => navigate('/log')} className="mt-3 rounded-xl bg-green px-5 py-2.5 text-body font-bold text-white">
             Log a round
           </button>
         </Card>
@@ -300,21 +308,12 @@ export default function Home() {
           return (
             <Card key={r.id} onClick={() => navigate(`/rounds/${r.id}`)} className="p-4">
               <div className="flex items-baseline justify-between gap-3">
-                <p className="font-bold text-[14.5px] text-ink truncate">{r.courseName}</p>
-                <p className="text-[11.5px] text-ink-faint shrink-0 tabular-nums">{shortDate(r.date)}</p>
+                <p className="font-bold text-body text-ink truncate">{r.courseName}</p>
+                <p className="text-caption text-ink-faint shrink-0 tabular-nums">{shortDate(r.date)}</p>
               </div>
               <div className="mt-2 flex items-center gap-2.5">
-                <div className="flex -space-x-1.5">
-                  {r.players.map((rp) => {
-                    const p = data.players.find((pl) => pl.id === rp.playerId)!
-                    return (
-                      <span key={rp.playerId} className="rounded-full ring-2 ring-card">
-                        <Avatar player={p} size={24} />
-                      </span>
-                    )
-                  })}
-                </div>
-                <p className="flex-1 text-[12.5px] text-ink-dim truncate">
+                <AvatarStack players={r.players.map((rp) => data.players.find((pl) => pl.id === rp.playerId))} />
+                <p className="flex-1 text-footnote text-ink-dim truncate">
                   {!top ? (
                     'No scores in yet'
                   ) : waiting.length > 0 ? (
@@ -342,44 +341,44 @@ export default function Home() {
 
       {/* The trophy and the group's favourite course, side by side */}
       <div className="grid grid-cols-2 gap-3 mt-3">
-        <Card onClick={() => navigate('/saddam')} className="p-3.5 border-gold/30 bg-gold-soft/40">
+        <Card onClick={() => navigate('/saddam')} className="p-3.5 border-cream-deep/60 bg-cream">
           <div className="flex items-center gap-2">
             <SaddamIcon size={22} />
-            <p className="text-[10.5px] font-bold uppercase tracking-wider text-ink-faint">The Saddam</p>
+            <p className="text-caption font-bold uppercase tracking-wider text-ink-faint">The Saddam</p>
           </div>
           {holder ? (
             <>
-              <p className="text-[15px] font-extrabold text-ink mt-2 truncate">{holder.name}</p>
-              <p className="text-[11.5px] text-ink-dim mt-0.5 truncate">
+              <p className="text-body font-extrabold text-ink mt-2 truncate">{holder.name}</p>
+              <p className="text-caption text-ink-dim mt-0.5 truncate">
                 {saddam.since ? `since ${shortDate(saddam.since)}` : 'holds it'}
                 {saddam.defenses > 0 && ` · ${saddam.defenses} def.`}
               </p>
             </>
           ) : (
             <>
-              <p className="text-[15px] font-extrabold text-ink mt-2">Up for grabs</p>
-              <p className="text-[11.5px] text-ink-dim mt-0.5">Win a group round</p>
+              <p className="text-body font-extrabold text-ink mt-2">Up for grabs</p>
+              <p className="text-caption text-ink-dim mt-0.5">Win a group round</p>
             </>
           )}
         </Card>
         <Card onClick={() => navigate(favourite ? `/courses/${encodeURIComponent(favourite.slug)}` : '/courses')} className="p-3.5">
-          <p className="text-[10.5px] font-bold uppercase tracking-wider text-ink-faint">Group’s favourite</p>
+          <p className="text-caption font-bold uppercase tracking-wider text-ink-faint">Group’s favourite</p>
           {favourite ? (
             <>
-              <p className="text-[15px] font-extrabold text-ink mt-2 truncate">{favourite.name}</p>
+              <p className="text-body font-extrabold text-ink mt-2 truncate">{favourite.name}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 {favourite.avg != null && (
                   <>
                     <StarRating value={favourite.avg} size={10} />
-                    <span className="text-[11.5px] text-ink-dim tabular-nums">{fmtStars(favourite.avg)}</span>
+                    <span className="text-caption text-ink-dim tabular-nums">{fmtStars(favourite.avg)}</span>
                   </>
                 )}
               </div>
             </>
           ) : (
             <>
-              <p className="text-[15px] font-extrabold text-ink mt-2">Not picked yet</p>
-              <p className="text-[11.5px] text-ink-dim mt-0.5">Rate a course →</p>
+              <p className="text-body font-extrabold text-ink mt-2">Not picked yet</p>
+              <p className="text-caption text-ink-dim mt-0.5">Rate a course →</p>
             </>
           )}
         </Card>

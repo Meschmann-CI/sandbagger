@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { Player } from '../types'
 import { money } from '../lib/money'
+import { IconTile } from './icons'
 
 export function Avatar({ player, size = 40 }: { player: Player; size?: number }) {
   return (
@@ -14,6 +15,49 @@ export function Avatar({ player, size = 40 }: { player: Player; size?: number })
       }}
     >
       {player.initials}
+    </div>
+  )
+}
+
+// Overlapping avatars for "who played" and "who's going". Each circle
+// gets a ring in the colour of whatever it sits on, so it reads as cut
+// out of the one beneath instead of the initials running into each
+// other. (The ring used to sit on an inline span, which drew it around
+// the line box, not the circle, so it never showed.) Past `max` the
+// rest fold into a +N.
+export function AvatarStack({
+  players,
+  size = 24,
+  max = 3,
+  ring = 'var(--color-card)',
+}: {
+  players: (Player | undefined)[]
+  size?: number
+  max?: number
+  ring?: string
+}) {
+  const people = players.filter((p): p is Player => !!p)
+  const shown = people.slice(0, max)
+  const extra = people.length - shown.length
+  // Shallow enough that the ring stops short of the initials beneath:
+  // bold two-letter initials fill most of the circle's width.
+  const overlap = Math.max(2, Math.round(size * 0.1))
+  const edge = { boxShadow: `0 0 0 2px ${ring}` }
+  return (
+    <div className="flex items-center shrink-0" aria-label={people.map((p) => p.name).join(', ')}>
+      {shown.map((p, i) => (
+        <span key={p.id} className="flex rounded-full" style={{ ...edge, marginLeft: i ? -overlap : 0 }}>
+          <Avatar player={p} size={size} />
+        </span>
+      ))}
+      {extra > 0 && (
+        <span
+          className="flex items-center justify-center rounded-full bg-paper font-bold text-ink-dim tabular-nums"
+          style={{ ...edge, width: size, height: size, marginLeft: -overlap, fontSize: Math.round(size * 0.38) }}
+        >
+          +{extra}
+        </span>
+      )}
     </div>
   )
 }
@@ -55,7 +99,7 @@ export function RowButton({ children, onClick, className = '' }: { children: Rea
 export function SectionLabel({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between px-1 mb-2.5 mt-7">
-      <h2 className="text-[12px] font-bold uppercase tracking-[0.12em] text-ink-faint">{children}</h2>
+      <h2 className="text-footnote font-bold uppercase tracking-[0.12em] text-ink-faint">{children}</h2>
       {action}
     </div>
   )
@@ -114,7 +158,7 @@ export function HelpTip({ title, lines }: { title: string; lines: string[] }) {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-label={`How ${title} works`}
-        className={`flex h-[18px] w-[18px] items-center justify-center rounded-full border text-[11px] font-extrabold leading-none transition ${
+        className={`flex h-[18px] w-[18px] items-center justify-center rounded-full border text-caption font-extrabold leading-none transition ${
           open ? 'bg-ink text-white border-ink' : 'border-line-strong bg-card text-ink-faint'
         }`}
       >
@@ -136,9 +180,9 @@ export function HelpTip({ title, lines }: { title: string; lines: string[] }) {
             style={{ transform: `translateX(${shift}px)` }}
             className="absolute right-0 top-[calc(100%+6px)] z-50 w-[264px] rounded-xl border border-line-strong bg-card p-3 text-left shadow-[0_8px_24px_rgba(24,32,25,0.16)]"
           >
-            <span className="block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5">{title}</span>
+            <span className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5">{title}</span>
             {lines.map((line, i) => (
-              <span key={i} className="block text-[12px] leading-[1.45] text-ink-dim mb-1.5 last:mb-0">
+              <span key={i} className="block text-footnote leading-[1.45] text-ink-dim mb-1.5 last:mb-0">
                 {line}
               </span>
             ))}
@@ -149,15 +193,16 @@ export function HelpTip({ title, lines }: { title: string; lines: string[] }) {
   )
 }
 
-export function Pill({ children, tone = 'default' }: { children: ReactNode; tone?: 'default' | 'gold' | 'green' | 'flag' }) {
+export function Pill({ children, tone = 'default' }: { children: ReactNode; tone?: 'default' | 'gold' | 'green' | 'flag' | 'cream' }) {
   const tones = {
     default: 'bg-paper text-ink-dim border-line',
     gold: 'bg-gold-soft text-gold border-gold/30',
     green: 'bg-green-soft text-green border-green/25',
     flag: 'bg-flag-soft text-flag border-flag/25',
+    cream: 'bg-cream text-forest border-cream-deep/70',
   }
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${tones[tone]}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-caption font-bold uppercase tracking-wide ${tones[tone]}`}>
       {children}
     </span>
   )
@@ -166,40 +211,43 @@ export function Pill({ children, tone = 'default' }: { children: ReactNode; tone
 export function EmptyState({ title, sub, cta }: { title: string; sub?: string; cta?: ReactNode }) {
   return (
     <div className="text-center py-14 px-6">
-      <div className="text-4xl mb-3">⛳</div>
-      <p className="text-lg font-extrabold text-ink">{title}</p>
-      {sub && <p className="text-sm text-ink-dim mt-1.5 max-w-[270px] mx-auto">{sub}</p>}
+      <div className="flex justify-center mb-4">
+        <IconTile name="flag" size={56} />
+      </div>
+      <p className="text-headline font-extrabold text-ink">{title}</p>
+      {sub && <p className="text-body text-ink-dim mt-1.5 max-w-[270px] mx-auto">{sub}</p>}
       {cta && <div className="mt-5">{cta}</div>}
     </div>
   )
 }
 
 // The Saddam: the trophy that belongs to whoever won the last group
-// round. The artwork is black line art on an opaque white background, so
-// multiply blending drops the white and lets it sit on the gold cards and
-// tinted rows without a visible square around it.
+// round. It's the same art as the app icon (forest face on cream), so the
+// trophy inside the app looks like the thing on your home screen. The
+// cream tile is part of the picture; the rounded corners make it a badge.
 export function SaddamIcon({ size = 18 }: { size?: number }) {
   return (
     <img
-      src="/saddam.png"
+      src={size > 72 ? '/sandbagger-icon-512.png' : '/sandbagger-icon-180.png'}
       alt="The Saddam"
       width={size}
       height={size}
-      style={{ width: size, height: size, mixBlendMode: 'multiply' }}
+      style={{ width: size, height: size, borderRadius: Math.round(size * 0.28) }}
       className="shrink-0 select-none"
       draggable={false}
     />
   )
 }
 
+/** The Saddam next to a name: the holder, in a list. */
 export function SaddamBadge({ size = 18 }: { size?: number }) {
   return (
     <span
-      className="inline-flex items-center justify-center rounded-full bg-gold-soft border border-gold/30 text-ink shrink-0"
-      style={{ width: size + 8, height: size + 8 }}
+      className="inline-flex shrink-0 ring-1 ring-cream-deep/70"
+      style={{ borderRadius: Math.round((size + 4) * 0.28) }}
       title="Current holder of the Saddam"
     >
-      <SaddamIcon size={size} />
+      <SaddamIcon size={size + 4} />
     </span>
   )
 }
@@ -209,7 +257,7 @@ export function PrimaryButton({ children, onClick, disabled, className = '' }: {
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-xl bg-green px-5 py-3 font-bold text-[15px] text-white shadow-[0_2px_6px_rgba(28,124,74,0.35)] disabled:opacity-30 disabled:shadow-none active:scale-[0.98] transition ${className}`}
+      className={`rounded-xl bg-green px-5 py-3 font-bold text-body text-white shadow-[0_2px_6px_rgba(28,124,74,0.35)] disabled:opacity-30 disabled:shadow-none active:scale-[0.98] transition ${className}`}
     >
       {children}
     </button>
@@ -220,7 +268,7 @@ export function GhostButton({ children, onClick, className = '' }: { children: R
   return (
     <button
       onClick={onClick}
-      className={`rounded-xl border border-line-strong bg-card px-5 py-3 font-bold text-[15px] text-ink-dim active:bg-paper transition ${className}`}
+      className={`rounded-xl border border-line-strong bg-card px-5 py-3 font-bold text-body text-ink-dim active:bg-paper transition ${className}`}
     >
       {children}
     </button>

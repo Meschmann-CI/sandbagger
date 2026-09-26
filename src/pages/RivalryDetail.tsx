@@ -4,6 +4,7 @@ import { useStore } from '../data/store'
 import { fmt1, hasScore, net, type ScoredRoundPlayer } from '../types'
 import { byDate, headToHead, prettyDate, shortDate } from '../lib/stats'
 import { Avatar, Card, RowButton, SectionLabel } from '../components/ui'
+import { IconTile } from '../components/icons'
 
 export default function RivalryDetail() {
   const { aId, bId } = useParams()
@@ -54,7 +55,7 @@ export default function RivalryDetail() {
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
-        <button onClick={() => goBack()} className="text-[13px] font-bold text-ink-faint mb-3">← Back</button>
+        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint mb-3">← Back</button>
       </header>
 
       {/* Tale of the tape */}
@@ -62,35 +63,35 @@ export default function RivalryDetail() {
         <div className="flex items-center justify-between">
           <div className="flex flex-col items-center gap-2 w-24">
             <Avatar player={a} size={56} />
-            <p className="font-bold text-[14px] text-ink text-center">{a.name}</p>
+            <p className="font-bold text-body text-ink text-center">{a.name}</p>
           </div>
           <div className="text-center">
-            <p className="text-[42px] font-extrabold text-ink leading-none tracking-tight tabular-nums">
-              {h.aWins}<span className="text-ink-faint mx-2 text-[26px]">–</span>{h.bWins}
+            <p className="text-hero font-extrabold text-ink leading-none tracking-tight tabular-nums">
+              {h.aWins}<span className="text-ink-faint mx-2 text-large">–</span>{h.bWins}
             </p>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-ink-faint mt-2">
+            <p className="text-caption font-bold uppercase tracking-[0.16em] text-ink-faint mt-2">
               Lifetime{h.ties > 0 ? ` · ${h.ties} tied` : ''}
             </p>
           </div>
           <div className="flex flex-col items-center gap-2 w-24">
             <Avatar player={b} size={56} />
-            <p className="font-bold text-[14px] text-ink text-center">{b.name}</p>
+            <p className="font-bold text-body text-ink text-center">{b.name}</p>
           </div>
         </div>
         <div className="mt-5 pt-4 border-t border-line text-center space-y-1.5">
-          <p className="text-[14.5px] font-bold text-ink">{streakLine}</p>
-          {droughtLine && <p className="text-[12.5px] text-flag font-semibold">{droughtLine}</p>}
+          <p className="text-body font-bold text-ink">{streakLine}</p>
+          {droughtLine && <p className="text-footnote text-flag font-semibold">{droughtLine}</p>}
         </div>
       </Card>
 
       {h.biggestMargin && (
         <Card className="mt-3 p-4 flex items-center gap-3.5">
-          <span className="text-2xl">💥</span>
+          <IconTile name="clash" tone="flag" />
           <div>
-            <p className="text-[13.5px] font-bold text-ink">
+            <p className="text-footnote font-bold text-ink">
               Biggest blowout: {data.players.find((p) => p.id === h.biggestMargin!.winnerId)!.name} by {fmt1(h.biggestMargin.margin)}
             </p>
-            <p className="text-[12px] text-ink-faint">
+            <p className="text-footnote text-ink-faint">
               {h.biggestMargin.round.courseName}, {shortDate(h.biggestMargin.round.date)}
             </p>
           </div>
@@ -99,7 +100,7 @@ export default function RivalryDetail() {
 
       <SectionLabel>Every Meeting</SectionLabel>
       <Card className="divide-y divide-line">
-        {meetings.length === 0 && <p className="p-5 text-center text-[13.5px] text-ink-dim">These two have never been in the same round.</p>}
+        {meetings.length === 0 && <p className="p-5 text-center text-footnote text-ink-dim">These two have never been in the same round.</p>}
         {meetings.map((r) => {
           const ra = r.players.find((p) => p.playerId === a.id) as ScoredRoundPlayer
           const rb = r.players.find((p) => p.playerId === b.id) as ScoredRoundPlayer
@@ -108,11 +109,11 @@ export default function RivalryDetail() {
           return (
             <RowButton key={r.id} onClick={() => navigate(`/rounds/${r.id}`)} className="block px-4 py-3.5">
               <div className="flex items-baseline justify-between gap-3">
-                <p className="text-[13.5px] font-bold text-ink truncate">{r.courseName}</p>
-                <p className="text-[10.5px] text-ink-faint shrink-0 tabular-nums">{shortDate(r.date)}</p>
+                <p className="text-footnote font-bold text-ink truncate">{r.courseName}</p>
+                <p className="text-caption text-ink-faint shrink-0 tabular-nums">{shortDate(r.date)}</p>
               </div>
               <div className="flex items-center justify-between mt-1.5">
-                <p className="text-[12.5px] text-ink-dim">
+                <p className="text-footnote text-ink-dim">
                   {winner ? (
                     <>
                       <span style={{ color: winner.color }} className="font-extrabold">{winner.name}</span> by {fmt1(Math.abs(diff))}
@@ -121,7 +122,7 @@ export default function RivalryDetail() {
                     'Dead even'
                   )}
                 </p>
-                <p className="text-[12.5px] text-ink-dim tabular-nums">
+                <p className="text-footnote text-ink-dim tabular-nums">
                   {fmt1(net(ra))} <span className="text-ink-faint">vs</span> {fmt1(net(rb))}
                 </p>
               </div>

@@ -3,6 +3,7 @@ import type { ItineraryItem, Player, Review } from '../types'
 import { faviconFor, hostOf } from '../lib/links'
 import { shortDate } from '../lib/stats'
 import { KIND_META } from './ItineraryEditor'
+import { Icon } from './icons'
 import { StarPicker, StarRating } from './Stars'
 import { Avatar } from './ui'
 
@@ -58,40 +59,42 @@ export default function ItineraryCard({ item, players, currentUserId, editable, 
   return (
     <div className="px-4 py-3">
       <div className="flex items-start gap-3">
-        {/* Course/venue icon from the link, falling back to the kind emoji */}
+        {/* Course/venue icon from the link, falling back to the kind's icon */}
         <div className="shrink-0 mt-0.5">
           {favicon && !iconFailed ? (
             <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-line bg-paper overflow-hidden">
               <img src={favicon} alt="" style={{ height: 18, width: 18 }} onError={() => setIconFailed(true)} />
             </span>
           ) : (
-            <span className="flex h-7 w-7 items-center justify-center text-[16px]">{meta.icon}</span>
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-soft text-green">
+              <Icon name={meta.icon} size={16} />
+            </span>
           )}
         </div>
 
         <button onClick={() => hasDetail && setOpen((o) => !o)} className="flex-1 min-w-0 text-left">
-          <p className="text-[14px] font-bold text-ink leading-snug">{item.title}</p>
+          <p className="text-body font-bold text-ink leading-snug">{item.title}</p>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
             {item.endDate && (
-              <span className="text-[11.5px] text-ink-dim tabular-nums">
+              <span className="text-caption text-ink-dim tabular-nums">
                 {shortDate(item.date)} – {shortDate(item.endDate)}
               </span>
             )}
-            {host && <span className="text-[11.5px] text-ink-faint truncate">{item.siteName || host}</span>}
+            {host && <span className="text-caption text-ink-faint truncate">{item.siteName || host}</span>}
             {avg != null && (
               <span className="inline-flex items-center gap-1">
                 <StarRating value={avg} size={11} />
-                <span className="text-[11px] font-bold text-ink-dim tabular-nums">{avg.toFixed(1)}</span>
+                <span className="text-caption font-bold text-ink-dim tabular-nums">{avg.toFixed(1)}</span>
               </span>
             )}
-            {item.cost != null && <span className="text-[11.5px] font-bold text-ink-dim tabular-nums">${item.cost}</span>}
+            {item.cost != null && <span className="text-caption font-bold text-ink-dim tabular-nums">${item.cost}</span>}
           </div>
         </button>
 
         <div className="flex items-center gap-2 shrink-0">
-          {item.time && <span className="text-[12px] font-bold text-ink-dim tabular-nums">{item.time}</span>}
+          {item.time && <span className="text-footnote font-bold text-ink-dim tabular-nums">{item.time}</span>}
           {hasDetail && (
-            <button onClick={() => setOpen((o) => !o)} className="text-ink-faint text-[11px] px-0.5" aria-label={open ? 'Collapse' : 'Expand'}>
+            <button onClick={() => setOpen((o) => !o)} className="text-ink-faint text-caption px-0.5" aria-label={open ? 'Collapse' : 'Expand'}>
               {open ? '▲' : '▼'}
             </button>
           )}
@@ -115,14 +118,14 @@ export default function ItineraryCard({ item, players, currentUserId, editable, 
             </div>
           )}
 
-          {item.note && <p className="text-[13px] text-ink-dim">{item.note}</p>}
+          {item.note && <p className="text-footnote text-ink-dim">{item.note}</p>}
 
           {item.url && (
             <a
               href={item.url}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center gap-2 text-[13px] font-bold text-green break-all"
+              className="inline-flex items-center gap-2 text-footnote font-bold text-green break-all"
             >
               {favicon && <img src={favicon} alt="" style={{ height: 14, width: 14 }} />}
               Open {item.siteName || host} ↗
@@ -131,9 +134,9 @@ export default function ItineraryCard({ item, players, currentUserId, editable, 
 
           {item.confirmation && (
             <button onClick={copyConfirmation} className="flex items-center gap-2 rounded-lg bg-paper border border-line px-3 py-2 w-full">
-              <span className="text-[10.5px] font-bold uppercase tracking-wider text-ink-faint">Conf #</span>
-              <span className="text-[13.5px] font-bold text-ink tabular-nums flex-1 text-left">{item.confirmation}</span>
-              <span className="text-[11.5px] font-bold text-green">{copied ? 'Copied ✓' : 'Copy'}</span>
+              <span className="text-caption font-bold uppercase tracking-wider text-ink-faint">Conf #</span>
+              <span className="text-footnote font-bold text-ink tabular-nums flex-1 text-left">{item.confirmation}</span>
+              <span className="text-caption font-bold text-green">{copied ? 'Copied ✓' : 'Copy'}</span>
             </button>
           )}
 
@@ -148,10 +151,10 @@ export default function ItineraryCard({ item, players, currentUserId, editable, 
                     <Avatar player={p} size={24} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-[12.5px] font-bold text-ink">{p.name}</span>
+                        <span className="text-footnote font-bold text-ink">{p.name}</span>
                         <StarRating value={r.rating} size={11} />
                       </div>
-                      {r.comment && <p className="text-[12.5px] text-ink-dim mt-0.5">{r.comment}</p>}
+                      {r.comment && <p className="text-footnote text-ink-dim mt-0.5">{r.comment}</p>}
                     </div>
                   </div>
                 )
@@ -160,7 +163,7 @@ export default function ItineraryCard({ item, players, currentUserId, editable, 
           )}
 
           {canReview && !reviewing && (
-            <button onClick={() => { setReviewing(true); setRating(myReview?.rating ?? 0); setComment(myReview?.comment ?? '') }} className="text-[12.5px] font-bold text-green">
+            <button onClick={() => { setReviewing(true); setRating(myReview?.rating ?? 0); setComment(myReview?.comment ?? '') }} className="text-footnote font-bold text-green">
               {myReview ? 'Edit your rating' : `How was it? Rate ${item.kind === 'tee' ? 'the course' : item.kind === 'meal' ? 'the food' : 'the place'} →`}
             </button>
           )}
@@ -172,13 +175,13 @@ export default function ItineraryCard({ item, players, currentUserId, editable, 
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Worth it? Skip it? Say why."
-                className="w-full mt-2.5 rounded-lg border border-line-strong bg-card px-3 py-2 text-[13.5px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+                className="w-full mt-2.5 rounded-lg border border-line-strong bg-card px-3 py-2 text-footnote text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
               />
               <div className="flex gap-2 mt-2">
-                <button onClick={submitReview} disabled={!rating} className="flex-1 rounded-lg bg-green py-2 text-[13px] font-bold text-white disabled:opacity-30">
+                <button onClick={submitReview} disabled={!rating} className="flex-1 rounded-lg bg-green py-2 text-footnote font-bold text-white disabled:opacity-30">
                   Post rating
                 </button>
-                <button onClick={() => setReviewing(false)} className="px-3 text-[13px] font-bold text-ink-faint">
+                <button onClick={() => setReviewing(false)} className="px-3 text-footnote font-bold text-ink-faint">
                   Cancel
                 </button>
               </div>
@@ -187,8 +190,8 @@ export default function ItineraryCard({ item, players, currentUserId, editable, 
 
           {editable && (
             <div className="flex gap-3 pt-1">
-              <button onClick={onEdit} className="text-[12px] font-bold text-ink-dim">Edit details</button>
-              <button onClick={onRemove} className="text-[12px] font-bold text-flag/80">Remove</button>
+              <button onClick={onEdit} className="text-footnote font-bold text-ink-dim">Edit details</button>
+              <button onClick={onRemove} className="text-footnote font-bold text-flag/80">Remove</button>
             </div>
           )}
         </div>

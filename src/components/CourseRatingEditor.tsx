@@ -58,8 +58,8 @@ export default function CourseRatingEditor({
   if (step === 'place') {
     return (
       <div className="rounded-2xl border border-green/30 bg-card p-4">
-        <p className="text-[14.5px] font-extrabold text-ink">Where does {courseDisplayName(data, slug)} land?</p>
-        <p className="text-[12.5px] text-ink-dim mt-1">
+        <p className="text-body font-extrabold text-ink">Where does {courseDisplayName(data, slug)} land?</p>
+        <p className="text-footnote text-ink-dim mt-1">
           Tap the slot. 1 is your favourite. Stars can tie; your list can’t, and that’s what sorts the group’s order.
         </p>
         <div className="grid grid-cols-6 gap-2 mt-3">
@@ -68,7 +68,7 @@ export default function CourseRatingEditor({
               key={i}
               onClick={() => place(i)}
               aria-label={`Slot ${i + 1}`}
-              className="h-11 rounded-xl border border-line-strong bg-card text-[16px] font-extrabold text-ink tabular-nums active:scale-95 active:bg-green-soft transition"
+              className="h-11 rounded-xl border border-line-strong bg-card text-headline font-extrabold text-ink tabular-nums active:scale-95 active:bg-green-soft transition"
             >
               {i + 1}
             </button>
@@ -76,13 +76,13 @@ export default function CourseRatingEditor({
         </div>
         <ol className="mt-3 space-y-1">
           {ranking.map((s, i) => (
-            <li key={s} className="flex items-baseline gap-2 text-[12.5px] text-ink-dim">
+            <li key={s} className="flex items-baseline gap-2 text-footnote text-ink-dim">
               <span className="w-5 text-right font-bold tabular-nums text-ink-faint">{i + 1}</span>
               <span className="truncate">{courseDisplayName(data, s)}</span>
             </li>
           ))}
         </ol>
-        <button onClick={onDone} className="mt-3 text-[12.5px] font-bold text-ink-faint">
+        <button onClick={onDone} className="mt-3 text-footnote font-bold text-ink-faint">
           Skip for now
         </button>
       </div>
@@ -92,27 +92,27 @@ export default function CourseRatingEditor({
   return (
     <div className="rounded-2xl border border-green/30 bg-card p-4 space-y-3.5">
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-1.5">Overall</p>
+        <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5">Overall</p>
         <StarPicker value={overall} onChange={setOverall} size={36} />
       </div>
 
       {/* The details stay folded until asked for. Most days one number
           is the honest amount to say. */}
       {!showDetails ? (
-        <button onClick={() => setShowDetails(true)} className="text-[12.5px] font-bold text-green">
+        <button onClick={() => setShowDetails(true)} className="text-footnote font-bold text-green">
           + Rate the details
         </button>
       ) : (
         <div className="rounded-xl border border-line bg-paper p-3 space-y-2.5">
           <div className="flex items-baseline justify-between">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-ink-faint">The details</p>
-            <span className="text-[11px] text-ink-faint">{detailsIn ? `${detailsIn} of ${RATING_ASPECTS.length}` : 'optional'}</span>
+            <p className="text-caption font-bold uppercase tracking-wider text-ink-faint">The details</p>
+            <span className="text-caption text-ink-faint">{detailsIn ? `${detailsIn} of ${RATING_ASPECTS.length}` : 'optional'}</span>
           </div>
           {RATING_ASPECTS.map((a) => (
             <div key={a.key} className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[13px] font-bold text-ink leading-tight">{a.label}</p>
-                <p className="text-[11px] text-ink-faint leading-tight">{a.hint}</p>
+                <p className="text-footnote font-bold text-ink leading-tight">{a.label}</p>
+                <p className="text-caption text-ink-faint leading-tight">{a.hint}</p>
               </div>
               <StarPicker
                 value={aspects[a.key] ?? 0}
@@ -128,14 +128,14 @@ export default function CourseRatingEditor({
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="One line. Play it again? Skip it? Why."
-        className="w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-[13.5px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+        className="w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-footnote text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
       />
 
       <div className="flex gap-2">
         <PrimaryButton onClick={post} disabled={!overall} className="flex-1 !py-2.5">
           {existing ? 'Update rating' : 'Post rating'}
         </PrimaryButton>
-        <button onClick={onDone} className="px-4 text-[13px] font-bold text-ink-faint">
+        <button onClick={onDone} className="px-4 text-footnote font-bold text-ink-faint">
           Cancel
         </button>
       </div>

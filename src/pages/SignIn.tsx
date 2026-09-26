@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { requireSupabase } from '../lib/supabase'
 import { Card, PrimaryButton } from '../components/ui'
+import { IconTile } from '../components/icons'
 
 // Signing in without ever leaving the app.
 //
@@ -106,19 +107,21 @@ export default function SignIn() {
     <div className="mx-auto max-w-md min-h-dvh flex flex-col justify-center px-5 rise">
       <div className="text-center mb-7">
         <img src="/sandbagger-icon-180.png" alt="" width={72} height={72} className="mx-auto rounded-2xl mb-3" />
-        <h1 className="text-[30px] font-extrabold tracking-tight text-ink">Sandbagger</h1>
-        <p className="text-[14px] text-ink-dim mt-1.5">Trips, rounds, and receipts.</p>
+        <h1 className="text-hero font-extrabold tracking-tight text-ink">Sandbagger</h1>
+        <p className="text-body text-ink-dim mt-1.5">Trips, rounds, and receipts.</p>
       </div>
 
       {sent ? (
         <Card className="p-5">
-          <p className="text-2xl text-center mb-2">📬</p>
-          <p className="text-[16px] font-extrabold text-ink text-center">Check your email</p>
-          <p className="text-[13.5px] text-ink-dim mt-1.5 text-center">
+          <div className="flex justify-center mb-3">
+            <IconTile name="mail" size={48} />
+          </div>
+          <p className="text-headline font-extrabold text-ink text-center">Check your email</p>
+          <p className="text-footnote text-ink-dim mt-1.5 text-center">
             We sent a six-digit code to <span className="font-bold text-ink">{email.trim()}</span>.
           </p>
 
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-ink-faint mt-5 mb-2">
+          <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mt-5 mb-2">
             Enter the code
           </label>
           <input
@@ -130,14 +133,14 @@ export default function SignIn() {
             onKeyDown={(e) => e.key === 'Enter' && void verify()}
             placeholder="000000"
             autoFocus
-            className="w-full rounded-xl border border-line-strong bg-card px-4 py-3.5 text-center text-[26px] font-extrabold tracking-[0.3em] text-ink tabular-nums placeholder:text-ink-faint placeholder:tracking-[0.3em] focus:border-green focus:outline-none"
+            className="w-full rounded-xl border border-line-strong bg-card px-4 py-3.5 text-center text-large font-extrabold tracking-[0.3em] text-ink tabular-nums placeholder:text-ink-faint placeholder:tracking-[0.3em] focus:border-green focus:outline-none"
           />
           <PrimaryButton onClick={() => void verify()} disabled={code.length < 6 || status === 'verifying'} className="w-full mt-3">
             {status === 'verifying' ? 'Signing you in…' : 'Sign in'}
           </PrimaryButton>
-          {error && <p className="text-[12.5px] text-flag font-semibold mt-2.5">{error}</p>}
+          {error && <p className="text-footnote text-flag font-semibold mt-2.5">{error}</p>}
 
-          <p className="text-[11.5px] text-ink-faint mt-3.5">
+          <p className="text-caption text-ink-faint mt-3.5">
             Type the code here rather than tapping anything in the email — opening a sign-in link spends the code.
           </p>
           <button
@@ -146,14 +149,14 @@ export default function SignIn() {
               setCode('')
               setError(null)
             }}
-            className="mt-3 text-[13px] font-bold text-green"
+            className="mt-3 text-footnote font-bold text-green"
           >
             Use a different email
           </button>
         </Card>
       ) : (
         <Card className="p-5">
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-ink-faint mb-2">Email</label>
+          <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-2">Email</label>
           <input
             type="email"
             inputMode="email"
@@ -162,13 +165,13 @@ export default function SignIn() {
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void send()}
             placeholder="you@example.com"
-            className="w-full rounded-xl border border-line-strong bg-card px-4 py-3.5 text-[16px] text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+            className="w-full rounded-xl border border-line-strong bg-card px-4 py-3.5 text-headline text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
           />
           <PrimaryButton onClick={() => void send()} disabled={!email.trim() || status === 'sending'} className="w-full mt-3">
             {status === 'sending' ? 'Sending…' : 'Email me a code'}
           </PrimaryButton>
-          {error && <p className="text-[12.5px] text-flag font-semibold mt-2.5">{error}</p>}
-          <p className="text-[11.5px] text-ink-faint mt-3">
+          {error && <p className="text-footnote text-flag font-semibold mt-2.5">{error}</p>}
+          <p className="text-caption text-ink-faint mt-3">
             No password. You'll get a six-digit code by email to type in here.
           </p>
         </Card>
