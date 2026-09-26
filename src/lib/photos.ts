@@ -13,7 +13,8 @@ const BUCKET = 'round-photos'
 const MAX_DIM = 1600
 const QUALITY = 0.8
 
-async function shrink(file: File): Promise<Blob> {
+/** Shrinks a photo to something a phone can upload on one bar. */
+export async function shrinkPhoto(file: File): Promise<Blob> {
   if (!file.type.startsWith('image/')) throw new Error('That isn’t a photo')
   const bitmap = await createImageBitmap(file)
   const scale = Math.min(1, MAX_DIM / Math.max(bitmap.width, bitmap.height))
@@ -29,7 +30,7 @@ async function shrink(file: File): Promise<Blob> {
   )
 }
 
-const blobToDataUrl = (blob: Blob) =>
+export const blobToDataUrl = (blob: Blob) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(reader.result as string)
@@ -37,21 +38,32 @@ const blobToDataUrl = (blob: Blob) =>
     reader.readAsDataURL(blob)
   })
 
-const newId = () =>
+const dataUrlToBlob = async (dataUrl: string) => (await fetch(dataUrl)).blob()
+
+export const newPhotoId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
     : `${Date.now().toString(16)}-${Math.floor(Math.random() * 1e12).toString(16)}`
 
-/** Shrinks and stores one photo; returns the record to put on the round. */
-export async function addRoundPhoto(file: File, round: Round, byId: string): Promise<RoundPhoto> {
-  const blob = await shrink(file)
-  const id = newId()
-  const takenAt = new Date(file.lastModified || Date.now()).toISOString()
+/**
+ * Puts one already-shrunk photo where it lives and returns the record
+ * to attach to the round. Takes a Blob straight from the picker, or the
+ * data URL a queued photo was parked as while there was no signal.
+ */
+export async function uploadRoundPhoto(
+  image: Blob | string,
+  round: Round,
+  id: string,
+  byId: string,
+  takenAt: string,
+): Promise<RoundPhoto> {
   if (!supabase) {
-    return { id, url: await blobToDataUrl(blob), byId, takenAt }
+    const url = typeof image === 'string' ? image : await blobToDataUrl(image)
+    return { id, url, byId, takenAt }
   }
+  const blob = typeof image === 'string' ? await dataUrlToBlob(image) : image
   const path = `${round.groupId}/${round.id}/${id}.jpg`
-  const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: false })
+  const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: true })
   if (error) throw new Error(`Couldn’t upload the photo: ${error.message}`)
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
   return { id, url: data.publicUrl, path, byId, takenAt }

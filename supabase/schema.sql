@@ -234,6 +234,17 @@ alter table rounds add column if not exists ghosts jsonb;
 -- carries URLs, so loading rounds stays light.
 alter table rounds add column if not exists photos jsonb;
 
+-- How many scorecard scans each account has run today, so the scan-card
+-- function can stop at a sane number. Written only by the function
+-- (service role); no policies, so the app can't read or change it.
+create table if not exists scan_usage (
+  user_id uuid not null,
+  day date not null default current_date,
+  count integer not null default 0,
+  primary key (user_id, day)
+);
+alter table scan_usage enable row level security;
+
 -- ============================================================
 -- Storage: round photos
 -- ============================================================

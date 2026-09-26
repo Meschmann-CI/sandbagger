@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from '../data/store'
+import { looksLikeConnectivity } from '../data/outbox'
+import { enqueuePhoto, usePendingPhotos } from '../data/photoOutbox'
 import type { Round, RoundPhoto } from '../types'
-import { addRoundPhoto, removeRoundPhotoFile } from '../lib/photos'
+import { blobToDataUrl, newPhotoId, removeRoundPhotoFile, shrinkPhoto, uploadRoundPhoto } from '../lib/photos'
 import { shortDate } from '../lib/stats'
 import { useConfirm } from './Confirm'
 import { Avatar, Card, SectionLabel } from './ui'
@@ -10,6 +12,10 @@ import { Avatar, Card, SectionLabel } from './ui'
 // Pictures from the day, on the round they belong to. A grid of
 // thumbnails, a picker that offers the camera or the library, and a
 // full-screen viewer with who took it and a way to take it down.
+//
+// No signal on the course is normal, so a photo that can't upload waits
+// on the phone (photoOutbox.ts) and shows here greyed as "waiting for
+// signal" until it goes.
 //
 // The viewer is portalled to the body: the page wrapper animates in
 // with a transform, and a fixed overlay inside a transformed box is
@@ -20,9 +26,10 @@ export default function RoundPhotos({ round }: { round: Round }) {
   const confirm = useConfirm()
   const me = data.currentUserId
   const fileRef = useRef<HTMLInputElement>(null)
-  const [busy, setBusy] = useState(0) // photos still uploading
+  const [busy, setBusy] = useState(0) // photos still being shrunk/uploaded
   const [error, setError] = useState<string | null>(null)
   const [open, setOpen] = useState<RoundPhoto | null>(null)
+  const pending = usePendingPhotos(round.id)
 
   const photos = round.photos ?? []
 
@@ -36,10 +43,19 @@ export default function RoundPhotos({ round }: { round: Round }) {
     setError(null)
     let current = round
     for (const file of files) {
+      const id = newPhotoId()
+      const takenAt = new Date(file.lastModified || Date.now()).toISOString()
       try {
-        const photo = await addRoundPhoto(file, current, me)
-        current = { ...current, photos: [...(current.photos ?? []), photo] }
-        updateRound(current)
+        const blob = await shrinkPhoto(file)
+        try {
+          const photo = await uploadRoundPhoto(blob, current, id, me, takenAt)
+          current = { ...current, photos: [...(current.photos ?? []), photo] }
+          updateRound(current)
+        } catch (err) {
+          // No signal: park it on the phone and let the outbox send it.
+          if (!looksLikeConnectivity(err)) throw err
+          enqueuePhoto({ id, roundId: round.id, byId: me, takenAt, dataUrl: await blobToDataUrl(blob) })
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err))
       } finally {
@@ -68,6 +84,7 @@ export default function RoundPhotos({ round }: { round: Round }) {
   }
 
   const who = (id: string) => data.players.find((p) => p.id === id)
+  const count = photos.length + pending.length
 
   return (
     <>
@@ -78,7 +95,7 @@ export default function RoundPhotos({ round }: { round: Round }) {
           </button>
         }
       >
-        Photos{photos.length > 0 && ` · ${photos.length}`}
+        Photos{count > 0 && ` · ${count}`}
       </SectionLabel>
       {/* No `capture` attribute on purpose: iOS then offers Take Photo
           or Photo Library, which is the right question after a round. */}
@@ -92,7 +109,7 @@ export default function RoundPhotos({ round }: { round: Round }) {
         onChange={(e) => void onFiles(e.target.files)}
       />
 
-      {photos.length === 0 ? (
+      {count === 0 ? (
         <Card onClick={() => fileRef.current?.click()} className="p-4 flex items-center gap-3.5">
           <span className="text-[22px]">📸</span>
           <div className="flex-1 min-w-0">
@@ -113,13 +130,25 @@ export default function RoundPhotos({ round }: { round: Round }) {
               <img src={photo.url} alt="" loading="lazy" className="h-full w-full object-cover" />
             </button>
           ))}
+          {pending.map((p) => (
+            <div
+              key={p.id}
+              className="relative aspect-square overflow-hidden rounded-xl bg-paper border border-dashed border-gold/50"
+              aria-label="Photo waiting for signal"
+            >
+              <img src={p.dataUrl} alt="" className="h-full w-full object-cover opacity-50" />
+              <span className="absolute inset-x-0 bottom-0 bg-gold-soft/95 px-1.5 py-1 text-center text-[9.5px] font-bold uppercase tracking-wider text-gold">
+                Waiting for signal
+              </span>
+            </div>
+          ))}
         </div>
       )}
       {error && <p className="mt-2 px-1 text-[12.5px] font-semibold text-flag">{error}</p>}
 
       {open &&
         createPortal(
-          <div className="fixed inset-0 z-[60] bg-black/92 flex flex-col" onClick={() => setOpen(null)}>
+          <div className="fixed inset-0 z-[60] bg-black/95 flex flex-col" onClick={() => setOpen(null)}>
             <div className="flex-1 flex items-center justify-center p-3 min-h-0">
               <img src={open.url} alt="" className="max-h-full max-w-full rounded-lg object-contain" onClick={(e) => e.stopPropagation()} />
             </div>

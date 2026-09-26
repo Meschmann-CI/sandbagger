@@ -1,5 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
+import { usePhotoOutboxFlush } from '../data/photoOutbox'
+import { useNewVersion } from '../lib/useNewVersion'
 import { Avatar } from './ui'
 
 // The tab order is the app's opinion about what matters most often.
@@ -63,8 +65,13 @@ const tabs = [
 export default function Shell() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const { data, syncError, pendingWrites } = useStore()
+  const { data, syncError, pendingWrites, updateRound } = useStore()
   const me = data.players.find((p) => p.id === data.currentUserId) ?? data.players[0]
+  // Photos parked while there was no signal go out from here, whatever
+  // screen is showing. And a build that's newer than the one running
+  // gets a banner rather than a close-and-reopen ritual.
+  usePhotoOutboxFlush(data.rounds, updateRound)
+  const newVersion = useNewVersion()
   // Off wherever there's a form with its own save button at the bottom,
   // or a card being scored — the button would sit on top of the thing
   // you're trying to tap.
@@ -79,6 +86,15 @@ export default function Shell() {
     <div className="mx-auto max-w-md min-h-dvh flex flex-col relative">
       {/* Queued writes are fine, not broken — the app is doing what it
           should on a course with no signal. Say so calmly. */}
+      {newVersion && (
+        <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-green/40 bg-green-soft px-4 py-2.5 flex items-center gap-3">
+          <p className="flex-1 text-[12.5px] font-bold text-ink">A newer version of the app is ready.</p>
+          <button onClick={() => window.location.reload()} className="rounded-lg bg-green px-3 py-1.5 text-[12.5px] font-bold text-white">
+            Reload
+          </button>
+        </div>
+      )}
+
       {pendingWrites > 0 && (
         <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-gold/40 bg-gold-soft px-4 py-2.5 flex items-center gap-2.5">
           <span className="h-2 w-2 rounded-full bg-gold shrink-0" />

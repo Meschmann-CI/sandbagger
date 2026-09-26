@@ -68,7 +68,7 @@ export function onOutboxChange(listener: () => void) {
 // none of the variants are worth losing a score over. A genuine rejection
 // from the server — a permission error, a bad row — is not this, and has
 // to surface instead of retrying forever.
-function looksLikeConnectivity(error: unknown): boolean {
+export function looksLikeConnectivity(error: unknown): boolean {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return true
   if (error instanceof TypeError) return true // fetch() rejects with this
   const message = error instanceof Error ? error.message : String(error)

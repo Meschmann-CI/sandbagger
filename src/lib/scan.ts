@@ -55,12 +55,53 @@ async function shrink(file: File): Promise<{ data: string; mediaType: 'image/jpe
   return { data: dataUrl.slice(dataUrl.indexOf(',') + 1), mediaType: 'image/jpeg' }
 }
 
-export async function scanCard(file: File): Promise<ScanResult> {
+// The function answers a refusal with a plain-English reason in the
+// body (over the daily cap, no scorecard in the photo); surface that
+// rather than supabase-js's generic wrapper.
+async function invoke<T>(body: Record<string, unknown>): Promise<T> {
   if (!supabase) throw new Error('Scanning needs the online app')
+  const { data, error } = await supabase.functions.invoke<T>('scan-card', { body })
+  if (error) {
+    const ctx = (error as { context?: Response }).context
+    if (ctx && typeof ctx.text === 'function') {
+      try {
+        const text = await ctx.text()
+        const parsed = JSON.parse(text) as { error?: string }
+        throw new Error(parsed.error || text || error.message)
+      } catch (e) {
+        if (e instanceof Error && e.message && !/JSON/.test(e.message)) throw e
+      }
+    }
+    throw new Error(error.message || 'The scan didn’t come back')
+  }
+  if (!data) throw new Error('Nothing readable came back')
+  return data
+}
+
+export async function scanCard(file: File): Promise<ScanResult> {
   const image = await shrink(file)
-  const { data, error } = await supabase.functions.invoke<ScanResult>('scan-card', { body: image })
-  if (error) throw new Error(error.message || 'The scan didn’t come back')
-  if (!data?.card) throw new Error('Nothing readable came back')
+  const data = await invoke<ScanResult>({ ...image, mode: 'card' })
+  if (!data.card) throw new Error('Nothing readable came back')
+  return data
+}
+
+/** A row of handwritten scores off a filled-in card, as read. */
+export interface ScannedScoreRow {
+  name: string | null
+  scores: (number | null)[]
+  total: number | null
+}
+
+export interface ScoresResult {
+  rows: ScannedScoreRow[]
+  notes: string[]
+  warnings: string[]
+}
+
+export async function scanScores(file: File): Promise<ScoresResult> {
+  const image = await shrink(file)
+  const data = await invoke<ScoresResult>({ ...image, mode: 'scores' })
+  if (!Array.isArray(data.rows)) throw new Error('Nothing readable came back')
   return data
 }
 

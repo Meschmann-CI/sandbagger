@@ -345,9 +345,17 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           )
           return
         }
-        case 'round.delete':
+        case 'round.delete': {
+          // The round's photos live in the bucket under its folder;
+          // deleting the row alone would strand them there forever.
+          const folder = `${groupId}/${change.id}`
+          const { data: files } = await client.storage.from('round-photos').list(folder)
+          if (files && files.length) {
+            await client.storage.from('round-photos').remove(files.map((f) => `${folder}/${f.name}`))
+          }
           await removeRow('rounds', change.id, 'Deleting round')
           return
+        }
         case 'course.upsert':
           guard((await client.from('courses').upsert(courseRow(change.course), { onConflict: 'group_id,slug' })).error, 'Saving course')
           return

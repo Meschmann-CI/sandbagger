@@ -2,9 +2,21 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { HOLE_COUNT, cardOf, cardTotal, holesEntered } from '../lib/holes'
-import { findCourse, hasPars, hasStrokeIndex, padded, scoreKind, strokesOffLow, toPar, type ScoreKind } from '../lib/courses'
+import {
+  findCourse,
+  hasPars,
+  hasStrokeIndex,
+  padded,
+  playingHandicap,
+  scoreKind,
+  strokesOffLow,
+  teeFor,
+  toPar,
+  type ScoreKind,
+} from '../lib/courses'
 import { settleFromCard } from '../lib/bets'
 import { fmtDiff, ghostDiff, ghostFor, ghostOptions } from '../lib/ghost'
+import { scanScores, scanSupported, type ScannedScoreRow } from '../lib/scan'
 import { roundStandings, shortDate } from '../lib/stats'
 import { notifyGroup } from '../lib/push'
 import { fmt1, type Round } from '../types'
@@ -196,6 +208,76 @@ export default function HoleEntry() {
     updateRound({ ...round, ghosts: ghosts.length ? ghosts : undefined })
   }
 
+  // Course handicaps for the tee on the round, so "how many do I get"
+  // is settled on the first tee rather than argued on the eighteenth.
+  const tee = hasPars(course) ? teeFor(course, round.tee) : null
+  const courseHandicaps = tee
+    ? round.players.map((rp) => ({
+        rp,
+        name: data.players.find((pl) => pl.id === rp.playerId)?.name.split(' ')[0] ?? '?',
+        hcp: playingHandicap(course, rp.handicapSnapshot, round.tee),
+      }))
+    : []
+  const lowHcp = courseHandicaps.length ? Math.min(...courseHandicaps.map((c) => c.hcp)) : 0
+
+  // Reading the paper card at the end. The photo goes to the same
+  // function as the course scanner, in scores mode; what comes back is
+  // laid out for review with each row matched to a golfer by name, and
+  // nothing lands on the card until Apply.
+  const scanRef = useRef<HTMLInputElement>(null)
+  const [scanBusy, setScanBusy] = useState(false)
+  const [scanError, setScanError] = useState<string | null>(null)
+  const [scanRows, setScanRows] = useState<(ScannedScoreRow & { playerId: string | null })[] | null>(null)
+  const [scanWarnings, setScanWarnings] = useState<string[]>([])
+
+  const matchPlayer = (name: string | null): string | null => {
+    if (!name) return null
+    const n = name.trim().toLowerCase()
+    const hit = round.players
+      .map((rp) => data.players.find((pl) => pl.id === rp.playerId))
+      .find((pl) => {
+        if (!pl) return false
+        const full = pl.name.toLowerCase()
+        const first = full.split(' ')[0]
+        return n === full || n === first || n === pl.initials.toLowerCase() || full.startsWith(n) || n.startsWith(first)
+      })
+    return hit?.id ?? null
+  }
+
+  const onScanPhoto = async (file: File | undefined) => {
+    if (!file) return
+    setScanBusy(true)
+    setScanError(null)
+    try {
+      const { rows, warnings, notes } = await scanScores(file)
+      setScanRows(rows.map((r) => ({ ...r, playerId: matchPlayer(r.name) })))
+      setScanWarnings([...warnings, ...notes])
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setScanBusy(false)
+      if (scanRef.current) scanRef.current.value = ''
+    }
+  }
+
+  const applyScan = () => {
+    if (!scanRows) return
+    setEdits((all) => {
+      const next = { ...all }
+      for (const row of scanRows) {
+        if (!row.playerId) continue
+        const mine = { ...(next[row.playerId] ?? {}) }
+        row.scores.forEach((s, i) => {
+          if (s != null) mine[i] = Math.max(1, Math.min(20, s))
+        })
+        next[row.playerId] = mine
+      }
+      return next
+    })
+    queueCommit()
+    setScanRows(null)
+  }
+
   // "Done" just leaves — with any pending write flushed first.
   const done = () => {
     clearTimeout(commitTimer.current)
@@ -282,6 +364,121 @@ export default function HoleEntry() {
           )
         })}
       </div>
+
+      {/* Who gets what off this tee — the first-tee conversation, settled */}
+      {tee && courseHandicaps.length > 0 && (
+        <p className="mt-2 px-1 text-[11.5px] text-ink-faint tabular-nums">
+          Course handicaps{round.tee ? ` off the ${round.tee}s` : ''} ({tee.rating}/{tee.slope}):{' '}
+          {courseHandicaps.map((c) => `${c.name} ${c.hcp}`).join(' · ')}
+          {courseHandicaps.length > 1 &&
+            hasStrokeIndex(course) &&
+            ` — strokes off ${courseHandicaps.find((c) => c.hcp === lowHcp)?.name}: ${courseHandicaps
+              .filter((c) => c.hcp > lowHcp)
+              .map((c) => `${c.name} ${c.hcp - lowHcp}`)
+              .join(', ') || 'none'}`}
+        </p>
+      )}
+
+      {/* The paper card, read into the phone. For the round nobody
+          scored live: photograph the filled card and every row lands
+          under the right name for a once-over. */}
+      {scanSupported() && (
+        <>
+          <input
+            ref={scanRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            aria-label="Photograph the filled-in scorecard"
+            onChange={(e) => void onScanPhoto(e.target.files?.[0])}
+          />
+          {!scanRows && (
+            <div className="mt-2 px-1 flex items-center gap-3">
+              <button
+                onClick={() => scanRef.current?.click()}
+                disabled={scanBusy}
+                className="text-[12.5px] font-bold text-green disabled:opacity-50"
+              >
+                {scanBusy ? '📷 Reading the card…' : '📷 Read scores off the paper card'}
+              </button>
+              {scanError && <span className="text-[12px] font-semibold text-flag">{scanError}</span>}
+            </div>
+          )}
+          {scanRows && (
+            <Card className="mt-3 p-3.5 border-gold/40 bg-gold-soft/40">
+              <p className="text-[13.5px] font-extrabold text-ink">Read from your photo</p>
+              <p className="text-[12px] text-ink-dim mt-0.5">
+                Match each row to a golfer, check the numbers, then Apply. Anything the reader couldn’t make out stays blank.
+              </p>
+              <div className="mt-2.5 space-y-2.5">
+                {scanRows.map((row, idx) => {
+                  const filled = row.scores.filter((s): s is number => s != null)
+                  const sum = filled.reduce((s, x) => s + x, 0)
+                  return (
+                    <div key={idx} className="rounded-xl border border-line bg-card p-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[12px] text-ink-faint truncate">“{row.name ?? 'no name'}” →</span>
+                        <select
+                          value={row.playerId ?? ''}
+                          onChange={(e) =>
+                            setScanRows((rows) =>
+                              rows ? rows.map((r, i) => (i === idx ? { ...r, playerId: e.target.value || null } : r)) : rows,
+                            )
+                          }
+                          className="flex-1 rounded-lg border border-line-strong bg-card px-2 py-1.5 text-[13px] font-bold text-ink"
+                        >
+                          <option value="">Skip this row</option>
+                          {round.players.map((rp) => {
+                            const pl = data.players.find((p) => p.id === rp.playerId)
+                            return pl ? (
+                              <option key={pl.id} value={pl.id}>
+                                {pl.name}
+                              </option>
+                            ) : null
+                          })}
+                        </select>
+                        <span className="text-[13px] font-extrabold text-ink tabular-nums shrink-0">{sum || '–'}</span>
+                      </div>
+                      <div className="mt-1.5 grid grid-cols-9 gap-0.5 text-center text-[11px] tabular-nums">
+                        {row.scores.map((s, i) => (
+                          <span key={i} className={s == null ? 'text-flag font-bold' : 'text-ink-dim'}>
+                            {s ?? '?'}
+                          </span>
+                        ))}
+                      </div>
+                      {row.total != null && filled.length === HOLE_COUNT && row.total !== sum && (
+                        <p className="mt-1 text-[11px] font-semibold text-flag">Written total {row.total} ≠ {sum} from the holes.</p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              {scanWarnings.length > 0 && (
+                <ul className="mt-2.5 space-y-0.5">
+                  {scanWarnings.map((w) => (
+                    <li key={w} className="text-[11.5px] text-ink-dim">
+                      · {w}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex gap-2 mt-3">
+                <PrimaryButton
+                  onClick={applyScan}
+                  disabled={!scanRows.some((r) => r.playerId)}
+                  className="flex-1 !py-2.5"
+                >
+                  Apply to the card
+                </PrimaryButton>
+                <button onClick={() => setScanRows(null)} className="px-4 text-[13px] font-bold text-ink-faint">
+                  Cancel
+                </button>
+              </div>
+            </Card>
+          )}
+        </>
+      )}
 
       {/* Race yourself: pick one of your earlier cards here. Shown only
           to the golfer it's for — the ghost is personal, even if
