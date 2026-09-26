@@ -26,6 +26,13 @@
   --color-cream: #efe3c8;
   --color-cream-deep: #d9c697;
   --color-on-forest: #f3ead4;
+  /* Sky and sand, the two colours a course has besides grass. They keep
+     the secondary tiles and badges from being more green: photos and mail
+     are sky, trips and travel are sand. */
+  --color-sky: #2f6fa3;
+  --color-sky-soft: #e7f0f8;
+  --color-sand: #9a6a33;
+  --color-sand-soft: #f6ecdf;
   --color-gold: #b98a24;
   --color-gold-soft: #faf2dd;
   --color-flag: #cf4a35;

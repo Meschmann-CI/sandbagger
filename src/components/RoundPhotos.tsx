@@ -115,7 +115,7 @@ export default function RoundPhotos({ round }: { round: Round }) {
 
       {count === 0 ? (
         <Card onClick={() => fileRef.current?.click()} className="p-4 flex items-center gap-3.5">
-          <IconTile name="camera" />
+          <IconTile name="camera" tone="sky" />
           <div className="flex-1 min-w-0">
             <p className="text-footnote font-bold text-ink">No photos yet</p>
             <p className="text-footnote text-ink-dim mt-0.5">The scenery, the beers, the shank into the pond. Add a few.</p>

@@ -114,7 +114,7 @@ export default function SignIn() {
       {sent ? (
         <Card className="p-5">
           <div className="flex justify-center mb-3">
-            <IconTile name="mail" size={48} />
+            <IconTile name="mail" tone="sky" size={48} />
           </div>
           <p className="text-headline font-extrabold text-ink text-center">Check your email</p>
           <p className="text-footnote text-ink-dim mt-1.5 text-center">

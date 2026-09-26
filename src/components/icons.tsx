@@ -165,6 +165,8 @@ export function Icon({
 const TILE_TONES = {
   green: 'bg-green-soft text-green',
   gold: 'bg-gold-soft text-gold',
+  sky: 'bg-sky-soft text-sky',
+  sand: 'bg-sand-soft text-sand',
   flag: 'bg-flag-soft text-flag',
   forest: 'bg-forest text-on-forest',
   cream: 'bg-cream text-forest',

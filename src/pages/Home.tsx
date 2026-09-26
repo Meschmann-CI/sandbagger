@@ -11,6 +11,7 @@ import { byGroupRank, courseSummaries, fmtStars, ratingFor } from '../lib/rating
 import { canSeeTrip, fmt1, hasScore, isSoloRound, pending, type Round, type Trip } from '../types'
 import { StarRating } from '../components/Stars'
 import { Icon, IconTile } from '../components/icons'
+import CourseScene, { scenesFor, type SceneName } from '../components/CourseScene'
 import { Avatar, AvatarStack, Card, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
 
 // The front door. Anything that needs doing comes first (a card mid-
@@ -43,6 +44,7 @@ export default function Home() {
   const holder = data.players.find((p) => p.id === saddam.holderId)
   const rounds = byDate(data.rounds)
   const recent = rounds.slice(-8).reverse()
+  const recentScenes = scenesFor(recent.map((r) => r.id))
   const awaiting = playerStats(data, me.id).awaitingScore.slice().reverse()
 
   // What I owe and what I'm owed, everywhere.
@@ -170,8 +172,6 @@ export default function Home() {
             <Icon name="chevronRight" size={18} className="text-ink-faint" />
           </Card>
         )}
-
-        {soonTrip && <TripHero trip={soonTrip} today={TODAY} meId={me.id} />}
 
         {/* The hero: my season, and the trophy underneath it */}
         <div className="overflow-hidden rounded-3xl bg-forest text-on-forest shadow-[0_10px_30px_rgba(28,70,50,0.22)]">
@@ -314,8 +314,6 @@ export default function Home() {
             <Icon name="chevronRight" size={18} className="text-ink-faint" />
           </Card>
         )}
-
-        {planningTrip && planningTrip.id !== soonTrip?.id && <TripHero trip={planningTrip} today={TODAY} meId={me.id} />}
       </div>
 
       {/* Recent rounds, as pictures you swipe through */}
@@ -338,8 +336,8 @@ export default function Home() {
         </Card>
       ) : (
         <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {recent.map((r) => (
-            <RoundTile key={r.id} round={r} onOpen={() => navigate(`/rounds/${r.id}`)} />
+          {recent.map((r, i) => (
+            <RoundTile key={r.id} round={r} scene={recentScenes[i]} onOpen={() => navigate(`/rounds/${r.id}`)} />
           ))}
           <button
             type="button"
@@ -349,6 +347,15 @@ export default function Home() {
             <IconTile name="chevronRight" size={36} />
             All rounds
           </button>
+        </div>
+      )}
+
+      {/* Trips: under the rounds, since a round happens every weekend and
+          a trip twice a year. Booked and close first, then one being planned. */}
+      {(soonTrip || planningTrip) && (
+        <div className="mt-4 space-y-2.5">
+          {soonTrip && <TripHero trip={soonTrip} today={TODAY} meId={me.id} />}
+          {planningTrip && planningTrip.id !== soonTrip?.id && <TripHero trip={planningTrip} today={TODAY} meId={me.id} />}
         </div>
       )}
 
@@ -409,7 +416,7 @@ export default function Home() {
       <Card>
         <div className="divide-y divide-line">
           <RowButton onClick={() => navigate('/trips')} className="flex items-center gap-3.5 px-4 py-3.5">
-            <IconTile name="suitcase" tone="forest" size={38} />
+            <IconTile name="suitcase" tone="sand" size={38} />
             <div className="flex-1 min-w-0">
               <p className="text-body font-bold text-ink">Trips</p>
               <p className="text-caption text-ink-faint truncate">
@@ -480,7 +487,7 @@ function Sparkline({ scores }: { scores: number[] }) {
 }
 
 /** A round as a card in the carousel: its first photo, or the flag. */
-function RoundTile({ round: r, onOpen }: { round: Round; onOpen: () => void }) {
+function RoundTile({ round: r, scene, onOpen }: { round: Round; scene: SceneName; onOpen: () => void }) {
   const { data } = useStore()
   const standings = roundStandings(r)
   const top = standings.length ? data.players.find((p) => p.id === standings[0].playerId) : undefined
@@ -500,18 +507,11 @@ function RoundTile({ round: r, onOpen }: { round: Round; onOpen: () => void }) {
       onClick={onOpen}
       className="w-[152px] shrink-0 snap-start overflow-hidden rounded-2xl border border-line bg-card text-left shadow-[0_1px_2px_rgba(24,32,25,0.05)] transition-transform active:scale-[0.98]"
     >
-      <div className="relative h-[92px] bg-forest">
+      <div className="relative h-[92px] bg-paper">
         {photo ? (
           <img src={photo.url} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
-          <>
-            <svg className="absolute inset-0 h-full w-full text-forest-soft" viewBox="0 0 152 92" preserveAspectRatio="none" aria-hidden>
-              <ellipse cx="120" cy="96" rx="92" ry="44" fill="none" stroke="currentColor" strokeWidth="1.5" />
-              <ellipse cx="120" cy="96" rx="64" ry="28" fill="none" stroke="currentColor" strokeWidth="1.5" />
-              <ellipse cx="120" cy="96" rx="36" ry="14" fill="none" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-            <Icon name="flag" size={26} className="absolute left-3 top-3 text-on-forest/80" />
-          </>
+          <CourseScene scene={scene} className="h-full w-full" />
         )}
         {(r.photos?.length ?? 0) > 1 && (
           <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/45 px-1.5 py-0.5 text-caption font-bold text-white">
@@ -540,23 +540,21 @@ function TripHero({ trip, today, meId }: { trip: Trip; today: string; meId: stri
   const days = trip.startDate ? daysBetween(today, trip.startDate) : null
   return (
     <Card onClick={() => navigate(`/trips/${trip.id}`)} className="overflow-hidden">
-      <div className="relative overflow-hidden bg-forest px-5 pt-4 pb-3.5 text-on-forest">
-        <svg className="absolute right-0 bottom-0 h-full w-40 text-forest-soft" viewBox="0 0 160 100" preserveAspectRatio="none" aria-hidden>
-          <path d="M0 100 Q40 55 90 70 T160 45 V100 Z" fill="currentColor" />
-          <path d="M20 100 Q70 70 120 85 T160 75 V100 Z" fill="currentColor" opacity="0.7" />
-        </svg>
-        <p className="relative flex items-center gap-1.5 text-caption font-bold uppercase tracking-[0.16em] text-on-forest/70">
+      {/* The scene stays clear: its flag sits somewhere different in each one. */}
+      <CourseScene name={trip.location || trip.name} className="h-24 w-full" />
+      <div className="px-5 pt-3">
+        <p className="flex items-center gap-1.5 text-caption font-bold uppercase tracking-[0.14em] text-sand">
           <Icon name="suitcase" size={13} strokeWidth={2.2} />
           {isPlanning ? 'Trip in the works' : days === 0 ? 'Trip starts today' : `Trip in ${plural(days ?? 0, 'day')}`}
         </p>
-        <h2 className="relative mt-0.5 text-title font-extrabold leading-tight">{trip.name}</h2>
-        <p className="relative mt-1 text-footnote text-on-forest/80">
+        <h2 className="mt-0.5 text-title font-extrabold leading-tight text-ink">{trip.name}</h2>
+        <p className="mt-0.5 text-footnote text-ink-dim">
           {isPlanning
             ? `${plural(trip.options.length, 'destination')} on the table`
             : `${trip.location}${trip.startDate ? ` · ${shortDate(trip.startDate)}` : ''}`}
         </p>
       </div>
-      <div className="flex items-center justify-between px-5 py-3">
+      <div className="mt-3 flex items-center justify-between border-t border-line px-5 py-3">
         {isPlanning ? (
           <>
             <p className="text-footnote text-ink-dim">

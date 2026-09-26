@@ -196,13 +196,15 @@ export function HelpTip({ title, lines }: { title: string; lines: string[] }) {
   )
 }
 
-export function Pill({ children, tone = 'default' }: { children: ReactNode; tone?: 'default' | 'gold' | 'green' | 'flag' | 'cream' }) {
+export function Pill({ children, tone = 'default' }: { children: ReactNode; tone?: 'default' | 'gold' | 'green' | 'flag' | 'cream' | 'sky' | 'sand' }) {
   const tones = {
     default: 'bg-paper text-ink-dim border-line',
     gold: 'bg-gold-soft text-gold border-gold/30',
     green: 'bg-green-soft text-green border-green/25',
     flag: 'bg-flag-soft text-flag border-flag/25',
     cream: 'bg-cream text-forest border-cream-deep/70',
+    sky: 'bg-sky-soft text-sky border-sky/20',
+    sand: 'bg-sand-soft text-sand border-sand/25',
   }
   return (
     <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-caption font-bold uppercase tracking-wide ${tones[tone]}`}>

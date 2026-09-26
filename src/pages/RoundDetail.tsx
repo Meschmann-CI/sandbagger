@@ -158,7 +158,7 @@ export default function RoundDetail() {
           {waiting.length > 0 && <Pill tone="flag">{waiting.length} score{waiting.length === 1 ? '' : 's'} outstanding</Pill>}
           {trip && (
             <Link to={`/trips/${trip.id}`}>
-              <Pill tone="green">
+              <Pill tone="sand">
                 <Icon name="suitcase" size={12} strokeWidth={2.2} /> {trip.name}
               </Pill>
             </Link>

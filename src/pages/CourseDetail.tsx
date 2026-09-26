@@ -7,6 +7,7 @@ import { RATING_ASPECTS, courseSummaries, fmtStars, ordinal } from '../lib/ratin
 import { roundStandings, shortDate } from '../lib/stats'
 import { useGoBack } from '../lib/nav'
 import { BackButton } from '../components/Nav'
+import CourseScene from '../components/CourseScene'
 import { useConfirm } from '../components/Confirm'
 import CourseRatingEditor from '../components/CourseRatingEditor'
 import { StarRating } from '../components/Stars'
@@ -62,8 +63,13 @@ export default function CourseDetail() {
         </p>
       </header>
 
+      {/* The course's scene: the same one its rounds carry everywhere */}
+      <div className="mt-2 h-28 overflow-hidden rounded-2xl">
+        <CourseScene name={summary.name} className="h-full w-full" />
+      </div>
+
       {/* The verdict */}
-      <Card className="mt-2 p-4">
+      <Card className="mt-3 p-4">
         {summary.avg != null ? (
           <div className="flex items-center gap-4">
             <div>

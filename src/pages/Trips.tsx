@@ -5,8 +5,9 @@ import { todayISO } from '../lib/dates'
 import { canSeeTrip } from '../types'
 import { useMembers } from '../data/store'
 import { Avatar, AvatarStack, Card, EmptyState, Pill, SectionLabel } from '../components/ui'
-import { Icon, IconTile } from '../components/icons'
+import { Icon } from '../components/icons'
 import { BackButton } from '../components/Nav'
+import CourseScene from '../components/CourseScene'
 
 export default function Trips() {
   const { data } = useStore()
@@ -128,7 +129,9 @@ export default function Trips() {
               const champ = tripBoard(data, rounds)[0]?.player
               return (
                 <Card key={trip.id} onClick={() => navigate(`/trips/${trip.id}`)} className="p-4 flex items-center gap-3.5">
-                  <IconTile name="suitcase" tone="forest" size={44} />
+                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">
+                    <CourseScene name={trip.location || trip.name} className="h-full w-full" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-body text-ink truncate">{trip.name}</p>
                     <p className="text-footnote text-ink-faint mt-0.5 tabular-nums">

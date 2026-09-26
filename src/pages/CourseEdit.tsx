@@ -210,7 +210,7 @@ export default function CourseEdit() {
           onChange={(e) => void onPhoto(e.target.files?.[0])}
         />
         <div className="flex items-center gap-3">
-          <IconTile name="camera" />
+          <IconTile name="camera" tone="sky" />
           <div className="flex-1 min-w-0">
             <p className="text-body font-extrabold text-ink">
               {scanning ? 'Reading the card…' : scanned ? 'Read from your photo' : 'Scan the card'}

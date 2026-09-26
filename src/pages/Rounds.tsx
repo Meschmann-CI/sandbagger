@@ -6,6 +6,7 @@ import { todayISO } from '../lib/dates'
 import { fmt1, isSoloRound, pending } from '../types'
 import { AvatarStack, Card, EmptyState, Pill, PrimaryButton } from '../components/ui'
 import { Icon } from '../components/icons'
+import CourseScene, { scenesFor } from '../components/CourseScene'
 
 type Filter = 'all' | 'mine' | 'group'
 
@@ -27,6 +28,9 @@ export default function Rounds() {
     filter === 'mine' ? r.players.some((p) => p.playerId === data.currentUserId) : filter === 'group' ? !isSoloRound(r) : true,
   )
 
+  // Each round keeps its own scene; neighbours never match.
+  const scenes = scenesFor(rounds.map((r) => r.id))
+
   // One line on the season, so the list has a headline.
   const season = all.filter((r) => r.date.startsWith(YEAR))
   const leader = leaderboard(data, season).find((row) => row.wins > 0)
@@ -42,9 +46,9 @@ export default function Rounds() {
       <header className="pt-4 pb-3 px-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-large font-extrabold tracking-tight text-ink">Rounds</h1>
-          <p className="text-footnote text-ink-dim">
+          <p className="text-footnote text-ink-dim text-balance">
             {season.length} this year · {all.length} on the books
-            {leader && ` · ${leader.player.name} leads with ${leader.wins}`}
+            {leader && ` · ${leader.player.name} leads with ${leader.wins} win${leader.wins === 1 ? '' : 's'}`}
           </p>
         </div>
         <Link to="/h2h" className="text-footnote font-bold text-green shrink-0 mt-2">
@@ -76,6 +80,7 @@ export default function Rounds() {
 
       <div className="space-y-3">
         {rounds.map((r, i) => {
+          const scene = scenes[i]
           const standings = roundStandings(r)
           const top = standings.length ? data.players.find((p) => p.id === standings[0].playerId) : undefined
           const solo = isSoloRound(r)
@@ -93,40 +98,50 @@ export default function Rounds() {
                   {monthLabel(month)}
                 </p>
               )}
-              <Card onClick={() => navigate(`/rounds/${r.id}`)} className="p-4">
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="font-bold text-body text-ink truncate">{r.courseName}</p>
-                  <p className="text-caption text-ink-faint shrink-0 tabular-nums">{shortDate(r.date)}</p>
+              <Card onClick={() => navigate(`/rounds/${r.id}`)} className="p-3.5 flex items-center gap-3.5">
+                {/* The round's first photo, or its course's scene */}
+                <div className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-xl bg-paper">
+                  {r.photos?.[0] ? (
+                    <img src={r.photos[0].url} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  ) : (
+                    <CourseScene scene={scene} className="h-full w-full" />
+                  )}
                 </div>
-                <div className="mt-2.5 flex items-center gap-2">
-                  <AvatarStack players={r.players.map((rp) => data.players.find((pl) => pl.id === rp.playerId))} />
-                  <p className="flex-1 text-footnote text-ink-dim truncate">
-                    {!top ? (
-                      'No scores in yet'
-                    ) : waiting.length > 0 ? (
-                      <>
-                        {top.name} posted <span className="font-bold text-ink tabular-nums">{standings[0].gross}</span> · waiting on{' '}
-                        {waiting.length === 1 ? data.players.find((p) => p.id === waiting[0].playerId)?.name : `${waiting.length} more`}
-                      </>
-                    ) : solo ? (
-                      <>
-                        {top.name} shot <span className="font-bold text-ink tabular-nums">{standings[0].gross}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="font-extrabold text-ink">{top.name}</span> took it · net{' '}
-                        <span className="font-bold tabular-nums">{fmt1(standings[0].netScore)}</span>
-                      </>
-                    )}
-                  </p>
-                  <div className="flex gap-1.5 shrink-0">
-                    {waiting.length > 0 && <Pill tone="flag">Pending</Pill>}
-                    {solo && waiting.length === 0 && <Pill>Solo</Pill>}
-                    {trip && <Pill tone="green">Trip</Pill>}
-                    {hasBets && <Pill tone="gold">$</Pill>}
-                    {(r.photos?.length ?? 0) > 0 && <Pill>
-                        <Icon name="camera" size={12} strokeWidth={2.2} /> {r.photos!.length}
-                      </Pill>}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="font-bold text-body text-ink truncate">{r.courseName}</p>
+                    <p className="text-caption text-ink-faint shrink-0 tabular-nums">{shortDate(r.date)}</p>
+                  </div>
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <AvatarStack players={r.players.map((rp) => data.players.find((pl) => pl.id === rp.playerId))} />
+                    <p className="flex-1 text-footnote text-ink-dim truncate">
+                      {!top ? (
+                        'No scores in yet'
+                      ) : waiting.length > 0 ? (
+                        <>
+                          {top.name} posted <span className="font-bold text-ink tabular-nums">{standings[0].gross}</span> · waiting on{' '}
+                          {waiting.length === 1 ? data.players.find((p) => p.id === waiting[0].playerId)?.name : `${waiting.length} more`}
+                        </>
+                      ) : solo ? (
+                        <>
+                          {top.name} shot <span className="font-bold text-ink tabular-nums">{standings[0].gross}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-extrabold text-ink">{top.name}</span> took it · net{' '}
+                          <span className="font-bold tabular-nums">{fmt1(standings[0].netScore)}</span>
+                        </>
+                      )}
+                    </p>
+                    <div className="flex gap-1.5 shrink-0">
+                      {waiting.length > 0 && <Pill tone="flag">Pending</Pill>}
+                      {solo && waiting.length === 0 && <Pill>Solo</Pill>}
+                      {trip && <Pill tone="sand">Trip</Pill>}
+                      {hasBets && <Pill tone="gold">$</Pill>}
+                      {(r.photos?.length ?? 0) > 0 && <Pill tone="sky">
+                          <Icon name="camera" size={12} strokeWidth={2.2} /> {r.photos!.length}
+                        </Pill>}
+                    </div>
                   </div>
                 </div>
               </Card>

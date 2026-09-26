@@ -311,7 +311,7 @@ export default function Profile() {
       {/* Trips have no tab; this and the row on Home are the way in. */}
       <SectionLabel>Trips</SectionLabel>
       <Card onClick={() => navigate('/trips')} className="p-4 flex items-center gap-3.5">
-        <IconTile name="suitcase" tone="forest" size={38} />
+        <IconTile name="suitcase" tone="sand" size={38} />
         <div className="min-w-0 flex-1">
           <p className="text-body font-bold text-ink">Your trips</p>
           <p className="text-footnote text-ink-dim mt-0.5">
