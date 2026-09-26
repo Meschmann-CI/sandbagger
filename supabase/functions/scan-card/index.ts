@@ -97,8 +97,23 @@ const int = (v: unknown, lo: number, hi: number): number | null => {
   return n != null && Number.isInteger(n) && n >= lo && n <= hi ? n : null
 }
 
+// Browsers send a preflight OPTIONS before a cross-origin POST with a
+// JSON body and an Authorization header. Without these headers the
+// request never leaves the browser, and supabase-js reports it as
+// "Failed to send a request to the Edge Function".
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+const reply = (body: BodyInit | null, init: ResponseInit = {}) =>
+  new Response(body, { ...init, headers: { ...CORS, ...(init.headers ?? {}) } })
+const json = (data: unknown, status = 200) =>
+  reply(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
 Deno.serve(async (req) => {
-  if (req.method !== 'POST') return new Response('POST only', { status: 405 })
+  if (req.method === 'OPTIONS') return reply('ok')
+  if (req.method !== 'POST') return reply('POST only', { status: 405 })
 
   // The gateway checked the JWT is valid; make sure it's a person, not
   // the app's public anon key.
@@ -106,18 +121,18 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
   })
   const { data: auth } = await asCaller.auth.getUser()
-  if (!auth?.user) return new Response('Sign in first', { status: 401 })
+  if (!auth?.user) return reply('Sign in first', { status: 401 })
 
   let body: { data?: string; mediaType?: string }
   try {
     body = await req.json()
   } catch {
-    return new Response('Bad JSON', { status: 400 })
+    return reply('Bad JSON', { status: 400 })
   }
   const data = typeof body.data === 'string' ? body.data : ''
   const mediaType = body.mediaType === 'image/png' ? 'image/png' : 'image/jpeg'
-  if (data.length < 1000) return new Response('No image', { status: 400 })
-  if (data.length > 8_000_000) return new Response('Image too large', { status: 413 })
+  if (data.length < 1000) return reply('No image', { status: 400 })
+  if (data.length > 8_000_000) return reply('Image too large', { status: 413 })
 
   const response = await anthropic.messages.create({
     model: MODEL,
@@ -139,10 +154,8 @@ Deno.serve(async (req) => {
   const call = response.content.find((b) => b.type === 'tool_use' && b.name === RECORD_CARD.name)
   if (!call || call.type !== 'tool_use') {
     const said = response.content.find((b) => b.type === 'text')
-    return Response.json(
-      { error: said && said.type === 'text' ? said.text.slice(0, 300) : 'Could not read a scorecard in that photo.' },
-      { status: 422 },
-    )
+    return json(
+      { error: said && said.type === 'text' ? said.text.slice(0, 300) : 'Could not read a scorecard in that photo.' }, 422)
   }
 
   // Tidy what came back into exactly the editor's shape, and say what
@@ -180,7 +193,7 @@ Deno.serve(async (req) => {
   if (new Set(si).size !== si.length) warnings.push('The stroke index repeats a number — one of those holes is wrong.')
   if (tees.length === 0) warnings.push('No tee ratings were readable.')
 
-  return Response.json({
+  return json({
     card: {
       name: typeof raw.name === 'string' && raw.name.trim() ? raw.name.trim() : null,
       town: typeof raw.town === 'string' && raw.town.trim() ? raw.town.trim() : null,

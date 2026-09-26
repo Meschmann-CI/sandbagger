@@ -21,31 +21,46 @@ const VAPID_PRIVATE = Deno.env.get('VAPID_PRIVATE_KEY')
 if (!VAPID_PRIVATE) throw new Error('VAPID_PRIVATE_KEY secret is not set on this project')
 webpush.setVapidDetails('mailto:MEschmann@corporateinsight.com', VAPID_PUBLIC, VAPID_PRIVATE)
 
+// Browsers send a preflight OPTIONS before a cross-origin POST with a
+// JSON body and an Authorization header. Without these headers the
+// request never leaves the browser, and supabase-js reports it as
+// "Failed to send a request to the Edge Function".
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+const reply = (body: BodyInit | null, init: ResponseInit = {}) =>
+  new Response(body, { ...init, headers: { ...CORS, ...(init.headers ?? {}) } })
+const json = (data: unknown, status = 200) =>
+  reply(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
+
 Deno.serve(async (req) => {
-  if (req.method !== 'POST') return new Response('POST only', { status: 405 })
+  if (req.method === 'OPTIONS') return reply('ok')
+  if (req.method !== 'POST') return reply('POST only', { status: 405 })
 
   let payload: { toPlayerIds?: string[]; title?: string; body?: string; url?: string }
   try {
     payload = await req.json()
   } catch {
-    return new Response('Bad JSON', { status: 400 })
+    return reply('Bad JSON', { status: 400 })
   }
   const title = (payload.title ?? '').slice(0, 80)
   const body = (payload.body ?? '').slice(0, 200)
   const url = typeof payload.url === 'string' && payload.url.startsWith('/') ? payload.url : '/'
   const to = Array.isArray(payload.toPlayerIds) ? payload.toPlayerIds.slice(0, 20) : []
-  if (!title || to.length === 0) return new Response('Nothing to send', { status: 400 })
+  if (!title || to.length === 0) return reply('Nothing to send', { status: 400 })
 
   // Who is calling, as a player? Same resolution the app itself uses.
   const asCaller = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
     global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
   })
   const { data: callerPlayerId, error: claimErr } = await asCaller.rpc('claim_my_player')
-  if (claimErr || !callerPlayerId) return new Response('No player for caller', { status: 403 })
+  if (claimErr || !callerPlayerId) return reply('No player for caller', { status: 403 })
 
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
   const { data: caller } = await admin.from('players').select('group_id').eq('id', callerPlayerId).single()
-  if (!caller) return new Response('No player for caller', { status: 403 })
+  if (!caller) return reply('No player for caller', { status: 403 })
 
   // Recipients: requested players, but only inside the caller's group,
   // and never the caller themselves.
@@ -56,7 +71,7 @@ Deno.serve(async (req) => {
     .in('id', to)
     .neq('id', callerPlayerId)
   const ids = (recipients ?? []).map((r) => r.id)
-  if (ids.length === 0) return Response.json({ sent: 0 })
+  if (ids.length === 0) return json({ sent: 0 })
 
   const { data: subs } = await admin
     .from('push_subscriptions')
@@ -81,5 +96,5 @@ Deno.serve(async (req) => {
   )
   if (dead.length > 0) await admin.from('push_subscriptions').delete().in('id', dead)
 
-  return Response.json({ sent, pruned: dead.length })
+  return json({ sent, pruned: dead.length })
 })
