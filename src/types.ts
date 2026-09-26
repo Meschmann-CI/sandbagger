@@ -160,6 +160,19 @@ export interface Round {
   // an automatic transfer to a toggle. Undefined = logged before the
   // toggle existed, and the old always-on rule applies to those.
   saddamOnTheLine?: boolean
+  /**
+   * Ghosts: a golfer racing one of their own earlier cards at this
+   * course. The ghost's hole scores show on the live card one hole at a
+   * time, as the golfer fills in their own, with a running comparison.
+   * Purely a view: the earlier round is never changed.
+   */
+  ghosts?: Ghost[]
+}
+
+export interface Ghost {
+  playerId: string
+  /** The earlier round whose card is being raced. */
+  roundId: string
 }
 
 /** Old rounds keep their history; new ones say so explicitly. */

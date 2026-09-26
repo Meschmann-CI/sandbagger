@@ -1,6 +1,9 @@
+import { Fragment } from 'react'
 import { useStore } from '../data/store'
 import type { Round } from '../types'
 import { HOLE_COUNT, cardOf, inTotal, outTotal } from '../lib/holes'
+import { fmtDiff, ghostDiff, ghostFor } from '../lib/ghost'
+import { shortDate } from '../lib/stats'
 import { findCourse, hasPars, hasStrokeIndex, padded, scoreKind, strokesOffLow, toPar, type ScoreKind } from '../lib/courses'
 import { Avatar, Card } from './ui'
 
@@ -155,8 +158,11 @@ export default function Scorecard({ round }: { round: Round }) {
               // Only compare against the holes that actually have a score.
               const scoredPar = pars ? pars.reduce<number>((s, par, i) => s + (card[i] != null ? (par ?? 0) : 0), 0) : null
               const total = out + inn
+              const ghost = ghostFor(data, round, rp.playerId)
+              const race = ghost ? ghostDiff(card, ghost.card) : null
               return (
-                <tr key={rp.playerId} className="border-b border-line last:border-0">
+                <Fragment key={rp.playerId}>
+                <tr className="border-b border-line last:border-0">
                   <td className="sticky left-0 z-10 bg-card px-3 py-2">
                     <div className="flex items-center gap-2">
                       <Avatar player={p} size={22} />
@@ -174,6 +180,53 @@ export default function Scorecard({ round }: { round: Round }) {
                     )}
                   </td>
                 </tr>
+                {/* The ghost they raced: shown on the holes the live card
+                    has, with the running difference. */}
+                {ghost && race && (
+                  <tr className="border-b border-line last:border-0 bg-paper/60">
+                    <td className="sticky left-0 z-10 bg-paper px-3 py-1.5">
+                      <span className="text-[11px] font-bold text-ink-dim whitespace-nowrap">👻 {shortDate(ghost.round.date)}</span>
+                    </td>
+                    {Array.from({ length: HOLE_COUNT }, (_, i) => {
+                      const g = ghost.card[i]
+                      const v = card[i]
+                      const shown = v != null && g != null
+                      const tone = !shown ? 'text-ink-faint' : v < g ? 'text-green' : v > g ? 'text-flag' : 'text-ink-dim'
+                      const cell = (
+                        <td key={i} className={`px-1 py-1 text-center text-[11px] font-bold tabular-nums ${tone}`}>
+                          {shown ? g : '·'}
+                        </td>
+                      )
+                      // Keep the Out column aligned after hole 9.
+                      return i === 8 ? (
+                        <Fragment key={i}>
+                          {cell}
+                          <td className="px-1 text-center text-[11px] text-ink-faint tabular-nums">
+                            {ghost.card.slice(0, 9).reduce<number>((s, h, k) => s + (card[k] != null ? (h ?? 0) : 0), 0) || '–'}
+                          </td>
+                        </Fragment>
+                      ) : (
+                        cell
+                      )
+                    })}
+                    <td className="px-1 text-center text-[11px] text-ink-faint tabular-nums">
+                      {ghost.card.slice(9).reduce<number>((s, h, k) => s + (card[k + 9] != null ? (h ?? 0) : 0), 0) || '–'}
+                    </td>
+                    <td className="px-1 text-center">
+                      <span className="text-[11px] font-bold text-ink-dim tabular-nums">{race.holes ? race.ghostSum : '–'}</span>
+                      {race.holes > 0 && (
+                        <span
+                          className={`block text-[10px] font-extrabold tabular-nums ${
+                            race.diff < 0 ? 'text-green' : race.diff > 0 ? 'text-flag' : 'text-ink-faint'
+                          }`}
+                        >
+                          {fmtDiff(race.diff)}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               )
             })}
           </tbody>

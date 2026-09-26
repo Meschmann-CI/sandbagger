@@ -225,6 +225,10 @@ alter table bets add column if not exists net boolean;
 alter table players add column if not exists is_guest boolean not null default false;
 -- The Saddam became a per-round toggle instead of an automatic transfer.
 alter table rounds add column if not exists saddam boolean;
+-- Ghosts: [{playerId, roundId}] — a golfer racing one of their own
+-- earlier cards at this course. A view over the earlier round, which
+-- is never changed.
+alter table rounds add column if not exists ghosts jsonb;
 -- Paybacks used to belong to a trip. A bet on a single round needs
 -- settling too, so a payment now hangs off whichever it cleared.
 alter table payments alter column trip_id drop not null;

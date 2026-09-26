@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { HOLE_COUNT, cardOf, cardTotal, holesEntered } from '../lib/holes'
 import { findCourse, hasPars, hasStrokeIndex, padded, scoreKind, strokesOffLow, toPar, type ScoreKind } from '../lib/courses'
 import { settleFromCard } from '../lib/bets'
-import { roundStandings } from '../lib/stats'
+import { fmtDiff, ghostDiff, ghostFor, ghostOptions } from '../lib/ghost'
+import { roundStandings, shortDate } from '../lib/stats'
 import { notifyGroup } from '../lib/push'
 import { fmt1, type Round } from '../types'
 import { Avatar, Card, HelpTip, PrimaryButton } from '../components/ui'
@@ -182,6 +183,19 @@ export default function HoleEntry() {
     setBuffer('')
   }
 
+  // Ghosts: each golfer races their own earlier card here, if they have
+  // one. Chosen on your own phone, stored on the round so it survives a
+  // reload and shows on everyone else's.
+  const me = data.currentUserId
+  const iPlay = round.players.some((rp) => rp.playerId === me)
+  const myGhostOptions = iPlay ? ghostOptions(data, round, me) : []
+  const myGhost = ghostFor(data, round, me)
+  const setMyGhost = (roundId: string | null) => {
+    const others = (round.ghosts ?? []).filter((g) => g.playerId !== me)
+    const ghosts = roundId ? [...others, { playerId: me, roundId }] : others
+    updateRound({ ...round, ghosts: ghosts.length ? ghosts : undefined })
+  }
+
   // "Done" just leaves — with any pending write flushed first.
   const done = () => {
     clearTimeout(commitTimer.current)
@@ -244,6 +258,8 @@ export default function HoleEntry() {
           const thru = card.filter((h) => h != null).length
           const gross = sum(card, 0, HOLE_COUNT)
           const vs = toParThru(card)
+          const ghost = ghostFor(data, round, rp.playerId)
+          const race = ghost ? ghostDiff(card, ghost.card) : null
           return (
             <div key={rp.playerId} className="flex items-center gap-2 rounded-xl border border-line bg-card px-2.5 py-1.5 shrink-0">
               <Avatar player={p} size={22} />
@@ -252,11 +268,66 @@ export default function HoleEntry() {
                 <p className="text-[11px] text-ink-faint tabular-nums">
                   {thru === 0 ? 'no scores' : `${gross}${vs ? ` · ${vs}` : ''} thru ${thru}`}
                 </p>
+                {race && race.holes > 0 && (
+                  <p
+                    className={`text-[11px] font-bold tabular-nums ${
+                      race.diff < 0 ? 'text-green' : race.diff > 0 ? 'text-flag' : 'text-ink-dim'
+                    }`}
+                  >
+                    👻 {fmtDiff(race.diff)} vs {shortDate(ghost!.round.date)}
+                  </p>
+                )}
               </div>
             </div>
           )
         })}
       </div>
+
+      {/* Race yourself: pick one of your earlier cards here. Shown only
+          to the golfer it's for — the ghost is personal, even if
+          everyone can see the race once it's on. */}
+      {iPlay && myGhostOptions.length > 0 && (
+        <Card className="mt-3 p-3.5">
+          {myGhost ? (
+            <div className="flex items-center gap-3">
+              <span className="text-[18px]">👻</span>
+              <p className="flex-1 min-w-0 text-[12.5px] text-ink-dim">
+                Racing your <span className="font-extrabold text-ink tabular-nums">{myGhost.card.reduce<number>((s, h) => s + (h ?? 0), 0)}</span> from{' '}
+                {shortDate(myGhost.round.date)}. Its scores show a hole at a time, as you post yours.
+              </p>
+              <button onClick={() => setMyGhost(null)} className="text-[12px] font-bold text-ink-faint shrink-0">
+                Drop it
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-3">
+                <span className="text-[18px]">👻</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13.5px] font-extrabold text-ink">Race a ghost?</p>
+                  <p className="text-[12px] text-ink-dim">
+                    You’ve played here before. Put one of those cards under yours and chase it hole by hole.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2.5">
+                {myGhostOptions.slice(0, 5).map((o) => (
+                  <button
+                    key={o.round.id}
+                    onClick={() => setMyGhost(o.round.id)}
+                    className={`rounded-full px-3.5 py-2 text-[12.5px] font-bold border transition active:scale-95 ${
+                      o.best ? 'border-gold/50 bg-gold-soft text-ink' : 'border-line-strong bg-card text-ink-dim'
+                    }`}
+                  >
+                    <span className="tabular-nums">{o.gross}</span> · {shortDate(o.round.date)}
+                    {o.best && <span className="ml-1 text-[10px] uppercase tracking-wider text-gold">best</span>}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </Card>
+      )}
 
       {/* The bets riding on this card, as it stands right now */}
       {liveBets.length > 0 && (
@@ -338,8 +409,11 @@ export default function HoleEntry() {
                 const dots = strokeDots?.[rp.playerId]
                 const total = sum(card, 0, HOLE_COUNT)
                 const vs = toParThru(card)
+                const ghost = ghostFor(data, round, rp.playerId)
+                const race = ghost ? ghostDiff(card, ghost.card) : null
                 return (
-                  <tr key={rp.playerId} className="border-b border-line last:border-0">
+                  <Fragment key={rp.playerId}>
+                  <tr className="border-b border-line last:border-0">
                     <th className="sticky left-0 z-20 bg-card px-3 text-left">
                       <div className="flex items-center gap-2">
                         <Avatar player={p} size={22} />
@@ -375,6 +449,42 @@ export default function HoleEntry() {
                       {vs && <p className="text-[10px] font-bold text-ink-faint -mt-0.5">{vs}</p>}
                     </td>
                   </tr>
+                  {/* The ghost's card, one hole at a time: a hole shows only
+                      once the live card has a score on it. */}
+                  {ghost && race && (
+                    <tr className="border-b border-line last:border-0 bg-paper/60">
+                      <th className="sticky left-0 z-20 bg-paper px-3 text-left">
+                        <span className="text-[11px] font-bold text-ink-dim whitespace-nowrap">👻 {shortDate(ghost.round.date)}</span>
+                      </th>
+                      {card.map((v, i) => {
+                        const g = ghost.card[i]
+                        const shown = v != null && g != null
+                        const tone = !shown ? 'text-ink-faint' : v < g ? 'text-green' : v > g ? 'text-flag' : 'text-ink-dim'
+                        return (
+                          <td key={i} className={`h-8 text-center text-[12px] font-bold tabular-nums ${tone}`}>
+                            {shown ? g : '·'}
+                          </td>
+                        )
+                      })}
+                      <td className="text-center">
+                        {race.holes > 0 ? (
+                          <>
+                            <p className="text-[12px] font-bold text-ink-dim tabular-nums">{race.ghostSum}</p>
+                            <p
+                              className={`text-[10px] font-extrabold -mt-0.5 tabular-nums ${
+                                race.diff < 0 ? 'text-green' : race.diff > 0 ? 'text-flag' : 'text-ink-faint'
+                              }`}
+                            >
+                              you {fmtDiff(race.diff)}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-[12px] text-ink-faint">–</p>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 )
               })}
             </tbody>
