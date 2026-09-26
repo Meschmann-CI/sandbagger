@@ -454,7 +454,7 @@ export default function HoleEntry() {
                   {ghost && race && (
                     <tr className="border-b border-line last:border-0 bg-paper/60">
                       <th className="sticky left-0 z-20 bg-paper px-3 text-left leading-tight">
-                        <span className="block text-[11.5px] font-bold text-ink-dim whitespace-nowrap">Ghost ({p.name.split(' ')[0]})</span>
+                        <span className="block text-[11.5px] font-bold text-ink-dim whitespace-nowrap">👻 Ghost {p.name.split(' ')[0]}</span>
                         <span className="block text-[9.5px] text-ink-faint whitespace-nowrap tabular-nums">{shortDate(ghost.round.date)}</span>
                       </th>
                       {card.map((v, i) => {
