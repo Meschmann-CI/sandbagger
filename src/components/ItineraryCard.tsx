@@ -134,7 +134,7 @@ export default function ItineraryCard({ item, players, currentUserId, editable, 
 
           {item.confirmation && (
             <button onClick={copyConfirmation} className="flex items-center gap-2 rounded-lg bg-paper border border-line px-3 py-2 w-full">
-              <span className="text-caption font-bold uppercase tracking-wider text-ink-faint">Conf #</span>
+              <span className="text-caption font-semibold uppercase tracking-wider text-ink-faint">Conf #</span>
               <span className="text-footnote font-bold text-ink tabular-nums flex-1 text-left">{item.confirmation}</span>
               <span className="text-caption font-bold text-green">{copied ? 'Copied ✓' : 'Copy'}</span>
             </button>
@@ -191,7 +191,7 @@ export default function ItineraryCard({ item, players, currentUserId, editable, 
           {editable && (
             <div className="flex gap-3 pt-1">
               <button onClick={onEdit} className="text-footnote font-bold text-ink-dim">Edit details</button>
-              <button onClick={onRemove} className="text-footnote font-bold text-flag/80">Remove</button>
+              <button onClick={onRemove} className="text-footnote font-bold text-ink-faint">Remove</button>
             </div>
           )}
         </div>

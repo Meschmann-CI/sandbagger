@@ -43,7 +43,7 @@ export default function AttendeePicker({
               <p className="text-caption text-ink-faint tabular-nums">Hcp {p.handicap.toFixed(1)}</p>
             </div>
             {locked ? (
-              <span className="text-caption font-bold uppercase tracking-wider text-ink-faint">Organizer</span>
+              <span className="text-caption font-semibold uppercase tracking-wider text-ink-faint">Organizer</span>
             ) : (
               <span className={`h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 ${on ? 'border-green bg-green' : 'border-line-strong'}`}>
                 {on && (

@@ -25,7 +25,7 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
 
   const field =
     'w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5'
+  const label = 'block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5'
 
   const signOut = async () => {
     await requireSupabase().auth.signOut()
@@ -81,7 +81,7 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
     <div className="mx-auto max-w-md min-h-dvh px-5 py-10 rise">
       <div className="text-center mb-6">
         <img src="/sandbagger-icon-180.png" alt="" width={64} height={64} className="mx-auto rounded-2xl mb-3" />
-        <h1 className="text-large font-extrabold tracking-tight text-ink">
+        <h1 className="text-large font-bold tracking-tight text-ink">
           {mode === 'create' ? 'Start your group' : mode === 'join' ? 'Join a group' : 'One more step'}
         </h1>
         {email && <p className="text-footnote text-ink-dim mt-1">Signed in as {email}</p>}
@@ -91,7 +91,7 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
         <div className="space-y-3">
           {groupExists && (
             <Card className="p-5">
-              <p className="text-body font-extrabold text-ink">Waiting on an invite?</p>
+              <p className="text-body font-bold text-ink">Waiting on an invite?</p>
               <p className="text-footnote text-ink-dim mt-1.5">
                 A group already exists. Ask whoever set it up to add {email ? <span className="font-bold text-ink">{email}</span> : 'your email'} as a
                 golfer, then sign in again and you'll drop straight in.
@@ -99,11 +99,11 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
             </Card>
           )}
           <Card onClick={() => setMode('join')} className="p-5">
-            <p className="text-body font-extrabold text-ink">I have an invite code</p>
+            <p className="text-body font-bold text-ink">I have an invite code</p>
             <p className="text-footnote text-ink-dim mt-1">Join an existing group with its six-character code.</p>
           </Card>
           <Card onClick={() => setMode('create')} className="p-5">
-            <p className="text-body font-extrabold text-ink">Start a new group</p>
+            <p className="text-body font-bold text-ink">Start a new group</p>
             <p className="text-footnote text-ink-dim mt-1">You'll be the organizer and can add everyone else.</p>
           </Card>
           <button onClick={() => void signOut()} className="w-full text-footnote font-bold text-ink-faint py-2">

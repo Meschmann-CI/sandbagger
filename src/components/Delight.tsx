@@ -8,14 +8,44 @@ import { money } from '../lib/money'
 export const reducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
-/** A short buzz, on the phones that allow it (Android; iOS Safari has no vibrate). */
+// iOS Safari has never had navigator.vibrate, and the whole group is on
+// iPhones. Since Safari 18, toggling an <input type="checkbox" switch>
+// plays the system's light tap, and clicking a hidden one's label from
+// script does the same. It's a workaround Apple could close, in which
+// case this goes quiet again, which is no worse than before.
+function iosTap() {
+  const label = document.createElement('label')
+  label.ariaHidden = 'true'
+  label.style.display = 'none'
+  const input = document.createElement('input')
+  input.type = 'checkbox'
+  input.setAttribute('switch', '')
+  label.appendChild(input)
+  document.head.appendChild(label)
+  label.click()
+  label.remove()
+}
+
+/**
+ * A short buzz. A pattern is [on, off, on, ...] in ms; on an iPhone each
+ * "on" becomes one tap at the same spacing, since a tap has no length.
+ */
 export function buzz(pattern: number | number[] = 20) {
   // Browsers refuse (and log an error) before the first tap on the page,
   // which is exactly when the handover opens. Skip it then.
   const activation = (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation
   if (activation && !activation.hasBeenActive) return
   try {
-    navigator.vibrate?.(pattern)
+    if (typeof navigator.vibrate === 'function') {
+      navigator.vibrate(pattern)
+      return
+    }
+    const steps = Array.isArray(pattern) ? pattern : [pattern]
+    let at = 0
+    steps.forEach((ms, i) => {
+      if (i % 2 === 0) setTimeout(iosTap, at)
+      at += ms
+    })
   } catch {
     // Not supported, or blocked: silence is fine.
   }

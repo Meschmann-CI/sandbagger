@@ -36,7 +36,7 @@ export default function TripDetail() {
           <div className="flex justify-center mb-3">
             <IconTile name="lock" tone="plain" size={48} />
           </div>
-          <p className="text-headline font-extrabold text-ink">This trip is private</p>
+          <p className="text-headline font-bold text-ink">This trip is private</p>
           <p className="text-footnote text-ink-dim mt-1.5">
             You're not on the list for this one. Ask the organizer if that's a mistake.
           </p>
@@ -55,7 +55,7 @@ export default function TripDetail() {
       <header className="pt-4 pb-2 px-1">
         <BackButton fallback="/trips" onBack={goBack} />
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-large font-extrabold tracking-tight text-ink leading-tight">{trip.name}</h1>
+          <h1 className="text-large font-bold tracking-tight text-ink leading-tight">{trip.name}</h1>
           {trip.status === 'planning' ? <Pill tone="green">Planning</Pill> : isPast ? <Pill>Archived</Pill> : <Pill tone="gold">Booked</Pill>}
         </div>
         {trip.status === 'booked' && (

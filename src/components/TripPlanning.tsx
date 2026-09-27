@@ -38,7 +38,7 @@ export default function TripPlanning({ trip }: { trip: Trip }) {
     <>
       <Card className="p-4 bg-green-soft/60 border-green/20">
         <p className="text-footnote text-ink">
-          <span className="font-extrabold">Where are we going?</span> Add contenders, stack up the pros and cons, and vote.
+          <span className="font-bold">Where are we going?</span> Add contenders, stack up the pros and cons, and vote.
           {votesIn > 0 && ` ${votesIn} of ${voterCount} votes are in.`}
         </p>
       </Card>
@@ -92,7 +92,7 @@ function OptionCard({ trip, option, onVote, onLockIn }: { trip: Trip; option: Tr
   return (
     <Card className={`p-4 ${leading ? 'border-green/40' : ''}`}>
       <div className="flex items-center justify-between gap-3">
-        <p className="font-extrabold text-headline text-ink">{option.title}</p>
+        <p className="font-bold text-headline text-ink">{option.title}</p>
         {leading && <Pill tone="green">Leading</Pill>}
       </div>
 
@@ -158,7 +158,7 @@ function OptionCard({ trip, option, onVote, onLockIn }: { trip: Trip; option: Tr
           </button>
           {/* Only the organizer calls it, so nobody books the trip by mistake. */}
           {trip.createdById === me && (
-            <button onClick={onLockIn} className="rounded-lg border border-line-strong px-3.5 py-2 text-footnote font-bold text-ink-dim">
+            <button onClick={onLockIn} className="rounded-lg bg-ink/[0.06] px-3.5 py-2 text-footnote font-bold text-ink-dim active:bg-ink/10">
               Lock in
             </button>
           )}

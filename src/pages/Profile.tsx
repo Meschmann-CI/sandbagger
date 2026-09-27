@@ -6,7 +6,7 @@ import { disablePush, enablePush, pushEnabled, pushSupported } from '../lib/push
 import { canSeeTrip, fmt1, isSoloRound, round1 } from '../types'
 import { supabase } from '../lib/supabase'
 import EditGolfer from '../components/EditGolfer'
-import { Avatar, AvatarStack, Card, MoneyBadge, Pill, PrimaryButton, RowButton, SaddamBadge, SectionLabel } from '../components/ui'
+import { Avatar, AvatarStack, Card, Meta, MoneyBadge, Pill, PrimaryButton, RowButton, SaddamBadge, SectionLabel } from '../components/ui'
 import { useConfirm } from '../components/Confirm'
 import { Icon, IconTile } from '../components/icons'
 
@@ -75,11 +75,11 @@ export default function Profile() {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-large font-extrabold tracking-tight text-ink truncate">{me.name}</h1>
-          <p className="text-footnote text-ink-dim truncate">
-            {me.homeCourse ? `Home course: ${me.homeCourse}` : 'No home course set'}
-            {me.venmo && ` · @${me.venmo}`}
-          </p>
+          <h1 className="text-large font-bold tracking-tight text-ink truncate">{me.name}</h1>
+          <Meta
+            className="text-footnote text-ink-dim"
+            parts={[me.homeCourse ? `Home course: ${me.homeCourse}` : 'No home course set', me.venmo && `Venmo @${me.venmo}`]}
+          />
           {stats.saddamHeld && <Pill tone="cream">Holder of the Saddam</Pill>}
         </div>
         {!editingMe && (
@@ -101,7 +101,7 @@ export default function Profile() {
       <Card className="mt-3 p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-footnote font-bold uppercase tracking-wider text-ink-faint">Handicap index</p>
+            <p className="text-footnote font-semibold uppercase tracking-wider text-ink-faint">Handicap index</p>
             {editingHcp ? (
               <input
                 value={hcpDraft}
@@ -190,15 +190,15 @@ export default function Profile() {
       <div className="grid grid-cols-3 gap-3 mt-3">
         <Card className="p-3.5 text-center">
           <p className="text-title font-extrabold text-ink tabular-nums">{stats.rounds}</p>
-          <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-0.5">Rounds</p>
+          <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint mt-0.5">Rounds</p>
         </Card>
         <Card className="p-3.5 text-center">
           <p className="text-title font-extrabold text-ink tabular-nums">{stats.bestGross ?? '—'}</p>
-          <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-0.5">Best</p>
+          <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint mt-0.5">Best</p>
         </Card>
         <Card className="p-3.5 text-center">
           <p className="text-title font-extrabold text-ink tabular-nums">{stats.avgGross ? stats.avgGross.toFixed(1) : '—'}</p>
-          <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-0.5">Average</p>
+          <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint mt-0.5">Average</p>
         </Card>
       </div>
 
@@ -219,7 +219,7 @@ export default function Profile() {
                 <p className="text-title font-extrabold text-ink tabular-nums">
                   {game.avgByPar[par] != null ? game.avgByPar[par]!.toFixed(2) : '—'}
                 </p>
-                <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-0.5">on par {par}s</p>
+                <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint mt-0.5">on par {par}s</p>
               </Card>
             ))}
           </div>
@@ -425,7 +425,7 @@ function PushToggle({ playerId }: { playerId: string }) {
           <button
             onClick={() => void (state === 'on' ? turnOff() : turnOn())}
             className={`shrink-0 rounded-xl px-4 py-2 text-footnote font-bold transition active:scale-95 ${
-              state === 'on' ? 'border border-line-strong bg-card text-ink-dim' : 'bg-green text-white'
+              state === 'on' ? 'bg-ink/[0.06] text-ink-dim' : 'bg-green text-white'
             }`}
           >
             {state === 'on' ? 'Turn off' : 'Turn on'}

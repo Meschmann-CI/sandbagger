@@ -157,7 +157,7 @@ export function CompactTitleBar() {
               </button>
             )}
           </div>
-          <p className="max-w-[52vw] truncate text-body font-extrabold text-ink">{title}</p>
+          <p className="max-w-[52vw] truncate text-body font-bold text-ink">{title}</p>
           <div />
         </div>
       </div>

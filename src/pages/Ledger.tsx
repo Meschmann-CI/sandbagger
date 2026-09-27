@@ -1,3 +1,4 @@
+import { useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGoBack } from '../lib/nav'
 import { BackButton } from '../components/Nav'
@@ -5,6 +6,7 @@ import { useMembers, useStore } from '../data/store'
 import { headToHead, leaderboard, saddamState, shortDate, trashTalk } from '../lib/stats'
 import { Avatar, Card, MoneyBadge, SaddamBadge, SectionLabel } from '../components/ui'
 import { Icon } from '../components/icons'
+import { StreakContext } from '../components/streakContext'
 
 // Head-to-head records. Deliberately tucked behind Home/Profile — the
 // receipts are all here for when the group actually plays together.
@@ -18,6 +20,7 @@ export default function Ledger() {
   const saddam = saddamState(data)
   const holder = data.players.find((p) => p.id === saddam.holderId)
   const talk = trashTalk(data)
+  const streaks = useContext(StreakContext)
 
   // Only pairs who have actually played together — an empty 0–0 card
   // adds nothing as the group grows.
@@ -33,7 +36,7 @@ export default function Ledger() {
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
         <BackButton fallback="/rounds" onBack={goBack} />
-        <h1 className="text-large font-extrabold tracking-tight text-ink">Head-to-Head</h1>
+        <h1 className="text-large font-bold tracking-tight text-ink">Head-to-Head</h1>
         <p className="text-footnote text-ink-dim">Group rounds only. The record is permanent.</p>
       </header>
 
@@ -43,7 +46,7 @@ export default function Ledger() {
           {holder ? (
             <>
               <p className="text-body text-ink">
-                <span className="font-extrabold">{holder.name}</span> holds the Saddam
+                <span className="font-bold">{holder.name}</span> holds the Saddam
               </p>
               <p className="text-footnote text-ink-dim mt-0.5">
                 Since {saddam.since && shortDate(saddam.since)}
@@ -52,7 +55,7 @@ export default function Ledger() {
             </>
           ) : (
             <>
-              <p className="text-body font-extrabold text-ink">Nobody holds the Saddam</p>
+              <p className="text-body font-bold text-ink">Nobody holds the Saddam</p>
               <p className="text-footnote text-ink-dim mt-0.5">Tap to hand it over or see the history</p>
             </>
           )}
@@ -65,13 +68,13 @@ export default function Ledger() {
           <p className="text-body font-bold text-ink leading-snug">
             {talk[(data.rounds.length + talk.length) % talk.length]}
           </p>
-          <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-1.5">The ledger never lies</p>
+          <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint mt-1.5">The ledger never lies</p>
         </Card>
       )}
 
       <SectionLabel>Group leaderboard</SectionLabel>
       <Card>
-        <div className="grid grid-cols-[1fr_repeat(4,auto)] gap-x-3.5 px-4 py-2.5 border-b border-line text-caption font-bold uppercase tracking-wider text-ink-faint">
+        <div className="grid grid-cols-[1fr_repeat(4,auto)] gap-x-3.5 px-4 py-2.5 border-b border-line text-caption font-semibold uppercase tracking-wider text-ink-faint">
           <span>Player</span>
           <span className="w-8 text-right">W</span>
           <span className="w-8 text-right">Rds</span>
@@ -88,10 +91,19 @@ export default function Ledger() {
                   {row.player.name}
                   {saddam.holderId === row.player.id && <SaddamBadge size={13} />}
                 </p>
-                {row.streak >= 2 && (
+                {row.streak >= 2 ? (
                   <p className="flex items-center gap-0.5 text-caption text-green font-bold">
                     {row.streak} straight <Icon name="flame" size={12} className="text-flag" />
                   </p>
+                ) : (
+                  streaks.get(row.player.id)?.kind === 'cold' && (
+                    <p
+                      className="flex items-center gap-0.5 whitespace-nowrap text-caption text-sky font-bold"
+                      title={`${streaks.get(row.player.id)!.count} group rounds without a win`}
+                    >
+                      {streaks.get(row.player.id)!.count} winless <Icon name="snowflake" size={12} strokeWidth={2.2} />
+                    </p>
+                  )
                 )}
               </div>
             </div>
@@ -135,7 +147,7 @@ export default function Ledger() {
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <Avatar player={a} size={34} />
-                  <span className={`text-body truncate ${leader?.id === a.id ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>{a.name}</span>
+                  <span className={`text-body truncate ${leader?.id === a.id ? 'font-bold text-ink' : 'text-ink-dim'}`}>{a.name}</span>
                 </div>
                 <div className="text-center shrink-0">
                   <p className="text-headline font-extrabold text-ink tracking-wide tabular-nums">
@@ -144,7 +156,7 @@ export default function Ledger() {
                   {h.ties > 0 && <p className="text-caption text-ink-faint tabular-nums">{h.ties} tied</p>}
                 </div>
                 <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-                  <span className={`text-body truncate ${leader?.id === b.id ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>{b.name}</span>
+                  <span className={`text-body truncate ${leader?.id === b.id ? 'font-bold text-ink' : 'text-ink-dim'}`}>{b.name}</span>
                   <Avatar player={b} size={34} />
                 </div>
               </div>

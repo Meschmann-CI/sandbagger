@@ -1,17 +1,19 @@
-import { useContext, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useContext, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import type { Player } from '../types'
 import { money } from '../lib/money'
 import { Icon, IconTile } from './icons'
 import { StreakContext } from './streakContext'
 
 // A golfer on a hot run wears a gold ring everywhere their face shows up,
-// with a flame once the avatar is big enough to carry one. A cold run
-// gets an icy one. Both go the moment the run ends.
+// with a flame once the avatar is big enough to carry one, and loses it
+// the moment the run ends. Cold runs used to get an icy ring too, but
+// with four golfers someone is nearly always four rounds without a win,
+// so it was on all the time and read as a selection outline. Cold now
+// shows only on the Head-to-Head leaderboard, where it's the joke.
 export function Avatar({ player, size = 40 }: { player: Player; size?: number }) {
-  const streak = useContext(StreakContext).get(player.id)
-  const ring = streak
-    ? `0 0 0 2px var(--color-card), 0 0 0 ${size >= 30 ? 4 : 3.5}px ${streak.kind === 'hot' ? 'var(--color-gold)' : '#8fbfe0'}`
-    : undefined
+  const found = useContext(StreakContext).get(player.id)
+  const streak = found?.kind === 'hot' ? found : undefined
+  const ring = streak ? `0 0 0 2px var(--color-card), 0 0 0 ${size >= 30 ? 4 : 3.5}px var(--color-gold)` : undefined
   return (
     <div
       className="relative flex items-center justify-center rounded-full font-bold shrink-0 text-white"
@@ -22,10 +24,10 @@ export function Avatar({ player, size = 40 }: { player: Player; size?: number })
         background: player.color,
         boxShadow: ring,
       }}
-      title={streak ? (streak.kind === 'hot' ? `${streak.count} group wins in a row` : `${streak.count} group rounds without a win`) : undefined}
+      title={streak ? `${streak.count} group wins in a row` : undefined}
     >
       {player.initials}
-      {streak?.kind === 'hot' && size >= 30 && (
+      {streak && size >= 30 && (
         <span
           className="absolute -bottom-1 -right-1 flex items-center justify-center rounded-full bg-gold text-white ring-2 ring-card"
           style={{ width: Math.round(size * 0.42), height: Math.round(size * 0.42) }}
@@ -121,9 +123,42 @@ export function RowButton({ children, onClick, className = '' }: { children: Rea
 export function SectionLabel({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-3 px-1 mb-2.5 mt-8">
-      <h2 className="text-headline font-extrabold tracking-tight text-ink">{children}</h2>
+      <h2 className="text-headline font-bold tracking-tight text-ink">{children}</h2>
       {action}
     </div>
+  )
+}
+
+/**
+ * A subtitle made of short facts, "6 this year · 9 on the books". Each
+ * fact keeps its separator and never breaks inside itself, so a wrap can
+ * only fall between facts and a line never starts with a dot. Empty and
+ * false parts drop out, which is how zero-count facts stay off screen.
+ */
+export function Meta({ parts, className = '' }: { parts: (string | false | null | undefined)[]; className?: string }) {
+  const shown = parts.filter((p): p is string => !!p)
+  return (
+    <p className={`text-balance ${className}`}>
+      {shown.map((p, i) => (
+        <Fragment key={i}>
+          <span className="whitespace-nowrap">
+            {p}
+            {i < shown.length - 1 && ' ·'}
+          </span>
+          {i < shown.length - 1 && ' '}
+        </Fragment>
+      ))}
+    </p>
+  )
+}
+
+/** A small round badge on a list row: trip, bets, photos. */
+export function RowBadge({ children, tone, label }: { children: ReactNode; tone: 'sand' | 'gold' | 'sky'; label: string }) {
+  const tones = { sand: 'bg-sand-soft text-sand', gold: 'bg-gold-soft text-gold', sky: 'bg-sky-soft text-sky' }
+  return (
+    <span title={label} aria-label={label} className={`inline-flex h-5 min-w-5 items-center justify-center gap-0.5 rounded-full px-1 text-caption font-bold tabular-nums ${tones[tone]}`}>
+      {children}
+    </span>
   )
 }
 
@@ -202,7 +237,7 @@ export function HelpTip({ title, lines }: { title: string; lines: string[] }) {
             style={{ transform: `translateX(${shift}px)` }}
             className="absolute right-0 top-[calc(100%+6px)] z-50 w-[264px] rounded-xl border border-line-strong bg-card p-3 text-left shadow-[0_8px_24px_rgba(24,32,25,0.16)]"
           >
-            <span className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5">{title}</span>
+            <span className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5">{title}</span>
             {lines.map((line, i) => (
               <span key={i} className="block text-footnote leading-[1.45] text-ink-dim mb-1.5 last:mb-0">
                 {line}
@@ -226,7 +261,7 @@ export function Pill({ children, tone = 'default' }: { children: ReactNode; tone
     sand: 'bg-sand-soft text-sand border-sand/25',
   }
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-caption font-bold uppercase tracking-wide ${tones[tone]}`}>
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-caption font-semibold uppercase tracking-wide ${tones[tone]}`}>
       {children}
     </span>
   )
@@ -238,7 +273,7 @@ export function EmptyState({ title, sub, cta }: { title: string; sub?: string; c
       <div className="flex justify-center mb-4">
         <IconTile name="flag" size={56} />
       </div>
-      <p className="text-headline font-extrabold text-ink">{title}</p>
+      <p className="text-headline font-bold text-ink">{title}</p>
       {sub && <p className="text-body text-ink-dim mt-1.5 max-w-[270px] mx-auto">{sub}</p>}
       {cta && <div className="mt-5">{cta}</div>}
     </div>
@@ -276,6 +311,13 @@ export function SaddamBadge({ size = 18 }: { size?: number }) {
   )
 }
 
+// Three button levels and no more. Primary is filled green, one per
+// screen or row. Secondary is a green tint with no border, because an
+// outlined white button looked exactly like a text field. Everything
+// else is plain text. Cancel and Back get a gray tint, the way iOS does
+// it, so a dismiss never competes with the action next to it.
+export const SECONDARY_BTN = 'bg-green-soft text-green-deep font-bold active:bg-green/15 transition disabled:opacity-50'
+
 export function PrimaryButton({ children, onClick, disabled, className = '' }: { children: ReactNode; onClick?: () => void; disabled?: boolean; className?: string }) {
   return (
     <button
@@ -292,7 +334,7 @@ export function GhostButton({ children, onClick, className = '' }: { children: R
   return (
     <button
       onClick={onClick}
-      className={`rounded-xl border border-line-strong bg-card px-5 py-3 font-bold text-body text-ink-dim active:bg-paper transition ${className}`}
+      className={`rounded-xl bg-ink/[0.06] px-5 py-3 font-bold text-body text-ink-dim active:bg-ink/10 transition ${className}`}
     >
       {children}
     </button>

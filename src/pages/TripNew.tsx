@@ -33,13 +33,13 @@ export default function TripNew() {
     <div className="rise">
       <header className="pt-4 pb-4 px-1">
         <BackButton fallback="/trips" onBack={goBack} />
-        <h1 className="text-large font-extrabold tracking-tight text-ink">New Trip</h1>
+        <h1 className="text-large font-bold tracking-tight text-ink">New Trip</h1>
         <p className="text-footnote text-ink-dim mt-1">
           Name it, pick who's coming, then throw destinations in the ring. Everybody on the list votes.
         </p>
       </header>
 
-      <label className="block text-footnote font-bold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">Trip name</label>
+      <label className="block text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">Trip name</label>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -51,7 +51,7 @@ export default function TripNew() {
 
       <div className="mt-5">
         <div className="flex items-baseline justify-between px-1 mb-2">
-          <label className="text-footnote font-bold uppercase tracking-[0.12em] text-ink-faint">Who's coming</label>
+          <label className="text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint">Who's coming</label>
           <button
             onClick={() => setAttendeeIds(everyone ? [data.currentUserId] : members.map((m) => m.id))}
             className="text-footnote font-bold text-green"

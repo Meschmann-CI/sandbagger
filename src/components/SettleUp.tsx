@@ -4,7 +4,7 @@ import type { Settlement } from '../lib/money'
 import { money } from '../lib/money'
 import { venmoLink } from '../lib/venmo'
 import { notifyGroup } from '../lib/push'
-import { Avatar } from './ui'
+import { Avatar, SECONDARY_BTN } from './ui'
 import { Icon } from './icons'
 import { RollDown, buzz, reducedMotion } from './Delight'
 
@@ -78,8 +78,8 @@ export default function SettleUp({ owed, note, url, onMarkPaid, squareLabel }: P
             >
               {from && <Avatar player={from} size={24} />}
               <p className="flex-1 text-footnote text-ink min-w-0">
-                <span className="font-extrabold">{name(s.fromId)}</span> owes{' '}
-                <span className="font-extrabold">{name(s.toId)}</span>{' '}
+                <span className="font-bold">{name(s.fromId)}</span> owes{' '}
+                <span className="font-bold">{name(s.toId)}</span>{' '}
                 <RollDown
                   amount={s.amount}
                   run={paying === k}
@@ -107,7 +107,7 @@ export default function SettleUp({ owed, note, url, onMarkPaid, squareLabel }: P
                       href={venmoLink(other.venmo, s.amount, note, iOwe ? 'pay' : 'charge')}
                       target="_blank"
                       rel="noreferrer"
-                      className="rounded-lg bg-[#008CFF] px-3 py-1.5 text-footnote font-bold text-white active:scale-95"
+                      className="rounded-lg bg-green px-3 py-1.5 text-footnote font-bold text-white active:scale-95 transition"
                     >
                       {iOwe ? 'Pay' : 'Request'}
                     </a>
@@ -115,7 +115,7 @@ export default function SettleUp({ owed, note, url, onMarkPaid, squareLabel }: P
                   <button
                     onClick={() => setPaying(k)}
                     disabled={paying != null}
-                    className="rounded-lg border border-line-strong bg-card px-3 py-1.5 text-footnote font-bold text-ink-dim active:bg-paper disabled:opacity-50"
+                    className={`rounded-lg px-3 py-1.5 text-footnote ${SECONDARY_BTN}`}
                   >
                     Mark paid
                   </button>

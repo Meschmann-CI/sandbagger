@@ -75,12 +75,12 @@ export default function EditRound() {
 
   const field =
     'w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-footnote font-bold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1'
+  const label = 'block text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1'
 
   return (
     <div className="rise">
       <header className="pt-4 pb-4 px-1 flex items-center justify-between">
-        <h1 className="text-large font-extrabold tracking-tight text-ink">Edit Round</h1>
+        <h1 className="text-large font-bold tracking-tight text-ink">Edit Round</h1>
         <button onClick={() => navigate(`/rounds/${round.id}`)} className="text-footnote font-bold text-ink-faint px-2 py-1">Cancel</button>
       </header>
 

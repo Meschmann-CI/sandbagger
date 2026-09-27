@@ -47,20 +47,20 @@ export default function Scorecard({ round }: { round: Round }) {
         <table className="text-footnote tabular-nums">
           <thead>
             <tr className="bg-forest text-on-forest">
-              <th className="sticky left-0 z-10 bg-forest px-3 py-2 text-left text-caption font-bold uppercase tracking-wider text-on-forest">
+              <th className="sticky left-0 z-10 bg-forest px-3 py-2 text-left text-caption font-semibold uppercase tracking-wider text-on-forest">
                 Hole
               </th>
               {Array.from({ length: 9 }, (_, i) => headerCell(i))}
-              <th className="w-9 px-1 py-2 font-extrabold">Out</th>
+              <th className="w-9 px-1 py-2 font-bold">Out</th>
               {Array.from({ length: 9 }, (_, i) => headerCell(i + 9))}
-              <th className="w-9 px-1 py-2 font-extrabold">In</th>
-              <th className="w-10 px-1 py-2 font-extrabold">Tot</th>
+              <th className="w-9 px-1 py-2 font-bold">In</th>
+              <th className="w-10 px-1 py-2 font-bold">Tot</th>
             </tr>
             {/* Yardage, where the card came with it. One tee set; the
                 label says which. */}
             {course?.yards && course.yards.length === HOLE_COUNT && (
               <tr className="border-b border-line">
-                <td className="sticky left-0 z-10 bg-card px-3 py-1 text-caption font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">
+                <td className="sticky left-0 z-10 bg-card px-3 py-1 text-caption font-semibold uppercase tracking-wider text-ink-faint whitespace-nowrap">
                   Yds{course.yardsTee ? ` · ${course.yardsTee}` : ''}
                 </td>
                 {course.yards.slice(0, 9).map((y, i) => (
@@ -86,7 +86,7 @@ export default function Scorecard({ round }: { round: Round }) {
             )}
             {pars && (
               <tr className="border-b border-line bg-paper/60">
-                <td className="sticky left-0 z-10 bg-paper px-3 py-1.5 text-caption font-bold uppercase tracking-wider text-ink-faint">
+                <td className="sticky left-0 z-10 bg-paper px-3 py-1.5 text-caption font-semibold uppercase tracking-wider text-ink-faint">
                   Par
                 </td>
                 {pars.slice(0, 9).map((p, i) => (

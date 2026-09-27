@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from '../data/store'
 import { looksLikeConnectivity } from '../data/outbox'
@@ -23,7 +23,11 @@ import { IconTile } from './icons'
 // with a transform, and a fixed overlay inside a transformed box is
 // fixed to the box, not the screen.
 
-export default function RoundPhotos({ round }: { round: Round }) {
+// With an `openerRef`, the round page's "Add photos" chip opens the
+// picker, and an empty round renders no section at all, so the page
+// doesn't ask for photos twice. The opener runs inside the chip's tap,
+// which iOS requires before it will show a file picker.
+export default function RoundPhotos({ round, openerRef }: { round: Round; openerRef?: MutableRefObject<(() => void) | null> }) {
   const { data, updateRound } = useStore()
   const confirm = useConfirm()
   const me = data.currentUserId
@@ -34,6 +38,14 @@ export default function RoundPhotos({ round }: { round: Round }) {
   const pending = usePendingPhotos(round.id)
 
   const photos = round.photos ?? []
+
+  useEffect(() => {
+    if (!openerRef) return
+    openerRef.current = () => fileRef.current?.click()
+    return () => {
+      openerRef.current = null
+    }
+  }, [openerRef])
 
   // One at a time, each landing on the round as it finishes, so a
   // handful picked from the library shows up progressively rather than
@@ -90,6 +102,29 @@ export default function RoundPhotos({ round }: { round: Round }) {
   const who = (id: string) => data.players.find((p) => p.id === id)
   const count = photos.length + pending.length
 
+  const input = (
+    // No `capture` attribute on purpose: iOS then offers Take Photo
+    // or Photo Library, which is the right question after a round.
+    <input
+      ref={fileRef}
+      type="file"
+      accept="image/*"
+      multiple
+      className="hidden"
+      aria-label="Add photos"
+      onChange={(e) => void onFiles(e.target.files)}
+    />
+  )
+
+  if (openerRef && count === 0 && busy === 0) {
+    return (
+      <>
+        {input}
+        {error && <p className="mt-2 px-1 text-footnote font-semibold text-flag">{error}</p>}
+      </>
+    )
+  }
+
   return (
     <>
       <SectionLabel
@@ -101,17 +136,7 @@ export default function RoundPhotos({ round }: { round: Round }) {
       >
         Photos{count > 0 && ` · ${count}`}
       </SectionLabel>
-      {/* No `capture` attribute on purpose: iOS then offers Take Photo
-          or Photo Library, which is the right question after a round. */}
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        aria-label="Add photos"
-        onChange={(e) => void onFiles(e.target.files)}
-      />
+      {input}
 
       {count === 0 ? (
         <Card onClick={() => fileRef.current?.click()} className="p-4 flex items-center gap-3.5">
@@ -141,7 +166,7 @@ export default function RoundPhotos({ round }: { round: Round }) {
               aria-label="Photo waiting for signal"
             >
               <img src={p.dataUrl} alt="" className="h-full w-full object-cover opacity-50" />
-              <span className="absolute inset-x-0 bottom-0 bg-gold-soft/95 px-1.5 py-1 text-center text-caption font-bold uppercase tracking-wider text-gold">
+              <span className="absolute inset-x-0 bottom-0 bg-gold-soft/95 px-1.5 py-1 text-center text-caption font-semibold uppercase tracking-wider text-gold">
                 Waiting for signal
               </span>
             </div>

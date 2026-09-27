@@ -348,7 +348,7 @@ export default function HoleEntry() {
       <Confetti fire={confetti} originY={0.4} />
       <header className="pt-4 pb-3 px-1">
         <BackButton fallback={`/rounds/${round.id}`} onBack={done} label="Round" />
-        <h1 className="text-title font-extrabold tracking-tight text-ink truncate">{round.courseName}</h1>
+        <h1 className="text-title font-bold tracking-tight text-ink truncate">{round.courseName}</h1>
         <p className="text-footnote text-ink-dim tabular-nums">
           {round.tee ? `${round.tee} tees` : 'Tees not noted'}
           {coursePar != null && ` · par ${coursePar}`}
@@ -435,7 +435,7 @@ export default function HoleEntry() {
           )}
           {scanRows && (
             <Card className="mt-3 p-3.5 border-gold/40 bg-gold-soft/40">
-              <p className="text-footnote font-extrabold text-ink">Read from your photo</p>
+              <p className="text-footnote font-bold text-ink">Read from your photo</p>
               <p className="text-footnote text-ink-dim mt-0.5">
                 Match each row to a golfer, check the numbers, then Apply. Anything the reader couldn’t make out stays blank.
               </p>
@@ -529,7 +529,7 @@ export default function HoleEntry() {
               <div className="flex items-center gap-3">
                 <IconTile name="ghost" tone="plain" size={34} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-footnote font-extrabold text-ink">Race a ghost?</p>
+                  <p className="text-footnote font-bold text-ink">Race a ghost?</p>
                   <p className="text-footnote text-ink-dim">
                     You’ve played here before. Put one of those cards under yours and chase it hole by hole.
                   </p>
@@ -560,7 +560,7 @@ export default function HoleEntry() {
           {liveBets.map(({ bet, outcome }) => (
             <div key={bet.id} className="flex items-start justify-between gap-2">
               <p className="text-footnote text-ink">
-                <span className="font-extrabold">{bet.name}:</span>{' '}
+                <span className="font-bold">{bet.name}:</span>{' '}
                 {outcome.detail
                   .map((line) => {
                     const [text, playerId] = line.split('|')
@@ -581,7 +581,7 @@ export default function HoleEntry() {
           <table className="border-collapse tabular-nums">
             <thead>
               <tr className="bg-forest text-on-forest">
-                <th className="sticky left-0 z-20 bg-forest px-3 text-left text-caption font-bold uppercase tracking-wider">Hole</th>
+                <th className="sticky left-0 z-20 bg-forest px-3 text-left text-caption font-semibold uppercase tracking-wider">Hole</th>
                 {Array.from({ length: HOLE_COUNT }, (_, i) => (
                   <th
                     key={i}
@@ -594,11 +594,11 @@ export default function HoleEntry() {
                     {i + 1}
                   </th>
                 ))}
-                <th className="w-12 h-9 text-caption font-extrabold">Tot</th>
+                <th className="w-12 h-9 text-caption font-bold">Tot</th>
               </tr>
               {yards && (
                 <tr className="bg-paper/70">
-                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">
+                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-semibold uppercase tracking-wider text-ink-faint whitespace-nowrap">
                     Yds{course?.yardsTee ? ` ${course.yardsTee}` : ''}
                   </th>
                   {yards.map((y, i) => (
@@ -609,7 +609,7 @@ export default function HoleEntry() {
               )}
               {pars && (
                 <tr className="bg-paper/70">
-                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-bold uppercase tracking-wider text-ink-faint">Par</th>
+                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-semibold uppercase tracking-wider text-ink-faint">Par</th>
                   {pars.map((p, i) => (
                     <td key={i} className="h-7 text-center text-footnote font-bold text-ink-dim">{p}</td>
                   ))}
@@ -618,7 +618,7 @@ export default function HoleEntry() {
               )}
               {index && (
                 <tr className="bg-paper/70 border-b border-line">
-                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">S. index</th>
+                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-semibold uppercase tracking-wider text-ink-faint whitespace-nowrap">S. index</th>
                   {index.map((n, i) => (
                     <td key={i} className="h-7 text-center text-caption text-ink-faint">{n}</td>
                   ))}
@@ -755,14 +755,20 @@ export default function HoleEntry() {
         </div>
       </Card>
 
-      <div className="mt-4">
-        <PrimaryButton onClick={done} className="w-full !py-4">
-          Done — back to the round
-        </PrimaryButton>
-      </div>
-      <p className="text-caption text-ink-faint px-1 mt-2">
-        Every tap saves by itself, so pocket the phone whenever — coming back picks up right where the card left off.
-      </p>
+      {/* Hidden while the pad is up: the pad has its own Done, and two
+          Done buttons on one screen meant two different things. */}
+      {!active && (
+        <>
+          <div className="mt-4">
+            <PrimaryButton onClick={done} className="w-full !py-4">
+              Back to the round
+            </PrimaryButton>
+          </div>
+          <p className="text-caption text-ink-faint px-1 mt-2">
+            Every tap saves by itself, so pocket the phone whenever. Coming back picks up right where the card left off.
+          </p>
+        </>
+      )}
       <div className="h-4" />
 
       {/* The pad. Fixed to the bottom like a keyboard, over the tab bar,
@@ -772,7 +778,7 @@ export default function HoleEntry() {
           <div className="mx-auto max-w-md bg-card border-t border-line shadow-[0_-8px_24px_rgba(24,32,25,0.12)] pb-[env(safe-area-inset-bottom)]">
             <div className="flex items-center justify-between px-4 py-2 bg-paper border-b border-line">
               <p className="text-footnote text-ink-dim">
-                <span className="font-extrabold text-ink">
+                <span className="font-bold text-ink">
                   {data.players.find((pl) => pl.id === active.playerId)?.name.split(' ')[0]}
                 </span>{' '}
                 · hole {active.hole + 1}
@@ -809,7 +815,7 @@ export default function HoleEntry() {
               <button onClick={() => typeDigit(0)} className="h-14 border-r border-line bg-card text-large font-bold text-ink active:bg-paper">
                 0
               </button>
-              <button onClick={advance} className="h-14 bg-green text-body font-extrabold text-white active:bg-green-deep">
+              <button onClick={advance} className="h-14 bg-green text-body font-bold text-white active:bg-green-deep">
                 Next →
               </button>
             </div>

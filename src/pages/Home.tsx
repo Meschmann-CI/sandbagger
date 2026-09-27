@@ -84,8 +84,10 @@ export default function Home() {
   const myPlace = board.findIndex((row) => row.player.id === me.id)
   const myRow = myPlace >= 0 ? board[myPlace] : undefined
 
-  // My last few posted scores, oldest first, for the line in the hero.
-  const myScores = rounds
+  // My last few posted scores this season, oldest first, for the line in
+  // the hero. Same season as the numbers beside it, or it read "5 rounds"
+  // next to "LAST 6".
+  const myScores = seasonRounds
     .map((r) => r.players.find((rp) => rp.playerId === me.id))
     .filter((rp): rp is NonNullable<typeof rp> => !!rp && hasScore(rp))
     .map((rp) => rp.gross as number)
@@ -124,10 +126,10 @@ export default function Home() {
     <div className="rise">
       <header className="pt-4 pb-1 px-1 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <Link to="/group" className="text-caption font-bold uppercase tracking-[0.14em] text-ink-faint">
+          <Link to="/group" className="text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
             {data.group.name}
           </Link>
-          <h1 className="text-large font-extrabold text-ink truncate">
+          <h1 className="text-large font-bold text-ink truncate">
             {hello}, {me.name}
           </h1>
           {subline && <p className="text-footnote text-ink-dim mt-0.5">{subline}</p>}
@@ -146,7 +148,7 @@ export default function Home() {
           >
             <IconTile name="flag" />
             <div className="flex-1 min-w-0">
-              <p className="text-body font-extrabold text-ink">Round in progress</p>
+              <p className="text-body font-bold text-ink">Round in progress</p>
               <p className="text-footnote text-ink-dim mt-0.5 truncate">
                 {inProgress.courseName} · {plural(inProgressHoles, 'hole score')} in
               </p>
@@ -160,7 +162,7 @@ export default function Home() {
           <Card onClick={() => navigate(`/rounds/${awaiting[0].id}`)} className="p-4 border-gold/40 bg-gold-soft/60 flex items-center gap-3.5">
             <IconTile name="pencil" tone="gold" />
             <div className="flex-1 min-w-0">
-              <p className="text-body font-extrabold text-ink">
+              <p className="text-body font-bold text-ink">
                 {awaiting.length === 1 ? 'You owe a score' : `You owe ${awaiting.length} scores`}
               </p>
               <p className="text-footnote text-ink-dim mt-0.5 truncate">
@@ -177,7 +179,7 @@ export default function Home() {
         <div className="overflow-hidden rounded-3xl bg-forest text-on-forest shadow-[0_10px_30px_rgba(28,70,50,0.22)]">
           <button type="button" onClick={() => navigate('/h2h')} className="relative block w-full px-5 pt-4 pb-4 text-left active:opacity-90">
             <div className="flex items-center justify-between">
-              <p className="text-caption font-bold uppercase tracking-[0.16em] text-on-forest/70">Your {YEAR}</p>
+              <p className="text-caption font-semibold uppercase tracking-[0.16em] text-on-forest/70">Your {YEAR}</p>
               {myRow && (
                 <span className="rounded-full bg-on-forest/15 px-2.5 py-0.5 text-caption font-extrabold tabular-nums">
                   {ordinal(myPlace + 1)} of {board.length}
@@ -212,7 +214,7 @@ export default function Home() {
           >
             <SaddamIcon size={34} />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-footnote font-extrabold">
+              <span className="block truncate text-footnote font-bold">
                 {holder ? `The Saddam · ${holder.id === me.id ? 'You' : holder.name}` : 'The Saddam is up for grabs'}
               </span>
               <span className="block truncate text-caption text-ink-dim">
@@ -224,7 +226,7 @@ export default function Home() {
                 {holder && saddam.defenses > 0 && ` · ${plural(saddam.defenses, 'defense')}`}
               </span>
             </span>
-            <span className="shrink-0 text-footnote font-extrabold text-forest">
+            <span className="shrink-0 text-footnote font-bold text-forest">
               {holder?.id === me.id ? 'Defend it' : 'Go get it'}
             </span>
           </button>
@@ -263,7 +265,7 @@ export default function Home() {
                 onClick={() => setMoneyOpen((o) => !o)}
                 aria-expanded={moneyOpen}
                 className={`shrink-0 rounded-xl px-3.5 py-2 text-footnote font-bold transition ${
-                  moneyOpen ? 'bg-paper text-ink-dim border border-line-strong' : 'bg-green text-white'
+                  moneyOpen ? 'bg-ink/[0.06] text-ink-dim' : 'bg-green text-white'
                 }`}
               >
                 {moneyOpen ? 'Done' : 'Settle up'}
@@ -281,11 +283,11 @@ export default function Home() {
                         <p className="text-footnote text-ink truncate">
                           {mine ? (
                             <>
-                              You owe <span className="font-extrabold">{other?.name}</span>
+                              You owe <span className="font-bold">{other?.name}</span>
                             </>
                           ) : (
                             <>
-                              <span className="font-extrabold">{other?.name}</span> owes you
+                              <span className="font-bold">{other?.name}</span> owes you
                             </>
                           )}
                         </p>
@@ -308,7 +310,7 @@ export default function Home() {
           <Card onClick={() => navigate(`/rounds/${toRate.id}`)} className="p-4 flex items-center gap-3.5">
             <IconTile name="star" tone="gold" />
             <div className="flex-1 min-w-0">
-              <p className="text-body font-extrabold text-ink truncate">How was {toRate.courseName}?</p>
+              <p className="text-body font-bold text-ink truncate">How was {toRate.courseName}?</p>
               <p className="text-footnote text-ink-dim mt-0.5">One tap for the stars, one for where it lands on your list.</p>
             </div>
             <Icon name="chevronRight" size={18} className="text-ink-faint" />
@@ -398,7 +400,7 @@ export default function Home() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-headline font-extrabold text-ink tabular-nums leading-none">{row.wins}</p>
-                  <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mt-0.5">{row.wins === 1 ? 'win' : 'wins'}</p>
+                  <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint mt-0.5">{row.wins === 1 ? 'win' : 'wins'}</p>
                 </div>
               </RowButton>
             ))}
@@ -523,7 +525,7 @@ function RoundTile({ round: r, scene, onOpen }: { round: Round; scene: SceneName
         </div>
       </div>
       <div className="px-3 pb-3 pt-4">
-        <p className="truncate text-footnote font-extrabold text-ink">{r.courseName}</p>
+        <p className="truncate text-footnote font-bold text-ink">{r.courseName}</p>
         <p className="truncate text-caption text-ink-dim tabular-nums">{line}</p>
         <p className="text-caption text-ink-faint tabular-nums">{shortDate(r.date)}</p>
       </div>
@@ -543,11 +545,11 @@ function TripHero({ trip, today, meId }: { trip: Trip; today: string; meId: stri
       {/* The scene stays clear: its flag sits somewhere different in each one. */}
       <CourseScene name={trip.location || trip.name} className="h-24 w-full" />
       <div className="px-5 pt-3">
-        <p className="flex items-center gap-1.5 text-caption font-bold uppercase tracking-[0.14em] text-sand">
+        <p className="flex items-center gap-1.5 text-caption font-semibold uppercase tracking-[0.14em] text-sand">
           <Icon name="suitcase" size={13} strokeWidth={2.2} />
           {isPlanning ? 'Trip in the works' : days === 0 ? 'Trip starts today' : `Trip in ${plural(days ?? 0, 'day')}`}
         </p>
-        <h2 className="mt-0.5 text-title font-extrabold leading-tight text-ink">{trip.name}</h2>
+        <h2 className="mt-0.5 text-title font-bold leading-tight text-ink">{trip.name}</h2>
         <p className="mt-0.5 text-footnote text-ink-dim">
           {isPlanning
             ? `${plural(trip.options.length, 'destination')} on the table`

@@ -76,7 +76,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
         ? outcome.computable
         : true)
 
-  const label = 'block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5'
+  const label = 'block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5'
   const field =
     'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
 
@@ -249,7 +249,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
       {!showManual ? (
         <Card className="p-3.5 bg-paper">
           <div className="flex items-baseline justify-between mb-2">
-            <p className="text-caption font-bold uppercase tracking-wider text-ink-faint">Works out to</p>
+            <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint">Works out to</p>
             {type !== 'custom' && (
               <button onClick={() => setManualMode(true)} className="text-caption font-bold text-green">
                 Enter by hand
@@ -291,7 +291,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
       ) : (
         <Card className="p-3.5 bg-paper">
           <div className="flex items-baseline justify-between mb-2">
-            <p className="text-caption font-bold uppercase tracking-wider text-ink-faint">Amounts</p>
+            <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint">Amounts</p>
             {outcome.computable && (
               <button onClick={() => setManualMode(false)} className="text-caption font-bold text-green">
                 Work it out for me

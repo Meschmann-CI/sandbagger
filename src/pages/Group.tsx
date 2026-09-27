@@ -27,13 +27,13 @@ export default function Group() {
 
   const field =
     'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5'
+  const label = 'block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5'
 
   return (
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
         <BackButton fallback="/profile" onBack={goBack} />
-        <h1 className="text-large font-extrabold tracking-tight text-ink">{data.group.name}</h1>
+        <h1 className="text-large font-bold tracking-tight text-ink">{data.group.name}</h1>
         <p className="text-footnote text-ink-dim">
           {members.length} golfer{members.length === 1 ? '' : 's'}
           {guests.length > 0 && ` · ${guests.length} guest${guests.length === 1 ? '' : 's'}`}

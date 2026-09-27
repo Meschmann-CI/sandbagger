@@ -116,12 +116,12 @@ export default function SignIn() {
           <div className="flex justify-center mb-3">
             <IconTile name="mail" tone="sky" size={48} />
           </div>
-          <p className="text-headline font-extrabold text-ink text-center">Check your email</p>
+          <p className="text-headline font-bold text-ink text-center">Check your email</p>
           <p className="text-footnote text-ink-dim mt-1.5 text-center">
             We sent a six-digit code to <span className="font-bold text-ink">{email.trim()}</span>.
           </p>
 
-          <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mt-5 mb-2">
+          <label className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mt-5 mb-2">
             Enter the code
           </label>
           <input
@@ -156,7 +156,7 @@ export default function SignIn() {
         </Card>
       ) : (
         <Card className="p-5">
-          <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-2">Email</label>
+          <label className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-2">Email</label>
           <input
             type="email"
             inputMode="email"

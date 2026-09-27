@@ -100,11 +100,11 @@ export default function TripBooked({ trip }: { trip: Trip }) {
         <Card className="p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5">First day</label>
+              <label className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5">First day</label>
               <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="w-full rounded-lg border border-line-strong px-3 py-2.5 text-body text-ink focus:border-green focus:outline-none" />
             </div>
             <div>
-              <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5">Last day</label>
+              <label className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5">Last day</label>
               <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="w-full rounded-lg border border-line-strong px-3 py-2.5 text-body text-ink focus:border-green focus:outline-none" />
             </div>
           </div>
@@ -120,7 +120,7 @@ export default function TripBooked({ trip }: { trip: Trip }) {
         <>
           <SectionLabel>{isPast ? 'Final standings' : 'Trip leaderboard'}</SectionLabel>
           <Card>
-            <div className="grid grid-cols-[1fr_repeat(3,auto)] gap-x-3 px-4 py-2.5 border-b border-line text-caption font-bold uppercase tracking-wider text-ink-faint whitespace-nowrap">
+            <div className="grid grid-cols-[1fr_repeat(3,auto)] gap-x-3 px-4 py-2.5 border-b border-line text-caption font-semibold uppercase tracking-wider text-ink-faint whitespace-nowrap">
               <span>Player</span>
               <span className="w-14 text-right">Net Σ</span>
               <span className="w-12 text-right">Gross Σ</span>
@@ -137,7 +137,7 @@ export default function TripBooked({ trip }: { trip: Trip }) {
                   </span>
                   <Avatar player={row.player} size={30} />
                   <div className="min-w-0">
-                    <p className={`text-body truncate ${i === 0 ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>
+                    <p className={`text-body truncate ${i === 0 ? 'font-bold text-ink' : 'text-ink-dim'}`}>
                       {row.player.name}
                     </p>
                     {/* A smaller total from fewer rounds isn't a lead, so say it. */}
@@ -197,7 +197,7 @@ export default function TripBooked({ trip }: { trip: Trip }) {
         <div className="space-y-4">
           {days.map((day) => (
             <div key={day}>
-              <p className="text-caption font-bold uppercase tracking-[0.12em] text-green px-1 mb-2">{prettyDate(day)}</p>
+              <p className="text-caption font-semibold uppercase tracking-[0.12em] text-green px-1 mb-2">{prettyDate(day)}</p>
               <Card className="divide-y divide-line">
                 {schedule
                   .filter((i) => i.date === day)
@@ -224,7 +224,7 @@ export default function TripBooked({ trip }: { trip: Trip }) {
                     <p className="text-footnote text-ink-faint mt-0.5 tabular-nums">{shortDate(r.date)}</p>
                   </div>
                   <p className="text-footnote text-ink-dim shrink-0">
-                    <span className="font-extrabold text-ink">{winner.name}</span> · net{' '}
+                    <span className="font-bold text-ink">{winner.name}</span> · net{' '}
                     <span className="font-bold tabular-nums">{fmt1(standings[0].netScore)}</span>
                   </p>
                 </Card>

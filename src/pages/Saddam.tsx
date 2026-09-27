@@ -37,7 +37,7 @@ export default function Saddam() {
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
         <BackButton fallback="/h2h" onBack={goBack} />
-        <h1 className="text-large font-extrabold tracking-tight text-ink">The Saddam</h1>
+        <h1 className="text-large font-bold tracking-tight text-ink">The Saddam</h1>
         <p className="text-footnote text-ink-dim">Held by whoever won the last group round.</p>
       </header>
 
@@ -49,8 +49,8 @@ export default function Saddam() {
               <SaddamIcon size={64} />
             </span>
             <div className="min-w-0">
-              <p className="text-caption font-bold uppercase tracking-[0.16em] text-forest/70">Current holder</p>
-              <p className="text-large font-extrabold text-ink leading-tight truncate">{holder.name}</p>
+              <p className="text-caption font-semibold uppercase tracking-[0.16em] text-forest/70">Current holder</p>
+              <p className="text-large font-bold text-ink leading-tight truncate">{holder.name}</p>
               <p className="text-footnote text-ink-dim mt-0.5">
                 Since {state.since && prettyDate(state.since)}
               </p>
@@ -74,7 +74,7 @@ export default function Saddam() {
           <span className="inline-flex opacity-60 grayscale">
             <SaddamIcon size={64} />
           </span>
-          <p className="text-headline font-extrabold text-ink mt-3">Up for grabs</p>
+          <p className="text-headline font-bold text-ink mt-3">Up for grabs</p>
           <p className="text-footnote text-ink-dim mt-1.5 max-w-[280px] mx-auto">
             Nobody holds it. Win a round with at least one other golfer and it's yours, or hand it to whoever has it in real
             life.
@@ -85,7 +85,7 @@ export default function Saddam() {
       {/* Hand it over */}
       {handingOver ? (
         <Card className="mt-3 p-4 space-y-3">
-          <p className="text-body font-extrabold text-ink">Who has it?</p>
+          <p className="text-body font-bold text-ink">Who has it?</p>
           <p className="text-footnote text-ink-dim">
             Use this when it changed hands outside the app. From today on, whoever wins the next group round takes it back.
           </p>
@@ -105,7 +105,7 @@ export default function Saddam() {
             ))}
           </div>
           <div>
-            <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5">Why (optional)</label>
+            <label className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5">Why (optional)</label>
             <input
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -125,7 +125,7 @@ export default function Saddam() {
       ) : (
         <button
           onClick={() => { setHandingOver(true); setPick(state.holderId) }}
-          className="w-full mt-3 rounded-xl border border-line-strong bg-card py-3 text-footnote font-bold text-ink-dim active:bg-paper"
+          className="w-full mt-2 py-2 text-footnote font-bold text-ink-faint"
         >
           {holder ? 'Hand it to someone else' : 'Give it to someone'}
         </button>

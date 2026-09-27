@@ -53,7 +53,7 @@ export default function CourseDetail() {
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
         <BackButton fallback="/courses" onBack={goBack} />
-        <h1 className="text-large font-extrabold tracking-tight text-ink leading-tight">{summary.name}</h1>
+        <h1 className="text-large font-bold tracking-tight text-ink leading-tight">{summary.name}</h1>
         <p className="text-footnote text-ink-dim mt-1 tabular-nums">
           {course?.town && `${course.town} · `}
           {summary.rounds > 0 ? `${summary.rounds} round${summary.rounds === 1 ? '' : 's'}` : 'No rounds logged'}
@@ -108,7 +108,28 @@ export default function CourseDetail() {
         Your take
       </SectionLabel>
       {editing ? (
-        <CourseRatingEditor courseName={summary.name} onDone={() => setEditing(false)} />
+        <>
+          <CourseRatingEditor courseName={summary.name} onDone={() => setEditing(false)} />
+          {summary.mine && (
+            <button
+              onClick={async () => {
+                const ok = await confirm({
+                  title: `Remove your rating of ${summary.name}?`,
+                  body: 'It comes off the group average. Your spot on your own list stays.',
+                  confirmLabel: 'Remove it',
+                  danger: true,
+                })
+                if (ok && summary.mine) {
+                  deleteCourseRating(summary.mine.id)
+                  setEditing(false)
+                }
+              }}
+              className="mt-2 px-1 text-footnote font-bold text-flag"
+            >
+              Remove my rating
+            </button>
+          )}
+        </>
       ) : summary.mine ? (
         <Card className="p-4">
           <div className="flex items-center gap-2">
@@ -127,26 +148,12 @@ export default function CourseDetail() {
               ))}
             </div>
           )}
-          <button
-            onClick={async () => {
-              const ok = await confirm({
-                title: `Remove your rating of ${summary.name}?`,
-                body: 'It comes off the group average. Your spot on your own list stays.',
-                confirmLabel: 'Remove it',
-                danger: true,
-              })
-              if (ok && summary.mine) deleteCourseRating(summary.mine.id)
-            }}
-            className="mt-3 text-caption font-bold text-flag/70"
-          >
-            Remove rating
-          </button>
         </Card>
       ) : (
         <Card onClick={() => setEditing(true)} className="p-4 border-green/30 bg-green-soft/40 flex items-center gap-3">
           <IconTile name="star" tone="gold" />
           <div className="flex-1 min-w-0">
-            <p className="text-body font-extrabold text-ink">Rate {summary.name}</p>
+            <p className="text-body font-bold text-ink">Rate {summary.name}</p>
             <p className="text-footnote text-ink-dim mt-0.5">One overall out of five. The details are optional.</p>
           </div>
           <span className="text-footnote font-bold text-green shrink-0">Rate →</span>
@@ -237,7 +244,7 @@ export default function CourseDetail() {
         <>
           <SectionLabel>Tees</SectionLabel>
           <Card>
-            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 px-4 py-2 border-b border-line text-caption font-bold uppercase tracking-wider text-ink-faint">
+            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 px-4 py-2 border-b border-line text-caption font-semibold uppercase tracking-wider text-ink-faint">
               <span>Tee</span>
               <span className="text-right">Yards</span>
               <span className="text-right">Rating / slope</span>
@@ -251,9 +258,9 @@ export default function CourseDetail() {
                     key={t.name}
                     className="grid grid-cols-[1fr_auto_auto] gap-x-4 items-center px-4 py-2.5 border-b border-line last:border-0 text-footnote"
                   >
-                    <span className={`truncate ${isDefault ? 'font-extrabold text-ink' : 'font-bold text-ink-dim'}`}>
+                    <span className={`truncate ${isDefault ? 'font-bold text-ink' : 'font-bold text-ink-dim'}`}>
                       {t.name}
-                      {isDefault && <span className="ml-1.5 text-caption font-bold uppercase tracking-wider text-green">default</span>}
+                      {isDefault && <span className="ml-1.5 text-caption font-semibold uppercase tracking-wider text-green">default</span>}
                     </span>
                     <span className="text-right tabular-nums text-ink-dim">{t.yards ?? '—'}</span>
                     <span className="text-right tabular-nums font-bold text-ink">

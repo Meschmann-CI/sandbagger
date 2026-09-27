@@ -70,7 +70,7 @@ export default function RivalryDetail() {
             <p className="text-hero font-extrabold text-ink leading-none tracking-tight tabular-nums">
               {h.aWins}<span className="text-ink-faint mx-2 text-large">–</span>{h.bWins}
             </p>
-            <p className="text-caption font-bold uppercase tracking-[0.16em] text-ink-faint mt-2">
+            <p className="text-caption font-semibold uppercase tracking-[0.16em] text-ink-faint mt-2">
               Lifetime{h.ties > 0 ? ` · ${h.ties} tied` : ''}
             </p>
           </div>
@@ -117,7 +117,7 @@ export default function RivalryDetail() {
                 <p className="text-footnote text-ink-dim">
                   {winner ? (
                     <>
-                      <span style={{ color: winner.color }} className="font-extrabold">{winner.name}</span> by {fmt1(Math.abs(diff))}
+                      <span style={{ color: winner.color }} className="font-bold">{winner.name}</span> by {fmt1(Math.abs(diff))}
                     </>
                   ) : (
                     'Dead even'

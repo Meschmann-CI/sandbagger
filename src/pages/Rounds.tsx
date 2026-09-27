@@ -4,7 +4,7 @@ import { useStore } from '../data/store'
 import { byDate, leaderboard, roundStandings, shortDate } from '../lib/stats'
 import { todayISO } from '../lib/dates'
 import { fmt1, isSoloRound, pending } from '../types'
-import { AvatarStack, Card, EmptyState, Pill, PrimaryButton } from '../components/ui'
+import { AvatarStack, Card, EmptyState, Meta, Pill, PrimaryButton, RowBadge } from '../components/ui'
 import { Icon } from '../components/icons'
 import CourseScene, { scenesFor } from '../components/CourseScene'
 
@@ -45,11 +45,15 @@ export default function Rounds() {
     <div className="rise">
       <header className="pt-4 pb-3 px-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-large font-extrabold tracking-tight text-ink">Rounds</h1>
-          <p className="text-footnote text-ink-dim text-balance">
-            {season.length} this year · {all.length} on the books
-            {leader && ` · ${leader.player.name} leads with ${leader.wins} win${leader.wins === 1 ? '' : 's'}`}
-          </p>
+          <h1 className="text-large font-bold tracking-tight text-ink">Rounds</h1>
+          <Meta
+            className="text-footnote text-ink-dim"
+            parts={[
+              season.length > 0 && `${season.length} this year`,
+              `${all.length} on the books`,
+              leader && `${leader.player.name} leads with ${leader.wins} win${leader.wins === 1 ? '' : 's'}`,
+            ]}
+          />
         </div>
         <Link to="/h2h" className="text-footnote font-bold text-green shrink-0 mt-2">
           Standings →
@@ -128,19 +132,29 @@ export default function Rounds() {
                         </>
                       ) : (
                         <>
-                          <span className="font-extrabold text-ink">{top.name}</span> took it · net{' '}
+                          <span className="font-bold text-ink">{top.name}</span> took it · net{' '}
                           <span className="font-bold tabular-nums">{fmt1(standings[0].netScore)}</span>
                         </>
                       )}
                     </p>
-                    <div className="flex gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                       {waiting.length > 0 && <Pill tone="flag">Pending</Pill>}
-                      {solo && waiting.length === 0 && <Pill>Solo</Pill>}
-                      {trip && <Pill tone="sand">Trip</Pill>}
-                      {hasBets && <Pill tone="gold">$</Pill>}
-                      {(r.photos?.length ?? 0) > 0 && <Pill tone="sky">
-                          <Icon name="camera" size={12} strokeWidth={2.2} /> {r.photos!.length}
-                        </Pill>}
+                      {trip && (
+                        <RowBadge tone="sand" label="Trip round">
+                          <Icon name="suitcase" size={11} strokeWidth={2.3} />
+                        </RowBadge>
+                      )}
+                      {hasBets && (
+                        <RowBadge tone="gold" label="Money on it">
+                          $
+                        </RowBadge>
+                      )}
+                      {(r.photos?.length ?? 0) > 0 && (
+                        <RowBadge tone="sky" label={`${r.photos!.length} photo${r.photos!.length === 1 ? '' : 's'}`}>
+                          <Icon name="camera" size={11} strokeWidth={2.3} />
+                          {r.photos!.length > 1 && r.photos!.length}
+                        </RowBadge>
+                      )}
                     </div>
                   </div>
                 </div>

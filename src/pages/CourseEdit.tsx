@@ -170,7 +170,7 @@ export default function CourseEdit() {
         <BackButton fallback={isNew ? '/courses' : `/courses/${encodeURIComponent(slug)}`} onBack={goBack} />
         {isNew ? (
           <>
-            <h1 className="text-large font-extrabold tracking-tight text-ink leading-tight">New course</h1>
+            <h1 className="text-large font-bold tracking-tight text-ink leading-tight">New course</h1>
             <input
               value={typedName}
               onChange={(e) => setTypedName(e.target.value)}
@@ -187,7 +187,7 @@ export default function CourseEdit() {
           </>
         ) : (
           <>
-            <h1 className="text-large font-extrabold tracking-tight text-ink leading-tight">{name}</h1>
+            <h1 className="text-large font-bold tracking-tight text-ink leading-tight">{name}</h1>
             <p className="text-footnote text-ink-dim mt-1">
               Straight off the scorecard. Every round here, past and future, picks it up.
             </p>
@@ -212,7 +212,7 @@ export default function CourseEdit() {
         <div className="flex items-center gap-3">
           <IconTile name="camera" tone="sky" />
           <div className="flex-1 min-w-0">
-            <p className="text-body font-extrabold text-ink">
+            <p className="text-body font-bold text-ink">
               {scanning ? 'Reading the card…' : scanned ? 'Read from your photo' : 'Scan the card'}
             </p>
             <p className="text-footnote text-ink-dim mt-0.5">
@@ -259,7 +259,7 @@ export default function CourseEdit() {
       {/* Running totals, so a typo in the composition is obvious */}
       <Card className={`mt-2 p-4 ${complete ? 'border-green/30 bg-green-soft/40' : ''}`}>
         <div className="flex items-baseline justify-between">
-          <p className="text-footnote font-bold uppercase tracking-wider text-ink-faint">
+          <p className="text-footnote font-semibold uppercase tracking-wider text-ink-faint">
             {complete ? 'Par' : `${parsIn} of ${HOLE_COUNT} holes`}
           </p>
           <p className="text-large font-extrabold text-ink tabular-nums">{total || '—'}</p>
@@ -367,7 +367,7 @@ export default function CourseEdit() {
         {/* Imported tees: one tap copies a tee's numbers in as the default. */}
         {existing?.tees && existing.tees.some((t) => (t.gender ?? 'M') === 'M') && (
           <div className="mb-3">
-            <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5">Default tee</p>
+            <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5">Default tee</p>
             <div className="flex flex-wrap gap-2">
               {existing.tees
                 .filter((t) => (t.gender ?? 'M') === 'M')
@@ -394,7 +394,7 @@ export default function CourseEdit() {
         )}
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1">
+            <label className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1">
               Course rating
             </label>
             <input
@@ -410,7 +410,7 @@ export default function CourseEdit() {
             />
           </div>
           <div className="flex-1">
-            <label className="block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1">Slope</label>
+            <label className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1">Slope</label>
             <input
               type="text"
               inputMode="numeric"

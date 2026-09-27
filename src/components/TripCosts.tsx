@@ -21,6 +21,7 @@ const ICON = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.icon])) as Recor
 export default function TripCosts({ trip }: { trip: Trip }) {
   const { data, addExpense, deleteExpense, addPayment, deletePayment } = useStore()
   const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState(false)
 
   const attendees = trip.attendeeIds.map((id) => data.players.find((p) => p.id === id)).filter((p): p is NonNullable<typeof p> => !!p)
   const expenses = data.expenses.filter((e) => e.tripId === trip.id)
@@ -35,7 +36,16 @@ export default function TripCosts({ trip }: { trip: Trip }) {
       <SectionLabel
         action={
           !adding ? (
-            <button onClick={() => setAdding(true)} className="text-footnote font-bold text-green">+ Add cost</button>
+            <span className="flex items-baseline gap-4">
+              {expenses.length > 0 && (
+                <button onClick={() => setEditing((e) => !e)} className="text-footnote font-bold text-ink-dim">
+                  {editing ? 'Done' : 'Edit'}
+                </button>
+              )}
+              {!editing && (
+                <button onClick={() => setAdding(true)} className="text-footnote font-bold text-green">Add cost</button>
+              )}
+            </span>
           ) : undefined
         }
       >
@@ -64,7 +74,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
           {/* Totals */}
           <Card className="p-4">
             <div className="flex items-baseline justify-between">
-              <p className="text-footnote font-bold uppercase tracking-wider text-ink-faint">Trip total</p>
+              <p className="text-footnote font-semibold uppercase tracking-wider text-ink-faint">Trip total</p>
               <p className="text-large font-extrabold text-ink tabular-nums">{money(total)}</p>
             </div>
             <div className="mt-3 pt-3 border-t border-line space-y-2">
@@ -89,7 +99,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
 
           {/* Settle up */}
           <Card className={`mt-3 p-4 ${owed.length === 0 ? 'bg-green-soft/50 border-green/25' : 'bg-gold-soft/40 border-gold/30'}`}>
-            <p className="text-footnote font-bold uppercase tracking-wider text-ink-faint mb-2.5">Settle up</p>
+            <p className="text-footnote font-semibold uppercase tracking-wider text-ink-faint mb-2.5">Settle up</p>
             <SettleUp
               url={`/trips/${trip.id}`}
               owed={owed}
@@ -127,9 +137,11 @@ export default function TripCosts({ trip }: { trip: Trip }) {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-body font-extrabold text-ink tabular-nums">{money(e.amount)}</p>
-                        <button onClick={() => deleteExpense(e.id)} className="text-caption font-bold text-flag/70 mt-1">
-                          Remove
-                        </button>
+                        {editing && (
+                          <button onClick={() => deleteExpense(e.id)} className="text-caption font-bold text-flag mt-1">
+                            Remove
+                          </button>
+                        )}
                       </div>
                     </div>
                   </Card>
@@ -140,7 +152,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
           {/* Paybacks already recorded */}
           {payments.length > 0 && (
             <Card className="mt-3 divide-y divide-line">
-              <p className="px-4 py-2 text-caption font-bold uppercase tracking-wider text-ink-faint">Paybacks recorded</p>
+              <p className="px-4 py-2 text-caption font-semibold uppercase tracking-wider text-ink-faint">Paybacks recorded</p>
               {payments.map((p) => (
                 <div key={p.id} className="flex items-center gap-2.5 px-4 py-2.5">
                   <span className="text-footnote text-ink-dim flex-1">
@@ -149,9 +161,11 @@ export default function TripCosts({ trip }: { trip: Trip }) {
                     <span className="font-bold tabular-nums text-green">{money(p.amount)}</span>
                     {p.date && <span className="text-ink-faint"> · {shortDate(p.date)}</span>}
                   </span>
-                  <button onClick={() => deletePayment(p.id)} className="text-caption font-bold text-flag/70 shrink-0">
-                    Undo
-                  </button>
+                  {editing && (
+                    <button onClick={() => deletePayment(p.id)} className="text-caption font-bold text-ink-faint shrink-0">
+                      Undo
+                    </button>
+                  )}
                 </div>
               ))}
             </Card>
@@ -180,7 +194,7 @@ function ExpenseForm({ trip, onSave, onCancel }: { trip: Trip; onSave: (e: Omit<
   const valid = description.trim() && value > 0 && sharedByIds.length > 0
 
   const field = 'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5'
+  const label = 'block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5'
 
   return (
     <div className="rounded-2xl border border-green/30 bg-card p-4 space-y-3.5">

@@ -43,7 +43,7 @@ export default function Trips() {
         <BackButton fallback="/" />
         <div className="flex items-end justify-between gap-3">
           <div>
-            <h1 className="text-large font-extrabold tracking-tight text-ink">Trips</h1>
+            <h1 className="text-large font-bold tracking-tight text-ink">Trips</h1>
             <p className="text-footnote text-ink-dim">Past, present, and hotly debated</p>
           </div>
           <button
@@ -69,7 +69,7 @@ export default function Trips() {
               return (
                 <Card key={trip.id} onClick={() => navigate(`/trips/${trip.id}`)} className="p-4 border-green/25">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-extrabold text-headline text-ink">{trip.name}</p>
+                    <p className="font-bold text-headline text-ink">{trip.name}</p>
                     <Pill tone="green">Planning</Pill>
                   </div>
                   <p className="text-footnote text-ink-dim mt-1.5">
@@ -103,7 +103,7 @@ export default function Trips() {
                   <svg className="absolute right-0 bottom-0 h-full w-36 opacity-15" viewBox="0 0 160 100" preserveAspectRatio="none">
                     <path d="M0 100 Q40 55 90 70 T160 45 V100 Z" fill="#fff" />
                   </svg>
-                  <h2 className="text-headline font-extrabold leading-tight">{trip.name}</h2>
+                  <h2 className="text-headline font-bold leading-tight">{trip.name}</h2>
                   <p className="text-footnote text-white/85 mt-0.5">{trip.location ?? 'Destination locked'}</p>
                 </div>
                 <div className="px-4 py-3 flex items-center justify-between gap-3">
@@ -141,8 +141,8 @@ export default function Trips() {
                   {champ && (
                     <div className="text-right shrink-0 flex items-center gap-2">
                       <div>
-                        <p className="text-caption font-bold uppercase tracking-wider text-gold">Champ</p>
-                        <p className="text-footnote font-extrabold text-ink">{champ.name}</p>
+                        <p className="text-caption font-semibold uppercase tracking-wider text-gold">Champ</p>
+                        <p className="text-footnote font-bold text-ink">{champ.name}</p>
                       </div>
                       <Avatar player={champ} size={30} />
                     </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useGoBack } from '../lib/nav'
 import { BackButton } from '../components/Nav'
@@ -19,7 +19,7 @@ import RoundPhotos from '../components/RoundPhotos'
 import SettleUp from '../components/SettleUp'
 import { roundBetSettlements } from '../lib/settlements'
 import { useConfirm } from '../components/Confirm'
-import { Avatar, Card, HelpTip, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SaddamIcon, SectionLabel } from '../components/ui'
+import { Avatar, Card, HelpTip, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SaddamIcon, SECONDARY_BTN, SectionLabel } from '../components/ui'
 import { betRules } from '../lib/betRules'
 import { sandbaggers } from '../lib/delight'
 import { SandbagStamp } from '../components/Delight'
@@ -35,6 +35,8 @@ export default function RoundDetail() {
   const [draftScore, setDraftScore] = useState('')
   const [addingBet, setAddingBet] = useState(false)
   const [rating, setRating] = useState(false)
+  const [editingBets, setEditingBets] = useState(false)
+  const openPhotos = useRef<(() => void) | null>(null)
   const round = data.rounds.find((r) => r.id === id)
 
   if (!round) {
@@ -113,13 +115,11 @@ export default function RoundDetail() {
   // Par is entered once per course and reaches back through every round
   // already played there, so it's worth asking for here.
   if (!par) chips.push({ key: 'par', label: 'Add par', icon: 'flag', onClick: () => navigate(`/courses/${encodeURIComponent(slug)}/card`) })
-  if ((round.photos?.length ?? 0) === 0)
-    chips.push({
-      key: 'photos',
-      label: 'Add photos',
-      icon: 'camera',
-      onClick: () => document.getElementById('photos')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-    })
+  // Each missing thing is asked for once, here. Its section only shows
+  // up below once there's something in it.
+  if (!anyCards(round)) chips.push({ key: 'card', label: 'Score by hole', icon: 'pencil', onClick: () => navigate(`/rounds/${round.id}/card`) })
+  if ((round.photos?.length ?? 0) === 0) chips.push({ key: 'photos', label: 'Add photos', icon: 'camera', onClick: () => openPhotos.current?.() })
+  if (bets.length === 0 && !addingBet) chips.push({ key: 'bet', label: 'Add a bet', icon: 'cash', onClick: () => setAddingBet(true) })
 
   const holesIn = round.players.reduce((sum, rp) => sum + holesEntered(rp), 0)
   const blurb = !top
@@ -144,7 +144,7 @@ export default function RoundDetail() {
         <BackButton fallback="/rounds" onBack={goBack} />
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-large font-extrabold tracking-tight leading-tight text-ink">{round.courseName}</h1>
+            <h1 className="text-large font-bold tracking-tight leading-tight text-ink">{round.courseName}</h1>
             <p className="text-footnote text-ink-dim mt-1">
               {prettyDate(round.date)}
               {par != null && ` · par ${par}`}
@@ -153,7 +153,7 @@ export default function RoundDetail() {
           </div>
           <button
             onClick={() => navigate(`/rounds/${round.id}/edit`)}
-            className="shrink-0 rounded-xl border border-line-strong bg-card px-4 py-2 text-footnote font-bold text-ink-dim active:bg-paper"
+            className={`shrink-0 rounded-xl px-4 py-2 text-footnote ${SECONDARY_BTN}`}
           >
             Edit
           </button>
@@ -175,7 +175,7 @@ export default function RoundDetail() {
       {/* Your own outstanding score gets top billing */}
       {iAmWaiting && (
         <Card className="mt-2 p-4 border-gold/40 bg-gold-soft/50">
-          <p className="text-body font-extrabold text-ink">Your score is missing</p>
+          <p className="text-body font-bold text-ink">Your score is missing</p>
           <p className="text-footnote text-ink-dim mt-1">
             Someone logged this round and left yours blank. Add it and the records update.
           </p>
@@ -228,7 +228,7 @@ export default function RoundDetail() {
                       </span>
                     )}
                     <Avatar player={p} size={first ? 46 : 38} />
-                    <span className={`max-w-full truncate text-footnote ${first ? 'font-extrabold text-ink' : 'font-bold text-ink-dim'}`}>
+                    <span className={`max-w-full truncate text-footnote ${first ? 'font-bold text-ink' : 'font-bold text-ink-dim'}`}>
                       {p.name}
                     </span>
                     {bagged.has(s.playerId) && <SandbagStamp />}
@@ -288,7 +288,7 @@ export default function RoundDetail() {
 
       <SectionLabel>Scorecard</SectionLabel>
       <Card>
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 px-4 py-2.5 border-b border-line text-caption font-bold uppercase tracking-wider text-ink-faint">
+        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 px-4 py-2.5 border-b border-line text-caption font-semibold uppercase tracking-wider text-ink-faint">
           <span>Player</span>
           <span className="w-12 text-right">Net</span>
           <span className="w-10 text-right">Gross</span>
@@ -305,7 +305,7 @@ export default function RoundDetail() {
                 {!solo && <span className={`font-extrabold w-4 tabular-nums ${s.rank === 1 ? 'text-gold' : 'text-ink-faint'}`}>{s.rank}</span>}
                 <Avatar player={p} size={30} />
                 <span className="min-w-0">
-                  <span className={`block truncate text-body ${s.rank === 1 && !solo ? 'font-extrabold text-ink' : 'text-ink-dim'}`}>{p.name}</span>
+                  <span className={`block truncate text-body ${s.rank === 1 && !solo ? 'font-bold text-ink' : 'text-ink-dim'}`}>{p.name}</span>
                   {bagged.has(s.playerId) && (
                     <span className="-ml-0.5 mt-0.5 block">
                       <SandbagStamp />
@@ -360,7 +360,7 @@ export default function RoundDetail() {
                 ) : (
                   <button
                     onClick={() => { setEntering(rp.playerId); setDraftScore('') }}
-                    className="shrink-0 rounded-lg border border-line-strong px-3 py-1.5 text-footnote font-bold text-green"
+                    className={`shrink-0 rounded-lg px-3 py-1.5 text-footnote ${SECONDARY_BTN}`}
                   >
                     {isMe ? 'Add mine' : 'Add it'}
                   </button>
@@ -381,39 +381,44 @@ export default function RoundDetail() {
         </p>
       )}
 
-      {/* Per-hole card */}
-      <SectionLabel
-        action={
-          <button onClick={() => navigate(`/rounds/${round.id}/card`)} className="text-footnote font-bold text-green">
-            {!anyCards(round) ? '+ Add hole scores' : round.players.some((rp) => !cardComplete(rp)) ? 'Keep scoring →' : 'Edit card'}
-          </button>
-        }
-      >
-        Scorecard by hole
-      </SectionLabel>
-      {anyCards(round) ? (
-        <Scorecard round={round} />
-      ) : (
-        <Card className="p-4 text-center">
-          <p className="text-footnote text-ink-dim">
-            No hole-by-hole scores yet. Add them and skins and nassau work themselves out.
-          </p>
-        </Card>
+      {/* Per-hole card, once there is one */}
+      {anyCards(round) && (
+        <>
+          <SectionLabel
+            action={
+              <button onClick={() => navigate(`/rounds/${round.id}/card`)} className="text-footnote font-bold text-green">
+                {round.players.some((rp) => !cardComplete(rp)) ? 'Keep scoring' : 'Edit card'}
+              </button>
+            }
+          >
+            Hole by hole
+          </SectionLabel>
+          <Scorecard round={round} />
+        </>
       )}
 
       <div id="photos" className="scroll-mt-16">
-        <RoundPhotos round={round} />
+        <RoundPhotos round={round} openerRef={openPhotos} />
       </div>
 
-      <SectionLabel
-        action={
-          !addingBet ? (
-            <button onClick={() => setAddingBet(true)} className="text-footnote font-bold text-green">+ Add bet</button>
-          ) : undefined
-        }
-      >
-        Money games
-      </SectionLabel>
+      {(bets.length > 0 || addingBet) && (
+        <SectionLabel
+          action={
+            bets.length > 0 && !addingBet ? (
+              <span className="flex items-baseline gap-4">
+                <button onClick={() => setEditingBets((e) => !e)} className="text-footnote font-bold text-ink-dim">
+                  {editingBets ? 'Done' : 'Edit'}
+                </button>
+                {!editingBets && (
+                  <button onClick={() => setAddingBet(true)} className="text-footnote font-bold text-green">Add bet</button>
+                )}
+              </span>
+            ) : undefined
+          }
+        >
+          Money games
+        </SectionLabel>
+      )}
 
       {addingBet && (
         <div className="mb-3">
@@ -428,16 +433,12 @@ export default function RoundDetail() {
         </div>
       )}
 
-      {bets.length === 0 && !addingBet && (
-        <Card className="p-4 text-center text-footnote text-ink-dim">Nothing on this round. Yet.</Card>
-      )}
-
       {/* What the bets add up to between people, and how to make it stop
           being true. Money won on a round is a permanent record; this is
           about whether it's actually changed hands. */}
       {bets.length > 0 && (
         <Card className={`mb-3 p-4 ${betsOwed.length === 0 ? 'bg-green-soft/50 border-green/25' : 'bg-gold-soft/40 border-gold/30'}`}>
-          <p className="text-footnote font-bold uppercase tracking-wider text-ink-faint mb-2.5">Settle up</p>
+          <p className="text-footnote font-semibold uppercase tracking-wider text-ink-faint mb-2.5">Settle up</p>
           <SettleUp
             url={`/rounds/${round.id}`}
             owed={betsOwed}
@@ -456,9 +457,11 @@ export default function RoundDetail() {
                     <span className="font-bold text-ink">{data.players.find((x) => x.id === p.toId)?.name}</span>{' '}
                     <span className="font-bold tabular-nums text-green">{money(p.amount)}</span>
                   </span>
-                  <button onClick={() => deletePayment(p.id)} className="text-caption font-bold text-flag/70 shrink-0">
-                    Undo
-                  </button>
+                  {editingBets && (
+                    <button onClick={() => deletePayment(p.id)} className="text-caption font-bold text-ink-faint shrink-0">
+                      Undo
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -487,6 +490,7 @@ export default function RoundDetail() {
                   <div className="flex items-center gap-3 shrink-0">
                     <HelpTip {...betRules(bet.type, { net: bet.net, winnerTakeAll: bet.winnerTakeAll })} />
                     <p className="text-caption text-ink-faint tabular-nums">{money(bet.stake)} stake</p>
+                    {editingBets && (
                     <button
                       onClick={async () => {
                         const ok = await confirm({
@@ -497,10 +501,11 @@ export default function RoundDetail() {
                         })
                         if (ok) deleteBet(bet.id)
                       }}
-                      className="text-caption font-bold text-flag/70"
+                      className="text-caption font-bold text-flag"
                     >
                       Remove
                     </button>
+                    )}
                   </div>
                 </div>
                 {status && (

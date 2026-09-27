@@ -28,7 +28,7 @@ export default function EditGolfer({ player, cloud, onDone }: { player: Player; 
 
   const field =
     'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5'
+  const label = 'block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5'
 
   const save = () => {
     if (!name.trim()) return
@@ -49,7 +49,7 @@ export default function EditGolfer({ player, cloud, onDone }: { player: Player; 
       <div className="flex items-center gap-3">
         {/* Preview, so the avatar you're about to save is the one you see */}
         <Avatar player={{ ...player, name, initials: initials || deriveInitials(name) }} size={32} />
-        <p className="text-body font-extrabold text-ink">Editing {player.name}</p>
+        <p className="text-body font-bold text-ink">Editing {player.name}</p>
       </div>
       <div className="grid grid-cols-[1fr_auto] gap-2.5">
         <div>

@@ -4,7 +4,7 @@ import { useMembers, useStore } from '../data/store'
 import { hasPars } from '../lib/courses'
 import { byGroupRank, byRating, courseSummaries, fmtStars, moveBy, myRanking, ordinal } from '../lib/ratings'
 import { StarRating } from '../components/Stars'
-import { Card, EmptyState, HelpTip, Pill, SectionLabel } from '../components/ui'
+import { Card, EmptyState, HelpTip, Meta, Pill, SectionLabel } from '../components/ui'
 
 // Every course the group has played, two ways: how it rates, and how it
 // ranks. Stars are the honest scale but bunch up around four; the
@@ -48,12 +48,19 @@ export default function Courses() {
     <div className="rise">
       <header className="pt-4 pb-2 px-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-large font-extrabold tracking-tight text-ink">Courses</h1>
-          <p className="text-footnote text-ink-dim">
-            {rows.length === 0
-              ? 'Add one ahead of playing it, or log a round and it turns up here.'
-              : `${played.length} played · ${rated} rated · ${rows.length - played.length} more on the books${needCard ? ` · ${needCard} without a scorecard` : ''}`}
-          </p>
+          <h1 className="text-large font-bold tracking-tight text-ink">Courses</h1>
+          {rows.length === 0 ? (
+            <p className="text-footnote text-ink-dim">Add one ahead of playing it, or log a round and it turns up here.</p>
+          ) : (
+            <Meta
+              className="text-footnote text-ink-dim"
+              parts={[
+                `${played.length} played`,
+                rated > 0 && `${rated} rated`,
+                rows.length > played.length && `${rows.length - played.length} not played yet`,
+              ]}
+            />
+          )}
         </div>
         {/* Adding ahead of time: the card, stroke index and slope go in
             before the first tee, and the round finds them by name. */}

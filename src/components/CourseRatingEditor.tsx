@@ -58,7 +58,7 @@ export default function CourseRatingEditor({
   if (step === 'place') {
     return (
       <div className="rounded-2xl border border-green/30 bg-card p-4">
-        <p className="text-body font-extrabold text-ink">Where does {courseDisplayName(data, slug)} land?</p>
+        <p className="text-body font-bold text-ink">Where does {courseDisplayName(data, slug)} land?</p>
         <p className="text-footnote text-ink-dim mt-1">
           Tap the slot. 1 is your favourite. Stars can tie; your list can’t, and that’s what sorts the group’s order.
         </p>
@@ -92,7 +92,7 @@ export default function CourseRatingEditor({
   return (
     <div className="rounded-2xl border border-green/30 bg-card p-4 space-y-3.5">
       <div>
-        <p className="text-caption font-bold uppercase tracking-wider text-ink-faint mb-1.5">Overall</p>
+        <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5">Overall</p>
         <StarPicker value={overall} onChange={setOverall} size={36} />
       </div>
 
@@ -105,7 +105,7 @@ export default function CourseRatingEditor({
       ) : (
         <div className="rounded-xl border border-line bg-paper p-3 space-y-2.5">
           <div className="flex items-baseline justify-between">
-            <p className="text-caption font-bold uppercase tracking-wider text-ink-faint">The details</p>
+            <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint">The details</p>
             <span className="text-caption text-ink-faint">{detailsIn ? `${detailsIn} of ${RATING_ASPECTS.length}` : 'optional'}</span>
           </div>
           {RATING_ASPECTS.map((a) => (

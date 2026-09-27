@@ -69,7 +69,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             className="relative w-full max-w-md rounded-t-3xl border-t border-line bg-card px-5 pt-5 pb-[max(env(safe-area-inset-bottom),1.25rem)] shadow-[0_-8px_30px_rgba(24,32,25,0.18)] sheet-up"
           >
             <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-line-strong" />
-            <p className="text-headline font-extrabold text-ink leading-snug">{pending.title}</p>
+            <p className="text-headline font-bold text-ink leading-snug">{pending.title}</p>
             {pending.body && <p className="text-footnote text-ink-dim mt-1.5 leading-relaxed">{pending.body}</p>}
             <div className="mt-5 space-y-2.5">
               <button
@@ -83,7 +83,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               </button>
               <button
                 onClick={() => settle(false)}
-                className="w-full rounded-xl border border-line-strong bg-card py-3.5 text-body font-bold text-ink-dim active:bg-paper transition"
+                className="w-full rounded-xl bg-ink/[0.06] py-3.5 text-body font-bold text-ink-dim active:bg-ink/10 transition"
               >
                 {pending.cancelLabel ?? 'Cancel'}
               </button>

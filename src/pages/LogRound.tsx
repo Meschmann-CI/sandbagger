@@ -126,7 +126,7 @@ export default function LogRound() {
     <div className="rise">
       <header className="pt-4 pb-4 px-1 flex items-center justify-between">
         <div>
-          <h1 className="text-large font-extrabold tracking-tight text-ink">Log a Round</h1>
+          <h1 className="text-large font-bold tracking-tight text-ink">Log a Round</h1>
           <div className="flex gap-1.5 mt-2">
             {[0, 1, 2].map((i) => (
               <span key={i} className={`h-1.5 rounded-full transition-all ${i === step ? 'w-8 bg-green' : i < step ? 'w-4 bg-green/40' : 'w-4 bg-line-strong'}`} />
@@ -140,7 +140,7 @@ export default function LogRound() {
       {step === 0 && (
         <div className="space-y-4">
           <div>
-            <label className="block text-footnote font-bold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">Course</label>
+            <label className="block text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">Course</label>
             <input
               value={courseName}
               onChange={(e) => setCourseName(e.target.value)}
@@ -165,7 +165,7 @@ export default function LogRound() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-footnote font-bold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">Date</label>
+              <label className="block text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">Date</label>
               <input
                 type="date"
                 value={date}
@@ -174,7 +174,7 @@ export default function LogRound() {
               />
             </div>
             <div>
-              <label className="block text-footnote font-bold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">Tees (optional)</label>
+              <label className="block text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">Tees (optional)</label>
               <TeePicker
                 value={tee}
                 onChange={setTee}
@@ -214,7 +214,7 @@ export default function LogRound() {
 
             {tripMode === 'pick' && (
               <div>
-                <label className="block text-footnote font-bold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">
+                <label className="block text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">
                   Which trip?
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -253,7 +253,7 @@ export default function LogRound() {
 
             {tripMode === 'new' && (
               <div>
-                <label className="block text-footnote font-bold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">
+                <label className="block text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">
                   New trip
                 </label>
                 <div className="flex gap-2">
@@ -320,7 +320,7 @@ export default function LogRound() {
               records. Once added they stick around for the next time the
               same brother-in-law tags along. */}
           {(guests.length > 0 || addingGuest) && (
-            <p className="text-caption font-bold uppercase tracking-[0.12em] text-ink-faint px-1 pt-2">Guests</p>
+            <p className="text-caption font-semibold uppercase tracking-[0.12em] text-ink-faint px-1 pt-2">Guests</p>
           )}
           {guests.map((p) => {
             const on = playerIds.includes(p.id)
