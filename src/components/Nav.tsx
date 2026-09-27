@@ -38,7 +38,7 @@ function sectionLabel(path: string): string | null {
   if (path === '/courses') return 'Courses'
   if (path === '/trips') return 'Trips'
   if (path === '/profile') return 'You'
-  if (path === '/h2h') return 'Head-to-Head'
+  if (path === '/h2h') return 'Standings'
   if (path === '/saddam') return 'The Saddam'
   if (path === '/group') return 'Group'
   if (path === '/log') return 'Log'

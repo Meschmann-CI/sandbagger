@@ -410,3 +410,21 @@ html[data-nav='back']::view-transition-new(root) {
   box-shadow: inset 0 0 0 2px #ae8cc0, 0 3px 8px rgba(122, 77, 156, 0.2);
   color: #5e3a78;
 }
+
+/* Keeping the app app-shaped on a phone.
+   - touch-action: manipulation turns off double-tap-to-zoom, which fast
+     taps on the score pad and steppers kept setting off, while leaving
+     pinch-zoom alone.
+   - overflow-x: clip means nothing a pixel too wide can let the whole
+     page slide sideways.
+   - text-size-adjust stops iOS enlarging text on its own after a
+     rotation. */
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+html,
+body {
+  overflow-x: clip;
+}

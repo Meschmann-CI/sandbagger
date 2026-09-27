@@ -12,6 +12,7 @@ import RoundScene from '../components/RoundScene'
 import CourseScene from '../components/CourseScene'
 import { Avatar, SaddamIcon } from '../components/ui'
 import { CountUp, Confetti } from '../components/Delight'
+import { setSoundOn, soundOn, startMusic } from '../lib/sound'
 import { Medal } from '../components/Medal'
 
 // Season Wrapped: your year as a stack of full-screen cards, the way
@@ -38,6 +39,35 @@ export default function Wrapped() {
   const mount = useRef(Math.random().toString(36).slice(2)).current
   const [at, setAt] = useState(0)
   const [started, setStarted] = useState(() => performance.now())
+  // Music under the cards, if sound is on. It starts as the recap opens
+  // (the tap that opened it woke the audio), or on the first tap inside
+  // if it didn't; the speaker button turns it off and remembers.
+  const [musicOn, setMusicOn] = useState(soundOn)
+  const stopMusic = useRef<(() => void) | null>(null)
+  const startIfWanted = () => {
+    if (musicOn && !stopMusic.current) stopMusic.current = startMusic()
+  }
+  useEffect(() => {
+    startIfWanted()
+    return () => {
+      stopMusic.current?.()
+      stopMusic.current = null
+    }
+    // Once, on open; toggling goes through the button.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const toggleMusic = () => {
+    if (stopMusic.current) {
+      stopMusic.current()
+      stopMusic.current = null
+      setMusicOn(false)
+      setSoundOn(false)
+    } else {
+      setSoundOn(true)
+      setMusicOn(true)
+      stopMusic.current = startMusic()
+    }
+  }
   const rival = w.rival ? data.players.find((p) => p.id === w.rival!.playerId) : undefined
   const big = 'text-[76px] font-extrabold leading-[0.9] tracking-[-0.04em]'
   const kicker = 'text-caption font-semibold uppercase tracking-[0.18em] opacity-75'
@@ -215,6 +245,7 @@ export default function Wrapped() {
 
   const last = slides.length - 1
   const go = (n: number) => {
+    startIfWanted()
     setAt(Math.max(0, Math.min(last, n)))
     setStarted(performance.now())
   }
@@ -265,7 +296,18 @@ export default function Wrapped() {
             </span>
           ))}
         </div>
-        <div className="relative z-10 flex justify-end pt-2">
+        <div className="relative z-10 flex justify-end gap-2 pt-2">
+          <button
+            onClick={toggleMusic}
+            aria-label={musicOn ? 'Turn the music off' : 'Turn the music on'}
+            aria-pressed={musicOn}
+            className={`flex h-9 w-9 items-center justify-center rounded-full ${slide.dark ? 'bg-white/15' : 'bg-ink/10'}`}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" stroke="none" />
+              {musicOn ? <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /> : <path d="M16 9.5l5 5M21 9.5l-5 5" />}
+            </svg>
+          </button>
           <button onClick={goBack} aria-label="Close" className={`flex h-9 w-9 items-center justify-center rounded-full ${slide.dark ? 'bg-white/15' : 'bg-ink/10'}`}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>
               <path d="M6 6l12 12M18 6L6 18" />

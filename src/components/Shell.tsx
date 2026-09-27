@@ -7,6 +7,7 @@ import { Avatar } from './ui'
 import { CompactTitleBar, useNavRecorder } from './Nav'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { announceRouted } from '../lib/viewTransition'
+import { unlockAudio } from '../lib/sound'
 import LogRound from '../pages/LogRound'
 import { LogSheetContext, useLogSheet } from './logSheet'
 import { streakStates } from '../lib/delight'
@@ -93,6 +94,8 @@ export default function Shell() {
     announceRouted()
   }, [location.key, navType])
   const [logOpen, setLogOpen] = useState(false)
+  // The first tap anywhere wakes the audio, so cues can play later.
+  useEffect(() => unlockAudio(), [])
   const openLog = useCallback(() => setLogOpen(true), [])
   const closeLog = useCallback(() => setLogOpen(false), [])
   const logSheet = useMemo(() => ({ open: openLog }), [openLog])

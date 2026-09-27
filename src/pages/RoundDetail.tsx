@@ -19,7 +19,7 @@ import RoundPhotos from '../components/RoundPhotos'
 import SettleUp from '../components/SettleUp'
 import { roundBetSettlements } from '../lib/settlements'
 import { useConfirm } from '../components/Confirm'
-import { Avatar, Card, HelpTip, MoneyBadge, Pill, PrimaryButton, SaddamBadge, SaddamIcon, SECONDARY_BTN, SectionLabel } from '../components/ui'
+import { Avatar, Card, HelpTip, MoneyBadge, Pill, PrimaryButton, SaddamIcon, SECONDARY_BTN, SectionLabel } from '../components/ui'
 import { betRules } from '../lib/betRules'
 import { sandbaggers } from '../lib/delight'
 import { SandbagStamp } from '../components/Delight'
@@ -29,6 +29,7 @@ import { useRoundWeather } from '../lib/weather'
 import { AttestSheet, readAttestation, type Attestation } from '../components/Attest'
 import { Confetti } from '../components/Delight'
 import { drawShareCard, shareCard } from '../lib/shareCard'
+import { play } from '../lib/sound'
 
 const shortDateLabel = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
@@ -73,6 +74,7 @@ export default function RoundDetail() {
       return
     }
     setCheer((c) => c + 1)
+    play('best')
   }, [personalBest, round])
 
   if (!round) {
@@ -342,11 +344,6 @@ export default function RoundDetail() {
         )}
         <div className={`px-4 py-3.5 ${podium.length >= 2 ? 'border-t border-line' : ''}`}>
           <p className="text-body font-bold text-ink leading-snug">{blurb}</p>
-          {saddamChangedHere && top && (
-            <p className="mt-2 flex items-center gap-2 text-footnote text-ink-dim">
-              <SaddamBadge size={16} /> The Saddam changed hands here. {top.name} carries it now.
-            </p>
-          )}
           {bags.map((b) => (
             <p key={b.playerId} className="mt-2 text-footnote text-ink-dim">
               <span className="font-bold text-ink">{data.players.find((p) => p.id === b.playerId)?.name}</span> played {fmt1(b.by)}{' '}
@@ -391,6 +388,7 @@ export default function RoundDetail() {
             setAttestation(a)
             setFlip((f) => f + 1)
             setCheer((c) => c + 1)
+            play('attest')
           }}
         />
       )}

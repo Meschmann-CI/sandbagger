@@ -3,13 +3,18 @@ import { createPortal } from 'react-dom'
 import { KIND_LABEL, type Badge } from '../lib/badges'
 import { shortDate } from '../lib/stats'
 import { Medal } from './Medal'
+import { play } from '../lib/sound'
 
 // A trophy up close. There's no hovering on a phone, so every medal is a
 // button, and tapping one slides this up: the medal large, what it
 // takes, and your record with it (how many times, since when, the round
-// it happened in). Tap outside, swipe it away with Cancel, or press Esc.
+// it happened in). Tap outside it, tap Done, or press Esc to close.
 
 export function TrophySheet({ badge, onClose, onRound }: { badge: Badge; onClose: () => void; onRound?: (roundId: string) => void }) {
+  // A little chime for one you've earned.
+  useEffect(() => {
+    if (badge.earned) play('trophy')
+  }, [badge.key, badge.earned])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)

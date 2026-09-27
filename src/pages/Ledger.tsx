@@ -3,10 +3,11 @@ import { useGoBack, useNavigate } from '../lib/nav'
 import { BackButton } from '../components/Nav'
 import type { Player } from '../types'
 import { useMembers, useStore } from '../data/store'
-import { headToHead, leaderboard, saddamState, shortDate, trashTalk } from '../lib/stats'
-import { Avatar, Card, MoneyBadge, SaddamBadge, SectionLabel } from '../components/ui'
+import { headToHead, leaderboard, saddamState, trashTalk } from '../lib/stats'
+import { Avatar, Card, MoneyBadge, SaddamBadge, SaddamIcon, SectionLabel } from '../components/ui'
 import { Icon } from '../components/icons'
 import { StreakContext } from '../components/streakContext'
+import { todayISO } from '../lib/dates'
 
 // Head-to-head records. Deliberately tucked behind Home/Profile — the
 // receipts are all here for when the group actually plays together.
@@ -20,6 +21,8 @@ export default function Ledger() {
   const saddam = saddamState(data)
   const holder = data.players.find((p) => p.id === saddam.holderId)
   const talk = trashTalk(data)
+  const holdDays = saddam.since ? Math.max(0, Math.round((Date.parse(`${todayISO()}T12:00:00`) - Date.parse(`${saddam.since}T12:00:00`)) / 86_400_000)) : 0
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
   const streaks = useContext(StreakContext)
 
   // Only pairs who have actually played together — an empty 0–0 card
@@ -40,32 +43,47 @@ export default function Ledger() {
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
         <BackButton fallback="/rounds" onBack={goBack} />
-        <h1 className="text-large font-bold tracking-tight text-ink">Head-to-Head</h1>
+        <h1 className="text-large font-bold tracking-tight text-ink">Standings</h1>
         <p className="text-footnote text-ink-dim">Group rounds only. The record is permanent.</p>
       </header>
 
-      <Card onClick={() => navigate('/saddam')} className="mt-2 p-4 flex items-center gap-3.5 border-cream-deep/60 bg-cream">
-        <SaddamBadge size={24} />
-        <div className="flex-1 min-w-0">
+      {/* The Saddam gets its full due here and nowhere else: everywhere
+          else in the app it's a small mark beside the holder's name. */}
+      <button
+        type="button"
+        onClick={() => navigate('/saddam')}
+        className="saddam-stage press relative mt-2 flex w-full items-center gap-4 overflow-hidden rounded-3xl px-5 py-5 text-left text-on-forest shadow-[0_10px_30px_rgba(28,70,50,0.22)]"
+      >
+        <span className={`relative shrink-0 rounded-[22px] bg-cream p-1 shadow-[0_10px_24px_rgba(0,0,0,0.3)] ${holder ? '' : 'opacity-60 grayscale'}`}>
+          <SaddamIcon size={72} />
+        </span>
+        <span className="relative min-w-0 flex-1">
+          <span className="block text-caption font-semibold uppercase tracking-[0.16em] text-on-forest/70">The Saddam</span>
           {holder ? (
             <>
-              <p className="text-body text-ink">
-                <span className="font-bold">{holder.name}</span> holds the Saddam
-              </p>
-              <p className="text-footnote text-ink-dim mt-0.5">
-                Since {saddam.since && shortDate(saddam.since)}
-                {saddam.courseName && ` · ${saddam.courseName}`}
-              </p>
+              <span className="mt-0.5 block truncate text-title font-bold leading-tight">{holder.name}</span>
+              <span className="mt-1 block text-footnote text-on-forest/80">
+                {plural(holdDays, 'day')}
+                {saddam.courseName && ` · won at ${saddam.courseName}`}
+                {saddam.defenses > 0 && ` · ${plural(saddam.defenses, 'defense')}`}
+              </span>
             </>
           ) : (
             <>
-              <p className="text-body font-bold text-ink">Nobody holds the Saddam</p>
-              <p className="text-footnote text-ink-dim mt-0.5">Tap to hand it over or see the history</p>
+              <span className="mt-0.5 block text-title font-bold leading-tight">Up for grabs</span>
+              <span className="mt-1 block text-footnote text-on-forest/80">Win a group round and it's yours.</span>
             </>
           )}
-        </div>
-        {holder ? <Avatar player={holder} size={34} /> : <span className="text-footnote font-bold text-green">Set it →</span>}
-      </Card>
+          <span className="mt-2 inline-flex items-center gap-1 text-footnote font-bold text-cream">
+            Every reign <Icon name="chevronRight" size={14} />
+          </span>
+        </span>
+        {holder && (
+          <span className="relative shrink-0 self-start rounded-full shadow-[0_0_0_3px_var(--color-forest),0_0_0_5px_var(--color-cream-deep)]">
+            <Avatar player={holder} size={40} />
+          </span>
+        )}
+      </button>
 
       {talk.length > 0 && (
         <Card className="mt-3 p-4 border-l-4 border-l-flag/50">

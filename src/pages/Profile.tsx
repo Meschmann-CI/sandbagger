@@ -6,6 +6,7 @@ import { HANDICAP_NUDGE_AFTER, holeStats, playerStats, roundsAtCurrentHandicap, 
 import { badgesFor, indexHistory, shelfOrder } from '../lib/badges'
 import { Medal } from '../components/Medal'
 import { TrophySheet } from '../components/TrophySheet'
+import { setSoundOn, soundOn } from '../lib/sound'
 import { todayISO } from '../lib/dates'
 import CourseScene from '../components/CourseScene'
 import RoundScene from '../components/RoundScene'
@@ -407,6 +408,7 @@ export default function Profile() {
       ) : (
         <Card className="p-4 text-footnote text-ink-dim">Notifications switch on once the app is online.</Card>
       )}
+      <SoundToggle />
 
       {/* Trips have no tab; this and the row on Home are the way in. */}
       <SectionLabel>Trips</SectionLabel>
@@ -558,5 +560,31 @@ function IndexLine({ points }: { points: number[] }) {
       />
       <circle cx={last[0]} cy={last[1]} r="3.4" fill="var(--color-cream)" />
     </svg>
+  )
+}
+
+/** Sound on or off for this phone: the music in Wrapped and the little cues. */
+function SoundToggle() {
+  const [on, setOn] = useState(soundOn)
+  return (
+    <Card className="mt-3 flex items-center gap-3 p-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-body font-bold text-ink">Sounds</p>
+        <p className="text-footnote text-ink-dim">Music in Season Wrapped, and a chime for a new best or a trophy.</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label="Sounds"
+        onClick={() => {
+          setSoundOn(!on)
+          setOn(!on)
+        }}
+        className={`h-7 w-12 shrink-0 rounded-full p-1 transition ${on ? 'bg-green' : 'bg-line-strong'}`}
+      >
+        <span className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${on ? 'translate-x-5' : ''}`} />
+      </button>
+    </Card>
   )
 }

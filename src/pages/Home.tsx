@@ -15,7 +15,7 @@ import { StarRating } from '../components/Stars'
 import { Icon, IconTile } from '../components/icons'
 import CourseScene from '../components/CourseScene'
 import RoundScene from '../components/RoundScene'
-import { Avatar, AvatarStack, Card, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
+import { Avatar, AvatarStack, Card, RowButton, SaddamBadge, SectionLabel } from '../components/ui'
 import { CountUp } from '../components/Delight'
 
 // The front door. Anything that needs doing comes first (a card mid-
@@ -130,17 +130,16 @@ export default function Home() {
   // One live line under the greeting: the most pressing fact there is.
   const hour = new Date().getHours()
   const hello = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening'
-  const saddamDays = saddam.since ? daysBetween(saddam.since, TODAY) : null
+  // The Saddam used to be the fallback here too, which said the same
+  // thing as the strip under the hero. It now lives as one small mark
+  // on the standings, and gets its full due on the Standings page.
   const subline = soonTrip
     ? (() => {
         const n = daysBetween(TODAY, soonTrip.startDate!)
         return n === 0 ? `${soonTrip.name} starts today.` : `${soonTrip.name} in ${plural(n, 'day')}.`
       })()
-    : holder && saddamDays != null
-      ? holder.id === me.id
-        ? `You've had the Saddam for ${plural(saddamDays, 'day')}.`
-        : `${holder.name} has had the Saddam for ${plural(saddamDays, 'day')}.`
-      : null
+    : null
+  const firstName = me.name.trim().split(/\s+/)[0]
 
   return (
     <div className="rise">
@@ -150,7 +149,7 @@ export default function Home() {
             {data.group.name}
           </Link>
           <h1 className="text-large font-bold text-ink truncate">
-            {hello}, {me.name}
+            {hello}, {firstName}
           </h1>
           {subline && <p className="text-footnote text-ink-dim mt-0.5">{subline}</p>}
         </div>
@@ -202,7 +201,7 @@ export default function Home() {
           </Card>
         )}
 
-        {/* The hero: my season, and the trophy underneath it */}
+        {/* The hero: my season */}
         <div className="overflow-hidden rounded-3xl bg-forest text-on-forest shadow-[0_10px_30px_rgba(28,70,50,0.22)]">
           <button type="button" onClick={() => navigate('/h2h')} className="relative block w-full px-5 pt-4 pb-4 text-left active:opacity-90">
             <div className="flex items-center justify-between">
@@ -233,29 +232,6 @@ export default function Home() {
               </div>
               {myScores.length >= 3 && <Sparkline scores={myScores} />}
             </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/saddam')}
-            className="flex w-full items-center gap-3 bg-cream px-5 py-3 text-left text-ink active:bg-cream-deep/40"
-          >
-            <SaddamIcon size={34} />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-footnote font-bold">
-                {holder ? `The Saddam · ${holder.id === me.id ? 'You' : holder.name}` : 'The Saddam is up for grabs'}
-              </span>
-              <span className="block truncate text-caption text-ink-dim">
-                {!holder
-                  ? 'Win a group round and it’s yours'
-                  : saddam.byHand
-                    ? `Handed over ${saddam.since ? shortDate(saddam.since) : ''}`
-                    : `Took it at ${saddam.courseName}${saddam.since ? `, ${shortDate(saddam.since)}` : ''}`}
-                {holder && saddam.defenses > 0 && ` · ${plural(saddam.defenses, 'defense')}`}
-              </span>
-            </span>
-            <span className="shrink-0 text-footnote font-bold text-forest">
-              {holder?.id === me.id ? 'Defend it' : 'Go get it'}
-            </span>
           </button>
         </div>
 
@@ -387,20 +363,11 @@ export default function Home() {
         </div>
       )}
 
-      {/* Trips: under the rounds, since a round happens every weekend and
-          a trip twice a year. Booked and close first, then one being planned. */}
-      {(soonTrip || planningTrip) && (
-        <div className="mt-4 space-y-2.5">
-          {soonTrip && <TripHero trip={soonTrip} today={TODAY} meId={me.id} />}
-          {planningTrip && planningTrip.id !== soonTrip?.id && <TripHero trip={planningTrip} today={TODAY} meId={me.id} />}
-        </div>
-      )}
-
       {/* The season, on the group's terms */}
       <SectionLabel
         action={
           <Link to="/h2h" className="text-footnote font-bold text-green">
-            Head-to-Head
+            Full standings
           </Link>
         }
       >
@@ -419,9 +386,12 @@ export default function Home() {
                 <span className={`w-5 text-body font-extrabold tabular-nums ${i === 0 ? 'text-gold' : 'text-ink-faint'}`}>{i + 1}</span>
                 <Avatar player={row.player} size={30} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-body font-bold text-ink truncate">
-                    {row.player.name}
-                    {row.player.id === me.id && <span className="text-ink-faint font-semibold"> (you)</span>}
+                  <p className="flex items-center gap-1.5 text-body font-bold text-ink">
+                    <span className="truncate">
+                      {row.player.name}
+                      {row.player.id === me.id && <span className="text-ink-faint font-semibold"> (you)</span>}
+                    </span>
+                    {holder?.id === row.player.id && <SaddamBadge size={14} />}
                   </p>
                   <p className="text-caption text-ink-faint tabular-nums">
                     {plural(row.rounds, 'round')}
@@ -445,7 +415,22 @@ export default function Home() {
               You're {ordinal(myPlace + 1)} of {board.length} · {plural(board[myPlace].wins, 'win')}
             </p>
           )}
+          {holder && !board.slice(0, 3).some((row) => row.player.id === holder.id) && (
+            <RowButton onClick={() => navigate('/h2h')} className="flex items-center gap-2 border-t border-line px-4 py-2.5 text-footnote text-ink-dim">
+              <SaddamBadge size={14} />
+              {holder.id === me.id ? 'You hold' : `${holder.name.split(' ')[0]} holds`} the Saddam
+            </RowButton>
+          )}
         </Card>
+      )}
+
+      {/* Trips: under the standings, since a round happens every weekend
+          and a trip twice a year. Booked and close first, then one being planned. */}
+      {(soonTrip || planningTrip) && (
+        <div className="mt-6 space-y-2.5">
+          {soonTrip && <TripHero trip={soonTrip} today={TODAY} meId={me.id} />}
+          {planningTrip && planningTrip.id !== soonTrip?.id && <TripHero trip={planningTrip} today={TODAY} meId={me.id} />}
+        </div>
       )}
 
       {/* Where to next, and where we've been */}
@@ -537,14 +522,14 @@ function RoundTile({ round: r, onOpen }: { round: Round; onOpen: () => void }) {
       ? `Waiting on ${waiting.length}`
       : solo
         ? `Solo · ${standings[0].gross}`
-        : `${top.name} · net ${fmt1(standings[0].netScore)}`
+        : `${top.name.split(' ')[0]} · net ${fmt1(standings[0].netScore)}`
   return (
     <button
       type="button"
       onClick={onOpen}
-      className="w-[152px] shrink-0 snap-start overflow-hidden rounded-2xl border border-line bg-card text-left shadow-[0_1px_2px_rgba(24,32,25,0.05)] transition-transform active:scale-[0.98]"
+      className="w-[124px] shrink-0 snap-start overflow-hidden rounded-2xl border border-line bg-card text-left shadow-[0_1px_2px_rgba(24,32,25,0.05)] transition-transform active:scale-[0.98]"
     >
-      <div data-shared={r.id} className="relative h-[92px] bg-paper">
+      <div data-shared={r.id} className="relative h-[62px] bg-paper">
         {photo ? (
           <img src={photo.url} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
@@ -555,11 +540,11 @@ function RoundTile({ round: r, onOpen }: { round: Round; onOpen: () => void }) {
             <Icon name="camera" size={11} strokeWidth={2.2} /> {r.photos!.length}
           </span>
         )}
-        <div className="absolute -bottom-3 left-2.5">
-          <AvatarStack players={r.players.map((rp) => data.players.find((p) => p.id === rp.playerId))} size={24} />
+        <div className="absolute -bottom-2.5 left-2">
+          <AvatarStack players={r.players.map((rp) => data.players.find((p) => p.id === rp.playerId))} size={20} />
         </div>
       </div>
-      <div className="px-3 pb-3 pt-4">
+      <div className="px-2.5 pb-2.5 pt-3.5">
         <p className="truncate text-footnote font-bold text-ink">{r.courseName}</p>
         <p className="truncate text-caption text-ink-dim tabular-nums">{line}</p>
         <p className="text-caption text-ink-faint tabular-nums">{shortDate(r.date)}</p>

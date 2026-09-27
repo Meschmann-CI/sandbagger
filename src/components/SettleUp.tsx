@@ -7,6 +7,7 @@ import { notifyGroup } from '../lib/push'
 import { Avatar, SECONDARY_BTN } from './ui'
 import { Icon, VENMO_BLUE, VenmoMark } from './icons'
 import { RollDown, buzz, reducedMotion } from './Delight'
+import { play } from '../lib/sound'
 
 // Who owes who, and the fastest way to make it stop being true.
 //
@@ -86,6 +87,7 @@ export default function SettleUp({ owed, note, url, onMarkPaid, squareLabel }: P
                   className={`font-extrabold ${paying === k ? 'text-green' : 'text-flag'}`}
                   onDone={() => {
                     buzz(20)
+                    play('coin')
                     if (reducedMotion()) finish(s)
                     else setLeaving(k)
                   }}
