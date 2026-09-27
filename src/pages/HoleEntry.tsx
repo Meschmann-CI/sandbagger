@@ -73,6 +73,15 @@ export default function HoleEntry() {
     const t = setTimeout(() => setCheer(null), 1500)
     return () => clearTimeout(t)
   }, [cheer])
+  // The paper-card scan under review (see onScanPhoto below). Every hook
+  // has to sit above the not-found return: in cloud mode the round can
+  // arrive after the first render, and a hook count that changes between
+  // renders crashes the page.
+  const scanRef = useRef<HTMLInputElement>(null)
+  const [scanBusy, setScanBusy] = useState(false)
+  const [scanError, setScanError] = useState<string | null>(null)
+  const [scanRows, setScanRows] = useState<(ScannedScoreRow & { playerId: string | null })[] | null>(null)
+  const [scanWarnings, setScanWarnings] = useState<string[]>([])
 
   const players = round?.players ?? []
   const cards: Record<string, (number | null)[]> = Object.fromEntries(
@@ -250,12 +259,8 @@ export default function HoleEntry() {
   // Reading the paper card at the end. The photo goes to the same
   // function as the course scanner, in scores mode; what comes back is
   // laid out for review with each row matched to a golfer by name, and
-  // nothing lands on the card until Apply.
-  const scanRef = useRef<HTMLInputElement>(null)
-  const [scanBusy, setScanBusy] = useState(false)
-  const [scanError, setScanError] = useState<string | null>(null)
-  const [scanRows, setScanRows] = useState<(ScannedScoreRow & { playerId: string | null })[] | null>(null)
-  const [scanWarnings, setScanWarnings] = useState<string[]>([])
+  // nothing lands on the card until Apply. Its state is declared up top
+  // with the other hooks.
 
   const matchPlayer = (name: string | null): string | null => {
     if (!name) return null
