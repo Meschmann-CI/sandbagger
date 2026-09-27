@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useLogSheet } from '../components/logSheet'
 import { useStore } from '../data/store'
 import { byDate, leaderboard, playerStats, roundStandings, saddamState, shortDate } from '../lib/stats'
 import { daysAgoISO, todayISO } from '../lib/dates'
@@ -11,7 +12,7 @@ import { byGroupRank, courseSummaries, fmtStars, ratingFor } from '../lib/rating
 import { canSeeTrip, fmt1, hasScore, isSoloRound, pending, type Round, type Trip } from '../types'
 import { StarRating } from '../components/Stars'
 import { Icon, IconTile } from '../components/icons'
-import CourseScene, { scenesFor, type SceneName } from '../components/CourseScene'
+import CourseScene, { lightsFor, type Light } from '../components/CourseScene'
 import { Avatar, AvatarStack, Card, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
 
 // The front door. Anything that needs doing comes first (a card mid-
@@ -36,6 +37,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 export default function Home() {
   const { data } = useStore()
   const navigate = useNavigate()
+  const { open: openLog } = useLogSheet()
   const [moneyOpen, setMoneyOpen] = useState(false)
   const TODAY = todayISO()
   const YEAR = TODAY.slice(0, 4)
@@ -44,7 +46,7 @@ export default function Home() {
   const holder = data.players.find((p) => p.id === saddam.holderId)
   const rounds = byDate(data.rounds)
   const recent = rounds.slice(-8).reverse()
-  const recentScenes = scenesFor(recent.map((r) => r.id))
+  const recentLights = lightsFor(recent.map((r) => r.id))
   const awaiting = playerStats(data, me.id).awaitingScore.slice().reverse()
 
   // What I owe and what I'm owed, everywhere.
@@ -332,14 +334,14 @@ export default function Home() {
         <Card className="p-5 text-center">
           <p className="text-body font-bold text-ink">No rounds logged yet</p>
           <p className="text-footnote text-ink-dim mt-1">Log one and the records start keeping themselves. Solo rounds count too.</p>
-          <button onClick={() => navigate('/log')} className="mt-3 rounded-xl bg-green px-5 py-2.5 text-body font-bold text-white">
+          <button onClick={() => openLog()} className="mt-3 rounded-xl bg-green px-5 py-2.5 text-body font-bold text-white">
             Log a round
           </button>
         </Card>
       ) : (
         <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {recent.map((r, i) => (
-            <RoundTile key={r.id} round={r} scene={recentScenes[i]} onOpen={() => navigate(`/rounds/${r.id}`)} />
+            <RoundTile key={r.id} round={r} light={recentLights[i]} onOpen={() => navigate(`/rounds/${r.id}`)} />
           ))}
           <button
             type="button"
@@ -489,7 +491,7 @@ function Sparkline({ scores }: { scores: number[] }) {
 }
 
 /** A round as a card in the carousel: its first photo, or the flag. */
-function RoundTile({ round: r, scene, onOpen }: { round: Round; scene: SceneName; onOpen: () => void }) {
+function RoundTile({ round: r, light, onOpen }: { round: Round; light: Light; onOpen: () => void }) {
   const { data } = useStore()
   const standings = roundStandings(r)
   const top = standings.length ? data.players.find((p) => p.id === standings[0].playerId) : undefined
@@ -513,7 +515,7 @@ function RoundTile({ round: r, scene, onOpen }: { round: Round; scene: SceneName
         {photo ? (
           <img src={photo.url} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
-          <CourseScene scene={scene} className="h-full w-full" />
+          <CourseScene course={r.courseName} light={light} className="h-full w-full" />
         )}
         {(r.photos?.length ?? 0) > 1 && (
           <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/45 px-1.5 py-0.5 text-caption font-bold text-white">
@@ -543,7 +545,7 @@ function TripHero({ trip, today, meId }: { trip: Trip; today: string; meId: stri
   return (
     <Card onClick={() => navigate(`/trips/${trip.id}`)} className="overflow-hidden">
       {/* The scene stays clear: its flag sits somewhere different in each one. */}
-      <CourseScene name={trip.location || trip.name} className="h-24 w-full" />
+      <CourseScene course={trip.location || trip.name} light="golden" className="h-24 w-full" />
       <div className="px-5 pt-3">
         <p className="flex items-center gap-1.5 text-caption font-semibold uppercase tracking-[0.14em] text-sand">
           <Icon name="suitcase" size={13} strokeWidth={2.2} />

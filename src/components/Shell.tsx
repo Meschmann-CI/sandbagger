@@ -1,10 +1,12 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { usePhotoOutboxFlush } from '../data/photoOutbox'
 import { useNewVersion } from '../lib/useNewVersion'
 import { Avatar } from './ui'
 import { CompactTitleBar, useNavRecorder } from './Nav'
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import LogRound from '../pages/LogRound'
+import { LogSheetContext, useLogSheet } from './logSheet'
 import { streakStates } from '../lib/delight'
 import { StreakContext } from './streakContext'
 import SaddamHandover from './SaddamHandover'
@@ -63,12 +65,26 @@ function tabFor(pathname: string) {
   if (pathname.startsWith('/rounds') || pathname.startsWith('/h2h') || pathname.startsWith('/saddam')) return '/rounds'
   if (pathname.startsWith('/courses')) return '/courses'
   if (pathname.startsWith('/profile') || pathname.startsWith('/group')) return '/profile'
-  if (pathname.startsWith('/log')) return '/log'
   return '/'
+}
+
+/** An old /log link: open the sheet over Home. */
+export function LogRedirect() {
+  const { open } = useLogSheet()
+  const navigate = useNavigate()
+  useEffect(() => {
+    navigate('/', { replace: true })
+    open()
+  }, [navigate, open])
+  return null
 }
 
 export default function Shell() {
   const { pathname } = useLocation()
+  const [logOpen, setLogOpen] = useState(false)
+  const openLog = useCallback(() => setLogOpen(true), [])
+  const closeLog = useCallback(() => setLogOpen(false), [])
+  const logSheet = useMemo(() => ({ open: openLog }), [openLog])
   useNavRecorder()
   const current = tabFor(pathname)
   const { data, syncError, pendingWrites, updateRound } = useStore()
@@ -101,6 +117,7 @@ export default function Shell() {
 
   return (
     <StreakContext.Provider value={streaks}>
+      <LogSheetContext.Provider value={logSheet}>
       <div className="mx-auto max-w-md min-h-dvh flex flex-col relative">
         <PullToRefresh />
         <SaddamHandover />
@@ -149,11 +166,13 @@ export default function Shell() {
             <div className="grid grid-cols-5">
               {tabs.slice(0, 2).map((t) => tabLink(t))}
               {/* The middle of the bar: logging a round, raised above the rest. */}
-              <NavLink
-                to="/log"
+              <button
+                type="button"
+                onClick={openLog}
                 aria-label="Log a round"
+                aria-haspopup="dialog"
                 className={`flex flex-col items-center gap-1 pb-2.5 text-caption font-bold tracking-wide ${
-                  current === '/log' ? 'text-green' : 'text-ink-faint'
+                  logOpen ? 'text-green' : 'text-ink-faint'
                 }`}
               >
                 <span className="-mt-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-forest text-on-forest shadow-[0_6px_16px_rgba(28,70,50,0.35)] ring-4 ring-card transition-transform active:scale-90">
@@ -162,12 +181,14 @@ export default function Shell() {
                   </svg>
                 </span>
                 Log
-              </NavLink>
+              </button>
               {tabs.slice(2).map((t) => tabLink(t))}
             </div>
           </div>
         </nav>
       </div>
+      {logOpen && <LogRound onClose={closeLog} />}
+      </LogSheetContext.Provider>
     </StreakContext.Provider>
   )
 }

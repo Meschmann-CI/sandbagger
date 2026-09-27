@@ -13,7 +13,7 @@ import { ConfirmProvider } from './components/Confirm'
 import Home from './pages/Home'
 import Rounds from './pages/Rounds'
 import RoundDetail from './pages/RoundDetail'
-import LogRound from './pages/LogRound'
+import { LogRedirect } from './components/Shell'
 import EditRound from './pages/EditRound'
 import HoleEntry from './pages/HoleEntry'
 import Ledger from './pages/Ledger'
@@ -43,7 +43,7 @@ function AppRoutes() {
             <Route path="/rounds/:id" element={<RoundDetail />} />
             <Route path="/rounds/:id/edit" element={<EditRound />} />
             <Route path="/rounds/:id/card" element={<HoleEntry />} />
-            <Route path="/log" element={<LogRound />} />
+            <Route path="/log" element={<LogRedirect />} />
             <Route path="/h2h" element={<Ledger />} />
             <Route path="/h2h/:aId/:bId" element={<RivalryDetail />} />
             <Route path="/trips" element={<Trips />} />

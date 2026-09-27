@@ -65,7 +65,7 @@ export default function CourseDetail() {
 
       {/* The course's scene: the same one its rounds carry everywhere */}
       <div className="mt-2 h-28 overflow-hidden rounded-2xl">
-        <CourseScene name={summary.name} className="h-full w-full" />
+        <CourseScene course={summary.name} className="h-full w-full" />
       </div>
 
       {/* The verdict */}

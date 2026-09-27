@@ -8,8 +8,6 @@ export default function TripPlanning({ trip }: { trip: Trip }) {
   const { updateTrip, voteTripOption, newId } = useStore()
   const confirm = useConfirm()
   const [newDest, setNewDest] = useState('')
-  const votesIn = new Set(trip.options.flatMap((o) => o.votes)).size
-  const voterCount = trip.attendeeIds.length
 
   const addOption = () => {
     if (!newDest.trim()) return
@@ -39,7 +37,6 @@ export default function TripPlanning({ trip }: { trip: Trip }) {
       <Card className="p-4 bg-green-soft/60 border-green/20">
         <p className="text-footnote text-ink">
           <span className="font-bold">Where are we going?</span> Add contenders, stack up the pros and cons, and vote.
-          {votesIn > 0 && ` ${votesIn} of ${voterCount} votes are in.`}
         </p>
       </Card>
 

@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useLogSheet } from '../components/logSheet'
 import { useStore } from '../data/store'
 import { byDate, leaderboard, roundStandings, shortDate } from '../lib/stats'
 import { todayISO } from '../lib/dates'
 import { fmt1, isSoloRound, pending } from '../types'
 import { AvatarStack, Card, EmptyState, Meta, Pill, PrimaryButton, RowBadge } from '../components/ui'
 import { Icon } from '../components/icons'
-import CourseScene, { scenesFor } from '../components/CourseScene'
+import CourseScene, { lightsFor } from '../components/CourseScene'
 
 type Filter = 'all' | 'mine' | 'group'
 
@@ -20,6 +21,7 @@ function monthLabel(yyyymm: string) {
 export default function Rounds() {
   const { data } = useStore()
   const navigate = useNavigate()
+  const { open: openLog } = useLogSheet()
   const [filter, setFilter] = useState<Filter>('all')
   const YEAR = todayISO().slice(0, 4)
 
@@ -28,8 +30,9 @@ export default function Rounds() {
     filter === 'mine' ? r.players.some((p) => p.playerId === data.currentUserId) : filter === 'group' ? !isSoloRound(r) : true,
   )
 
-  // Each round keeps its own scene; neighbours never match.
-  const scenes = scenesFor(rounds.map((r) => r.id))
+  // Each course keeps its landscape; each round gets its own light, and
+  // neighbours never share one.
+  const lights = lightsFor(rounds.map((r) => r.id))
 
   // One line on the season, so the list has a headline.
   const season = all.filter((r) => r.date.startsWith(YEAR))
@@ -78,13 +81,13 @@ export default function Rounds() {
         <EmptyState
           title={filter === 'mine' ? 'Nothing logged yet' : 'No rounds here'}
           sub="Log one — solo grinds count too."
-          cta={<PrimaryButton onClick={() => navigate('/log')}>Log a round</PrimaryButton>}
+          cta={<PrimaryButton onClick={() => openLog()}>Log a round</PrimaryButton>}
         />
       )}
 
       <div className="space-y-3">
         {rounds.map((r, i) => {
-          const scene = scenes[i]
+          const light = lights[i]
           const standings = roundStandings(r)
           const top = standings.length ? data.players.find((p) => p.id === standings[0].playerId) : undefined
           const solo = isSoloRound(r)
@@ -108,7 +111,7 @@ export default function Rounds() {
                   {r.photos?.[0] ? (
                     <img src={r.photos[0].url} alt="" loading="lazy" className="h-full w-full object-cover" />
                   ) : (
-                    <CourseScene scene={scene} className="h-full w-full" />
+                    <CourseScene course={r.courseName} light={light} className="h-full w-full" />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">

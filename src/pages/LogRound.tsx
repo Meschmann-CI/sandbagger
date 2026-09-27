@@ -1,27 +1,59 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { useGoBack } from '../lib/nav'
 import { useMembers, useStore } from '../data/store'
-import { courseSuggestions } from '../lib/stats'
-import { todayISO } from '../lib/dates'
+import { courseSuggestions, shortDate } from '../lib/stats'
+import { daysAgoISO, todayISO } from '../lib/dates'
+import { courseSlug } from '../lib/courses'
+import CourseScene from '../components/CourseScene'
 import { GROSS_CEILING, GROSS_FLOOR, grossWarning } from '../lib/scores'
 import { notifyGroup } from '../lib/push'
 import { fmt1 } from '../types'
 import { findCourse } from '../lib/courses'
 import TeePicker from '../components/TeePicker'
-import { Avatar, Card, GhostButton, PrimaryButton, SaddamIcon } from '../components/ui'
+import { Avatar, Card, PrimaryButton, SaddamIcon, SECONDARY_BTN } from '../components/ui'
 
-// The two-minute flow: where → who → scores → done.
-// Defaults to just you, since most rounds are solo. Tap the others in
-// when the group actually played.
+// Logging a round, as a sheet over whatever screen you were on: it's a
+// quick action, not a trip to another page. One screen for where, when
+// and who, all taps (the courses you play as scene cards, the date as
+// Today / Yesterday chips, the golfers as faces), then either straight to
+// the hole-by-hole card or a second screen for totals.
+// Defaults to just you, since most rounds are solo.
 
-export default function LogRound() {
+// Today, yesterday, and the last weekend day before that if it was this
+// week, since that's when most rounds happen.
+function dateChips(): { iso: string; label: string }[] {
+  const out = [
+    { iso: todayISO(), label: 'Today' },
+    { iso: daysAgoISO(1), label: 'Yesterday' },
+  ]
+  for (let n = 2; n <= 6; n++) {
+    const iso = daysAgoISO(n)
+    const d = new Date(`${iso}T12:00:00`)
+    if (d.getDay() === 0 || d.getDay() === 6) {
+      out.push({ iso, label: d.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' }) })
+      break
+    }
+  }
+  return out
+}
+
+// "Jul 25" this year, "Oct 2025" before that: short enough for a card.
+function sinceLabel(iso: string) {
+  const d = new Date(`${iso}T12:00:00`)
+  return iso.slice(0, 4) === todayISO().slice(0, 4)
+    ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+}
+
+export default function LogRound({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
-  const goBack = useGoBack('/')
   const { data, addRound, addPlayer, addTrip } = useStore()
   const members = useMembers()
 
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState<0 | 2>(0)
+  const [typing, setTyping] = useState(false)
+  const [pickingDate, setPickingDate] = useState(false)
   const [courseName, setCourseName] = useState('')
   const [date, setDate] = useState(todayISO)
   const [tee, setTee] = useState('')
@@ -86,7 +118,6 @@ export default function LogRound() {
   const bump = (id: string, delta: number) =>
     setScores((s) => ({ ...s, [id]: Math.max(GROSS_FLOOR, Math.min(GROSS_CEILING, (s[id] ?? 90) + delta)) }))
 
-  const canNext = step === 0 ? courseName.trim().length > 0 : step === 1 ? playerIds.length > 0 : true
   // One score is enough. Anyone left blank gets asked for theirs later.
   const anyScored = playerIds.some((id) => scores[id] !== undefined)
   const missing = playerIds.filter((id) => scores[id] === undefined)
@@ -119,398 +150,462 @@ export default function LogRound() {
     }
     // No totals yet means they're on the course — go straight to the
     // hole-by-hole card instead of a round page full of blanks.
-    navigate(anyScored ? `/rounds/${round.id}` : `/rounds/${round.id}/card`, { replace: true })
+    onClose()
+    navigate(anyScored ? `/rounds/${round.id}` : `/rounds/${round.id}/card`)
   }
 
-  return (
-    <div className="rise">
-      <header className="pt-4 pb-4 px-1 flex items-center justify-between">
-        <div>
-          <h1 className="text-large font-bold tracking-tight text-ink">Log a Round</h1>
-          <div className="flex gap-1.5 mt-2">
-            {[0, 1, 2].map((i) => (
-              <span key={i} className={`h-1.5 rounded-full transition-all ${i === step ? 'w-8 bg-green' : i < step ? 'w-4 bg-green/40' : 'w-4 bg-line-strong'}`} />
-            ))}
+  // A sheet: Escape closes it, and the page underneath stops scrolling.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = overflow
+    }
+  }, [onClose])
+
+  const chips = dateChips()
+  const lastPlayed = (name: string) => {
+    const slug = courseSlug(name)
+    return data.rounds.filter((r) => courseSlug(r.courseName) === slug).reduce<string | null>((a, r) => (!a || r.date > a ? r.date : a), null)
+  }
+  const courseCards = suggestions.slice(0, 8)
+  const typedNew = courseName.trim() !== '' && !courseCards.some((c) => c.toLowerCase() === courseName.trim().toLowerCase())
+  const label = 'block text-footnote font-semibold text-ink-dim mb-2 px-1'
+  const toggle = (on: boolean) =>
+    `rounded-full px-3.5 py-2 text-footnote font-bold transition active:scale-95 ${on ? 'bg-forest text-on-forest' : 'bg-card text-ink-dim ring-1 ring-inset ring-line-strong'}`
+
+  const everyone = [...members, ...guests]
+
+  return createPortal(
+    <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label="Log a round">
+      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-ink/40 animate-[fade_0.2s_ease-out]" />
+      <div className="sheet-up absolute inset-x-0 bottom-0 mx-auto flex max-h-[92dvh] max-w-md flex-col rounded-t-3xl bg-paper shadow-[0_-12px_40px_rgba(0,0,0,0.2)]">
+        <div className="shrink-0 px-5 pt-2.5">
+          <div className="mx-auto h-1.5 w-10 rounded-full bg-line-strong" />
+          <div className="mt-3 flex items-center justify-between">
+            {step === 2 ? (
+              <button onClick={() => setStep(0)} className="text-footnote font-bold text-green">
+                ‹ Back
+              </button>
+            ) : (
+              <h2 className="text-title font-bold tracking-tight text-ink">Log a round</h2>
+            )}
+            {step === 2 && <h2 className="text-headline font-bold text-ink">Scores</h2>}
+            <button onClick={onClose} className="px-1 text-footnote font-bold text-ink-faint">
+              Cancel
+            </button>
           </div>
         </div>
-        <button onClick={() => goBack()} className="text-footnote font-bold text-ink-faint px-2 py-1">Cancel</button>
-      </header>
 
-      {/* Step 1: course + date */}
-      {step === 0 && (
-        <div className="space-y-4">
-          <div>
-            <label className="block text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">Course</label>
-            <input
-              value={courseName}
-              onChange={(e) => setCourseName(e.target.value)}
-              placeholder="Where'd you play?"
-              autoFocus
-              className="w-full rounded-xl border border-line-strong bg-card px-4 py-4 text-headline text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
-            />
-            {filteredSuggestions.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2.5 px-1">
-                {filteredSuggestions.slice(0, courseName ? 6 : 4).map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setCourseName(c)}
-                    className="rounded-full border border-line-strong bg-card px-3.5 py-2 text-footnote font-bold text-ink-dim active:bg-paper"
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">Date</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-xl border border-line-strong bg-card px-4 py-3.5 text-body text-ink focus:border-green focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">Tees (optional)</label>
-              <TeePicker
-                value={tee}
-                onChange={setTee}
-                course={findCourse(data, courseName)}
-                className="w-full rounded-xl border border-line-strong bg-card px-4 py-3.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Trips, folded. Just a round is the default and needs no tap. */}
-          <div>
-            {tripMode === 'none' && !chosenTrip && (
-              <button onClick={() => setTripMode('pick')} className="px-1 text-footnote font-bold text-green">
-                Part of a trip? →
-              </button>
-            )}
-
-            {chosenTrip && tripMode !== 'new' && (
-              <div className="flex items-center gap-2 px-1">
-                <span className="text-footnote text-ink-dim">
-                  Part of <span className="font-bold text-ink">{chosenTrip.name}</span>
-                </span>
-                <button onClick={() => setTripMode('pick')} className="text-footnote font-bold text-green">
-                  Change
-                </button>
-                <button
-                  onClick={() => {
-                    setTripId('')
-                    setTripMode('none')
-                  }}
-                  className="text-footnote font-bold text-ink-faint"
-                >
-                  Not a trip
-                </button>
-              </div>
-            )}
-
-            {tripMode === 'pick' && (
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-4">
+          {step === 0 && (
+            <div className="space-y-5">
+              {/* Where: the courses you play, as pictures */}
               <div>
-                <label className="block text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">
-                  Which trip?
-                </label>
+                <span className={label}>Where'd you play?</span>
+                <div className="-mx-4 flex snap-x scroll-px-4 gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+                  {courseCards.map((c) => {
+                    const on = courseName.trim().toLowerCase() === c.toLowerCase()
+                    const last = lastPlayed(c)
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => {
+                          setCourseName(c)
+                          setTyping(false)
+                        }}
+                        aria-pressed={on}
+                        className={`w-[108px] shrink-0 snap-start overflow-hidden rounded-2xl bg-card text-left transition active:scale-[0.97] ${
+                          on ? 'ring-[2.5px] ring-forest' : 'ring-1 ring-line'
+                        }`}
+                      >
+                        <CourseScene course={c} className="h-14 w-full" />
+                        <span className="block px-2.5 pb-2 pt-1.5">
+                          <span className="block truncate text-footnote font-bold text-ink">{c}</span>
+                          <span className="block text-caption text-ink-faint tabular-nums">{last ? `Last ${sinceLabel(last)}` : 'Not played yet'}</span>
+                        </span>
+                      </button>
+                    )
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTyping(true)
+                      if (!typedNew) setCourseName('')
+                    }}
+                    className={`flex w-[108px] shrink-0 snap-start flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed text-footnote font-bold transition ${
+                      typing || typedNew ? 'border-forest text-forest' : 'border-line-strong text-ink-faint'
+                    }`}
+                  >
+                    <span className="text-title leading-none">+</span>
+                    Somewhere else
+                  </button>
+                </div>
+                {(typing || typedNew || courseCards.length === 0) && (
+                  <div className="mt-2.5">
+                    <input
+                      value={courseName}
+                      onChange={(e) => setCourseName(e.target.value)}
+                      placeholder="Course name"
+                      autoFocus
+                      className="w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+                    />
+                    {courseName && filteredSuggestions.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {filteredSuggestions.slice(0, 5).map((c) => (
+                          <button
+                            key={c}
+                            onClick={() => {
+                              setCourseName(c)
+                              setTyping(false)
+                            }}
+                            className="rounded-full bg-card px-3 py-1.5 text-footnote font-bold text-ink-dim ring-1 ring-inset ring-line-strong"
+                          >
+                            {c}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* When */}
+              <div>
+                <span className={label}>When</span>
                 <div className="flex flex-wrap gap-2">
-                  {bookedTrips.map((t) => (
+                  {chips.map((c) => (
                     <button
-                      key={t.id}
+                      key={c.iso}
+                      type="button"
                       onClick={() => {
-                        setTripId(t.id)
-                        setTripMode('none')
+                        setDate(c.iso)
+                        setPickingDate(false)
                       }}
-                      className={`rounded-full px-4 py-2.5 text-footnote font-bold border transition ${
-                        tripId === t.id ? 'bg-forest text-on-forest border-forest' : 'border-line-strong bg-card text-ink-dim'
-                      }`}
+                      aria-pressed={date === c.iso && !pickingDate}
+                      className={toggle(date === c.iso && !pickingDate)}
                     >
-                      {t.name}
+                      {c.label}
                     </button>
                   ))}
                   <button
-                    onClick={() => setTripMode('new')}
-                    className="rounded-full px-4 py-2.5 text-footnote font-bold border border-dashed border-green/50 text-green"
+                    type="button"
+                    onClick={() => setPickingDate(true)}
+                    aria-pressed={pickingDate || !chips.some((c) => c.iso === date)}
+                    className={toggle(pickingDate || !chips.some((c) => c.iso === date))}
                   >
-                    + New trip
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTripId('')
-                      setTripMode('none')
-                    }}
-                    className="px-2 text-footnote font-bold text-ink-faint"
-                  >
-                    {chosenTrip ? 'Cancel' : 'Never mind'}
+                    {!pickingDate && !chips.some((c) => c.iso === date) ? shortDate(date) : 'Other day'}
                   </button>
                 </div>
+                {pickingDate && (
+                  <input
+                    type="date"
+                    value={date}
+                    max={todayISO()}
+                    onChange={(e) => e.target.value && setDate(e.target.value)}
+                    aria-label="Date played"
+                    className="mt-2.5 w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink focus:border-green focus:outline-none"
+                  />
+                )}
               </div>
-            )}
 
-            {tripMode === 'new' && (
+              {/* Tees, once there's a course to take them from */}
+              {courseName.trim() && (
+                <div>
+                  <span className={label}>Tees (optional)</span>
+                  <TeePicker
+                    value={tee}
+                    onChange={setTee}
+                    course={findCourse(data, courseName)}
+                    className="w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+                  />
+                </div>
+              )}
+
+              {/* Who: faces to tap. Guests are on the round and in the bets,
+                  off the lifetime records, and stick around for next time. */}
               <div>
-                <label className="block text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1">
-                  New trip
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    value={newTripName}
-                    onChange={(e) => setNewTripName(e.target.value)}
-                    placeholder="e.g. Myrtle Beach 2026"
-                    autoFocus
-                    onKeyDown={(e) => e.key === 'Enter' && createTrip()}
-                    className="flex-1 rounded-xl border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
-                  />
+                <span className={label}>Who played</span>
+                <div className="flex flex-wrap gap-x-3 gap-y-3 px-1">
+                  {everyone.map((p) => {
+                    const on = playerIds.includes(p.id)
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => togglePlayer(p.id)}
+                        aria-pressed={on}
+                        className="relative flex w-[58px] flex-col items-center gap-1 transition active:scale-95"
+                      >
+                        <span className={`transition ${on ? '' : 'opacity-35 grayscale'}`}>
+                          <Avatar player={p} size={44} />
+                        </span>
+                        {on && (
+                          <span className="absolute right-0.5 top-0 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-forest text-on-forest ring-2 ring-paper">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M4.5 12.5 L9.5 17.5 L19.5 6.5" />
+                            </svg>
+                          </span>
+                        )}
+                        <span className={`max-w-full truncate text-caption font-bold ${on ? 'text-ink' : 'text-ink-faint'}`}>
+                          {p.id === data.currentUserId ? 'You' : p.name.split(' ')[0]}
+                        </span>
+                        <span className="-mt-1 text-caption text-ink-faint tabular-nums">{p.guest ? 'guest' : fmt1(p.handicap)}</span>
+                      </button>
+                    )
+                  })}
                   <button
-                    onClick={createTrip}
-                    disabled={!newTripName.trim()}
-                    className="rounded-xl bg-green px-4 py-2.5 text-footnote font-bold text-white disabled:opacity-30"
+                    type="button"
+                    onClick={() => setAddingGuest(true)}
+                    className="flex w-[58px] flex-col items-center gap-1 text-ink-faint"
                   >
-                    Create
-                  </button>
-                  <button onClick={() => setTripMode('pick')} className="px-2 text-footnote font-bold text-ink-faint">
-                    Back
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-dashed border-line-strong text-headline font-bold">+</span>
+                    <span className="text-caption font-bold">Guest</span>
                   </button>
                 </div>
-                <p className="text-caption text-ink-faint mt-1.5 px-1">
-                  Booked, starting today, everyone in the group on it. Dates, lodging and costs can be filled in from Trips later.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* Step 2: players */}
-      {step === 1 && (
-        <div className="space-y-3">
-          <p className="text-footnote text-ink-dim px-1">Who teed it up? Just you is a fine answer.</p>
-          {members.map((p) => {
-            const on = playerIds.includes(p.id)
-            return (
-              <Card
-                key={p.id}
-                onClick={() => togglePlayer(p.id)}
-                className={`p-4 flex items-center gap-3.5 transition ${on ? 'border-green/50 bg-green-soft/40' : 'opacity-60'}`}
-              >
-                <Avatar player={p} size={44} />
-                <div className="flex-1">
-                  <p className="font-bold text-body text-ink">
-                    {p.name}
-                    {p.id === data.currentUserId && <span className="text-ink-faint font-semibold"> (you)</span>}
+                {addingGuest && (
+                  <Card className="mt-3 p-3.5 space-y-2.5">
+                    <div className="grid grid-cols-[1fr_5.5rem] gap-2">
+                      <input
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder="Guest's name"
+                        autoFocus
+                        className="rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+                      />
+                      <input
+                        value={guestHcp}
+                        onChange={(e) => setGuestHcp(e.target.value.replace(/[^\d.]/g, ''))}
+                        placeholder="Hcp"
+                        inputMode="decimal"
+                        className="rounded-lg border border-line-strong bg-card px-3 py-2.5 text-center text-body text-ink tabular-nums placeholder:text-ink-faint focus:border-green focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <PrimaryButton onClick={addGuest} disabled={!guestName.trim()} className="flex-1 !py-2.5">
+                        Add to round
+                      </PrimaryButton>
+                      <button onClick={() => setAddingGuest(false)} className="px-3 text-footnote font-bold text-ink-faint">
+                        Cancel
+                      </button>
+                    </div>
+                  </Card>
+                )}
+              </div>
+
+              {/* The Saddam is declared, not automatic: the trophy has house
+                  rules the app can't know, so the group says when it's at stake. */}
+              {playerIds.length >= 2 && (
+                <Card
+                  onClick={() => setSaddamOn((v) => !v)}
+                  className={`p-3.5 flex items-center gap-3 transition ${saddamOn ? 'border-cream-deep bg-cream' : ''}`}
+                >
+                  <SaddamIcon size={26} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-body font-bold text-ink">The Saddam is on the line</p>
+                    <p className="text-caption text-ink-faint">{saddamOn ? 'Winner takes the trophy.' : 'Off. This round can’t move the trophy.'}</p>
+                  </div>
+                  <span className={`h-7 w-12 rounded-full p-1 transition shrink-0 ${saddamOn ? 'bg-gold' : 'bg-line-strong'}`}>
+                    <span className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${saddamOn ? 'translate-x-5' : ''}`} />
+                  </span>
+                </Card>
+              )}
+
+              {/* Trips, folded. Just a round is the default and needs no tap. */}
+              <div>
+                {tripMode === 'none' && !chosenTrip && (
+                  <button onClick={() => setTripMode('pick')} className="px-1 text-footnote font-bold text-green">
+                    Part of a trip?
+                  </button>
+                )}
+
+                {chosenTrip && tripMode !== 'new' && (
+                  <div className="flex items-center gap-2 px-1">
+                    <span className="text-footnote text-ink-dim">
+                      Part of <span className="font-bold text-ink">{chosenTrip.name}</span>
+                    </span>
+                    <button onClick={() => setTripMode('pick')} className="text-footnote font-bold text-green">
+                      Change
+                    </button>
+                    <button
+                      onClick={() => {
+                        setTripId('')
+                        setTripMode('none')
+                      }}
+                      className="text-footnote font-bold text-ink-faint"
+                    >
+                      Not a trip
+                    </button>
+                  </div>
+                )}
+
+                {tripMode === 'pick' && (
+                  <div>
+                    <span className={label}>Which trip?</span>
+                    <div className="flex flex-wrap gap-2">
+                      {bookedTrips.map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => {
+                            setTripId(t.id)
+                            setTripMode('none')
+                          }}
+                          className={toggle(tripId === t.id)}
+                        >
+                          {t.name}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => setTripMode('new')}
+                        className="rounded-full px-3.5 py-2 text-footnote font-bold border border-dashed border-green/50 text-green"
+                      >
+                        + New trip
+                      </button>
+                      <button
+                        onClick={() => {
+                          setTripId('')
+                          setTripMode('none')
+                        }}
+                        className="px-2 text-footnote font-bold text-ink-faint"
+                      >
+                        {chosenTrip ? 'Cancel' : 'Never mind'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {tripMode === 'new' && (
+                  <div>
+                    <span className={label}>New trip</span>
+                    <div className="flex gap-2">
+                      <input
+                        value={newTripName}
+                        onChange={(e) => setNewTripName(e.target.value)}
+                        placeholder="e.g. Myrtle Beach 2026"
+                        autoFocus
+                        onKeyDown={(e) => e.key === 'Enter' && createTrip()}
+                        className="flex-1 rounded-xl border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+                      />
+                      <button
+                        onClick={createTrip}
+                        disabled={!newTripName.trim()}
+                        className="rounded-xl bg-green px-4 py-2.5 text-footnote font-bold text-white disabled:opacity-30"
+                      >
+                        Create
+                      </button>
+                      <button onClick={() => setTripMode('pick')} className="px-2 text-footnote font-bold text-ink-faint">
+                        Back
+                      </button>
+                    </div>
+                    <p className="text-caption text-ink-faint mt-1.5 px-1">
+                      Booked, starting today, everyone in the group on it. Dates, lodging and costs can be filled in from Trips later.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-3">
+              <p className="text-footnote text-ink-dim px-1">
+                Gross scores at {courseName.trim()}. Net is handled for you.
+              </p>
+              {playerIds.map((pid) => {
+                const p = data.players.find((pl) => pl.id === pid)!
+                const val = scores[pid]
+                const warning = val === undefined ? null : grossWarning(val)
+                return (
+                  <Card key={pid} className="p-4 flex flex-wrap items-center gap-3">
+                    <Avatar player={p} size={40} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-body text-ink truncate">{p.name}</p>
+                      <p className="text-caption text-ink-faint tabular-nums">
+                        {val !== undefined ? `net ${fmt1(val - p.handicap)}` : `hcp ${fmt1(p.handicap)}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => bump(pid, -1)}
+                        className="h-12 w-12 rounded-xl bg-ink/[0.06] text-ink text-large font-bold active:scale-95 transition"
+                        aria-label={`decrease ${p.name}`}
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={val ?? ''}
+                        placeholder="—"
+                        onChange={(e) => {
+                          const n = parseInt(e.target.value, 10)
+                          setScores((sc) => {
+                            const copy = { ...sc }
+                            if (Number.isNaN(n)) delete copy[pid]
+                            else copy[pid] = n
+                            return copy
+                          })
+                        }}
+                        className="w-16 h-12 rounded-xl border border-line-strong bg-card text-center text-title font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
+                      />
+                      <button
+                        onClick={() => bump(pid, 1)}
+                        className="h-12 w-12 rounded-xl bg-ink/[0.06] text-ink text-large font-bold active:scale-95 transition"
+                        aria-label={`increase ${p.name}`}
+                      >
+                        +
+                      </button>
+                    </div>
+                    {warning && <p className="w-full text-footnote font-semibold text-flag">{warning}</p>}
+                  </Card>
+                )
+              })}
+              <p className="text-caption text-ink-faint px-1 pt-1">Tap − / + to nudge from 90, or type it straight in.</p>
+              {missing.length > 0 && anyScored && (
+                <Card className="p-3.5 border-gold/30 bg-gold-soft/40">
+                  <p className="text-footnote text-ink">
+                    <span className="font-bold">Don't know everyone's score?</span> Leave it blank.{' '}
+                    {missing
+                      .map((id) => data.players.find((p) => p.id === id)?.name)
+                      .filter(Boolean)
+                      .join(' and ')}{' '}
+                    will be asked to fill {missing.length === 1 ? 'theirs' : 'them'} in next time they open the app.
                   </p>
-                  <p className="text-footnote text-ink-faint tabular-nums">Handicap {fmt1(p.handicap)}</p>
-                </div>
-                <span className={`h-7 w-7 rounded-full border-2 flex items-center justify-center transition ${on ? 'border-green bg-green' : 'border-line-strong'}`}>
-                  {on && (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4.5 12.5 L9.5 17.5 L19.5 6.5" />
-                    </svg>
-                  )}
-                </span>
-              </Card>
-            )
-          })}
-
-          {/* Guests: on the round and in the bets, off the lifetime
-              records. Once added they stick around for the next time the
-              same brother-in-law tags along. */}
-          {(guests.length > 0 || addingGuest) && (
-            <p className="text-caption font-semibold uppercase tracking-[0.12em] text-ink-faint px-1 pt-2">Guests</p>
+                </Card>
+              )}
+            </div>
           )}
-          {guests.map((p) => {
-            const on = playerIds.includes(p.id)
-            return (
-              <Card
-                key={p.id}
-                onClick={() => togglePlayer(p.id)}
-                className={`p-3.5 flex items-center gap-3 transition ${on ? 'border-green/50 bg-green-soft/40' : 'opacity-60'}`}
-              >
-                <Avatar player={p} size={36} />
-                <div className="flex-1">
-                  <p className="font-bold text-body text-ink">{p.name}</p>
-                  <p className="text-caption text-ink-faint tabular-nums">Guest · hcp {fmt1(p.handicap)}</p>
-                </div>
-                <span className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition ${on ? 'border-green bg-green' : 'border-line-strong'}`}>
-                  {on && (
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4.5 12.5 L9.5 17.5 L19.5 6.5" />
-                    </svg>
-                  )}
-                </span>
-              </Card>
-            )
-          })}
-          {/* The Saddam moved from automatic to declared: the trophy has
-              house rules the app can't know (the whole group has to be
-              playing), so the group says when it's at stake. */}
-          {playerIds.length >= 2 && (
-            <Card
-              onClick={() => setSaddamOn((v) => !v)}
-              className={`p-3.5 flex items-center gap-3 transition ${saddamOn ? 'border-cream-deep bg-cream' : ''}`}
-            >
-              <SaddamIcon size={26} />
-              <div className="flex-1 min-w-0">
-                <p className="text-body font-bold text-ink">The Saddam is on the line</p>
-                <p className="text-caption text-ink-faint">
-                  {saddamOn ? 'Winner takes the trophy.' : 'Off — this round can’t move the trophy.'}
-                </p>
-              </div>
-              <span
-                className={`h-7 w-12 rounded-full p-1 transition shrink-0 ${saddamOn ? 'bg-gold' : 'bg-line-strong'}`}
-              >
-                <span
-                  className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${saddamOn ? 'translate-x-5' : ''}`}
-                />
-              </span>
-            </Card>
-          )}
+        </div>
 
-          {addingGuest ? (
-            <Card className="p-3.5 space-y-2.5">
-              <div className="grid grid-cols-[1fr_5.5rem] gap-2">
-                <input
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  placeholder="Guest's name"
-                  autoFocus
-                  className="rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
-                />
-                <input
-                  value={guestHcp}
-                  onChange={(e) => setGuestHcp(e.target.value.replace(/[^\d.]/g, ''))}
-                  placeholder="Hcp"
-                  inputMode="decimal"
-                  className="rounded-lg border border-line-strong bg-card px-3 py-2.5 text-center text-body text-ink tabular-nums placeholder:text-ink-faint focus:border-green focus:outline-none"
-                />
-              </div>
-              <div className="flex gap-2">
-                <PrimaryButton onClick={addGuest} disabled={!guestName.trim()} className="flex-1 !py-2.5">
-                  Add to round
-                </PrimaryButton>
-                <button onClick={() => setAddingGuest(false)} className="px-3 text-footnote font-bold text-ink-faint">
-                  Cancel
-                </button>
-              </div>
-            </Card>
+        {/* Footer, pinned to the bottom of the sheet */}
+        <div className="shrink-0 border-t border-line bg-paper px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.9rem)]">
+          {step === 0 ? (
+            <div className="grid gap-2">
+              <PrimaryButton onClick={() => save()} disabled={!courseName.trim() || playerIds.length === 0} className="w-full !py-3.5">
+                Start scoring
+              </PrimaryButton>
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                disabled={!courseName.trim() || playerIds.length === 0}
+                className={`w-full rounded-xl py-3 text-body ${SECONDARY_BTN}`}
+              >
+                Just enter totals
+              </button>
+            </div>
           ) : (
-            <button
-              onClick={() => setAddingGuest(true)}
-              className="w-full rounded-xl border border-dashed border-line-strong bg-card py-3 text-footnote font-bold text-ink-dim active:bg-paper"
-            >
-              + Bring a guest
-            </button>
+            <PrimaryButton onClick={() => save()} disabled={!anyScored} className="w-full !py-3.5">
+              {anyScored && missing.length > 0 ? `Save with ${missing.length} to come` : 'Save round'}
+            </PrimaryButton>
           )}
-        </div>
-      )}
-
-      {/* Step 3: scores */}
-      {step === 2 && (
-        <div className="space-y-3">
-          <p className="text-footnote text-ink-dim px-1">Gross scores. Net is handled for you.</p>
-          {playerIds.map((pid) => {
-            const p = data.players.find((pl) => pl.id === pid)!
-            const val = scores[pid]
-            const warning = val === undefined ? null : grossWarning(val)
-            return (
-              <Card key={pid} className="p-4 flex flex-wrap items-center gap-3">
-                <Avatar player={p} size={40} />
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-body text-ink truncate">{p.name}</p>
-                  <p className="text-caption text-ink-faint tabular-nums">
-                    {val !== undefined ? `net ${fmt1(val - p.handicap)}` : `hcp ${fmt1(p.handicap)}`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => bump(pid, -1)}
-                    className="h-12 w-12 rounded-xl bg-paper border border-line-strong text-ink text-large font-bold active:scale-95 transition"
-                    aria-label={`decrease ${p.name}`}
-                  >
-                    −
-                  </button>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    value={val ?? ''}
-                    placeholder="—"
-                    onChange={(e) => {
-                      const n = parseInt(e.target.value, 10)
-                      setScores((s) => {
-                        const copy = { ...s }
-                        if (Number.isNaN(n)) delete copy[pid]
-                        else copy[pid] = n
-                        return copy
-                      })
-                    }}
-                    className="w-16 h-12 rounded-xl border border-line-strong bg-card text-center text-title font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
-                  />
-                  <button
-                    onClick={() => bump(pid, 1)}
-                    className="h-12 w-12 rounded-xl bg-paper border border-line-strong text-ink text-large font-bold active:scale-95 transition"
-                    aria-label={`increase ${p.name}`}
-                  >
-                    +
-                  </button>
-                </div>
-                {warning && <p className="w-full text-footnote font-semibold text-flag">{warning}</p>}
-              </Card>
-            )
-          })}
-          <p className="text-caption text-ink-faint px-1 pt-1">
-            Tap − / + to nudge from 90, or type it straight in.
-          </p>
-          {!anyScored && (
-            <Card className="p-3.5 border-green/30 bg-green-soft/40">
-              <p className="text-footnote text-ink">
-                <span className="font-bold">On the course right now?</span> Leave these blank and start the round — you'll
-                score it hole by hole as you play, and any bets on it settle themselves from the card.
-              </p>
-            </Card>
-          )}
-          {missing.length > 0 && anyScored && (
-            <Card className="p-3.5 border-gold/30 bg-gold-soft/40">
-              <p className="text-footnote text-ink">
-                <span className="font-bold">Don't know everyone's score?</span> Leave it blank —{' '}
-                {missing
-                  .map((id) => data.players.find((p) => p.id === id)?.name)
-                  .filter(Boolean)
-                  .join(' and ')}{' '}
-                will be asked to fill {missing.length === 1 ? 'theirs' : 'them'} in next time they open the app.
-              </p>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* Footer nav */}
-      <div className="fixed bottom-0 inset-x-0 z-40">
-        <div className="mx-auto max-w-md p-4 pb-[max(env(safe-area-inset-bottom),1rem)] bg-gradient-to-t from-paper via-paper/95 to-transparent">
-          <div className="flex gap-3">
-            {step > 0 && <GhostButton onClick={() => setStep((s) => s - 1)}>Back</GhostButton>}
-            {step < 2 ? (
-              <PrimaryButton onClick={() => canNext && setStep((s) => s + 1)} disabled={!canNext} className="flex-1 !py-4">
-                Next
-              </PrimaryButton>
-            ) : (
-              // Zero scores is a real state now, not a blocked one: it's
-              // the first tee. The round starts and the card takes over.
-              <PrimaryButton onClick={() => save()} disabled={playerIds.length === 0} className="flex-1 !py-4">
-                {!anyScored
-                  ? 'Start round — score as you play'
-                  : missing.length > 0
-                    ? `Save with ${missing.length} to come`
-                    : 'Save round'}
-              </PrimaryButton>
-            )}
-          </div>
         </div>
       </div>
-      <div className="h-24" />
-    </div>
+    </div>,
+    document.body,
   )
 }

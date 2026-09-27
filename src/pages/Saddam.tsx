@@ -3,11 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import { useGoBack } from '../lib/nav'
 import { BackButton } from '../components/Nav'
 import { useMembers, useStore } from '../data/store'
-import { prettyDate, saddamHistory, saddamState, shortDate } from '../lib/stats'
+import { saddamDays, saddamHistory, saddamReigns, saddamState, shortDate } from '../lib/stats'
+import { todayISO } from '../lib/dates'
 import { Avatar, Card, PrimaryButton, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
 
-// Who holds the trophy, how it got there, and a way to hand it over when
-// it changed hands somewhere the app never saw.
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+const monthYear = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+
+// The trophy room: the Saddam on a spotlit stage, every reign as one
+// ribbon, and the chain of custody underneath. The manual handover is a
+// fix-up tool for when it changed hands somewhere the app never saw, so
+// it lives behind the ••• button instead of being the biggest thing here.
 export default function Saddam() {
   const navigate = useNavigate()
   const goBack = useGoBack('/h2h')
@@ -17,13 +23,20 @@ export default function Saddam() {
   const [pick, setPick] = useState<string | null>(null)
   const [note, setNote] = useState('')
 
+  const today = todayISO()
   const state = saddamState(data)
   const holder = data.players.find((p) => p.id === state.holderId)
   const history = saddamHistory(data).slice().reverse()
-
-  const reignCount = new Map<string, number>()
-  for (const change of history) reignCount.set(change.playerId, (reignCount.get(change.playerId) ?? 0) + 1)
-  const mostReigns = [...reignCount.entries()].sort((a, b) => b[1] - a[1])
+  const reigns = saddamReigns(data, today)
+  const current = reigns[reigns.length - 1]
+  const totals = saddamDays(data, today)
+  const longest = reigns.length > 1 ? reigns.reduce((a, b) => (b.days > a.days ? b : a)) : undefined
+  const shortest = reigns.filter((r) => !r.current).reduce<(typeof reigns)[number] | undefined>((a, b) => (!a || b.days < a.days ? b : a), undefined)
+  const span = reigns.reduce((sum, r) => sum + r.days, 0)
+  const standings = members
+    .map((p) => ({ player: p, ...(totals.get(p.id) ?? { days: 0, reigns: 0 }) }))
+    .sort((a, b) => b.days - a.days || b.reigns - a.reigns)
+  const name = (id: string) => data.players.find((p) => p.id === id)?.name ?? 'Someone'
 
   const handOver = () => {
     if (!pick) return
@@ -35,56 +48,32 @@ export default function Saddam() {
 
   return (
     <div className="rise">
-      <header className="pt-4 pb-2 px-1">
-        <BackButton fallback="/h2h" onBack={goBack} />
-        <h1 className="text-large font-bold tracking-tight text-ink">The Saddam</h1>
-        <p className="text-footnote text-ink-dim">Held by whoever won the last group round.</p>
+      <header className="pt-4 pb-2 px-1 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <BackButton fallback="/h2h" onBack={goBack} />
+          <h1 className="text-large font-bold tracking-tight text-ink">The Saddam</h1>
+          <p className="text-footnote text-ink-dim">Held by whoever won the last group round.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setHandingOver((h) => !h)
+            setPick(state.holderId)
+          }}
+          aria-expanded={handingOver}
+          aria-label={holder ? 'Hand it to someone else' : 'Give it to someone'}
+          className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink/[0.06] text-ink-dim active:bg-ink/10"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <circle cx="5" cy="12" r="1.8" />
+            <circle cx="12" cy="12" r="1.8" />
+            <circle cx="19" cy="12" r="1.8" />
+          </svg>
+        </button>
       </header>
 
-      {/* Current holder */}
-      {holder ? (
-        <Card className="mt-2 overflow-hidden">
-          <div className="bg-cream border-b border-cream-deep/60 px-5 py-6 flex items-center gap-4">
-            <span className="shrink-0 rounded-[18px] shadow-[0_4px_14px_rgba(28,70,50,0.18)]">
-              <SaddamIcon size={64} />
-            </span>
-            <div className="min-w-0">
-              <p className="text-caption font-semibold uppercase tracking-[0.16em] text-forest/70">Current holder</p>
-              <p className="text-large font-bold text-ink leading-tight truncate">{holder.name}</p>
-              <p className="text-footnote text-ink-dim mt-0.5">
-                Since {state.since && prettyDate(state.since)}
-              </p>
-            </div>
-            <Avatar player={holder} size={44} />
-          </div>
-          <div className="px-5 py-3.5">
-            <p className="text-footnote text-ink-dim">
-              {state.byHand
-                ? state.note
-                  ? `Handed over: ${state.note}`
-                  : 'Handed over by the group.'
-                : `Won at ${state.courseName}.`}
-              {state.defenses > 0 &&
-                ` Defended ${state.defenses} group round${state.defenses === 1 ? '' : 's'} since.`}
-            </p>
-          </div>
-        </Card>
-      ) : (
-        <Card className="mt-2 px-5 py-7 text-center">
-          <span className="inline-flex opacity-60 grayscale">
-            <SaddamIcon size={64} />
-          </span>
-          <p className="text-headline font-bold text-ink mt-3">Up for grabs</p>
-          <p className="text-footnote text-ink-dim mt-1.5 max-w-[280px] mx-auto">
-            Nobody holds it. Win a round with at least one other golfer and it's yours, or hand it to whoever has it in real
-            life.
-          </p>
-        </Card>
-      )}
-
-      {/* Hand it over */}
-      {handingOver ? (
-        <Card className="mt-3 p-4 space-y-3">
+      {handingOver && (
+        <Card className="mt-2 mb-3 p-4 space-y-3">
           <p className="text-body font-bold text-ink">Who has it?</p>
           <p className="text-footnote text-ink-dim">
             Use this when it changed hands outside the app. From today on, whoever wins the next group round takes it back.
@@ -122,13 +111,106 @@ export default function Saddam() {
             </button>
           </div>
         </Card>
-      ) : (
-        <button
-          onClick={() => { setHandingOver(true); setPick(state.holderId) }}
-          className="w-full mt-2 py-2 text-footnote font-bold text-ink-faint"
-        >
-          {holder ? 'Hand it to someone else' : 'Give it to someone'}
-        </button>
+      )}
+
+      {/* The stage */}
+      <div className="saddam-stage relative mt-2 overflow-hidden rounded-3xl px-6 pb-6 pt-7 text-center text-on-forest">
+        <span className="relative inline-flex rounded-[30px] bg-cream p-1.5 shadow-[0_0_0_6px_rgba(239,227,200,0.14),0_18px_40px_rgba(0,0,0,0.35)]">
+          <span className={holder ? '' : 'opacity-60 grayscale'}>
+            <SaddamIcon size={104} />
+          </span>
+        </span>
+        {holder && current ? (
+          <>
+            <p className="relative mt-5 text-caption font-semibold uppercase tracking-[0.18em] text-on-forest/70">Current holder</p>
+            <p className="relative mt-1 text-hero font-bold leading-none tracking-tight">{holder.name}</p>
+            <p className="relative mt-2.5 text-body text-on-forest/85">
+              <span className="font-extrabold tabular-nums">{plural(current.days, 'day')}</span>
+              {state.byHand ? ' · handed over' : state.courseName ? ` · won at ${state.courseName}` : ''}
+            </p>
+            {(state.defenses > 0 || (state.byHand && state.note)) && (
+              <p className="relative mt-1 text-footnote text-on-forest/70">
+                {state.byHand && state.note ? state.note : `Defended ${plural(state.defenses, 'group round')} since.`}
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="relative mt-5 text-title font-bold">Up for grabs</p>
+            <p className="relative mx-auto mt-1.5 max-w-[280px] text-footnote text-on-forest/75">
+              Nobody holds it. Win a round with at least one other golfer and it's yours, or hand it to whoever has it in real
+              life with the ••• button.
+            </p>
+          </>
+        )}
+      </div>
+
+      {/* Every reign as one ribbon, each as wide as it lasted */}
+      {reigns.length > 0 && span > 0 && (
+        <>
+          <SectionLabel>Every reign</SectionLabel>
+          <Card className="p-4">
+            <div className="flex h-7 gap-[2px] overflow-hidden rounded-lg">
+              {reigns.map((r, i) => {
+                const p = data.players.find((pl) => pl.id === r.playerId)
+                const share = r.days / span
+                return (
+                  <span
+                    key={`${r.date}-${i}`}
+                    title={`${p?.name ?? 'Someone'}: ${plural(r.days, 'day')}`}
+                    className="flex min-w-[4px] items-center justify-center overflow-hidden whitespace-nowrap text-caption font-extrabold text-white tabular-nums"
+                    style={{
+                      flexGrow: Math.max(r.days, 1),
+                      flexBasis: 0,
+                      background: p?.color ?? 'var(--color-ink-faint)',
+                      boxShadow: r.current ? 'inset 0 0 0 2px var(--color-cream)' : undefined,
+                    }}
+                  >
+                    {share > 0.2 ? `${p?.name.split(' ')[0]} ${r.days}` : share > 0.08 ? r.days : ''}
+                  </span>
+                )
+              })}
+            </div>
+            <div className="mt-1.5 flex justify-between text-caption font-semibold text-ink-faint tabular-nums">
+              <span>{monthYear(reigns[0].date)}</span>
+              <span>Now</span>
+            </div>
+            {longest && (
+              <div className="mt-3 grid grid-cols-2 gap-3 border-t border-line pt-3">
+                <div>
+                  <p className="text-headline font-extrabold text-ink tabular-nums">{plural(longest.days, 'day')}</p>
+                  <p className="text-caption text-ink-dim">
+                    Longest reign · {name(longest.playerId)}
+                    {longest.current && ', still going'}
+                  </p>
+                </div>
+                {shortest && shortest !== longest && (
+                  <div>
+                    <p className="text-headline font-extrabold text-ink tabular-nums">{plural(shortest.days, 'day')}</p>
+                    <p className="text-caption text-ink-dim">
+                      Shortest · {name(shortest.playerId)}
+                      {shortest.courseName && `, ${shortest.courseName}`}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+
+          <SectionLabel>Days held</SectionLabel>
+          <Card className="divide-y divide-line">
+            {standings.map(({ player: p, days, reigns: count }) => (
+              <div key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+                <Avatar player={p} size={28} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-footnote font-bold text-ink">{p.name}</p>
+                  <p className="text-caption text-ink-faint">{count ? plural(count, 'reign') : 'Never held it'}</p>
+                </div>
+                <span className={`text-body font-extrabold tabular-nums ${days ? 'text-ink' : 'text-ink-faint'}`}>{days}</span>
+              </div>
+            ))}
+          </Card>
+        </>
       )}
 
       {/* Chain of custody */}
@@ -142,7 +224,7 @@ export default function Saddam() {
           {history.map((change, i) => {
             const p = data.players.find((pl) => pl.id === change.playerId)
             if (!p) return null
-            const current = i === 0
+            const isCurrent = i === 0
             const key = `${change.date}-${change.playerId}-${i}`
             const row = 'flex items-center gap-3 px-4 py-3'
             // A handover has no round to open, so only the ones won on the
@@ -153,18 +235,13 @@ export default function Saddam() {
                 <div className="flex-1 min-w-0">
                   <p className="text-body font-bold text-ink truncate">
                     {p.name}
-                    {current && <span className="text-gold"> · holds it now</span>}
+                    {isCurrent && <span className="text-gold"> · holds it now</span>}
                   </p>
                   <p className="text-caption text-ink-faint truncate tabular-nums">
                     {shortDate(change.date)}
                     {change.byHand ? ` · handed over${change.note ? `: ${change.note}` : ''}` : ` · ${change.courseName}`}
                   </p>
                 </div>
-                {current && (
-                  <span className="text-ink shrink-0">
-                    <SaddamIcon size={20} />
-                  </span>
-                )}
               </>
             )
             return change.roundId ? (
@@ -180,27 +257,8 @@ export default function Saddam() {
         </Card>
       )}
 
-      {mostReigns.length > 1 && (
-        <>
-          <SectionLabel>Times held</SectionLabel>
-          <Card className="divide-y divide-line">
-            {mostReigns.map(([playerId, count]) => {
-              const p = data.players.find((pl) => pl.id === playerId)
-              if (!p) return null
-              return (
-                <div key={playerId} className="flex items-center gap-3 px-4 py-2.5">
-                  <Avatar player={p} size={26} />
-                  <span className="flex-1 text-footnote font-bold text-ink">{p.name}</span>
-                  <span className="text-footnote font-extrabold text-ink tabular-nums">{count}</span>
-                </div>
-              )
-            })}
-          </Card>
-        </>
-      )}
-
       <p className="text-caption text-ink-faint px-2 mt-3">
-        It only moves on a group round with at least two scores posted, and only on an outright win — a tie leaves it where it
+        It only moves on a group round with at least two scores posted, and only on an outright win. A tie leaves it where it
         is.
       </p>
       <div className="h-4" />

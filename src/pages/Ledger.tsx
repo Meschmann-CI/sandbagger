@@ -1,7 +1,8 @@
-import { useContext } from 'react'
+import { Fragment, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGoBack } from '../lib/nav'
 import { BackButton } from '../components/Nav'
+import type { Player } from '../types'
 import { useMembers, useStore } from '../data/store'
 import { headToHead, leaderboard, saddamState, shortDate, trashTalk } from '../lib/stats'
 import { Avatar, Card, MoneyBadge, SaddamBadge, SectionLabel } from '../components/ui'
@@ -31,6 +32,10 @@ export default function Ledger() {
       if (h.aWins + h.bWins + h.ties > 0) pairs.push([members[i].id, members[j].id])
     }
   }
+
+  // Everyone in at least one rivalry, in leaderboard order, for the grid.
+  const inPairs = new Set(pairs.flat())
+  const gridPlayers = board.map((row) => row.player).filter((p) => inPairs.has(p.id))
 
   return (
     <div className="rise">
@@ -135,43 +140,98 @@ export default function Ledger() {
           Nothing to settle yet. Records start the first time two of you play the same round.
         </Card>
       )}
-      <div className="space-y-3">
-        {pairs.map(([aId, bId]) => {
-          const a = data.players.find((p) => p.id === aId)!
-          const b = data.players.find((p) => p.id === bId)!
-          const h = headToHead(data, aId, bId)
-          const total = h.aWins + h.bWins + h.ties
-          const leader = h.aWins === h.bWins ? null : h.aWins > h.bWins ? a : b
-          return (
-            <Card key={`${aId}-${bId}`} onClick={() => navigate(`/h2h/${aId}/${bId}`)} className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <Avatar player={a} size={34} />
-                  <span className={`text-body truncate ${leader?.id === a.id ? 'font-bold text-ink' : 'text-ink-dim'}`}>{a.name}</span>
-                </div>
-                <div className="text-center shrink-0">
-                  <p className="text-headline font-extrabold text-ink tracking-wide tabular-nums">
+      {pairs.length > 0 && gridPlayers.length <= 6 ? (
+        <RivalryGrid players={gridPlayers} onOpen={(a, b) => navigate(`/h2h/${a}/${b}`)} />
+      ) : (
+        <div className="space-y-3">
+          {pairs.map(([aId, bId]) => {
+            const a = data.players.find((p) => p.id === aId)!
+            const b = data.players.find((p) => p.id === bId)!
+            const h = headToHead(data, aId, bId)
+            const leader = h.aWins === h.bWins ? null : h.aWins > h.bWins ? a : b
+            return (
+              <Card key={`${aId}-${bId}`} onClick={() => navigate(`/h2h/${aId}/${bId}`)} className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Avatar player={a} size={34} />
+                    <span className={`text-body truncate ${leader?.id === a.id ? 'font-bold text-ink' : 'text-ink-dim'}`}>{a.name}</span>
+                  </div>
+                  <p className="text-headline font-extrabold text-ink tracking-wide tabular-nums shrink-0">
                     {h.aWins}<span className="text-ink-faint text-footnote mx-1">–</span>{h.bWins}
                   </p>
-                  {h.ties > 0 && <p className="text-caption text-ink-faint tabular-nums">{h.ties} tied</p>}
+                  <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
+                    <span className={`text-body truncate ${leader?.id === b.id ? 'font-bold text-ink' : 'text-ink-dim'}`}>{b.name}</span>
+                    <Avatar player={b} size={34} />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-                  <span className={`text-body truncate ${leader?.id === b.id ? 'font-bold text-ink' : 'text-ink-dim'}`}>{b.name}</span>
-                  <Avatar player={b} size={34} />
-                </div>
-              </div>
-              {total > 0 && (
-                <div className="mt-3 h-1.5 rounded-full bg-paper border border-line overflow-hidden flex">
-                  <div className="h-full" style={{ width: `${(h.aWins / total) * 100}%`, background: a.color }} />
-                  <div className="h-full bg-line-strong" style={{ width: `${(h.ties / total) * 100}%` }} />
-                  <div className="h-full" style={{ width: `${(h.bWins / total) * 100}%`, background: b.color }} />
-                </div>
-              )}
-            </Card>
-          )
-        })}
-      </div>
+              </Card>
+            )
+          })}
+        </div>
+      )}
       <div className="h-4" />
     </div>
+  )
+}
+
+// Every rivalry in one grid: read across a row for that golfer's record
+// against each of the others. Six stacked cards took 1,900px of scrolling
+// to say what sixteen cells say at a glance. A cell leans green the more
+// its row leads the matchup, gray when it trails, cream when it's level.
+function RivalryGrid({ players, onOpen }: { players: Player[]; onOpen: (a: string, b: string) => void }) {
+  const { data } = useStore()
+  return (
+    <Card className="p-3">
+      <div className="grid gap-1" style={{ gridTemplateColumns: `36px repeat(${players.length}, minmax(0, 1fr))` }}>
+        <span />
+        {players.map((p) => (
+          <span key={p.id} className="flex justify-center pb-1">
+            <Avatar player={p} size={28} />
+          </span>
+        ))}
+        {players.map((row) => (
+          <Fragment key={row.id}>
+            <span className="flex items-center">
+              <Avatar player={row} size={28} />
+            </span>
+            {players.map((col) => {
+              if (col.id === row.id) {
+                return <span key={col.id} className="rounded-lg bg-[repeating-linear-gradient(45deg,var(--color-line)_0_3px,transparent_3px_7px)] opacity-60" />
+              }
+              const h = headToHead(data, row.id, col.id)
+              const played = h.aWins + h.bWins + h.ties
+              const lead = h.aWins - h.bWins
+              const style =
+                played === 0
+                  ? undefined
+                  : lead > 0
+                    ? { background: `color-mix(in srgb, var(--color-green) ${Math.min(10 + lead * 6, 34)}%, var(--color-card))` }
+                    : lead < 0
+                      ? { background: `color-mix(in srgb, var(--color-ink) ${Math.min(4 + -lead * 2, 12)}%, var(--color-card))` }
+                      : { background: 'var(--color-cream)' }
+              return (
+                <button
+                  key={col.id}
+                  type="button"
+                  disabled={played === 0}
+                  onClick={() => onOpen(row.id, col.id)}
+                  style={style}
+                  aria-label={`${row.name} against ${col.name}: ${h.aWins} to ${h.bWins}${h.ties ? `, ${h.ties} tied` : ''}`}
+                  className={`flex h-12 flex-col items-center justify-center rounded-lg tabular-nums transition active:scale-95 ${
+                    played === 0 ? 'text-ink-faint' : lead > 0 ? 'text-green-deep' : 'text-ink-dim'
+                  }`}
+                >
+                  <span className="text-body font-extrabold leading-none tabular-nums">
+                    {played === 0 ? '·' : `${h.aWins}–${h.bWins}`}
+                  </span>
+                  {h.ties > 0 && <span className="mt-0.5 text-caption leading-none tabular-nums">{h.ties} tied</span>}
+                </button>
+              )
+            })}
+          </Fragment>
+        ))}
+      </div>
+      <p className="mt-2.5 px-1 text-caption text-ink-faint">Read across: each row's record against the golfer above. Tap one for the whole rivalry.</p>
+    </Card>
   )
 }

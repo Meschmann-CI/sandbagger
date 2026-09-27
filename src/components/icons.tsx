@@ -188,3 +188,20 @@ export function IconTile({ name, tone = 'green', size = 40 }: { name: IconName; 
     </span>
   )
 }
+
+/**
+ * Venmo's "V", drawn for the Pay and Request buttons so they read as
+ * Venmo at a glance. Filled, unlike the line icons above, because the
+ * real mark is solid. Sits on Venmo's blue (VENMO_BLUE).
+ */
+export const VENMO_BLUE = '#008CFF'
+export function VenmoMark({ size = 14, className = '' }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden>
+      <path
+        fill="currentColor"
+        d="M19.3 3c.7 1.2 1 2.4 1 3.9 0 4.9-4.2 11.2-7.6 15.6H5L1.9 4.2l6.8-.6 1.7 13.5c1.6-2.6 3.5-6.6 3.5-9.4 0-1.5-.3-2.5-.7-3.3z"
+      />
+    </svg>
+  )
+}

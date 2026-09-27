@@ -5,7 +5,7 @@ import { money } from '../lib/money'
 import { venmoLink } from '../lib/venmo'
 import { notifyGroup } from '../lib/push'
 import { Avatar, SECONDARY_BTN } from './ui'
-import { Icon } from './icons'
+import { Icon, VENMO_BLUE, VenmoMark } from './icons'
 import { RollDown, buzz, reducedMotion } from './Delight'
 
 // Who owes who, and the fastest way to make it stop being true.
@@ -107,8 +107,10 @@ export default function SettleUp({ owed, note, url, onMarkPaid, squareLabel }: P
                       href={venmoLink(other.venmo, s.amount, note, iOwe ? 'pay' : 'charge')}
                       target="_blank"
                       rel="noreferrer"
-                      className="rounded-lg bg-green px-3 py-1.5 text-footnote font-bold text-white active:scale-95 transition"
+                      style={{ background: VENMO_BLUE }}
+                      className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-footnote font-bold text-white active:scale-95 transition"
                     >
+                      <VenmoMark size={13} />
                       {iOwe ? 'Pay' : 'Request'}
                     </a>
                   )}

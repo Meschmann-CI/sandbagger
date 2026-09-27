@@ -259,6 +259,38 @@ export function saddamState(data: AppData): SaddamState {
   }
 }
 
+/** Whole days from one ISO date to another. */
+function daysBetween(from: string, to: string) {
+  const [a, b] = [from, to].map((d) => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)))
+  return Math.max(0, Math.round((b - a) / 86_400_000))
+}
+
+export interface SaddamReign extends SaddamChange {
+  /** The day it moved on, or today for the current holder. */
+  end: string
+  days: number
+  current: boolean
+}
+
+/** Each stretch someone held the Saddam, oldest first, with how long it lasted. */
+export function saddamReigns(data: AppData, today: string): SaddamReign[] {
+  const history = saddamHistory(data)
+  return history.map((change, i) => {
+    const end = history[i + 1]?.date ?? today
+    return { ...change, end, days: daysBetween(change.date, end), current: i === history.length - 1 }
+  })
+}
+
+/** Total days each golfer has held the Saddam, and how many separate reigns. */
+export function saddamDays(data: AppData, today: string): Map<string, { days: number; reigns: number }> {
+  const out = new Map<string, { days: number; reigns: number }>()
+  for (const r of saddamReigns(data, today)) {
+    const prev = out.get(r.playerId) ?? { days: 0, reigns: 0 }
+    out.set(r.playerId, { days: prev.days + r.days, reigns: prev.reigns + 1 })
+  }
+  return out
+}
+
 // ---------- Money ----------
 
 export function moneyTotals(data: AppData, roundIds?: Set<string>) {

@@ -130,7 +130,7 @@ export default function Trips() {
               return (
                 <Card key={trip.id} onClick={() => navigate(`/trips/${trip.id}`)} className="p-4 flex items-center gap-3.5">
                   <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">
-                    <CourseScene name={trip.location || trip.name} className="h-full w-full" />
+                    <CourseScene course={trip.location || trip.name} light="golden" className="h-full w-full" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-body text-ink truncate">{trip.name}</p>
