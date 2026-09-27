@@ -10,6 +10,22 @@
     <meta name="theme-color" content="#f6f6f2" />
     <title>Sandbagger</title>
 
+    <!-- Netlify adds a "Powered by Netlify" badge to the bottom-right of
+         every page it hosts (its script is appended after </html> at
+         deploy time), and it sits over the app's tab bar. The badge has
+         its own "Hide this badge" button, which just stores this key; it
+         reads the key before drawing, and this runs first, so nobody ever
+         sees it. The style rule covers a phone where storage is blocked,
+         and only matches the public badge, not the owner toolbar. -->
+    <script>
+      try {
+        localStorage.setItem('nl-hud:public:v1', 'hidden')
+      } catch (e) {}
+    </script>
+    <style>
+      #nl-badge-frame { display: none !important; }
+    </style>
+
     <!-- Installable, so it lands on a home screen instead of in a pile of
          browser tabs.
          The group is all on iPhones, and iOS ignores the manifest's icons

@@ -12,9 +12,18 @@ import { IconTile } from '../components/icons'
 // actually looking at sits on "check your email" forever, and there's no
 // way to hand the session across or to make Mail open the app instead.
 //
-// The same email carries a code. Typing it in happens inside the app, so
-// there's nothing to hand across. The link still works for anyone signing
-// in from a desktop browser.
+// So the email carries a code instead, and typing it in happens inside
+// the app, with nothing to hand across. Supabase sends one of two emails:
+// "Confirm signup" to someone signing in for the first time and "Magic
+// Link" to everyone after that. Both templates have to be edited to show
+// the code and leave the link out (supabase/email-templates/ has the
+// text); a first-timer who got the stock signup email saw only a link.
+//
+// The code's length is a Supabase setting (Authentication → Sign In /
+// Providers → Email → Email OTP Length, 6 to 10), so nothing here assumes
+// six digits.
+const MIN_CODE = 6
+const MAX_CODE = 10
 
 // Supabase's own wording for these is too terse to act on, and the
 // rate-limit one is the single most likely thing a new golfer will hit.
@@ -28,7 +37,7 @@ function friendlyAuthError(message: string): string {
   // types the code lands here, and "expired" on its own is baffling when
   // the email arrived a minute ago.
   if (m.includes('expired') || m.includes('already') || m.includes('used')) {
-    return 'That code has already been used or has expired. Tapping the link in the email uses it up too. Send a new email and type the code from that one without opening its link.'
+    return 'That code has expired or was already used (opening a link in an older sign-in email uses it up too). Send a new email and use the code from that one.'
   }
   if (m.includes('invalid') && (m.includes('token') || m.includes('otp') || m.includes('code'))) {
     return "That code wasn't right. Check the email again — it's the most recent one that counts."
@@ -76,9 +85,9 @@ export default function SignIn() {
     }
   }
 
-  const verify = async () => {
-    const token = code.replace(/\D/g, '')
-    if (!token) return
+  const verify = async (typed = code) => {
+    const token = typed.replace(/\D/g, '')
+    if (token.length < MIN_CODE || status === 'verifying') return
     setStatus('verifying')
     setError(null)
     try {
@@ -118,30 +127,44 @@ export default function SignIn() {
           </div>
           <p className="text-headline font-bold text-ink text-center">Check your email</p>
           <p className="text-footnote text-ink-dim mt-1.5 text-center">
-            We sent a six-digit code to <span className="font-bold text-ink">{email.trim()}</span>.
+            We sent a sign-in code to <span className="font-bold text-ink">{email.trim()}</span>.
           </p>
 
-          <label className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mt-5 mb-2">
+          <label htmlFor="signin-code" className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mt-5 mb-2">
             Enter the code
           </label>
           <input
+            id="signin-code"
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
+            maxLength={MAX_CODE}
             value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+            onChange={(e) => {
+              const next = e.target.value.replace(/\D/g, '').slice(0, MAX_CODE)
+              // A whole code arriving at once is iOS autofill ("From
+              // Messages" / "From Mail") or a paste, so sign straight in.
+              // Typed codes wait for the button, since a 6-digit prefix
+              // of an 8-digit code would otherwise go off early.
+              const arrivedWhole = next.length >= MIN_CODE && next.length - code.length > 1
+              setCode(next)
+              setError(null)
+              if (arrivedWhole) void verify(next)
+            }}
             onKeyDown={(e) => e.key === 'Enter' && void verify()}
-            placeholder="000000"
+            placeholder="Code from the email"
             autoFocus
-            className="w-full rounded-xl border border-line-strong bg-card px-4 py-3.5 text-center text-large font-extrabold tracking-[0.3em] text-ink tabular-nums placeholder:text-ink-faint placeholder:tracking-[0.3em] focus:border-green focus:outline-none"
+            className={`w-full rounded-xl border border-line-strong bg-card px-3 py-3.5 text-center text-ink tabular-nums placeholder:text-ink-faint focus:border-green focus:outline-none ${
+              code ? 'text-large font-extrabold tracking-[0.18em]' : 'text-headline font-semibold'
+            }`}
           />
-          <PrimaryButton onClick={() => void verify()} disabled={code.length < 6 || status === 'verifying'} className="w-full mt-3">
+          <PrimaryButton onClick={() => void verify()} disabled={code.length < MIN_CODE || status === 'verifying'} className="w-full mt-3">
             {status === 'verifying' ? 'Signing you in…' : 'Sign in'}
           </PrimaryButton>
           {error && <p className="text-footnote text-flag font-semibold mt-2.5">{error}</p>}
 
           <p className="text-caption text-ink-faint mt-3.5">
-            Type the code here rather than tapping anything in the email — opening a sign-in link spends the code.
+            The code is all you need, so there's nothing to tap in the email. On an iPhone, the code usually shows up above the keyboard, ready to fill in.
           </p>
           <button
             onClick={() => {
@@ -172,7 +195,7 @@ export default function SignIn() {
           </PrimaryButton>
           {error && <p className="text-footnote text-flag font-semibold mt-2.5">{error}</p>}
           <p className="text-caption text-ink-faint mt-3">
-            No password. You'll get a six-digit code by email to type in here.
+            No password. We'll email you a code to enter here.
           </p>
         </Card>
       )}

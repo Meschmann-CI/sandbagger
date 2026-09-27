@@ -49,7 +49,14 @@ instead of the app.
 
 ## 5. Sign in and create the group
 
-1. Enter your email, click **Send me a sign-in link**, then open the link from your inbox.
+Before anyone signs in, make both sign-in emails show a code instead of a link (links
+open in Safari, not in the home-screen app). In **Authentication → Emails → Templates**,
+replace the body of **Confirm signup** (first sign-in) and **Magic Link** (every one after)
+with the matching file in `supabase/email-templates/`, and set both subjects to
+*Your Sandbagger code*. The app accepts codes of 6 to 10 digits, whatever **Email OTP
+Length** is set to.
+
+1. Enter your email, click **Email me a code**, then enter the code from your inbox.
 2. You'll land on a setup screen. Choose **Start a new group**.
 3. Fill in the group name and your details. **Load sample data** fills the group with a
    worked example (one past trip with its itinerary and cost split, one being planned, and
