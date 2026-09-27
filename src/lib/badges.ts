@@ -3,21 +3,30 @@ import { canSeeTrip, hasScore, isGroupRound } from '../types'
 import type { IconName } from '../components/icons'
 import { byDate, roundStandings, roundWinnerIds, saddamDays } from './stats'
 import { HOLE_COUNT, cardOf } from './holes'
-import { courseSlug, findCourse, hasPars, padded } from './courses'
-import { sandbaggers } from './delight'
-import { settleFromCard } from './bets'
+import { courseSlug, findCourse, hasPars, hasStrokeIndex, padded, strokesOffLow } from './courses'
 
 // The trophy case. Every trophy is worked out from data the app already
 // keeps (totals, hole-by-hole cards, course pars, bets, the Saddam's
 // history, trips), so nothing new is recorded and every old round counts.
 //
-// Three kinds: the ones people brag about (gold), the ones nobody wants
-// (tarnished), and the odd ones (sky). Earned trophies show how many
-// times and when first; locked ones say what it takes. A few ideas need
-// data the app doesn't keep yet (putts, penalty strokes, tee times,
-// birthdays), so they're not here until it does.
+// Six shelves: legendary (one of a kind), the ones people brag about
+// (gold), the ones you can only earn with the group (forest), the odd
+// ones (sky), the locker-room ones (plum), and the ones nobody wants
+// (tarnished). Earned trophies show how many times and when first;
+// locked ones say what it takes. A few ideas need data the app doesn't
+// keep yet (putts, penalty strokes, tee times, birthdays), so they're
+// not here until it does.
 
-export type BadgeKind = 'brag' | 'shame' | 'odd'
+export type BadgeKind = 'legend' | 'brag' | 'group' | 'odd' | 'locker' | 'shame'
+
+export const KIND_LABEL: Record<BadgeKind, string> = {
+  legend: 'Legendary',
+  brag: 'Brag-worthy',
+  group: 'Group trophy',
+  odd: 'Oddity',
+  locker: 'Locker room',
+  shame: 'Nobody wants this one',
+}
 
 export interface Badge {
   key: string
@@ -60,6 +69,7 @@ type Check = (f: Facts, ctx: Ctx) => boolean
 interface Ctx {
   data: AppData
   me: string
+  today: string
   /** My gross scores before this round, oldest first. */
   prior: number[]
   /** My rounds so far including this one. */
@@ -93,18 +103,65 @@ const pairs = (xs: (number | null)[], test: (a: number, b: number) => boolean) =
   return false
 }
 
-/** Skins won per golfer in this round's skins bets, from the card. */
-function skinsWon(data: AppData, round: Round): Map<string, number> {
-  const out = new Map<string, number>()
+/** Every hole of this round's skins games, replayed: who won it outright, who tied, and how many skins were riding on it. */
+interface SkinsHole {
+  winner: string | null
+  tied: string[]
+  /** Skins carried in from tied holes before this one. */
+  carryIn: number
+}
+function skinsHoles(data: AppData, round: Round): SkinsHole[] {
   const course = findCourse(data, round.courseName)
-  for (const bet of data.bets.filter((b) => b.roundId === round.id && b.type === 'skins')) {
-    for (const line of settleFromCard(bet, round, course)?.detail ?? []) {
-      const m = line.match(/^(\d+) skins?\|(.+)$/)
-      if (m) out.set(m[2], (out.get(m[2]) ?? 0) + Number(m[1]))
+  const out: SkinsHole[] = []
+  for (const bet of data.bets.filter((b) => b.roundId === round.id && b.type === 'skins' && !b.manual && b.net !== undefined)) {
+    const entries = bet.results.map((r) => round.players.find((p) => p.playerId === r.playerId)).filter((p): p is RoundPlayer => !!p)
+    if (entries.length < 2 || (bet.net && !hasStrokeIndex(course))) continue
+    const given = bet.net && course ? strokesOffLow(course, entries, round.tee) : {}
+    let carry = 0
+    for (let h = 0; h < HOLE_COUNT; h++) {
+      const scores = entries.map((rp) => ({ id: rp.playerId, s: cardOf(rp)[h] == null ? null : (cardOf(rp)[h] as number) - (given[rp.playerId]?.[h] ?? 0) }))
+      if (scores.some((x) => x.s == null)) continue
+      const best = Math.min(...scores.map((x) => x.s as number))
+      const top = scores.filter((x) => x.s === best).map((x) => x.id)
+      if (top.length === 1) {
+        out.push({ winner: top[0], tied: [], carryIn: carry })
+        carry = 0
+      } else {
+        out.push({ winner: null, tied: top, carryIn: carry })
+        carry++
+      }
     }
   }
   return out
 }
+/** Skins won per golfer in this round's skins games. */
+function skinsWon(data: AppData, round: Round): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const h of skinsHoles(data, round)) if (h.winner) out.set(h.winner, (out.get(h.winner) ?? 0) + 1 + h.carryIn)
+  return out
+}
+
+/** Everyone else's cards in the round, where they have one. */
+const others = (f: Facts, me: string) =>
+  f.round.players.filter((p) => p.playerId !== me).map((p) => cardOf(p)).filter((c) => c.some((h) => h != null))
+/** Every card in the round, mine included. */
+const everyone = (f: Facts) => f.round.players.map((p) => cardOf(p)).filter((c) => c.some((h) => h != null))
+const window5 = (xs: (number | null)[], test: (w: number[]) => boolean) => {
+  for (let i = 0; i + 5 <= xs.length; i++) {
+    const w = xs.slice(i, i + 5)
+    if (w.every((x) => x != null) && test(w as number[])) return true
+  }
+  return false
+}
+const steps = (xs: (number | null)[], len: number, step: number) => {
+  for (let i = 0; i + len <= xs.length; i++) {
+    const w = xs.slice(i, i + len)
+    if (w.every((x) => x != null) && w.every((x, k) => k === 0 || x === (w[k - 1] as number) + step)) return true
+  }
+  return false
+}
+const daysApart = (a: string, b: string) =>
+  Math.abs(Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10)) - Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10))) / 86_400_000
 
 const DEFS: Def[] = [
   // ---- The ones people brag about ----
@@ -179,7 +236,7 @@ const DEFS: Def[] = [
   { key: 'opening', kind: 'odd', label: 'Opening Statement', mark: '1', how: 'Birdie the 1st hole.', check: (f) => f.diffs[0] != null && f.diffs[0]! <= -1 },
   {
     key: 'photo',
-    kind: 'odd',
+    kind: 'group',
     label: 'Photo Finish',
     mark: '1',
     how: 'Win a group round by a stroke or less.',
@@ -191,7 +248,7 @@ const DEFS: Def[] = [
   },
   {
     key: 'twins',
-    kind: 'odd',
+    kind: 'group',
     label: 'Twins',
     mark: '=',
     how: "Tie another golfer's total in the same round.",
@@ -199,7 +256,7 @@ const DEFS: Def[] = [
   },
   {
     key: 'comeback',
-    kind: 'odd',
+    kind: 'group',
     label: 'Comeback Kid',
     mark: '+5',
     how: 'Win the round after trailing by five or more at the turn.',
@@ -253,7 +310,197 @@ const DEFS: Def[] = [
       return f.out + f.in < theirs.reduce<number>((s, h) => s + (h as number), 0)
     },
   },
-  { key: 'sandbagger', kind: 'odd', label: 'Sandbagger', mark: 'SB', how: 'Get stamped for playing well under your handicap.', check: (f, c) => sandbaggers(c.data, f.round).some((s) => s.playerId === c.me) },
+
+  // ---- Legendary ----
+  {
+    key: 'jenny',
+    kind: 'legend',
+    label: "Jenny's Number",
+    mark: '867',
+    how: 'Score 8, 6, 7, 5, 3 on five holes in a row. Legendary.',
+    check: (f) => window5(f.card, (w) => w.join() === '8,6,7,5,3'),
+  },
+
+  // ---- More odd ones ----
+  { key: 'staircase', kind: 'odd', label: 'Staircase', mark: '↗', how: 'Scores go up by one on four straight holes, like 3, 4, 5, 6.', check: (f) => steps(f.card, 4, 1) },
+  { key: 'countdown', kind: 'odd', label: 'Countdown', mark: '↘', how: 'Scores drop by one on four straight holes, like 6, 5, 4, 3.', check: (f) => steps(f.card, 4, -1) },
+  { key: 'fourkind', kind: 'odd', label: 'Four of a Kind', mark: '4×', how: 'The same score on four holes in a row.', check: (f) => steps(f.card, 4, 0) },
+  {
+    key: 'fullhouse',
+    kind: 'odd',
+    label: 'Full House',
+    mark: '3+2',
+    how: 'Over five straight holes, three of one score and two of another.',
+    check: (f) =>
+      window5(f.card, (w) => {
+        const n = [...new Set(w)].map((v) => w.filter((x) => x === v).length).sort()
+        return n.length === 2 && n[0] === 2 && n[1] === 3
+      }),
+  },
+  { key: 'snakeeyes', kind: 'odd', label: 'Snake Eyes', mark: '2·2', how: 'Two holes with a 2 in the same round.', check: (f) => count(f.card, (s) => s === 2) >= 2 },
+  { key: 'blackjack', kind: 'odd', label: 'Blackjack', mark: '21', how: 'Finish exactly 21 over par.', check: (f) => f.gross != null && f.parTotal != null && f.gross - f.parTotal === 21 },
+  { key: 'bottles', kind: 'odd', label: '99 Bottles', mark: '99', how: 'Shoot exactly 99. Broke 100 by the skin of your teeth.', check: (f) => f.gross === 99 },
+
+  // ---- More of the ones nobody wants ----
+  { key: 'boxcars', kind: 'shame', label: 'Boxcars', mark: '12', how: 'A 12 on any hole.', check: (f) => some(f.card, (s) => s === 12) },
+  {
+    key: 'ghosted',
+    kind: 'shame',
+    label: 'Ghosted',
+    mark: '–',
+    how: 'Leave a hole blank on a finished scorecard.',
+    check: (f, c) => f.card.some((h) => h != null) && f.card.slice(0, HOLE_COUNT).some((h) => h == null) && (f.gross != null || f.round.date < c.today),
+  },
+
+  // ---- Group trophies: only possible with company ----
+  {
+    key: 'soulmates',
+    kind: 'group',
+    label: 'Soulmates',
+    mark: '5=',
+    how: "Tie a playing partner's score on five or more holes in one round.",
+    check: (f, c) => others(f, c.me).some((card) => card.filter((h, i) => h != null && h === f.card[i]).length >= 5),
+  },
+  {
+    key: 'copycat',
+    kind: 'group',
+    label: 'Copycat',
+    mark: '3=',
+    how: "Match a partner's score on three straight holes.",
+    check: (f, c) => others(f, c.me).some((card) => run(card.map((h, i) => (h != null && h === f.card[i] ? 1 : null)), 3, () => true)),
+  },
+  {
+    key: 'swingers',
+    kind: 'group',
+    label: 'Swingers',
+    mark: '⇄',
+    how: 'You and another golfer trade the lead three or more times in a round.',
+    check: (f, c) => {
+      const players = f.round.players.filter((p) => cardOf(p).some((h) => h != null))
+      if (players.length < 2 || !players.some((p) => p.playerId === c.me)) return false
+      const total = new Map(players.map((p) => [p.playerId, 0]))
+      let leader: string | null = null
+      let changes = 0
+      let iLed = false
+      for (let h = 0; h < HOLE_COUNT; h++) {
+        if (players.some((p) => cardOf(p)[h] == null)) break
+        for (const p of players) total.set(p.playerId, total.get(p.playerId)! + (cardOf(p)[h] as number))
+        const low = Math.min(...total.values())
+        const top = [...total.entries()].filter(([, t]) => t === low).map(([id]) => id)
+        if (top.length !== 1) continue
+        if (leader && top[0] !== leader && (top[0] === c.me || leader === c.me)) changes++
+        leader = top[0]
+        if (leader === c.me) iLed = true
+      }
+      return iLed && changes >= 3
+    },
+  },
+  {
+    key: 'threesome',
+    kind: 'group',
+    label: 'Threesome',
+    mark: '3×',
+    how: 'Three golfers, you among them, birdie the same hole.',
+    check: (f) =>
+      !!f.pars &&
+      f.diffs.some((d, i) => d != null && d <= -1 && everyone(f).filter((card) => card[i] != null && f.pars![i] != null && card[i]! - f.pars![i]! <= -1).length >= 3),
+  },
+  {
+    key: 'circle',
+    kind: 'group',
+    label: 'Circle Jerk',
+    mark: '≡',
+    how: 'Everyone in a group of three or more makes the exact same score on a hole.',
+    check: (f) => {
+      const cards = f.round.players.map((p) => cardOf(p))
+      return cards.length >= 3 && f.card.some((h, i) => h != null && cards.every((card) => card[i] === h))
+    },
+  },
+  {
+    key: 'friendlyfire',
+    kind: 'group',
+    label: 'Friendly Fire',
+    mark: '+2',
+    how: 'Everyone in a group of three or more makes double bogey or worse on the same hole.',
+    check: (f) => {
+      const cards = f.round.players.map((p) => cardOf(p))
+      return !!f.pars && cards.length >= 3 && f.pars.some((par, i) => par != null && cards.every((card) => card[i] != null && card[i]! - par >= 2))
+    },
+  },
+  {
+    key: 'blueballs',
+    kind: 'group',
+    label: 'Blue Balls',
+    mark: '4',
+    icon: 'cash',
+    how: 'Tie on a hole that would have won you four or more carried-over skins.',
+    check: (f, c) => skinsHoles(c.data, f.round).some((h) => h.carryIn >= 3 && h.tied.includes(c.me)),
+  },
+  {
+    key: 'moneyshot',
+    kind: 'group',
+    label: 'Money Shot',
+    mark: '4+',
+    icon: 'cash',
+    how: 'Win a single skin worth four or more with the carryovers.',
+    check: (f, c) => skinsHoles(c.data, f.round).some((h) => h.carryIn >= 3 && h.winner === c.me),
+  },
+  {
+    key: 'sandbagger',
+    kind: 'group',
+    label: 'Sandbagger',
+    mark: 'SB',
+    how: 'Beat your handicap by five or more net strokes. The group will have questions.',
+    check: (f) => f.gross != null && f.parTotal != null && f.gross - f.rp.handicapSnapshot <= f.parTotal - 5,
+  },
+  {
+    key: 'participation',
+    kind: 'group',
+    label: 'Participation Trophy',
+    mark: '3',
+    how: 'Finish last in the group three rounds in a row.',
+    check: (_f, c) => {
+      const last3 = c.soFar.filter((x) => isGroupRound(x.round) && x.gross != null).slice(-3)
+      return (
+        last3.length === 3 &&
+        last3.every((x) => {
+          const st = roundStandings(x.round)
+          return st.length > 1 && st[st.length - 1].netScore === st.find((s) => s.playerId === c.me)?.netScore
+        })
+      )
+    },
+  },
+
+  // ---- Locker room ----
+  { key: 'nice', kind: 'locker', label: 'Nice', mark: '69', how: 'Shoot exactly 69. Or, for the rest of us, make a 6 then a 9 on back-to-back holes.', check: (f) => f.gross === 69 || pairs(f.card, (a, b) => a === 6 && b === 9) },
+  { key: 'deuce', kind: 'locker', label: 'Dropped a Deuce', mark: '2', how: 'Make a 2 on any hole.', check: (f) => some(f.card, (s) => s === 2) },
+  { key: 'bde', kind: 'locker', label: 'BDE', mark: '−2', how: 'Eagle a par 5.', check: (f) => f.card.some((s, i) => s != null && f.pars?.[i] === 5 && s <= 3) },
+  {
+    key: 'premature',
+    kind: 'locker',
+    label: 'Premature',
+    mark: '1',
+    how: 'Birdie the 1st, then not a single par or better the rest of the way.',
+    check: (f) => f.complete && f.diffs[0] != null && f.diffs[0]! <= -1 && f.diffs.slice(1).every((d) => d != null && d >= 1),
+  },
+  {
+    key: 'couldntfinish',
+    kind: 'locker',
+    label: "Couldn't Finish",
+    mark: '15',
+    how: 'On pace to break a milestone (100, 90, 80, 70) through 15, then miss it.',
+    check: (f) => {
+      if (!f.complete || !f.pars || f.pars.slice(15).some((p) => p == null)) return false
+      const through15 = f.card.slice(0, 15).reduce<number>((s, h) => s + (h as number), 0)
+      const pace = through15 + f.pars.slice(15).reduce<number>((s, p) => s + (p as number), 0)
+      const final = f.out + f.in
+      return [100, 90, 80, 70].some((m) => pace < m && final >= m)
+    },
+  },
+  { key: 'happyending', kind: 'locker', label: 'Happy Ending', mark: '3', how: 'Par or better on 16, 17 and 18.', check: (f) => f.diffs.slice(15, 18).length === 3 && f.diffs.slice(15, 18).every((d) => d != null && d <= 0) },
+  { key: 'walkofshame', kind: 'locker', label: 'Walk of Shame', mark: '18', how: 'Double par or worse on the 18th.', check: (f) => f.card[17] != null && f.pars?.[17] != null && f.card[17]! >= 2 * f.pars[17]! },
+  { key: 'shrinkage', kind: 'locker', label: 'Shrinkage', mark: '❄', how: 'Log a round between December and February.', check: (f) => [12, 1, 2].includes(+f.round.date.slice(5, 7)) },
+  { key: 'hallpass', kind: 'locker', label: 'Hall Pass', mark: '3', how: 'Log three rounds within seven days.', check: (f, c) => c.soFar.filter((x) => daysApart(x.round.date, f.round.date) <= 6).length >= 3 },
 ]
 
 function factsFor(data: AppData, round: Round, rp: RoundPlayer): Facts {
@@ -292,7 +539,7 @@ export function badgesFor(data: AppData, playerId: string, today: string): Badge
   const once = new Set(['globetrotter', 'regular'])
   for (const f of mine) {
     soFar.push(f)
-    const ctx: Ctx = { data, me: playerId, prior: [...prior], soFar }
+    const ctx: Ctx = { data, me: playerId, today, prior: [...prior], soFar }
     for (const def of DEFS) {
       const t = tally.get(def.key)
       if (once.has(def.key) && t) continue
@@ -374,10 +621,10 @@ export function badgesFor(data: AppData, playerId: string, today: string): Badge
 
 /** Earned first (brags, then oddities, then the shameful ones), then what's next to chase. */
 export function shelfOrder(badges: Badge[]): Badge[] {
-  const rank: Record<BadgeKind, number> = { brag: 0, odd: 1, shame: 2 }
+  const rank: Record<BadgeKind, number> = { legend: 0, brag: 1, group: 2, odd: 3, locker: 4, shame: 5 }
   const earned = badges.filter((b) => b.earned).sort((a, b) => rank[a.kind] - rank[b.kind])
   // Only the next scoring milestone is worth chasing: Break 80 before 90 is noise.
-  const locked = badges.filter((b) => !b.earned && b.kind !== 'shame')
+  const locked = badges.filter((b) => !b.earned && (b.kind === 'brag' || b.kind === 'group'))
   const nextBreak = locked.find((b) => b.key.startsWith('break'))
   return [...earned, ...locked.filter((b) => !b.key.startsWith('break') || b === nextBreak)]
 }

@@ -3,13 +3,15 @@ import { SaddamIcon } from './ui'
 import { Icon } from './icons'
 
 /**
- * One trophy as a medal: struck gold for the brags, tarnished for the
- * ones nobody wants, sky for the odd ones, plain gray with a lock until
+ * One trophy as a medal: struck gold for the brags, pearl for the
+ * legendary, forest for the group ones, sky for the odd, plum for the
+ * locker room, tarnished for the ones nobody wants, plain gray with a lock until
  * it's earned. A little number on the rim when it's been earned more
  * than once.
  */
 export function Medal({ badge, size = 52 }: { badge: Badge; size?: number }) {
-  const tone = !badge.earned ? 'medal-locked' : badge.kind === 'shame' ? 'medal-shame' : badge.kind === 'odd' ? 'medal-odd' : ''
+  const TONE: Record<string, string> = { legend: 'medal-legend', brag: '', group: 'medal-group', odd: 'medal-odd', locker: 'medal-locker', shame: 'medal-shame' }
+  const tone = badge.earned ? TONE[badge.kind] : 'medal-locked'
   return (
     <span className="relative inline-flex">
       <span className={`medal ${tone}`} style={{ width: size, height: size }}>

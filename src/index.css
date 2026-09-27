@@ -392,3 +392,21 @@ html[data-nav='back']::view-transition-new(root) {
   box-shadow: inset 0 0 0 2px #9fbcd6, 0 3px 8px rgba(47, 111, 163, 0.18);
   color: var(--color-sky);
 }
+
+/* Legendary: mother-of-pearl, turning slowly. Group: forest and cream,
+   the Saddam's colors. Locker room: plum. */
+.medal-legend {
+  background: conic-gradient(from 200deg, #f7e6a8, #c9e6d8, #cbd9f3, #ecd0e8, #f7e6a8);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7), 0 0 0 2px #d9c697, 0 4px 14px rgba(185, 138, 36, 0.35);
+  color: #5c4712;
+}
+.medal-group {
+  background: radial-gradient(circle at 35% 30%, #2f6a4d, var(--color-forest) 72%);
+  box-shadow: inset 0 0 0 2px var(--color-cream-deep), 0 3px 8px rgba(28, 70, 50, 0.25);
+  color: var(--color-cream);
+}
+.medal-locker {
+  background: radial-gradient(circle at 35% 30%, #efe3f4, #c8a9d6 72%);
+  box-shadow: inset 0 0 0 2px #ae8cc0, 0 3px 8px rgba(122, 77, 156, 0.2);
+  color: #5e3a78;
+}

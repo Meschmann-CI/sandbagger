@@ -5,6 +5,7 @@ import { useMembers, useStore } from '../data/store'
 import { HANDICAP_NUDGE_AFTER, holeStats, playerStats, roundsAtCurrentHandicap, saddamDays, shortDate } from '../lib/stats'
 import { badgesFor, indexHistory, shelfOrder } from '../lib/badges'
 import { Medal } from '../components/Medal'
+import { TrophySheet } from '../components/TrophySheet'
 import { todayISO } from '../lib/dates'
 import CourseScene from '../components/CourseScene'
 import RoundScene from '../components/RoundScene'
@@ -37,6 +38,7 @@ export default function Profile() {
   const stats = playerStats(data, me.id)
   const game = holeStats(data, me.id)
   const [editingMe, setEditingMe] = useState(false)
+  const [trophy, setTrophy] = useState<string | null>(null)
   const [editingHcp, setEditingHcp] = useState(false)
   const [hcpDraft, setHcpDraft] = useState('')
   const [nudgeDismissed, setNudgeDismissed] = useState(() => {
@@ -254,18 +256,35 @@ export default function Profile() {
       >
         Trophy case
       </SectionLabel>
-      <button type="button" onClick={() => navigate('/trophies')} className="grid w-full grid-cols-4 gap-x-2 gap-y-4 px-1 text-left">
+      {/* No hover on a phone: each medal opens a sheet with what it takes. */}
+      <div className="grid grid-cols-4 gap-x-2 gap-y-4 px-1">
         {shelfOrder(badges).slice(0, 8).map((b) => (
-          <span key={b.key} className="flex flex-col items-center gap-1.5 text-center" title={b.how}>
+          <button
+            key={b.key}
+            type="button"
+            onClick={() => setTrophy(b.key)}
+            aria-label={`${b.label}${b.earned ? ', earned' : ', not earned yet'}`}
+            className="flex flex-col items-center gap-1.5 text-center transition active:scale-95"
+          >
             <Medal badge={b} />
             <span className={`text-caption font-bold leading-tight ${b.earned ? 'text-ink' : 'text-ink-faint'}`}>{b.label}</span>
-          </span>
+          </button>
         ))}
-      </button>
+      </div>
       <p className="mt-3 px-1 text-footnote text-ink-dim">
         {earnedCount} of {badges.length} earned
         {shameCount > 0 && ` · ${shameCount} you'd rather not talk about`}
       </p>
+      {trophy && badges.find((b) => b.key === trophy) && (
+        <TrophySheet
+          badge={badges.find((b) => b.key === trophy)!}
+          onClose={() => setTrophy(null)}
+          onRound={(id) => {
+            setTrophy(null)
+            navigate(`/rounds/${id}`)
+          }}
+        />
+      )}
 
       {/* The year in review, once there's a year worth reviewing */}
       {yearRounds >= 3 && (
