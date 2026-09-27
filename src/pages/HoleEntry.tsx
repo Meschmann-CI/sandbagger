@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+import { useNavigate } from '../lib/nav'
 import { useStore } from '../data/store'
 import { HOLE_COUNT, cardOf, cardTotal, holesEntered } from '../lib/holes'
 import {
