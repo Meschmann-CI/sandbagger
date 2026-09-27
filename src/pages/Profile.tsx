@@ -50,6 +50,7 @@ export default function Profile() {
   const myReigns = saddamDays(data, today).get(me.id)
   const badges = badgesFor(data, me.id, today)
   const earnedCount = badges.filter((b) => b.earned).length
+  const yearRounds = data.rounds.filter((r) => r.date.startsWith(today.slice(0, 4)) && r.players.some((p) => p.playerId === me.id && p.gross != null)).length
   // The index at each round posted, for the line on the card, and how far
   // it has moved since the first round this season.
   const history = indexHistory(data, me.id, me.handicap)
@@ -262,6 +263,24 @@ export default function Profile() {
           </div>
         ))}
       </div>
+
+      {/* The year in review, once there's a year worth reviewing */}
+      {yearRounds >= 3 && (
+        <button
+          type="button"
+          onClick={() => navigate(`/wrapped/${today.slice(0, 4)}`, { transition: 'fade' })}
+          className="press mt-6 flex w-full items-center gap-3.5 overflow-hidden rounded-2xl bg-[linear-gradient(120deg,#1c4632,#2f6fa3)] p-4 text-left text-on-forest shadow-[0_8px_22px_rgba(28,70,50,0.22)]"
+        >
+          <span className="shrink-0 rounded-xl bg-cream p-1">
+            <SaddamIcon size={36} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-body font-bold">Your {today.slice(0, 4)}, wrapped</span>
+            <span className="block text-footnote text-on-forest/75">{yearRounds} rounds, your best, your rival, the money</span>
+          </span>
+          <Icon name="chevronRight" size={18} className="shrink-0 text-on-forest/70" />
+        </button>
+      )}
 
       {/* What the hole-by-hole cards and course pars add up to. Only
           holes with both a score and a known par count, so the rates

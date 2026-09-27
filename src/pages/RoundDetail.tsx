@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useGoBack, useNavigate } from '../lib/nav'
 import { BackButton } from '../components/Nav'
 import { useStore } from '../data/store'
-import { canSeeTrip, fmt1, isSoloRound, net, pending, round1, saddamCounts, type ScoredRoundPlayer } from '../types'
+import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, saddamCounts, type ScoredRoundPlayer } from '../types'
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
 import { anyCards, cardComplete, holesEntered } from '../lib/holes'
 import { settleFromCard } from '../lib/bets'
@@ -26,6 +26,11 @@ import { SandbagStamp } from '../components/Delight'
 import { Icon, type IconName } from '../components/icons'
 import CourseScene, { lightFor } from '../components/CourseScene'
 import { useRoundWeather } from '../lib/weather'
+import { AttestSheet, readAttestation, type Attestation } from '../components/Attest'
+import { Confetti } from '../components/Delight'
+import { drawShareCard, shareCard } from '../lib/shareCard'
+
+const shortDateLabel = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
 export default function RoundDetail() {
   const { id } = useParams()
@@ -41,6 +46,34 @@ export default function RoundDetail() {
   const openPhotos = useRef<(() => void) | null>(null)
   const round = data.rounds.find((r) => r.id === id)
   const weather = useRoundWeather(data, round)
+  const [attestation, setAttestation] = useState<Attestation | null>(() => (id ? readAttestation(id, data.currentUserId) : null))
+  const [attesting, setAttesting] = useState(false)
+  const [flip, setFlip] = useState(0)
+  const [cheer, setCheer] = useState(0)
+  const [sharing, setSharing] = useState(false)
+
+  // A new personal best: your score here beats every round you'd posted
+  // before it. The confetti plays once per phone; the banner stays.
+  const myScore = round?.players.find((p) => p.playerId === data.currentUserId && hasScore(p)) as ScoredRoundPlayer | undefined
+  const priorBest = round && myScore
+    ? data.rounds
+        .filter((r) => r.id !== round.id && (r.date < round.date || (r.date === round.date && r.id < round.id)))
+        .map((r) => r.players.find((p) => p.playerId === data.currentUserId && hasScore(p)) as ScoredRoundPlayer | undefined)
+        .filter((p): p is ScoredRoundPlayer => !!p)
+        .reduce<number | null>((best, p) => (best == null || p.gross < best ? p.gross : best), null)
+    : null
+  const personalBest = myScore && priorBest != null && myScore.gross < priorBest
+  useEffect(() => {
+    if (!personalBest || !round) return
+    const seen = `sandbagger-pb-seen:${round.id}`
+    try {
+      if (localStorage.getItem(seen)) return
+      localStorage.setItem(seen, '1')
+    } catch {
+      return
+    }
+    setCheer((c) => c + 1)
+  }, [personalBest, round])
 
   if (!round) {
     return (
@@ -123,6 +156,36 @@ export default function RoundDetail() {
   if (!anyCards(round)) chips.push({ key: 'card', label: 'Score by hole', icon: 'pencil', onClick: () => navigate(`/rounds/${round.id}/card`) })
   if ((round.photos?.length ?? 0) === 0) chips.push({ key: 'photos', label: 'Add photos', icon: 'camera', onClick: () => openPhotos.current?.() })
   if (bets.length === 0 && !addingBet) chips.push({ key: 'bet', label: 'Add a bet', icon: 'cash', onClick: () => setAddingBet(true) })
+  // The result as a picture for the group text, once there is a result.
+  if (podium.length >= 2 || (solo && standings.length > 0))
+    chips.unshift({
+      key: 'share',
+      label: sharing ? 'Drawing…' : 'Share result',
+      icon: 'share',
+      hot: true,
+      onClick: async () => {
+        if (sharing) return
+        setSharing(true)
+        try {
+          const rows = (podium.length ? podium : standings.slice(0, 1)).flatMap((s) => {
+            const player = data.players.find((p) => p.id === s.playerId)
+            return player ? [{ player, net: s.netScore, gross: s.gross, sandbagger: bagged.has(s.playerId) }] : []
+          })
+          const blob = await drawShareCard({
+            course: round.courseName,
+            dateLabel: prettyDate(round.date),
+            weatherLine: weather ? `${weather.label}, ${weather.tempF}°F` : undefined,
+            podium: rows,
+            headline: solo || !top ? `${top?.name ?? ''} shot ${standings[0]?.gross ?? ''}` : margin === 0 ? 'Dead heat at the top' : `${top.name} by ${fmt1(margin)}`,
+            groupName: data.group.name,
+            banner: document.querySelector('[data-shared-hero] svg, [data-shared-hero] img'),
+          })
+          await shareCard(blob, `${round.courseName.replace(/[^a-z0-9]+/gi, '-')}-${round.date}.png`, `${round.courseName}, ${prettyDate(round.date)}`)
+        } finally {
+          setSharing(false)
+        }
+      },
+    })
 
   const holesIn = round.players.reduce((sum, rp) => sum + holesEntered(rp), 0)
   const blurb = !top
@@ -228,9 +291,22 @@ export default function RoundDetail() {
         </Card>
       )}
 
+      <Confetti fire={cheer} originY={0.3} />
+      {personalBest && myScore && (
+        <div className="mt-3 flex items-center gap-3 rounded-2xl bg-[linear-gradient(120deg,#faf2dd,#f1dfae)] px-4 py-3 ring-1 ring-cream-deep">
+          <span className="medal !h-11 !w-11 shrink-0">{myScore.gross}</span>
+          <div className="min-w-0">
+            <p className="text-body font-bold text-ink">New personal best</p>
+            <p className="text-footnote text-ink-dim">
+              Beat your old best of <span className="line-through decoration-flag/70 decoration-2">{priorBest}</span> by {priorBest! - myScore.gross}.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Who won comes first. A settled group round gets the podium; a
           solo round, or one still waiting on scores, gets the line. */}
-      <Card className="mt-3 overflow-hidden">
+      <Card key={flip} className={`mt-3 overflow-hidden ${flip ? 'card-flip' : ''}`}>
         {podium.length >= 2 && (
           <div className="px-4 pt-4">
             <div className={`grid items-end gap-2 ${podium.length === 3 ? 'grid-cols-[1fr_1.15fr_1fr]' : 'grid-cols-2'}`}>
@@ -279,6 +355,45 @@ export default function RoundDetail() {
           ))}
         </div>
       </Card>
+
+      {/* Attesting, once every hole is in: sign it and the card turns over. */}
+      {iPlayed && anyCards(round) && round.players.every(cardComplete) && (
+        attestation ? (
+          <div className="mt-2 flex items-center gap-2 px-1 text-footnote text-ink-dim">
+            <Icon name="check" size={16} className="text-green" />
+            <span>
+              Attested by you, {shortDateLabel(attestation.date)}
+            </span>
+            <img src={attestation.signature} alt="Your initials" className="ml-auto h-7 opacity-80" />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setAttesting(true)}
+            className="press mt-2 flex w-full items-center gap-3 rounded-2xl border border-dashed border-forest/40 bg-card px-4 py-3 text-left"
+          >
+            <Icon name="pencil" size={20} className="shrink-0 text-forest" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-body font-bold text-ink">Sign the card</span>
+              <span className="block text-footnote text-ink-dim">Every hole is in. Initial it to make it official.</span>
+            </span>
+          </button>
+        )
+      )}
+      {attesting && (
+        <AttestSheet
+          roundId={round.id}
+          playerId={data.currentUserId}
+          name={data.players.find((p) => p.id === data.currentUserId)?.name ?? 'You'}
+          onClose={() => setAttesting(false)}
+          onAttested={(a) => {
+            setAttesting(false)
+            setAttestation(a)
+            setFlip((f) => f + 1)
+            setCheer((c) => c + 1)
+          }}
+        />
+      )}
 
       {/* The chores, as one row of chips instead of a stack of cards */}
       {chips.length > 0 && !rating && (

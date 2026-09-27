@@ -68,6 +68,14 @@ const PATHS = {
   flame: (
     <path d="M12 21c-3.9 0-6.5-2.6-6.5-6.2 0-3.4 2.4-5.3 3.6-8.3.8 1.7 1.7 2.6 2.9 3.1C12.3 6.7 13.5 4.4 15.6 3c-.3 3.2 2.9 5.9 2.9 11.2 0 3.9-2.7 6.8-6.5 6.8z" />
   ),
+  // Out of the box: sharing a result.
+  share: (
+    <>
+      <path d="M12 3.5v11" />
+      <path d="M8 7.5l4-4 4 4" />
+      <path d="M7 11H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1" />
+    </>
+  ),
   // A cold run, on Head-to-Head only.
   snowflake: (
     <>
