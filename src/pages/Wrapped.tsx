@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { useParams } from 'react-router-dom'
 import { useGoBack } from '../lib/nav'
 import { useStore } from '../data/store'
-import { wrappedFor } from '../lib/wrapped'
+import { pickPhotos, wrappedFor, type Wrapped as WrappedData, type WrappedPhoto } from '../lib/wrapped'
 import { todayISO } from '../lib/dates'
 import { money } from '../lib/money'
 import { shortDate } from '../lib/stats'
@@ -18,7 +18,9 @@ import { Medal } from '../components/Medal'
 // Season Wrapped: your year as a stack of full-screen cards, the way
 // Stories work. Tap the right side for the next card, the left for the
 // one before; each moves on by itself after a few seconds. Cards with
-// nothing to say (no rival, no money) are left out.
+// nothing to say (no rival, no money, no photos) are left out. Photos
+// from the year's rounds stand in for the painted scenes wherever one
+// fits, and get a card of their own.
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 const HOLD_MS = 5200
@@ -27,8 +29,12 @@ interface Slide {
   key: string
   bg: string
   dark?: boolean
+  /** How long the card stays up before moving on, if not HOLD_MS. */
+  hold?: number
   body: ReactNode
 }
+
+const MONTH_INITIALS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
 
 export default function Wrapped() {
   const { year = String(new Date().getFullYear()) } = useParams()
@@ -70,6 +76,20 @@ export default function Wrapped() {
     }
   }
   const rival = w.rival ? data.players.find((p) => p.id === w.rival!.playerId) : undefined
+  const bestPhoto = w.best ? w.photos.find((p) => p.roundId === w.best!.round.id) : undefined
+  const turfPhoto = w.homeTurf ? w.photos.filter((p) => p.courseName === w.homeTurf!.course).at(-1) : undefined
+  const pile = useMemo(() => pickPhotos(w.photos, 6), [w.photos])
+  const montage = useMemo(() => pickPhotos(w.photos, 9), [w.photos])
+  const photoRounds = new Set(w.photos.map((p) => p.roundId)).size
+
+  // Fetch the pictures while the first cards are up, so each is there
+  // the moment its card is.
+  useEffect(() => {
+    for (const p of new Set([bestPhoto, turfPhoto, ...pile, ...montage])) {
+      if (p) new Image().src = p.url
+    }
+  }, [bestPhoto, turfPhoto, pile, montage])
+
   const big = 'text-[76px] font-extrabold leading-[0.9] tracking-[-0.04em]'
   const kicker = 'text-caption font-semibold uppercase tracking-[0.18em] opacity-75'
 
@@ -104,10 +124,34 @@ export default function Wrapped() {
             {w.groupRounds > 0 ? `${plural(w.groupRounds, 'group round')}, ${plural(w.groupWins, 'win')}.` : 'All of them solo.'}
             {w.busiestMonth && ` ${w.busiestMonth.name} was the busiest, with ${w.busiestMonth.rounds}.`}
           </p>
+          <MonthBars months={w.months} />
         </div>
       ),
     },
   ]
+  if (w.scores.length >= 3) {
+    const steady = w.trend == null || Math.abs(w.trend) < 0.5
+    slides.push({
+      key: 'scores',
+      bg: 'linear-gradient(170deg, #eef4f9, #d9e6f1)',
+      body: (
+        <div className="flex h-full flex-col justify-center gap-4 text-ink">
+          <p className={`${kicker} text-sky`}>Stroke by stroke</p>
+          <p className="text-[40px] font-extrabold leading-[1.02] tracking-tight">
+            {steady ? 'Steady all year.' : w.trend! < 0 ? `${fmt1(-w.trend!)} strokes better.` : `${fmt1(w.trend!)} strokes worse.`}
+          </p>
+          <ScoreLine scores={w.scores} bestId={w.best?.round.id} average={w.average} />
+          <p className="text-body text-ink-dim">
+            {steady
+              ? 'Every round of the year, left to right. Remarkably, boringly consistent.'
+              : w.trend! < 0
+                ? 'The back half of the year against the front. Someone has been practicing.'
+                : 'The back half of the year against the front. Blame the weather.'}
+          </p>
+        </div>
+      ),
+    })
+  }
   if (w.best)
     slides.push({
       key: 'best',
@@ -115,8 +159,12 @@ export default function Wrapped() {
       dark: true,
       body: (
         <div className="relative flex h-full flex-col justify-end gap-2 pb-10">
-          <div className="absolute inset-x-[-24px] top-[-60px] h-[58%]">
-            <RoundScene round={w.best.round} />
+          <div className="absolute inset-x-[-24px] top-[-60px] h-[58%] overflow-hidden">
+            {bestPhoto ? (
+              <img src={bestPhoto.url} alt="" className="wrapped-drift h-full w-full object-cover" />
+            ) : (
+              <RoundScene round={w.best.round} />
+            )}
             <div className="absolute inset-0 bg-gradient-to-b from-transparent from-40% to-[#1c4632]" />
           </div>
           <p className={`relative ${kicker}`}>Round of the year</p>
@@ -131,6 +179,26 @@ export default function Wrapped() {
         </div>
       ),
     })
+  if (pile.length)
+    slides.push({
+      key: 'photos',
+      bg: 'radial-gradient(90% 70% at 50% 40%, #37322b, #191713 80%)',
+      dark: true,
+      hold: 2600 + pile.length * 700,
+      body: (
+        <div className="flex h-full flex-col gap-4 pt-4">
+          <div>
+            <p className={kicker}>The year in pictures</p>
+            <p className="mt-1 text-[40px] font-extrabold leading-none tracking-tight">{plural(w.photos.length, 'photo')}</p>
+            <p className="mt-1 text-body opacity-80">
+              {photoRounds === 1 ? 'All from one round.' : `From ${photoRounds} rounds.`}
+              {w.photos.length > pile.length && ` Here are ${pile.length}.`}
+            </p>
+          </div>
+          <PhotoPile photos={pile} />
+        </div>
+      ),
+    })
   if (w.homeTurf)
     slides.push({
       key: 'turf',
@@ -138,8 +206,12 @@ export default function Wrapped() {
       body: (
         <div className="flex h-full flex-col justify-center gap-4 text-forest">
           <p className={kicker}>Home turf</p>
-          <div className="overflow-hidden rounded-3xl shadow-[0_18px_40px_rgba(28,70,50,0.25)]">
-            <CourseScene course={w.homeTurf.course} className="h-48 w-full" />
+          <div className="h-48 overflow-hidden rounded-3xl shadow-[0_18px_40px_rgba(28,70,50,0.25)]">
+            {turfPhoto ? (
+              <img src={turfPhoto.url} alt="" className="wrapped-drift h-full w-full object-cover" />
+            ) : (
+              <CourseScene course={w.homeTurf.course} className="h-full w-full" />
+            )}
           </div>
           <p className="text-[40px] font-extrabold leading-none tracking-tight">{w.homeTurf.course}</p>
           <p className="text-title font-bold">{plural(w.homeTurf.rounds, 'round')} there.</p>
@@ -163,6 +235,7 @@ export default function Wrapped() {
           <p className={big}>
             {w.rival.wins}–{w.rival.losses}
           </p>
+          <RivalBar record={w.rival} />
           <p className="text-body opacity-85">
             {w.rival.wins > w.rival.losses
               ? `On net, in group rounds. ${rival.name} will want that back.`
@@ -234,10 +307,11 @@ export default function Wrapped() {
     bg: 'radial-gradient(80% 60% at 50% 30%, #2f6a4d, #1c4632 75%)',
     dark: true,
     body: (
-      <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-        <p className={kicker}>That's the year</p>
-        <p className="text-[40px] font-extrabold leading-tight tracking-tight">See you on the first tee in {Number(year) + 1}.</p>
-        <button onClick={goBack} className="mt-4 rounded-xl bg-cream px-5 py-3 text-body font-bold text-forest active:scale-95">
+      <div className="relative flex h-full flex-col items-center justify-center gap-4 text-center">
+        {montage.length >= 3 && <Montage photos={montage} />}
+        <p className={`relative ${kicker}`}>That's the year</p>
+        <p className="relative text-[40px] font-extrabold leading-tight tracking-tight">See you on the first tee in {Number(year) + 1}.</p>
+        <button onClick={goBack} className="relative mt-4 rounded-xl bg-cream px-5 py-3 text-body font-bold text-forest active:scale-95">
           Done
         </button>
       </div>
@@ -252,13 +326,14 @@ export default function Wrapped() {
   }
 
   // Moves on by itself, and stops on the last card.
+  const hold = slides[at].hold ?? HOLD_MS
   useEffect(() => {
     if (at >= last) return
-    const t = setTimeout(() => go(at + 1), HOLD_MS)
+    const t = setTimeout(() => go(at + 1), hold)
     return () => clearTimeout(t)
     // `go` is recreated each render; the timer only cares about the card.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [at, last])
+  }, [at, last, hold])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -292,7 +367,7 @@ export default function Wrapped() {
               <span
                 key={`${i}-${started}`}
                 className={`block h-full rounded-full ${slide.dark ? 'bg-white' : 'bg-ink'} ${i === at && at < last ? 'wrapped-fill' : ''}`}
-                style={{ width: i < at || (i === at && at === last) ? '100%' : i === at ? undefined : '0%', animationDuration: `${HOLD_MS}ms` }}
+                style={{ width: i < at || (i === at && at === last) ? '100%' : i === at ? undefined : '0%', animationDuration: `${hold}ms` }}
               />
             </span>
           ))}
@@ -328,5 +403,186 @@ export default function Wrapped() {
       )}
     </div>,
     document.body,
+  )
+}
+
+/** Rounds per month as bars; the busiest month in cream. */
+function MonthBars({ months }: { months: number[] }) {
+  const top = Math.max(...months, 1)
+  return (
+    <div className="mt-6" aria-hidden>
+      <div className="flex h-24 items-end gap-1.5">
+        {months.map((n, i) => (
+          <span
+            key={i}
+            className={`wrapped-grow flex-1 rounded-t-md ${n === top ? 'bg-cream' : n ? 'bg-white/40' : 'bg-white/15'}`}
+            style={{ height: n ? `${(n / top) * 100}%` : '3px', animationDelay: `${0.25 + i * 0.05}s` }}
+          />
+        ))}
+      </div>
+      <div className="mt-1.5 flex gap-1.5">
+        {MONTH_INITIALS.map((m, i) => (
+          <span key={i} className={`flex-1 text-center text-caption font-semibold ${months[i] === top ? 'opacity-100' : 'opacity-60'}`}>
+            {m}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Every round's gross, left to right through the year. Lower scores sit higher. */
+function ScoreLine({ scores, bestId, average }: { scores: WrappedData['scores']; bestId?: string; average: number | null }) {
+  const W = 320
+  const H = 190
+  const pad = { x: 14, top: 26, bottom: 18 }
+  const grosses = scores.map((s) => s.gross)
+  const lo = Math.min(...grosses)
+  const hi = Math.max(...grosses)
+  const x = (i: number) => pad.x + (i / (scores.length - 1)) * (W - pad.x * 2)
+  const y = (g: number) => pad.top + ((g - lo) / (hi - lo || 1)) * (H - pad.top - pad.bottom)
+  const points = scores.map((s, i) => `${x(i).toFixed(1)},${y(s.gross).toFixed(1)}`).join(' ')
+  const bestIndex = scores.findIndex((s) => s.roundId === bestId)
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full overflow-visible" role="img" aria-label={`Scores this year, from ${hi} down to ${lo}`}>
+      {average != null && (
+        <>
+          <line x1={0} x2={W} y1={y(average)} y2={y(average)} stroke="currentColor" strokeOpacity={0.25} strokeDasharray="4 5" />
+          <text x={W} y={y(average) - 6} textAnchor="end" className="fill-ink-dim text-[11px] font-semibold">
+            avg {fmt1(average)}
+          </text>
+        </>
+      )}
+      <polyline
+        points={points}
+        pathLength={1}
+        fill="none"
+        stroke="var(--color-sky)"
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="wrapped-draw"
+      />
+      {scores.map((s, i) => (
+        <circle
+          key={s.roundId}
+          cx={x(i)}
+          cy={y(s.gross)}
+          r={i === bestIndex ? 7 : 4}
+          fill={i === bestIndex ? 'var(--color-forest)' : 'white'}
+          stroke={i === bestIndex ? 'white' : 'var(--color-sky)'}
+          strokeWidth={2.5}
+          className="wrapped-pop"
+          style={{ animationDelay: `${0.3 + (i / scores.length) * 1.6}s` }}
+        />
+      ))}
+      {bestIndex >= 0 && (
+        <text
+          x={Math.min(Math.max(x(bestIndex), 20), W - 20)}
+          y={y(scores[bestIndex].gross) - 13}
+          textAnchor="middle"
+          className="wrapped-pop fill-forest text-[13px] font-extrabold"
+          style={{ animationDelay: '2s' }}
+        >
+          {scores[bestIndex].gross}
+        </text>
+      )}
+    </svg>
+  )
+}
+
+// Where each polaroid lands on the pile, by how many there are: left and
+// top as a percentage of the table, and a resting tilt. The widths keep
+// the whole pile on screen however tall the phone is.
+const PILES: { l: number; t: number; r: number }[][] = [
+  [{ l: 14, t: 4, r: -3 }],
+  [
+    { l: 2, t: 2, r: -5 },
+    { l: 40, t: 28, r: 4 },
+  ],
+  [
+    { l: 0, t: 0, r: -6 },
+    { l: 46, t: 8, r: 5 },
+    { l: 18, t: 42, r: -2 },
+  ],
+  [
+    { l: 0, t: 0, r: -6 },
+    { l: 48, t: 4, r: 5 },
+    { l: 4, t: 46, r: 4 },
+    { l: 46, t: 50, r: -4 },
+  ],
+  [
+    { l: 2, t: 0, r: -6 },
+    { l: 46, t: 4, r: 5 },
+    { l: 22, t: 30, r: 2 },
+    { l: 0, t: 60, r: 4 },
+    { l: 48, t: 62, r: -5 },
+  ],
+  [
+    { l: 2, t: 0, r: -6 },
+    { l: 46, t: 4, r: 5 },
+    { l: 6, t: 30, r: 3 },
+    { l: 48, t: 34, r: -4 },
+    { l: 2, t: 60, r: -3 },
+    { l: 44, t: 62, r: 6 },
+  ],
+]
+const PILE_WIDTH = ['min(68cqw, 62cqh)', 'min(56cqw, 50cqh)', 'min(50cqw, 44cqh)', 'min(48cqw, 40cqh)', 'min(44cqw, 31cqh)', 'min(44cqw, 31cqh)']
+
+/** The year's photos as polaroids dropped on a table, one after another. */
+function PhotoPile({ photos }: { photos: WrappedPhoto[] }) {
+  const spots = PILES[photos.length - 1]
+  return (
+    <div className="relative min-h-0 w-full flex-1" style={{ containerType: 'size' }}>
+      {photos.map((p, i) => (
+        <figure
+          key={p.id}
+          className="wrapped-drop absolute m-0 bg-white p-[4%] pb-[3%] shadow-[0_14px_30px_rgba(0,0,0,0.45)]"
+          style={{
+            left: `${spots[i].l}%`,
+            top: `${spots[i].t}%`,
+            width: PILE_WIDTH[photos.length - 1],
+            ['--r' as string]: `${spots[i].r}deg`,
+            animationDelay: `${0.4 + i * 0.7}s`,
+          }}
+        >
+          <img src={p.url} alt="" className="aspect-square w-full bg-paper object-cover" />
+          <figcaption className="mt-[4%] flex gap-1.5 text-caption font-semibold text-ink-dim">
+            <span className="min-w-0 flex-1 truncate">{p.courseName}</span>
+            <span className="shrink-0">{shortDate(p.date).replace(/, \d{4}$/, '')}</span>
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  )
+}
+
+/** Wins, ties and losses as one bar. */
+function RivalBar({ record }: { record: { wins: number; losses: number; ties: number } }) {
+  const parts = [
+    { n: record.wins, cls: 'bg-cream' },
+    { n: record.ties, cls: 'bg-white/45' },
+    { n: record.losses, cls: 'bg-white/25' },
+  ].filter((p) => p.n > 0)
+  return (
+    <div className="wrapped-grow-x flex h-3 gap-1 overflow-hidden rounded-full" aria-hidden>
+      {parts.map((p, i) => (
+        <span key={i} className={`${p.cls} rounded-full`} style={{ flexGrow: p.n }} />
+      ))}
+    </div>
+  )
+}
+
+/** The year's photos, dimmed and drifting behind the last card. */
+function Montage({ photos }: { photos: WrappedPhoto[] }) {
+  return (
+    <div className="absolute inset-x-[-24px] inset-y-[-80px] overflow-hidden" aria-hidden>
+      <div className="wrapped-drift grid h-full grid-cols-3 gap-1 opacity-35">
+        {photos.map((p) => (
+          <img key={p.id} src={p.url} alt="" className="h-full min-h-0 w-full object-cover" />
+        ))}
+      </div>
+      <div className="absolute inset-0 bg-[radial-gradient(70%_50%_at_50%_45%,rgba(28,70,50,0.92),rgba(28,70,50,0.55))]" />
+    </div>
   )
 }

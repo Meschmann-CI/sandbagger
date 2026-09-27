@@ -7,9 +7,25 @@ import { badgesFor, type Badge } from './badges'
 // needs. Everything is worked out from rounds already logged, and only
 // rounds with the golfer's own score count.
 
+export interface WrappedPhoto {
+  id: string
+  url: string
+  roundId: string
+  courseName: string
+  date: string
+}
+
 export interface Wrapped {
   year: string
   rounds: number
+  /** Rounds in each month, January first. */
+  months: number[]
+  /** The golfer's gross score in every round, oldest first. */
+  scores: { roundId: string; date: string; gross: number }[]
+  /** Average gross in the second half of the year's rounds minus the first half; negative is better. Needs 4 rounds. */
+  trend: number | null
+  /** Every photo from the year's rounds, oldest first. */
+  photos: WrappedPhoto[]
   groupRounds: number
   groupWins: number
   busiestMonth: { name: string; rounds: number } | null
@@ -43,6 +59,11 @@ export function wrappedFor(data: AppData, playerId: string, year: string, today:
   for (const r of mine) byMonth.set(+r.date.slice(5, 7) - 1, (byMonth.get(+r.date.slice(5, 7) - 1) ?? 0) + 1)
   const topMonth = [...byMonth.entries()].sort((a, b) => b[1] - a[1])[0]
 
+  const scores = mine.map((r) => ({ roundId: r.id, date: r.date, gross: myRp(r).gross }))
+  const avg = (xs: typeof scores) => xs.reduce((sum, x) => sum + x.gross, 0) / xs.length
+  const half = Math.floor(scores.length / 2)
+  const trend = scores.length >= 4 ? Math.round((avg(scores.slice(-half)) - avg(scores.slice(0, half))) * 10) / 10 : null
+
   const best = mine.reduce<{ round: Round; gross: number } | null>((acc, r) => {
     const g = myRp(r).gross
     return !acc || g < acc.gross ? { round: r, gross: g } : acc
@@ -75,6 +96,12 @@ export function wrappedFor(data: AppData, playerId: string, year: string, today:
   return {
     year,
     rounds: mine.length,
+    months: MONTHS.map((_, i) => byMonth.get(i) ?? 0),
+    scores,
+    trend,
+    photos: mine.flatMap((r) =>
+      (r.photos ?? []).map((p) => ({ id: p.id, url: p.url, roundId: r.id, courseName: r.courseName, date: r.date })),
+    ),
     groupRounds: group.length,
     groupWins: group.filter((r) => roundWinnerIds(r).length === 1 && roundWinnerIds(r)[0] === playerId).length,
     busiestMonth: topMonth ? { name: MONTHS[topMonth[0]], rounds: topMonth[1] } : null,
@@ -86,4 +113,19 @@ export function wrappedFor(data: AppData, playerId: string, year: string, today:
     saddamDays,
     badges: badgesFor(data, playerId, today).filter((b) => b.earned),
   }
+}
+
+/**
+ * Up to `n` photos for a spread, taken a round at a time so every round
+ * with pictures gets one before any round gets two. Oldest first.
+ */
+export function pickPhotos(photos: WrappedPhoto[], n: number): WrappedPhoto[] {
+  const byRound = new Map<string, WrappedPhoto[]>()
+  for (const p of photos) byRound.set(p.roundId, [...(byRound.get(p.roundId) ?? []), p])
+  const queues = [...byRound.values()]
+  const picked: WrappedPhoto[] = []
+  for (let depth = 0; picked.length < n && queues.some((q) => q.length > depth); depth++) {
+    for (const q of queues) if (q[depth] && picked.length < n) picked.push(q[depth])
+  }
+  return picked.sort((a, b) => a.date.localeCompare(b.date))
 }
