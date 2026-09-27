@@ -34,6 +34,8 @@ export interface Wrapped {
   homeTurf: { course: string; rounds: number; sample: Round } | null
   rival: { playerId: string; wins: number; losses: number; ties: number } | null
   money: number
+  /** The running total on the bets, one point per round the golfer had money on, oldest first. */
+  moneyLine: { roundId: string; courseName: string; date: string; delta: number; total: number }[]
   saddamDays: number
   badges: Badge[]
 }
@@ -89,6 +91,16 @@ export function wrappedFor(data: AppData, playerId: string, year: string, today:
   }
   const rival = [...vs.entries()].sort((a, b) => b[1].wins + b[1].losses + b[1].ties - (a[1].wins + a[1].losses + a[1].ties))[0]
 
+  // Summed the same way moneyTotals does, from each bet's results, so the
+  // line ends where the headline number is.
+  const moneyLine: Wrapped['moneyLine'] = []
+  for (const r of mine) {
+    const mineHere = data.bets.filter((b) => b.roundId === r.id).flatMap((b) => b.results.filter((res) => res.playerId === playerId))
+    if (!mineHere.length) continue
+    const delta = mineHere.reduce((sum, res) => sum + res.amount, 0)
+    moneyLine.push({ roundId: r.id, courseName: r.courseName, date: r.date, delta, total: (moneyLine.at(-1)?.total ?? 0) + delta })
+  }
+
   const saddamDays = saddamReigns(data, today)
     .filter((r) => r.playerId === playerId)
     .reduce((sum, r) => sum + overlapDays(r.date, r.end, year), 0)
@@ -110,6 +122,7 @@ export function wrappedFor(data: AppData, playerId: string, year: string, today:
     homeTurf: turf ? { course: turf[0], rounds: turf[1].length, sample: turf[1][turf[1].length - 1] } : null,
     rival: rival ? { playerId: rival[0], ...rival[1] } : null,
     money: moneyTotals(data, new Set(mine.map((r) => r.id))).get(playerId) ?? 0,
+    moneyLine,
     saddamDays,
     badges: badgesFor(data, playerId, today).filter((b) => b.earned),
   }

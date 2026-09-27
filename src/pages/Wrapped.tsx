@@ -34,7 +34,9 @@ interface Slide {
   body: ReactNode
 }
 
-const MONTH_INITIALS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+const signedMoney = (n: number) => `${n < 0 ? '−' : '+'}${money(Math.abs(n))}`
+
+const MONTH_INITIALS =['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
 
 export default function Wrapped() {
   const { year = String(new Date().getFullYear()) } = useParams()
@@ -81,6 +83,7 @@ export default function Wrapped() {
   const pile = useMemo(() => pickPhotos(w.photos, 6), [w.photos])
   const montage = useMemo(() => pickPhotos(w.photos, 9), [w.photos])
   const photoRounds = new Set(w.photos.map((p) => p.roundId)).size
+  const bestDay = w.moneyLine.reduce<WrappedData['moneyLine'][number] | null>((a, p) => (!a || p.delta > a.delta ? p : a), null)
 
   // Fetch the pictures while the first cards are up, so each is there
   // the moment its card is.
@@ -259,7 +262,11 @@ export default function Wrapped() {
             {w.money > 0 ? '+' : '−'}
             <CountUp id={`w-money-${mount}`} value={Math.abs(w.money)} format={(n) => money(Math.round(n))} />
           </p>
-          <p className="text-body opacity-85">{w.money > 0 ? 'Up on the year. Drinks are on you.' : 'Down on the year. Consider it a donation.'}</p>
+          {w.moneyLine.length > 0 && <MoneyLine line={w.moneyLine} />}
+          <p className="text-body opacity-85">
+            {bestDay && bestDay.delta > 0 && `Best day: ${signedMoney(bestDay.delta)} at ${bestDay.courseName}, ${shortDate(bestDay.date).replace(/, \d{4}$/, '')}. `}
+            {w.money > 0 ? 'Up on the year. Drinks are on you.' : 'Down on the year. Consider it a donation.'}
+          </p>
         </div>
       ),
     })
@@ -487,6 +494,73 @@ function ScoreLine({ scores, bestId, average }: { scores: WrappedData['scores'];
           {scores[bestIndex].gross}
         </text>
       )}
+    </svg>
+  )
+}
+
+/**
+ * The running total on the bets through the year, from $0 before the
+ * first bet. Money won sits above the dashed $0 line, money lost below;
+ * the biggest single day and where the year ended are labeled.
+ */
+function MoneyLine({ line }: { line: WrappedData['moneyLine'] }) {
+  const W = 320
+  const H = 170
+  const pad = { x: 12, top: 26, bottom: 24 }
+  const totals = [0, ...line.map((p) => p.total)]
+  const lo = Math.min(0, ...totals)
+  const hi = Math.max(0, ...totals)
+  const x = (i: number) => pad.x + (i / (totals.length - 1)) * (W - pad.x * 2)
+  const y = (v: number) => pad.top + ((hi - v) / (hi - lo || 1)) * (H - pad.top - pad.bottom)
+  const pts = totals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`)
+  const zero = y(0)
+  const last = totals.length - 1
+  const best = line.reduce((b, p, i) => (p.delta > line[b].delta ? i : b), 0) + 1
+  const label = (i: number, text: string, bold = false) => {
+    const below = totals[i] < 0
+    return (
+      <text
+        x={Math.min(Math.max(x(i), 24), W - 24)}
+        y={y(totals[i]) + (below ? 20 : -12)}
+        textAnchor="middle"
+        className={`wrapped-pop fill-current text-[12px] ${bold ? 'font-extrabold' : 'font-semibold opacity-80'}`}
+        style={{ animationDelay: '1.9s' }}
+      >
+        {text}
+      </text>
+    )
+  }
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="my-2 w-full overflow-visible" role="img" aria-label={`Running total on the bets, ending at ${signedMoney(totals[last])}`}>
+      <defs>
+        <linearGradient id="wrapped-money-fill" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor="white" stopOpacity={0.28} />
+          <stop offset="1" stopColor="white" stopOpacity={0.04} />
+        </linearGradient>
+      </defs>
+      <polygon
+        points={`${x(0)},${zero} ${pts.join(' ')} ${x(last)},${zero}`}
+        fill="url(#wrapped-money-fill)"
+        className="motion-safe:animate-[fade_0.8s_ease_1.4s_both]"
+      />
+      <line x1={0} x2={W} y1={zero} y2={zero} stroke="currentColor" strokeOpacity={0.4} strokeDasharray="4 5" />
+      <text x={0} y={zero - 6} className="fill-current text-[11px] font-semibold opacity-70">
+        $0
+      </text>
+      <polyline points={pts.join(' ')} pathLength={1} fill="none" stroke="var(--color-cream)" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className="wrapped-draw" />
+      {totals.slice(1).map((v, k) => (
+        <circle
+          key={line[k].roundId}
+          cx={x(k + 1)}
+          cy={y(v)}
+          r={k + 1 === last ? 6 : 3.5}
+          fill={k + 1 === last ? 'var(--color-cream)' : 'white'}
+          className="wrapped-pop"
+          style={{ animationDelay: `${0.3 + ((k + 1) / totals.length) * 1.6}s` }}
+        />
+      ))}
+      {best !== last && line[best - 1].delta > 0 && label(best, signedMoney(line[best - 1].delta))}
+      {label(last, signedMoney(totals[last]), true)}
     </svg>
   )
 }
