@@ -52,7 +52,7 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
   const members = useMembers()
 
   const [step, setStep] = useState<0 | 2>(0)
-  const [typing, setTyping] = useState(false)
+  const [query, setQuery] = useState('')
   const [pickingDate, setPickingDate] = useState(false)
   const [courseName, setCourseName] = useState('')
   const [date, setDate] = useState(todayISO)
@@ -85,9 +85,6 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
   }
 
   const suggestions = useMemo(() => courseSuggestions(data), [data])
-  const filteredSuggestions = courseName
-    ? suggestions.filter((c) => c.toLowerCase().includes(courseName.toLowerCase()) && c.toLowerCase() !== courseName.toLowerCase())
-    : suggestions
   // Trips this round could belong to, the one happening now first.
   const bookedTrips = data.trips
     .filter((t) => t.status === 'booked')
@@ -171,8 +168,18 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
     const slug = courseSlug(name)
     return data.rounds.filter((r) => courseSlug(r.courseName) === slug).reduce<string | null>((a, r) => (!a || r.date > a ? r.date : a), null)
   }
-  const courseCards = suggestions.slice(0, 8)
-  const typedNew = courseName.trim() !== '' && !courseCards.some((c) => c.toLowerCase() === courseName.trim().toLowerCase())
+  // The courses you play, as cards. A course picked from search (or a
+  // brand-new one) jumps to the front, so what's chosen is always in view.
+  const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
+  const picked = courseName.trim()
+  const courseCards = picked && !suggestions.slice(0, 8).some((c) => same(c, picked)) ? [picked, ...suggestions.slice(0, 7)] : suggestions.slice(0, 8)
+  const q = query.trim().toLowerCase()
+  const matches = q ? suggestions.filter((c) => c.toLowerCase().includes(q)).slice(0, 6) : []
+  const exact = !!q && suggestions.some((c) => same(c, q))
+  const pickCourse = (name: string) => {
+    setCourseName(name.trim())
+    setQuery('')
+  }
   const label = 'block text-footnote font-semibold text-ink-dim mb-2 px-1'
   const toggle = (on: boolean) =>
     `rounded-full px-3.5 py-2 text-footnote font-bold transition active:scale-95 ${on ? 'bg-forest text-on-forest' : 'bg-card text-ink-dim ring-1 ring-inset ring-line-strong'}`
@@ -206,70 +213,92 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
               {/* Where: the courses you play, as pictures */}
               <div>
                 <span className={label}>Where'd you play?</span>
-                <div className="-mx-4 flex snap-x scroll-px-4 gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
-                  {courseCards.map((c) => {
-                    const on = courseName.trim().toLowerCase() === c.toLowerCase()
-                    const last = lastPlayed(c)
-                    return (
+                {/* Search first, so a course nobody has played is one line
+                    of typing away, not hidden past the end of a row. */}
+                <label className="relative block">
+                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" aria-hidden>
+                      <circle cx="11" cy="11" r="6.5" />
+                      <path d="M16 16l4.5 4.5" />
+                    </svg>
+                  </span>
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && query.trim()) pickCourse(matches[0] ?? query)
+                    }}
+                    placeholder="Search courses, or add a new one"
+                    aria-label="Search courses, or add a new one"
+                    enterKeyHint="done"
+                    className="w-full rounded-xl border border-line-strong bg-card py-3 pl-10 pr-4 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+                  />
+                </label>
+
+                {query.trim() ? (
+                  <div className="mt-2 overflow-hidden rounded-2xl bg-card ring-1 ring-line divide-y divide-line">
+                    {matches.map((c) => {
+                      const last = lastPlayed(c)
+                      const town = findCourse(data, c)?.town
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => pickCourse(c)}
+                          className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-paper"
+                        >
+                          <span className="h-9 w-9 shrink-0 overflow-hidden rounded-lg">
+                            <CourseScene course={c} className="h-full w-full" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-footnote font-bold text-ink">{c}</span>
+                            <span className="block truncate text-caption text-ink-faint">
+                              {[last ? `Last ${sinceLabel(last)}` : 'Not played yet', town].filter(Boolean).join(' · ')}
+                            </span>
+                          </span>
+                        </button>
+                      )
+                    })}
+                    {!exact && (
                       <button
-                        key={c}
                         type="button"
-                        onClick={() => {
-                          setCourseName(c)
-                          setTyping(false)
-                        }}
-                        aria-pressed={on}
-                        className={`w-[108px] shrink-0 snap-start overflow-hidden rounded-2xl bg-card text-left transition active:scale-[0.97] ${
-                          on ? 'ring-[2.5px] ring-forest' : 'ring-1 ring-line'
-                        }`}
+                        onClick={() => pickCourse(query)}
+                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-paper"
                       >
-                        <CourseScene course={c} className="h-14 w-full" />
-                        <span className="block px-2.5 pb-2 pt-1.5">
-                          <span className="block truncate text-footnote font-bold text-ink">{c}</span>
-                          <span className="block text-caption text-ink-faint tabular-nums">{last ? `Last ${sinceLabel(last)}` : 'Not played yet'}</span>
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-soft text-title font-bold leading-none text-green-deep">+</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-footnote font-bold text-green-deep">Add “{query.trim()}”</span>
+                          <span className="block text-caption text-ink-faint">A new course. Add its scorecard any time after.</span>
                         </span>
                       </button>
-                    )
-                  })}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTyping(true)
-                      if (!typedNew) setCourseName('')
-                    }}
-                    className={`flex w-[108px] shrink-0 snap-start flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed text-footnote font-bold transition ${
-                      typing || typedNew ? 'border-forest text-forest' : 'border-line-strong text-ink-faint'
-                    }`}
-                  >
-                    <span className="text-title leading-none">+</span>
-                    Somewhere else
-                  </button>
-                </div>
-                {(typing || typedNew || courseCards.length === 0) && (
-                  <div className="mt-2.5">
-                    <input
-                      value={courseName}
-                      onChange={(e) => setCourseName(e.target.value)}
-                      placeholder="Course name"
-                      autoFocus
-                      className="w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
-                    />
-                    {courseName && filteredSuggestions.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {filteredSuggestions.slice(0, 5).map((c) => (
-                          <button
-                            key={c}
-                            onClick={() => {
-                              setCourseName(c)
-                              setTyping(false)
-                            }}
-                            className="rounded-full bg-card px-3 py-1.5 text-footnote font-bold text-ink-dim ring-1 ring-inset ring-line-strong"
-                          >
-                            {c}
-                          </button>
-                        ))}
-                      </div>
                     )}
+                  </div>
+                ) : (
+                  <div className="-mx-4 mt-2.5 flex snap-x scroll-px-4 gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+                    {courseCards.map((c) => {
+                      const on = courseName.trim().toLowerCase() === c.toLowerCase()
+                      const last = lastPlayed(c)
+                      const isNew = !suggestions.some((s) => s.toLowerCase() === c.toLowerCase())
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setCourseName(c)}
+                          aria-pressed={on}
+                          className={`w-[108px] shrink-0 snap-start overflow-hidden rounded-2xl bg-card text-left transition active:scale-[0.97] ${
+                            on ? 'ring-[2.5px] ring-forest' : 'ring-1 ring-line'
+                          }`}
+                        >
+                          <CourseScene course={c} className="h-14 w-full" />
+                          <span className="block px-2.5 pb-2 pt-1.5">
+                            <span className="block truncate text-footnote font-bold text-ink">{c}</span>
+                            <span className="block text-caption text-ink-faint tabular-nums">
+                              {isNew ? 'New course' : last ? `Last ${sinceLabel(last)}` : 'Not played yet'}
+                            </span>
+                          </span>
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
               </div>
