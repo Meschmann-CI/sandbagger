@@ -1,7 +1,6 @@
-// Sound, made on the phone with Web Audio: no files to download, nothing
-// to license. Pachelbel's Canon under Season Wrapped, and a short cue for a
-// few moments that earn one (a new personal best, attesting the card,
-// settling a debt).
+// Sound, all through Web Audio. Matt's song under Season Wrapped (the one
+// file this downloads), and a short synthesized cue for a few moments that
+// earn one (a new personal best, attesting the card, settling a debt).
 //
 // Browsers only allow sound after a tap, and iOS only lets an audio
 // context start inside one. So the first tap anywhere in the app wakes
@@ -94,47 +93,35 @@ export function play(cue: Cue) {
   if (cue === 'trophy') [79, 84, 88, 91].forEach((n, i) => bell(c, out, n, t + i * 0.07, 0.9, 0.13))
 }
 
-// ---------- Wrapped's music: Pachelbel's Canon in D ----------
+// ---------- Wrapped's music: Matt's song ----------
 //
-// The end-of-year song. Pachelbel's Canon (about 1680, public domain):
-// the eight-chord ground in D, its bass line, and the descending lines
-// the violins pass around, arranged the way a graduation-season pop
-// song would have it. Soft strings and bass first, then a broken-chord
-// piano, then the melody, then a backbeat under the lot as the recap
-// builds. Every note is scheduled a little ahead, the standard Web
-// Audio way, so it keeps time while the cards animate.
+// A recording in public/wrapped-song.m4a, looped under the recap. It is
+// fetched and decoded into the same audio context the cues use, rather
+// than played through an <audio> element: iOS only lets a media element
+// start inside a tap, and Wrapped starts its music a beat after the tap
+// that opened it. The context is already awake by then, so a buffer
+// source plays. The service worker caches the file like any other asset,
+// so the song works offline once it has played once.
 
-const BPM = 88
-const BEAT = 60 / BPM
-/** Each chord of the ground lasts two beats; eight chords make a pass. */
-const CHORD_LEN = BEAT * 2
+const SONG_URL = '/wrapped-song.m4a'
+let song: Promise<AudioBuffer | null> | null = null
 
-// The ground: D, A, Bm, F#m, G, D, G, A.
-const BASS = [50, 45, 47, 42, 43, 38, 43, 45]
-const CHORDS = [
-  [62, 66, 69],
-  [57, 61, 64],
-  [59, 62, 66],
-  [54, 57, 61],
-  [55, 59, 62],
-  [54, 57, 62],
-  [55, 59, 62],
-  [57, 61, 64],
-]
-// The violins' first two entries: one note to a chord.
-const LINE_1 = [78, 76, 74, 73, 71, 69, 71, 73] // F# E D C# B A B C#
-const LINE_2 = [74, 73, 71, 69, 67, 66, 67, 64] // D C# B A G F# G E
-// The running eighth-note variation, four to a chord.
-const LINE_3 = [
-  [74, 78, 81, 79],
-  [78, 74, 78, 76],
-  [74, 71, 74, 69],
-  [67, 71, 69, 67],
-  [66, 62, 64, 73],
-  [74, 78, 81, 81],
-  [83, 79, 81, 78],
-  [74, 74, 74, 73],
-]
+function loadSong(c: AudioContext): Promise<AudioBuffer | null> {
+  song ??= fetch(SONG_URL)
+    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`${r.status}`))))
+    .then((bytes) => c.decodeAudioData(bytes))
+    .catch(() => {
+      song = null // try again next time
+      return null
+    })
+  return song
+}
+
+/** Starts the download early, so the song is ready by the first tap. */
+export function preloadMusic() {
+  const c = context()
+  if (c && soundOn()) void loadSong(c)
+}
 
 export function startMusic(): (() => void) | null {
   const c = ready()
@@ -144,165 +131,56 @@ export function startMusic(): (() => void) | null {
   if (nav.audioSession) nav.audioSession.type = 'playback'
 
   const master = c.createGain()
-  master.gain.setValueAtTime(0, c.currentTime)
-  master.gain.linearRampToValueAtTime(0.6, c.currentTime + 1.5)
-  const tone = c.createBiquadFilter()
-  tone.type = 'lowpass'
-  tone.frequency.value = 3200
-  master.connect(tone).connect(c.destination)
+  master.gain.value = 0.9
+  master.connect(c.destination)
+  const playing = new Set<AudioBufferSourceNode>()
+  let stopped = false
 
-  const noise = c.createBuffer(1, c.sampleRate * 0.3, c.sampleRate)
-  const data = noise.getChannelData(0)
-  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
-
-  // Strings: detuned saws, slow in, slow out.
-  const strings = (notes: number[], at: number, dur: number, level: number) => {
-    for (const n of notes) {
-      for (const detune of [-7, 7]) {
-        const o = c.createOscillator()
-        const g = c.createGain()
-        o.type = 'sawtooth'
-        o.frequency.value = hz(n)
-        o.detune.value = detune
-        g.gain.setValueAtTime(0, at)
-        g.gain.linearRampToValueAtTime(level, at + 0.35)
-        g.gain.setValueAtTime(level, at + dur - 0.25)
-        g.gain.linearRampToValueAtTime(0, at + dur + 0.1)
-        o.connect(g).connect(master)
-        o.start(at)
-        o.stop(at + dur + 0.15)
-      }
-    }
-  }
-  // Piano-ish: a quick strike that rings off.
-  const piano = (n: number, at: number, level = 0.1, ring = 1.2) => {
-    for (const [type, mult, amt] of [
-      ['triangle', 1, 1],
-      ['sine', 2, 0.35],
-    ] as const) {
-      const o = c.createOscillator()
-      const g = c.createGain()
-      o.type = type
-      o.frequency.value = hz(n) * mult
-      g.gain.setValueAtTime(0, at)
-      g.gain.linearRampToValueAtTime(level * amt, at + 0.008)
-      g.gain.exponentialRampToValueAtTime(0.0001, at + ring)
-      o.connect(g).connect(master)
-      o.start(at)
-      o.stop(at + ring + 0.05)
-    }
-  }
-  // The violin line: two saws with a touch of vibrato, filtered warm.
-  const violin = (n: number, at: number, dur: number, level = 0.07) => {
-    const f = c.createBiquadFilter()
-    f.type = 'lowpass'
-    f.frequency.value = 2400
+  // The recording ends mid-phrase, so each pass fades in and out and the
+  // next one starts under the last few seconds of the one before. Passes
+  // are queued on the audio clock one ahead (a pass ending queues the one
+  // after next), because a 90-second timer can't be trusted to fire on time.
+  const XFADE = 1.5
+  const pass = (buffer: AudioBuffer, at: number) => {
+    const source = c.createBufferSource()
     const g = c.createGain()
+    const end = at + buffer.duration
+    source.buffer = buffer
     g.gain.setValueAtTime(0, at)
-    g.gain.linearRampToValueAtTime(level, at + 0.08)
-    g.gain.setValueAtTime(level, at + Math.max(0.1, dur - 0.12))
-    g.gain.linearRampToValueAtTime(0, at + dur)
-    const lfo = c.createOscillator()
-    const depth = c.createGain()
-    lfo.frequency.value = 5.2
-    depth.gain.value = 6
-    lfo.connect(depth)
-    for (const detune of [-4, 4]) {
-      const o = c.createOscillator()
-      o.type = 'sawtooth'
-      o.frequency.value = hz(n)
-      o.detune.value = detune
-      depth.connect(o.detune)
-      o.connect(f)
-      o.start(at)
-      o.stop(at + dur + 0.05)
+    g.gain.linearRampToValueAtTime(1, at + XFADE)
+    g.gain.setValueAtTime(1, end - XFADE)
+    g.gain.linearRampToValueAtTime(0, end)
+    source.connect(g).connect(master)
+    source.onended = () => {
+      playing.delete(source)
+      if (!stopped) pass(buffer, at + 2 * (buffer.duration - XFADE))
     }
-    f.connect(g).connect(master)
-    lfo.start(at)
-    lfo.stop(at + dur + 0.05)
-  }
-  const bass = (n: number, at: number, dur: number) => {
-    const o = c.createOscillator()
-    const g = c.createGain()
-    o.type = 'sine'
-    o.frequency.value = hz(n - 12)
-    g.gain.setValueAtTime(0, at)
-    g.gain.linearRampToValueAtTime(0.32, at + 0.02)
-    g.gain.exponentialRampToValueAtTime(0.05, at + dur)
-    g.gain.linearRampToValueAtTime(0, at + dur + 0.05)
-    o.connect(g).connect(master)
-    o.start(at)
-    o.stop(at + dur + 0.1)
-  }
-  const kick = (at: number) => {
-    const o = c.createOscillator()
-    const g = c.createGain()
-    o.frequency.setValueAtTime(110, at)
-    o.frequency.exponentialRampToValueAtTime(42, at + 0.14)
-    g.gain.setValueAtTime(0.45, at)
-    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.22)
-    o.connect(g).connect(master)
-    o.start(at)
-    o.stop(at + 0.25)
-  }
-  const snap = (at: number) => {
-    const src = c.createBufferSource()
-    src.buffer = noise
-    const bp = c.createBiquadFilter()
-    bp.type = 'bandpass'
-    bp.frequency.value = 1800
-    const g = c.createGain()
-    g.gain.setValueAtTime(0.16, at)
-    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.16)
-    src.connect(bp).connect(g).connect(master)
-    src.start(at)
-    src.stop(at + 0.18)
+    source.start(at)
+    source.stop(end)
+    playing.add(source)
   }
 
-  let step = 0 // chord number since the start, across passes
-  let next = c.currentTime + 0.15
-  const schedule = () => {
-    while (next < c.currentTime + 0.8) {
-      const i = step % 8
-      const pass = Math.floor(step / 8)
-      const chord = CHORDS[i]
-
-      // Pass 1: strings and bass. The ground, alone, the way it opens.
-      bass(BASS[i], next, CHORD_LEN)
-      strings(chord, next, CHORD_LEN, pass === 0 ? 0.018 : 0.013)
-
-      // From pass 2: the broken-chord piano in eighths.
-      if (pass >= 1) {
-        const broken = [chord[0], chord[1], chord[2], chord[1] + 12]
-        broken.forEach((n, k) => piano(n + 12, next + (k * BEAT) / 2, 0.075, 0.9))
-      }
-      // Pass 2 carries the first violin line, pass 3 the second, and
-      // from pass 4 the running eighths, then round again.
-      const line = pass === 0 ? null : (pass - 1) % 3
-      if (line === 0) violin(LINE_1[i], next, CHORD_LEN)
-      if (line === 1) violin(LINE_2[i], next, CHORD_LEN)
-      if (line === 2) LINE_3[i].forEach((n, k) => violin(n, next + (k * BEAT) / 2, BEAT / 2, 0.06))
-
-      // From pass 3: a soft backbeat, kick on one and three, snap on two and four.
-      if (pass >= 2) {
-        kick(next)
-        snap(next + BEAT)
-        if (i % 2 === 1) kick(next + BEAT * 1.5)
-      }
-      step++
-      next += CHORD_LEN
-    }
-  }
-  schedule()
-  const timer = window.setInterval(schedule, 200)
+  void loadSong(c).then((buffer) => {
+    if (!buffer || stopped) return
+    const at = c.currentTime + 0.05
+    pass(buffer, at)
+    pass(buffer, at + buffer.duration - XFADE)
+  })
 
   return () => {
-    window.clearInterval(timer)
+    stopped = true
     const now = c.currentTime
     master.gain.cancelScheduledValues(now)
     master.gain.setValueAtTime(master.gain.value, now)
     master.gain.linearRampToValueAtTime(0, now + 0.8)
     window.setTimeout(() => {
+      for (const source of playing) {
+        try {
+          source.stop()
+        } catch {
+          // older Safari throws on a second stop(); it was ending anyway
+        }
+      }
       master.disconnect()
       if (nav.audioSession && previous) nav.audioSession.type = previous
     }, 900)

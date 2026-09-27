@@ -12,7 +12,7 @@ import RoundScene from '../components/RoundScene'
 import CourseScene from '../components/CourseScene'
 import { Avatar, SaddamIcon } from '../components/ui'
 import { CountUp, Confetti } from '../components/Delight'
-import { setSoundOn, soundOn, startMusic } from '../lib/sound'
+import { preloadMusic, setSoundOn, soundOn, startMusic } from '../lib/sound'
 import { Medal } from '../components/Medal'
 
 // Season Wrapped: your year as a stack of full-screen cards, the way
@@ -48,6 +48,7 @@ export default function Wrapped() {
     if (musicOn && !stopMusic.current) stopMusic.current = startMusic()
   }
   useEffect(() => {
+    preloadMusic()
     startIfWanted()
     return () => {
       stopMusic.current?.()
