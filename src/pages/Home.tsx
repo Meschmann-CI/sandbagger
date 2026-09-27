@@ -1,19 +1,22 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { useNavigate } from '../lib/nav'
 import { useLogSheet } from '../components/logSheet'
 import { useStore } from '../data/store'
 import { byDate, leaderboard, playerStats, roundStandings, saddamState, shortDate } from '../lib/stats'
 import { daysAgoISO, todayISO } from '../lib/dates'
 import { myOutstanding } from '../lib/settlements'
-import { anyCards, cardComplete, holesEntered } from '../lib/holes'
+import { anyCards, cardComplete, cardOf, holesEntered } from '../lib/holes'
 import { money } from '../lib/money'
-import { courseSlug } from '../lib/courses'
+import { courseSlug, findCourse, hasPars, padded } from '../lib/courses'
 import { byGroupRank, courseSummaries, fmtStars, ratingFor } from '../lib/ratings'
 import { canSeeTrip, fmt1, hasScore, isSoloRound, pending, type Round, type Trip } from '../types'
 import { StarRating } from '../components/Stars'
 import { Icon, IconTile } from '../components/icons'
-import CourseScene, { lightsFor, type Light } from '../components/CourseScene'
+import CourseScene from '../components/CourseScene'
+import RoundScene from '../components/RoundScene'
 import { Avatar, AvatarStack, Card, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
+import { CountUp } from '../components/Delight'
 
 // The front door. Anything that needs doing comes first (a card mid-
 // round, a score you owe), then the one hero: your season, with the
@@ -46,7 +49,6 @@ export default function Home() {
   const holder = data.players.find((p) => p.id === saddam.holderId)
   const rounds = byDate(data.rounds)
   const recent = rounds.slice(-8).reverse()
-  const recentLights = lightsFor(recent.map((r) => r.id))
   const awaiting = playerStats(data, me.id).awaitingScore.slice().reverse()
 
   // What I owe and what I'm owed, everywhere.
@@ -65,6 +67,22 @@ export default function Home() {
     .filter((r) => r.date === TODAY && anyCards(r) && r.players.some((rp) => !cardComplete(rp)))
     .at(-1)
   const inProgressHoles = inProgress ? inProgress.players.reduce((sum, rp) => sum + holesEntered(rp), 0) : 0
+  // "thru 4 · E": my holes so far, against par when the course has one.
+  const liveLine = (() => {
+    const rp = inProgress?.players.find((p) => p.playerId === me.id)
+    if (!inProgress || !rp) return null
+    const card = cardOf(rp)
+    const thru = card.filter((h) => h != null).length
+    if (thru === 0) return 'on the first tee'
+    const course = findCourse(data, inProgress.courseName)
+    if (!hasPars(course)) return `thru ${thru}`
+    const pars = padded(course.pars)
+    let diff = 0
+    card.forEach((h, i) => {
+      if (h != null && pars[i] != null) diff += h - pars[i]!
+    })
+    return `thru ${thru} · ${diff === 0 ? 'E' : diff > 0 ? `+${diff}` : diff}`
+  })()
 
   // The most recent round I played and haven't rated, if it's fresh.
   // Two weeks, then it stops asking — an unrated round from March is
@@ -143,20 +161,27 @@ export default function Home() {
 
       <div className="mt-3 space-y-2.5">
         {/* Straight back onto the card — the app's front door mid-round */}
+        {/* A round in progress, like a Live Activity: where, how far, how
+            it's going, and one tap back onto the card. */}
         {inProgress && (
-          <Card
+          <button
+            type="button"
             onClick={() => navigate(`/rounds/${inProgress.id}/card`)}
-            className="p-4 border-green/40 bg-green-soft/50 flex items-center gap-3.5"
+            className="press flex w-full items-center gap-3 rounded-full bg-forest py-2.5 pl-4 pr-3 text-left text-on-forest shadow-[0_6px_18px_rgba(28,70,50,0.28)]"
           >
-            <IconTile name="flag" />
-            <div className="flex-1 min-w-0">
-              <p className="text-body font-bold text-ink">Round in progress</p>
-              <p className="text-footnote text-ink-dim mt-0.5 truncate">
-                {inProgress.courseName} · {plural(inProgressHoles, 'hole score')} in
-              </p>
-            </div>
-            <Icon name="chevronRight" size={18} className="text-ink-faint" />
-          </Card>
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="live-ping absolute inset-0 rounded-full bg-[#7fd39b]" />
+              <span className="relative h-2.5 w-2.5 rounded-full bg-[#7fd39b]" />
+            </span>
+            <span className="min-w-0 flex-1 truncate text-footnote">
+              <span className="font-bold">{inProgress.courseName}</span>
+              <span className="text-on-forest/70"> · live</span>
+            </span>
+            <span className="shrink-0 text-footnote font-bold tabular-nums">
+              {liveLine ?? plural(inProgressHoles, 'hole score')}
+            </span>
+            <Icon name="chevronRight" size={16} className="shrink-0 text-on-forest/60" />
+          </button>
         )}
 
         {/* Rounds someone logged you into without your score */}
@@ -191,7 +216,7 @@ export default function Home() {
             <div className="mt-2 flex items-end justify-between gap-4">
               <div className="min-w-0">
                 <p className="flex items-baseline gap-2">
-                  <span className="text-hero font-extrabold leading-[0.9] tabular-nums">{myRow?.wins ?? 0}</span>
+                  <CountUp id="home-wins" value={myRow?.wins ?? 0} className="text-hero font-extrabold leading-[0.9]" />
                   <span className="text-body font-bold text-on-forest/85">group {myRow?.wins === 1 ? 'win' : 'wins'}</span>
                 </p>
                 <p className="mt-1.5 text-footnote text-on-forest/75 tabular-nums">
@@ -250,7 +275,15 @@ export default function Home() {
                     netPosition > 0 ? 'text-green' : netPosition < 0 ? 'text-flag' : 'text-ink'
                   }`}
                 >
-                  {netPosition > 0 ? `+${money(netPosition)} coming` : netPosition < 0 ? `${money(-netPosition)} to pay` : 'All square'}
+                  {netPosition === 0 ? (
+                    'All square'
+                  ) : (
+                    <>
+                      {netPosition > 0 && '+'}
+                      <CountUp id="home-money" value={Math.abs(netPosition)} format={(n) => money(Math.round(n))} />
+                      {netPosition > 0 ? ' coming' : ' to pay'}
+                    </>
+                  )}
                 </p>
                 <p className="truncate text-caption text-ink-dim">
                   {[
@@ -340,8 +373,8 @@ export default function Home() {
         </Card>
       ) : (
         <div className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {recent.map((r, i) => (
-            <RoundTile key={r.id} round={r} light={recentLights[i]} onOpen={() => navigate(`/rounds/${r.id}`)} />
+          {recent.map((r) => (
+            <RoundTile key={r.id} round={r} onOpen={() => navigate(`/rounds/${r.id}`, { shared: r.id })} />
           ))}
           <button
             type="button"
@@ -491,7 +524,7 @@ function Sparkline({ scores }: { scores: number[] }) {
 }
 
 /** A round as a card in the carousel: its first photo, or the flag. */
-function RoundTile({ round: r, light, onOpen }: { round: Round; light: Light; onOpen: () => void }) {
+function RoundTile({ round: r, onOpen }: { round: Round; onOpen: () => void }) {
   const { data } = useStore()
   const standings = roundStandings(r)
   const top = standings.length ? data.players.find((p) => p.id === standings[0].playerId) : undefined
@@ -511,11 +544,11 @@ function RoundTile({ round: r, light, onOpen }: { round: Round; light: Light; on
       onClick={onOpen}
       className="w-[152px] shrink-0 snap-start overflow-hidden rounded-2xl border border-line bg-card text-left shadow-[0_1px_2px_rgba(24,32,25,0.05)] transition-transform active:scale-[0.98]"
     >
-      <div className="relative h-[92px] bg-paper">
+      <div data-shared={r.id} className="relative h-[92px] bg-paper">
         {photo ? (
           <img src={photo.url} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
-          <CourseScene course={r.courseName} light={light} className="h-full w-full" />
+          <RoundScene round={r} />
         )}
         {(r.photos?.length ?? 0) > 1 && (
           <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/45 px-1.5 py-0.5 text-caption font-bold text-white">

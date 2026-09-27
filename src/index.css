@@ -244,3 +244,104 @@ input[type="number"]::-webkit-inner-spin-button {
   box-shadow: inset 0 0 0 1.5px var(--color-line-strong);
   color: var(--color-ink-faint);
 }
+
+/* ---------- Screen transitions (lib/viewTransition.ts) ----------
+   A pushed screen slides in from the right over the old one, which
+   drifts a third of the way left and dims, the way iOS does it. Back is
+   the same in reverse. The tab bar has its own name, so it stays put.
+   The page's own rise-in is switched off while a transition runs, or the
+   new screen would slide and rise at once. */
+html[data-nav] .rise {
+  animation: none;
+}
+::view-transition-group(root),
+::view-transition-group(shared-scene) {
+  animation-duration: 0.42s;
+  animation-timing-function: cubic-bezier(0.22, 0.9, 0.25, 1);
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.42s;
+  animation-timing-function: cubic-bezier(0.22, 0.9, 0.25, 1);
+}
+html[data-nav='forward']::view-transition-old(root) {
+  animation-name: vt-push-out;
+}
+html[data-nav='forward']::view-transition-new(root) {
+  animation-name: vt-push-in;
+}
+html[data-nav='back']::view-transition-old(root) {
+  animation-name: vt-pop-out;
+  z-index: 2;
+}
+html[data-nav='back']::view-transition-new(root) {
+  animation-name: vt-pop-in;
+}
+@keyframes vt-push-in {
+  from { transform: translateX(100%); box-shadow: -12px 0 30px rgba(0, 0, 0, 0); }
+  to { transform: none; box-shadow: -12px 0 30px rgba(0, 0, 0, 0.12); }
+}
+@keyframes vt-push-out {
+  to { transform: translateX(-30%); filter: brightness(0.93); }
+}
+@keyframes vt-pop-out {
+  from { transform: none; box-shadow: -12px 0 30px rgba(0, 0, 0, 0.12); }
+  to { transform: translateX(100%); box-shadow: -12px 0 30px rgba(0, 0, 0, 0); }
+}
+@keyframes vt-pop-in {
+  from { transform: translateX(-30%); filter: brightness(0.93); }
+  to { transform: none; filter: none; }
+}
+/* The shared picture keeps its crop while it changes shape. */
+::view-transition-old(shared-scene),
+::view-transition-new(shared-scene) {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: bottom;
+}
+::view-transition-group(tabbar) {
+  animation: none;
+  z-index: 3;
+}
+
+/* ---------- Flags that stir ----------
+   Every painted flag flutters a little, from the pole. Windier rounds
+   flap faster (--flutter, set on the scene). */
+.scene-flag {
+  animation: flutter var(--flutter, 2.6s) ease-in-out infinite alternate;
+}
+@keyframes flutter {
+  0% { transform: scaleX(1) skewY(0deg); }
+  50% { transform: scaleX(0.86) skewY(4deg); }
+  100% { transform: scaleX(0.97) skewY(-3deg); }
+}
+@keyframes rain-fall {
+  from { transform: translate(0, -18px); }
+  to { transform: translate(-4px, 0); }
+}
+.scene-rain {
+  animation: rain-fall 0.55s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-flag,
+  .scene-rain {
+    animation: none;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* The live round's dot, pinging like a Live Activity. */
+@keyframes live-ping {
+  75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+.live-ping {
+  animation: live-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-ping { animation: none; }
+}

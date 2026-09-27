@@ -1,4 +1,5 @@
-import { useId, type ReactNode } from 'react'
+import { useId, type CSSProperties, type ReactNode } from 'react'
+import type { DayWeather } from '../lib/weather'
 
 // Little painted landscapes that stand in for a photo: a round with no
 // pictures, a course, a trip.
@@ -129,7 +130,12 @@ function pineRow(xs: [number, number][], base: number, fill: string) {
   return xs.map(([x, h], i) => <path key={i} d={`M${x} ${base - h} l${h * 0.34} ${h} h${-h * 0.68}z`} fill={fill} />)
 }
 
-function art(land: Landscape, p: Palette, sky: string): ReactNode {
+function art(land: Landscape, p: Palette, sky: string, wx?: DayWeather | null): ReactNode {
+  // The day's weather, when it's known: more cloud and a gray wash for an
+  // overcast day, rain or snow falling over everything, the sun hidden.
+  const grey = wx?.sky === 'cloudy' || wx?.sky === 'rain' || wx?.sky === 'snow'
+  const clouds = grey ? 1 : p.clouds
+  const orbOpacity = wx?.sky === 'rain' || wx?.sky === 'snow' ? 0 : grey ? 0.3 : 0.95
   const heavens = (
     <>
       <defs>
@@ -149,17 +155,59 @@ function art(land: Landscape, p: Palette, sky: string): ReactNode {
           <circle cx="146" cy="16" r="0.8" />
         </g>
       )}
-      <circle cx={p.orb.x} cy={p.orb.y} r={p.orb.r} fill={p.orb.fill} opacity="0.95" />
-      {p.clouds > 0 && (
-        <g fill="#ffffff" opacity={p.clouds}>
+      <circle cx={p.orb.x} cy={p.orb.y} r={p.orb.r} fill={p.orb.fill} opacity={orbOpacity} />
+      {clouds > 0 && (
+        <g fill={grey ? '#e3e6e8' : '#ffffff'} opacity={clouds}>
           <ellipse cx="62" cy="22" rx="13" ry="4.5" />
           <ellipse cx="71" cy="19" rx="8" ry="4.5" />
           <ellipse cx="128" cy="32" rx="11" ry="3.5" />
+          {grey && (
+            <>
+              <ellipse cx="22" cy="14" rx="20" ry="6" />
+              <ellipse cx="100" cy="12" rx="26" ry="7" />
+              <ellipse cx="150" cy="20" rx="18" ry="5" />
+            </>
+          )}
+        </g>
+      )}
+      {wx?.windy && (
+        <g stroke="#ffffff" strokeOpacity="0.6" strokeWidth="1" strokeLinecap="round" fill="none">
+          <path d="M20 40 q14 -3 28 0" />
+          <path d="M96 30 q16 -3 32 0" />
         </g>
       )}
     </>
   )
+  const weatherOver =
+    wx && grey ? (
+      <>
+        <rect width="160" height="100" fill="#6f7a80" opacity={wx.sky === 'cloudy' ? 0.16 : 0.24} />
+        {wx.sky === 'rain' && (
+          <g className="scene-rain" stroke="#ffffff" strokeOpacity="0.55" strokeWidth="0.9" strokeLinecap="round">
+            {[8, 26, 44, 62, 80, 98, 116, 134, 152, 17, 53, 89, 125].map((x, i) => (
+              <line key={i} x1={x} y1={(i * 23) % 70} x2={x - 3} y2={((i * 23) % 70) + 8} />
+            ))}
+          </g>
+        )}
+        {wx.sky === 'snow' && (
+          <g fill="#ffffff" opacity="0.85">
+            {[12, 30, 48, 66, 84, 102, 120, 138, 156, 21, 57, 93, 129].map((x, i) => (
+              <circle key={i} cx={x} cy={(i * 29) % 80} r="1.1" />
+            ))}
+          </g>
+        )}
+      </>
+    ) : null
   const flag = (x: number, y: number) => <Flag x={x} y={y} pole={p.pole} cloth={p.cloth} />
+  return (
+    <>
+      {ground(land, p, heavens, flag)}
+      {weatherOver}
+    </>
+  )
+}
+
+function ground(land: Landscape, p: Palette, heavens: ReactNode, flag: (x: number, y: number) => ReactNode): ReactNode {
   switch (land) {
     case 'parkland':
       return (
@@ -219,7 +267,18 @@ function art(land: Landscape, p: Palette, sky: string): ReactNode {
  * out for the course on its own (its page, its row in a list), which gets
  * the course's own light so it stays the same picture there too.
  */
-export default function CourseScene({ course, light, className = '' }: { course: string; light?: Light; className?: string }) {
+export default function CourseScene({
+  course,
+  light,
+  weather,
+  className = '',
+}: {
+  course: string
+  light?: Light
+  /** The day's actual weather, from lib/weather, when it's known. */
+  weather?: DayWeather | null
+  className?: string
+}) {
   const sky = `sky${useId().replace(/:/g, '')}`
   const land = landscapeFor(course)
   const which = light ?? (['morning', 'midday', 'golden'] as const)[hash(course) % 3]
@@ -228,8 +287,14 @@ export default function CourseScene({ course, light, className = '' }: { course:
   // same picture side by side.
   const mirrored = (hash(`${course}|side`) & 1) === 1
   return (
-    <svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMax slice" className={`block ${className}`} aria-hidden>
-      <g transform={mirrored ? 'translate(160 0) scale(-1 1)' : undefined}>{art(land, PALETTES[which], sky)}</g>
+    <svg
+      viewBox="0 0 160 100"
+      preserveAspectRatio="xMidYMax slice"
+      className={`block ${className}`}
+      style={weather?.windy ? ({ '--flutter': '0.45s' } as CSSProperties) : undefined}
+      aria-hidden
+    >
+      <g transform={mirrored ? 'translate(160 0) scale(-1 1)' : undefined}>{art(land, PALETTES[which], sky, weather)}</g>
     </svg>
   )
 }

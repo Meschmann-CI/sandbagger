@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useMembers, useStore } from '../data/store'
 import { courseSlug, coursePar, hasSlopeRating, hasStrokeIndex, parsEntered } from '../lib/courses'
 import { HOLE_COUNT } from '../lib/holes'
 import { RATING_ASPECTS, courseSummaries, fmtStars, ordinal } from '../lib/ratings'
 import { roundStandings, shortDate } from '../lib/stats'
-import { useGoBack } from '../lib/nav'
+import { useGoBack, useNavigate } from '../lib/nav'
 import { BackButton } from '../components/Nav'
 import CourseScene from '../components/CourseScene'
 import { useConfirm } from '../components/Confirm'
@@ -64,7 +64,7 @@ export default function CourseDetail() {
       </header>
 
       {/* The course's scene: the same one its rounds carry everywhere */}
-      <div className="mt-2 h-28 overflow-hidden rounded-2xl">
+      <div data-shared={`course:${summary.slug}`} data-shared-hero className="mt-2 h-28 overflow-hidden rounded-2xl">
         <CourseScene course={summary.name} className="h-full w-full" />
       </div>
 

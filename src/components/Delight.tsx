@@ -155,3 +155,44 @@ export function SandbagStamp({ size = 'sm' }: { size?: 'sm' | 'md' }) {
     </span>
   )
 }
+
+/**
+ * A number that counts up from zero the first time it's shown in a
+ * session, then just sits there. About 700ms, fast off the start and
+ * settling on the value, so the data feels live without making anyone
+ * wait. `id` names it, so coming back to the screen doesn't replay it.
+ */
+export function CountUp({ value, id, format = (n) => String(Math.round(n)), className = '' }: { value: number; id: string; format?: (n: number) => string; className?: string }) {
+  const key = `sandbagger-counted:${id}:${value}`
+  const [shown, setShown] = useState(() => {
+    try {
+      return reducedMotion() || sessionStorage.getItem(key) ? value : 0
+    } catch {
+      return value
+    }
+  })
+  useEffect(() => {
+    if (shown === value) return
+    const start = performance.now()
+    const ms = 700
+    let raf = 0
+    const step = (t: number) => {
+      const p = Math.min(1, (t - start) / ms)
+      setShown(value * (1 - (1 - p) ** 3))
+      if (p < 1) raf = requestAnimationFrame(step)
+      else {
+        setShown(value)
+        try {
+          sessionStorage.setItem(key, '1')
+        } catch {
+          // fine: it counts again next time
+        }
+      }
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+    // Runs once per mount; `shown` starting at the value means nothing to do.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, key])
+  return <span className={`tabular-nums ${className}`}>{format(shown)}</span>
+}

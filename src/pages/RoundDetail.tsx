@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useGoBack } from '../lib/nav'
+import { Link, useParams } from 'react-router-dom'
+import { useGoBack, useNavigate } from '../lib/nav'
 import { BackButton } from '../components/Nav'
 import { useStore } from '../data/store'
 import { canSeeTrip, fmt1, isSoloRound, net, pending, round1, saddamCounts, type ScoredRoundPlayer } from '../types'
@@ -24,6 +24,8 @@ import { betRules } from '../lib/betRules'
 import { sandbaggers } from '../lib/delight'
 import { SandbagStamp } from '../components/Delight'
 import { Icon, type IconName } from '../components/icons'
+import CourseScene, { lightFor } from '../components/CourseScene'
+import { useRoundWeather } from '../lib/weather'
 
 export default function RoundDetail() {
   const { id } = useParams()
@@ -38,6 +40,7 @@ export default function RoundDetail() {
   const [editingBets, setEditingBets] = useState(false)
   const openPhotos = useRef<(() => void) | null>(null)
   const round = data.rounds.find((r) => r.id === id)
+  const weather = useRoundWeather(data, round)
 
   if (!round) {
     return (
@@ -142,6 +145,21 @@ export default function RoundDetail() {
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
         <BackButton fallback="/rounds" onBack={goBack} />
+        {/* The round as a picture: its first photo, or its course painted
+            with the day's actual weather. The thumbnail you tapped grows
+            into this. */}
+        <div data-shared={round.id} data-shared-hero className="relative -mx-1 mb-3 mt-1 h-44 overflow-hidden rounded-3xl bg-paper">
+          {round.photos?.[0] ? (
+            <img src={round.photos[0].url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <CourseScene course={round.courseName} light={lightFor(round.id)} weather={weather} className="h-full w-full" />
+          )}
+          {weather && (
+            <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-black/35 px-2.5 py-1 text-caption font-bold text-white backdrop-blur-sm tabular-nums">
+              {weather.label} · {weather.tempF}°F · wind {weather.windMph} mph
+            </span>
+          )}
+        </div>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-large font-bold tracking-tight leading-tight text-ink">{round.courseName}</h1>

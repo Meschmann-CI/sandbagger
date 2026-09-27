@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useGoBack } from '../lib/nav'
+import { useGoBack, useNavigate } from '../lib/nav'
 import { BackButton } from '../components/Nav'
 import { useMembers, useStore } from '../data/store'
 import AttendeePicker from '../components/AttendeePicker'

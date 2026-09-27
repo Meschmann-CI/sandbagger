@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { useNavigate } from '../lib/nav'
 import { useLogSheet } from '../components/logSheet'
 import { useStore } from '../data/store'
 import { byDate, leaderboard, roundStandings, shortDate } from '../lib/stats'
@@ -7,7 +8,7 @@ import { todayISO } from '../lib/dates'
 import { fmt1, isSoloRound, pending } from '../types'
 import { AvatarStack, Card, EmptyState, Meta, Pill, PrimaryButton, RowBadge } from '../components/ui'
 import { Icon } from '../components/icons'
-import CourseScene, { lightsFor } from '../components/CourseScene'
+import RoundScene from '../components/RoundScene'
 
 type Filter = 'all' | 'mine' | 'group'
 
@@ -30,9 +31,6 @@ export default function Rounds() {
     filter === 'mine' ? r.players.some((p) => p.playerId === data.currentUserId) : filter === 'group' ? !isSoloRound(r) : true,
   )
 
-  // Each course keeps its landscape; each round gets its own light, and
-  // neighbours never share one.
-  const lights = lightsFor(rounds.map((r) => r.id))
 
   // One line on the season, so the list has a headline.
   const season = all.filter((r) => r.date.startsWith(YEAR))
@@ -87,7 +85,6 @@ export default function Rounds() {
 
       <div className="space-y-3">
         {rounds.map((r, i) => {
-          const light = lights[i]
           const standings = roundStandings(r)
           const top = standings.length ? data.players.find((p) => p.id === standings[0].playerId) : undefined
           const solo = isSoloRound(r)
@@ -105,13 +102,13 @@ export default function Rounds() {
                   {monthLabel(month)}
                 </p>
               )}
-              <Card onClick={() => navigate(`/rounds/${r.id}`)} className="p-3.5 flex items-center gap-3.5">
+              <Card onClick={() => navigate(`/rounds/${r.id}`, { shared: r.id })} className="p-3.5 flex items-center gap-3.5">
                 {/* The round's first photo, or its course's scene */}
-                <div className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-xl bg-paper">
+                <div data-shared={r.id} className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-xl bg-paper">
                   {r.photos?.[0] ? (
                     <img src={r.photos[0].url} alt="" loading="lazy" className="h-full w-full object-cover" />
                   ) : (
-                    <CourseScene course={r.courseName} light={light} className="h-full w-full" />
+                    <RoundScene round={r} />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">

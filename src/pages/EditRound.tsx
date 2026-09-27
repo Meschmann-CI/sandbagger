@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+import { useNavigate } from '../lib/nav'
 import { useMembers, useStore } from '../data/store'
 import { fmt1, type RoundPlayer } from '../types'
 import { courseSuggestions } from '../lib/stats'

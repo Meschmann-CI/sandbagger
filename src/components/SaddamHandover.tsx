@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import { useNavigate } from '../lib/nav'
 import { useStore } from '../data/store'
 import { roundStandings, saddamHistory } from '../lib/stats'
 import { fmt1, round1 } from '../types'

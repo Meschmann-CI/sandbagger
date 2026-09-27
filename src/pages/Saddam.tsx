@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useGoBack } from '../lib/nav'
+import { useGoBack, useNavigate } from '../lib/nav'
 import { BackButton } from '../components/Nav'
 import { useMembers, useStore } from '../data/store'
 import { saddamDays, saddamHistory, saddamReigns, saddamState, shortDate } from '../lib/stats'
 import { todayISO } from '../lib/dates'
+import { CountUp } from '../components/Delight'
 import { Avatar, Card, PrimaryButton, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
@@ -125,7 +125,7 @@ export default function Saddam() {
             <p className="relative mt-5 text-caption font-semibold uppercase tracking-[0.18em] text-on-forest/70">Current holder</p>
             <p className="relative mt-1 text-hero font-bold leading-none tracking-tight">{holder.name}</p>
             <p className="relative mt-2.5 text-body text-on-forest/85">
-              <span className="font-extrabold tabular-nums">{plural(current.days, 'day')}</span>
+              <CountUp id="saddam-days" value={current.days} format={(n) => plural(Math.round(n), 'day')} className="font-extrabold" />
               {state.byHand ? ' · handed over' : state.courseName ? ` · won at ${state.courseName}` : ''}
             </p>
             {(state.defenses > 0 || (state.byHand && state.note)) && (

@@ -1,10 +1,12 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigationType } from 'react-router-dom'
+import { useNavigate } from '../lib/nav'
 import { useStore } from '../data/store'
 import { usePhotoOutboxFlush } from '../data/photoOutbox'
 import { useNewVersion } from '../lib/useNewVersion'
 import { Avatar } from './ui'
 import { CompactTitleBar, useNavRecorder } from './Nav'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { announceRouted } from '../lib/viewTransition'
 import LogRound from '../pages/LogRound'
 import { LogSheetContext, useLogSheet } from './logSheet'
 import { streakStates } from '../lib/delight'
@@ -80,7 +82,16 @@ export function LogRedirect() {
 }
 
 export default function Shell() {
-  const { pathname } = useLocation()
+  const location = useLocation()
+  const { pathname } = location
+  // Tell a running screen transition the new screen is on the page.
+  // A new screen starts at the top (Back keeps where you were), then
+  // tells a running screen transition it's on the page.
+  const navType = useNavigationType()
+  useLayoutEffect(() => {
+    if (navType !== 'POP') window.scrollTo(0, 0)
+    announceRouted()
+  }, [location.key, navType])
   const [logOpen, setLogOpen] = useState(false)
   const openLog = useCallback(() => setLogOpen(true), [])
   const closeLog = useCallback(() => setLogOpen(false), [])
@@ -161,7 +172,7 @@ export default function Shell() {
 
         <CompactTitleBar />
 
-        <nav className="fixed bottom-0 inset-x-0 z-40">
+        <nav className="fixed bottom-0 inset-x-0 z-40 [view-transition-name:tabbar]">
           <div className="mx-auto max-w-md border-t border-line bg-card/95 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]">
             <div className="grid grid-cols-5">
               {tabs.slice(0, 2).map((t) => tabLink(t))}

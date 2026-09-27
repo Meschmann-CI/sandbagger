@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from '../lib/nav'
 import { useMembers, useStore } from '../data/store'
 import { hasPars } from '../lib/courses'
 import { byGroupRank, byRating, courseSummaries, fmtStars, moveBy, myRanking, ordinal } from '../lib/ratings'
@@ -106,10 +106,12 @@ export default function Courses() {
                     {playedShown.map((row) => (
                       <button
                         key={row.slug}
-                        onClick={() => navigate(`/courses/${encodeURIComponent(row.slug)}`)}
+                        onClick={() => navigate(`/courses/${encodeURIComponent(row.slug)}`, { shared: `course:${row.slug}` })}
                         className="w-full text-left flex items-center gap-3 px-3.5 py-3 active:bg-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green"
                       >
-                        <CourseScene course={row.name} className="h-12 w-12 shrink-0 rounded-xl overflow-hidden" />
+                        <span data-shared={`course:${row.slug}`} className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">
+                          <CourseScene course={row.name} className="h-full w-full" />
+                        </span>
                         <div className="flex-1 min-w-0">
                           <p className="text-body font-bold text-ink truncate">{row.name}</p>
                           <p className="text-caption text-ink-faint tabular-nums truncate">

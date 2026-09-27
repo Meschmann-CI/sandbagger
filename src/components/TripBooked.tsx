@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from '../lib/nav'
 import { useStore } from '../data/store'
 import type { ItineraryItem, Review, Trip } from '../types'
 import { SPANNING_KINDS, fmt1 } from '../types'

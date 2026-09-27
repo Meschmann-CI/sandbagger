@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from '../lib/nav'
 import { useLogSheet } from '../components/logSheet'
 import { useMembers, useStore } from '../data/store'
 import { HANDICAP_NUDGE_AFTER, holeStats, playerStats, roundsAtCurrentHandicap, saddamDays, shortDate } from '../lib/stats'
 import { badgesFor, indexHistory } from '../lib/badges'
 import { todayISO } from '../lib/dates'
-import CourseScene, { lightFor } from '../components/CourseScene'
+import CourseScene from '../components/CourseScene'
+import RoundScene from '../components/RoundScene'
 import { disablePush, enablePush, pushEnabled, pushSupported } from '../lib/push'
 import { canSeeTrip, fmt1, isSoloRound, round1 } from '../types'
 import { supabase } from '../lib/supabase'
 import EditGolfer from '../components/EditGolfer'
 import { Avatar, AvatarStack, Card, Meta, PrimaryButton, RowButton, SaddamBadge, SaddamIcon, SectionLabel } from '../components/ui'
 import { useConfirm } from '../components/Confirm'
+import { CountUp } from '../components/Delight'
 import { Icon, IconTile } from '../components/icons'
 
 // You. Your index, your numbers, your phone's settings. The group roster
@@ -128,7 +130,7 @@ export default function Profile() {
               aria-label={`Handicap index ${fmt1(me.handicap)}. Update it`}
             >
               <span className="block text-caption font-semibold uppercase tracking-[0.16em] text-on-forest/70">Handicap index</span>
-              <span className="block text-hero font-extrabold leading-[0.95] tabular-nums">{fmt1(me.handicap)}</span>
+              <CountUp id="you-index" value={me.handicap} format={(n) => n.toFixed(1)} className="block text-hero font-extrabold leading-[0.95]" />
               {indexMove != null && indexMove !== 0 ? (
                 <span className={`block text-footnote font-bold ${indexMove < 0 ? 'text-[#bfe2c9]' : 'text-on-forest/70'}`}>
                   {indexMove < 0 ? '↓' : '↑'} {fmt1(Math.abs(indexMove))} this season
@@ -335,9 +337,9 @@ export default function Profile() {
       ) : (
         <Card className="divide-y divide-line">
           {stats.last5.map(({ round, gross }) => (
-            <RowButton key={round.id} onClick={() => navigate(`/rounds/${round.id}`)} className="flex items-center gap-3 px-3.5 py-2.5">
-              <span className="h-10 w-10 shrink-0 overflow-hidden rounded-lg">
-                <CourseScene course={round.courseName} light={lightFor(round.id)} className="h-full w-full" />
+            <RowButton key={round.id} onClick={() => navigate(`/rounds/${round.id}`, { shared: round.id })} className="flex items-center gap-3 px-3.5 py-2.5">
+              <span data-shared={round.id} className="h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+                <RoundScene round={round} />
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-body font-bold text-ink truncate">{round.courseName}</p>

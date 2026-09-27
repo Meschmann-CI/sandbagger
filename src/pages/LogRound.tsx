@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from '../lib/nav'
 import { useMembers, useStore } from '../data/store'
 import { courseSuggestions, shortDate } from '../lib/stats'
 import { daysAgoISO, todayISO } from '../lib/dates'

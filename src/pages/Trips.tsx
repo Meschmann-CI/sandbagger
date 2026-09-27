@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from '../lib/nav'
 import { useStore } from '../data/store'
 import { shortDate, tripBoard } from '../lib/stats'
 import { todayISO } from '../lib/dates'

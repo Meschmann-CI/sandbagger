@@ -1,5 +1,5 @@
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useGoBack } from '../lib/nav'
+import { Link, useParams } from 'react-router-dom'
+import { useGoBack, useNavigate } from '../lib/nav'
 import { BackButton } from '../components/Nav'
 import { useStore } from '../data/store'
 import { shortDate } from '../lib/stats'
