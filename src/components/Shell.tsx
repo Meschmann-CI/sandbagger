@@ -66,7 +66,7 @@ const tabs = [
 function tabFor(pathname: string) {
   if (pathname.startsWith('/rounds') || pathname.startsWith('/h2h') || pathname.startsWith('/saddam')) return '/rounds'
   if (pathname.startsWith('/courses')) return '/courses'
-  if (pathname.startsWith('/profile') || pathname.startsWith('/group')) return '/profile'
+  if (pathname.startsWith('/profile') || pathname.startsWith('/group') || pathname.startsWith('/trophies')) return '/profile'
   return '/'
 }
 

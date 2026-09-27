@@ -3,7 +3,8 @@ import { useNavigate } from '../lib/nav'
 import { useLogSheet } from '../components/logSheet'
 import { useMembers, useStore } from '../data/store'
 import { HANDICAP_NUDGE_AFTER, holeStats, playerStats, roundsAtCurrentHandicap, saddamDays, shortDate } from '../lib/stats'
-import { badgesFor, indexHistory } from '../lib/badges'
+import { badgesFor, indexHistory, shelfOrder } from '../lib/badges'
+import { Medal } from '../components/Medal'
 import { todayISO } from '../lib/dates'
 import CourseScene from '../components/CourseScene'
 import RoundScene from '../components/RoundScene'
@@ -50,6 +51,7 @@ export default function Profile() {
   const myReigns = saddamDays(data, today).get(me.id)
   const badges = badgesFor(data, me.id, today)
   const earnedCount = badges.filter((b) => b.earned).length
+  const shameCount = badges.filter((b) => b.earned && b.kind === 'shame').length
   const yearRounds = data.rounds.filter((r) => r.date.startsWith(today.slice(0, 4)) && r.players.some((p) => p.playerId === me.id && p.gross != null)).length
   // The index at each round posted, for the line on the card, and how far
   // it has moved since the first round this season.
@@ -241,28 +243,29 @@ export default function Profile() {
         </Card>
       )}
 
-      {/* The trophy shelf: gold for earned, gray for what's next. */}
-      <SectionLabel action={<span className="text-footnote font-bold text-ink-faint tabular-nums">{earnedCount} of {badges.length}</span>}>
-        Trophy shelf
+      {/* The trophy shelf: what you've earned (the good, the odd, the
+          shameful), then the next ones to chase. The whole case is a tap away. */}
+      <SectionLabel
+        action={
+          <button onClick={() => navigate('/trophies')} className="text-footnote font-bold text-green">
+            See all {badges.length}
+          </button>
+        }
+      >
+        Trophy case
       </SectionLabel>
-      <div className="grid grid-cols-4 gap-x-2 gap-y-4 px-1">
-        {badges.slice(0, 8).map((b) => (
-          <div key={b.key} className="flex flex-col items-center gap-1.5 text-center" title={b.detail}>
-            <span className={`medal ${b.earned ? '' : 'medal-locked'}`}>
-              {!b.earned ? (
-                <Icon name="lock" size={18} strokeWidth={2} />
-              ) : b.icon === 'saddam' ? (
-                <SaddamIcon size={34} />
-              ) : b.icon ? (
-                <Icon name={b.icon} size={22} strokeWidth={2.1} />
-              ) : (
-                b.mark
-              )}
-            </span>
+      <button type="button" onClick={() => navigate('/trophies')} className="grid w-full grid-cols-4 gap-x-2 gap-y-4 px-1 text-left">
+        {shelfOrder(badges).slice(0, 8).map((b) => (
+          <span key={b.key} className="flex flex-col items-center gap-1.5 text-center" title={b.how}>
+            <Medal badge={b} />
             <span className={`text-caption font-bold leading-tight ${b.earned ? 'text-ink' : 'text-ink-faint'}`}>{b.label}</span>
-          </div>
+          </span>
         ))}
-      </div>
+      </button>
+      <p className="mt-3 px-1 text-footnote text-ink-dim">
+        {earnedCount} of {badges.length} earned
+        {shameCount > 0 && ` · ${shameCount} you'd rather not talk about`}
+      </p>
 
       {/* The year in review, once there's a year worth reviewing */}
       {yearRounds >= 3 && (

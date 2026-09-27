@@ -6,10 +6,13 @@ import { courseSuggestions, shortDate } from '../lib/stats'
 import { daysAgoISO, todayISO } from '../lib/dates'
 import { courseSlug } from '../lib/courses'
 import CourseScene from '../components/CourseScene'
+import { Icon } from '../components/icons'
+import { ghostOptions } from '../lib/ghost'
 import { GROSS_CEILING, GROSS_FLOOR, grossWarning } from '../lib/scores'
 import { notifyGroup } from '../lib/push'
-import { fmt1 } from '../types'
-import { findCourse } from '../lib/courses'
+import { fmt1, type Round } from '../types'
+import { findCourse, hasPars } from '../lib/courses'
+import { directorySupported, fetchDirectoryCourse, searchDirectory, type DirectoryMatch } from '../lib/courseLookup'
 import TeePicker from '../components/TeePicker'
 import { Avatar, Card, PrimaryButton, SaddamIcon, SECONDARY_BTN } from '../components/ui'
 
@@ -48,11 +51,12 @@ function sinceLabel(iso: string) {
 
 export default function LogRound({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
-  const { data, addRound, addPlayer, addTrip } = useStore()
+  const { data, addRound, addPlayer, addTrip, saveCourse } = useStore()
   const members = useMembers()
 
   const [step, setStep] = useState<0 | 2>(0)
   const [query, setQuery] = useState('')
+  const [ghostId, setGhostId] = useState<string | null>(null)
   const [pickingDate, setPickingDate] = useState(false)
   const [courseName, setCourseName] = useState('')
   const [date, setDate] = useState(todayISO)
@@ -126,6 +130,7 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
       tee: tee.trim() || undefined,
       tripId: tripId || undefined,
       saddamOnTheLine: playerIds.length >= 2 ? saddamOn : false,
+      ghosts: ghost ? [{ playerId: data.currentUserId, roundId: ghost.round.id }] : undefined,
       players: playerIds.map((pid) => ({
         playerId: pid,
         gross: scores[pid] ?? null,
@@ -180,6 +185,53 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
     setCourseName(name.trim())
     setQuery('')
   }
+
+  // The course directory. A search costs one of the group's 35 daily
+  // lookups and pulling a course in costs another, so both wait for a tap.
+  const [dir, setDir] = useState<{
+    query: string
+    state: 'searching' | 'done' | 'error'
+    results: DirectoryMatch[]
+    error?: string
+    loadingId?: string
+  }>({ query: '', state: 'done', results: [] })
+  const lookUp = async () => {
+    const asked = q
+    setDir({ query: asked, state: 'searching', results: [] })
+    try {
+      const results = await searchDirectory(asked)
+      setDir((d) => (d.query === asked ? { query: asked, state: 'done', results } : d))
+    } catch (err) {
+      setDir((d) => (d.query === asked ? { query: asked, state: 'error', results: [], error: (err as Error).message } : d))
+    }
+  }
+  const pullIn = async (id: string) => {
+    setDir((d) => ({ ...d, loadingId: id }))
+    try {
+      const c = await fetchDirectoryCourse(id)
+      // A course the group already has a card for keeps it: the directory
+      // never overwrites pars or a stroke index someone typed in.
+      const existing = findCourse(data, c.name)
+      if (!hasPars(existing)) {
+        saveCourse(
+          c.name,
+          c.hasCard ? c.pars : Array(18).fill(null),
+          c.hasCard ? c.strokeIndex : undefined,
+          c.rating != null && c.slope != null ? { rating: c.rating, slope: c.slope } : undefined,
+          { tees: c.tees.length ? c.tees : undefined, yards: c.hasCard ? c.yards : undefined, yardsTee: c.yardsTee ?? undefined, town: c.town ?? undefined },
+        )
+      }
+      pickCourse(c.name)
+      setDir({ query: '', state: 'done', results: [] })
+    } catch (err) {
+      setDir((d) => ({ ...d, loadingId: undefined, state: 'error', error: (err as Error).message }))
+    }
+  }
+  // Racing your ghost, offered the moment you pick a course you've scored
+  // hole by hole before. It used to show up only on the live card, which
+  // meant most people never saw it.
+  const ghosts = courseName.trim() ? ghostOptions(data, { id: '', groupId: '', courseName: courseName.trim(), date, players: [] } as Round, data.currentUserId) : []
+  const ghost = ghosts.find((g) => g.round.id === ghostId)
   const label = 'block text-footnote font-semibold text-ink-dim mb-2 px-1'
   const toggle = (on: boolean) =>
     `rounded-full px-3.5 py-2 text-footnote font-bold transition active:scale-95 ${on ? 'bg-forest text-on-forest' : 'bg-card text-ink-dim ring-1 ring-inset ring-line-strong'}`
@@ -272,6 +324,57 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
                         </span>
                       </button>
                     )}
+                    {/* The course directory: scorecard, tees and town filled in
+                        for you. Searched only on a tap, since the free plan
+                        allows 35 lookups a day for the whole group. */}
+                    {!exact && directorySupported() && q.length >= 3 && (
+                      <>
+                        {dir.query !== q ? (
+                          <button
+                            type="button"
+                            onClick={() => void lookUp()}
+                            className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-paper"
+                          >
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-soft text-sky">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" aria-hidden>
+                                <circle cx="11" cy="11" r="6.5" />
+                                <path d="M16 16l4.5 4.5" />
+                              </svg>
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-footnote font-bold text-sky">Look it up in the course directory</span>
+                              <span className="block text-caption text-ink-faint">Fills in the scorecard, tees and town</span>
+                            </span>
+                          </button>
+                        ) : dir.state === 'searching' ? (
+                          <p className="px-3 py-3 text-footnote text-ink-dim">Searching the directory…</p>
+                        ) : dir.state === 'error' ? (
+                          <p className="px-3 py-3 text-footnote font-semibold text-flag">{dir.error}</p>
+                        ) : dir.results.length === 0 ? (
+                          <p className="px-3 py-3 text-footnote text-ink-dim">Nothing in the directory by that name. Add it yourself above.</p>
+                        ) : (
+                          dir.results.map((m) => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              disabled={!!dir.loadingId}
+                              onClick={() => void pullIn(m.id)}
+                              className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-paper disabled:opacity-60"
+                            >
+                              <span className="h-9 w-9 shrink-0 overflow-hidden rounded-lg">
+                                <CourseScene course={m.name} className="h-full w-full" />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-footnote font-bold text-ink">{m.name}</span>
+                                <span className="block truncate text-caption text-ink-faint">
+                                  {dir.loadingId === m.id ? 'Pulling in the card…' : [m.town, m.hasCard ? 'scorecard included' : 'name and town only'].filter(Boolean).join(' · ')}
+                                </span>
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="-mx-4 mt-2.5 flex snap-x scroll-px-4 gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
@@ -302,6 +405,38 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
                   </div>
                 )}
               </div>
+
+              {ghosts.length > 0 && (
+                <div className="rounded-2xl bg-card p-3.5 ring-1 ring-line">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ink/[0.06] text-ink-dim">
+                      <Icon name="ghost" size={20} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-footnote font-bold text-ink">{ghost ? `Racing your ${ghost.gross}` : 'Race a ghost?'}</p>
+                      <p className="text-caption text-ink-dim">
+                        {ghost
+                          ? 'It shows up a hole at a time under your card as you play.'
+                          : "You've scored this course hole by hole before. Chase one of those cards."}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    {ghosts.slice(0, 4).map((g) => (
+                      <button
+                        key={g.round.id}
+                        type="button"
+                        onClick={() => setGhostId(ghostId === g.round.id ? null : g.round.id)}
+                        aria-pressed={ghostId === g.round.id}
+                        className={toggle(ghostId === g.round.id)}
+                      >
+                        <span className="tabular-nums">{g.gross}</span> · {sinceLabel(g.round.date)}
+                        {g.best && ' · best'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* When */}
               <div>

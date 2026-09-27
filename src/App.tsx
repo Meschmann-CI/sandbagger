@@ -24,6 +24,7 @@ import TripDetail from './pages/TripDetail'
 import Profile from './pages/Profile'
 import Saddam from './pages/Saddam'
 import Wrapped from './pages/Wrapped'
+import Trophies from './pages/Trophies'
 import Courses from './pages/Courses'
 import Group from './pages/Group'
 import CourseDetail from './pages/CourseDetail'
@@ -54,6 +55,7 @@ function AppRoutes() {
             <Route path="/group" element={<Group />} />
             <Route path="/saddam" element={<Saddam />} />
             <Route path="/wrapped/:year" element={<Wrapped />} />
+            <Route path="/trophies" element={<Trophies />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/new" element={<CourseEdit />} />
             <Route path="/courses/:slug" element={<CourseDetail />} />

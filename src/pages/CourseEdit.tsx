@@ -4,6 +4,7 @@ import { useStore } from '../data/store'
 import { HOLE_COUNT } from '../lib/holes'
 import { courseSlug, emptyPars, padded } from '../lib/courses'
 import { defaultTee, scanCard, scanSupported, type ScannedCard } from '../lib/scan'
+import { directorySupported, fetchDirectoryCourse, searchDirectory, type DirectoryMatch } from '../lib/courseLookup'
 import { useGoBack, useNavigate } from '../lib/nav'
 import { BackButton } from '../components/Nav'
 import { Card, PrimaryButton, SectionLabel } from '../components/ui'
@@ -58,26 +59,64 @@ export default function CourseEdit() {
   const [scanned, setScanned] = useState<ScannedCard | null>(null)
   const [scanWarnings, setScanWarnings] = useState<string[]>([])
 
+  const applyCard = (card: ScannedCard, warnings: string[]) => {
+    if (isNew && !typedName.trim() && card.name) setTypedName(card.name)
+    if (card.holes.some((h) => h.par != null)) setPars(card.holes.map((h) => h.par))
+    const anyIndex = card.holes.some((h) => h.strokeIndex != null)
+    if (anyIndex) {
+      setIndex(card.holes.map((h) => h.strokeIndex))
+      setShowIndex(true)
+    }
+    const def = defaultTee(card.tees)
+    if (def) {
+      setRating(String(def.rating))
+      setSlope(String(def.slope))
+    }
+    setScanned(card)
+    setScanWarnings(warnings)
+  }
+
+  // The course directory (GolfCourseAPI): one search and one fetch, on a
+  // tap, since the whole group shares 35 lookups a day.
+  const [dirQuery, setDirQuery] = useState('')
+  const [dirState, setDirState] = useState<{ busy?: string; error?: string; results?: DirectoryMatch[] }>({})
+  const findInDirectory = async () => {
+    const q = (dirQuery || typedName || name).trim()
+    if (q.length < 3) return
+    setDirState({ busy: 'search' })
+    try {
+      setDirState({ results: await searchDirectory(q) })
+    } catch (err) {
+      setDirState({ error: (err as Error).message })
+    }
+  }
+  const takeFromDirectory = async (id: string) => {
+    setDirState((d) => ({ ...d, busy: id }))
+    try {
+      const c = await fetchDirectoryCourse(id)
+      applyCard(
+        {
+          name: c.name,
+          town: c.town,
+          holes: Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: c.pars[i] ?? null, strokeIndex: c.strokeIndex[i] ?? null, yards: c.yards[i] ?? null })),
+          tees: c.tees.map((t) => (t.name === c.yardsTee ? { ...t, holeYards: c.yards } : t)),
+          notes: [c.hasCard ? 'From the course directory. Check it against the card if you have one.' : 'The directory only had the name and town for this one. The card is still yours to fill in.'],
+        },
+        [],
+      )
+      setDirState({})
+    } catch (err) {
+      setDirState((d) => ({ ...d, busy: undefined, error: (err as Error).message }))
+    }
+  }
+
   const onPhoto = async (file: File | undefined) => {
     if (!file) return
     setScanning(true)
     setScanError(null)
     try {
       const { card, warnings } = await scanCard(file)
-      if (isNew && !typedName.trim() && card.name) setTypedName(card.name)
-      setPars(card.holes.map((h) => h.par))
-      const anyIndex = card.holes.some((h) => h.strokeIndex != null)
-      if (anyIndex) {
-        setIndex(card.holes.map((h) => h.strokeIndex))
-        setShowIndex(true)
-      }
-      const def = defaultTee(card.tees)
-      if (def) {
-        setRating(String(def.rating))
-        setSlope(String(def.slope))
-      }
-      setScanned(card)
-      setScanWarnings(warnings)
+      applyCard(card, warnings)
     } catch (err) {
       setScanError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -194,6 +233,58 @@ export default function CourseEdit() {
           </>
         )}
       </header>
+
+      {/* The course directory: most courses come with the whole card */}
+      {directorySupported() && !scanned && (
+        <Card className="mt-2 p-3.5 border-sky/25 bg-sky-soft/50">
+          <div className="flex items-center gap-3">
+            <IconTile name="pin" tone="sky" />
+            <div className="min-w-0 flex-1">
+              <p className="text-body font-bold text-ink">Find it in the course directory</p>
+              <p className="mt-0.5 text-footnote text-ink-dim">Pars, stroke index, every tee's rating and slope, and the town.</p>
+            </div>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <input
+              value={dirQuery || (isNew ? typedName : name)}
+              onChange={(e) => setDirQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void findInDirectory()}
+              placeholder="Course name"
+              aria-label="Course to look up"
+              className="min-w-0 flex-1 rounded-xl border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+            />
+            <button
+              onClick={() => void findInDirectory()}
+              disabled={!!dirState.busy || (dirQuery || typedName || name).trim().length < 3}
+              className="shrink-0 rounded-xl bg-green px-4 py-2.5 text-footnote font-bold text-white disabled:opacity-40 active:scale-95 transition"
+            >
+              {dirState.busy === 'search' ? 'Looking…' : 'Look up'}
+            </button>
+          </div>
+          {dirState.error && <p className="mt-2 text-footnote font-semibold text-flag">{dirState.error}</p>}
+          {dirState.results && (
+            <div className="mt-2.5 overflow-hidden rounded-xl bg-card ring-1 ring-line divide-y divide-line">
+              {dirState.results.length === 0 && <p className="px-3 py-2.5 text-footnote text-ink-dim">Nothing by that name. Try fewer words, or fill the card in below.</p>}
+              {dirState.results.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => void takeFromDirectory(m.id)}
+                  disabled={!!dirState.busy}
+                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-paper disabled:opacity-60"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-footnote font-bold text-ink">{m.name}</span>
+                    <span className="block truncate text-caption text-ink-faint">
+                      {dirState.busy === m.id ? 'Pulling in the card…' : [m.town, m.hasCard ? 'scorecard included' : 'name and town only'].filter(Boolean).join(' · ')}
+                    </span>
+                  </span>
+                  <Icon name="chevronRight" size={16} className="shrink-0 text-ink-faint" />
+                </button>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* A photo of the card does the eighteen taps. Reviewed, not
           trusted: the fields fill in and the golfer reads them against

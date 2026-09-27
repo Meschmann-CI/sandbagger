@@ -12,7 +12,7 @@ import RoundScene from '../components/RoundScene'
 import CourseScene from '../components/CourseScene'
 import { Avatar, SaddamIcon } from '../components/ui'
 import { CountUp, Confetti } from '../components/Delight'
-import { Icon } from '../components/icons'
+import { Medal } from '../components/Medal'
 
 // Season Wrapped: your year as a stack of full-screen cards, the way
 // Stories work. Tap the right side for the next card, the left for the
@@ -190,9 +190,7 @@ export default function Wrapped() {
           <div className="grid grid-cols-3 gap-x-3 gap-y-5">
             {w.badges.slice(0, 9).map((b) => (
               <div key={b.key} className="flex flex-col items-center gap-1.5 text-center">
-                <span className="medal">
-                  {b.icon === 'saddam' ? <SaddamIcon size={34} /> : b.icon ? <Icon name={b.icon} size={22} strokeWidth={2.1} /> : b.mark}
-                </span>
+                <Medal badge={b} />
                 <span className="text-caption font-bold">{b.label}</span>
               </div>
             ))}

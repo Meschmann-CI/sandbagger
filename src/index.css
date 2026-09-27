@@ -379,3 +379,16 @@ html[data-nav='back']::view-transition-new(root) {
 @media (prefers-reduced-motion: reduce) {
   .card-flip { animation: none; }
 }
+
+/* The trophies nobody wants: tarnished, like a wooden spoon. The odd
+   ones are sky. */
+.medal-shame {
+  background: radial-gradient(circle at 35% 30%, #efe4da, #c9ae97 72%);
+  box-shadow: inset 0 0 0 2px #b8977c, 0 3px 8px rgba(90, 60, 30, 0.18);
+  color: #6b4a33;
+}
+.medal-odd {
+  background: radial-gradient(circle at 35% 30%, #f1f7fc, #bcd3e6 72%);
+  box-shadow: inset 0 0 0 2px #9fbcd6, 0 3px 8px rgba(47, 111, 163, 0.18);
+  color: var(--color-sky);
+}
