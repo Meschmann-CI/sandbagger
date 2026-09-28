@@ -60,6 +60,7 @@ export function enqueuePhoto(item: PendingPhoto) {
 }
 
 export const pendingPhotosFor = (roundId: string) => queue.filter((q) => q.roundId === roundId)
+export const hasPendingPhotos = () => queue.length > 0
 const snapshot = () => queue.map((q) => q.id).join(',')
 const subscribe = (l: () => void) => {
   listeners.add(l)

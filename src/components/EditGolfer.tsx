@@ -3,6 +3,7 @@ import { useStore } from '../data/store'
 import { deriveInitials, round1, type Player } from '../types'
 import { normalizeVenmo } from '../lib/venmo'
 import { Avatar, PrimaryButton } from './ui'
+import { useHoldUpdates } from '../lib/holdUpdates'
 
 // Editing a golfer: your own details from the You tab, or anyone's from
 // the Group page (mainly so the organizer can attach the email they'll
@@ -10,6 +11,7 @@ import { Avatar, PrimaryButton } from './ui'
 // and its history instead of creating a second, empty one).
 
 export default function EditGolfer({ player, cloud, onDone }: { player: Player; cloud: boolean; onDone: () => void }) {
+  useHoldUpdates()
   const { updatePlayer } = useStore()
   const [name, setName] = useState(player.name)
   const [email, setEmail] = useState(player.email ?? '')

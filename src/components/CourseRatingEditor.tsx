@@ -5,6 +5,7 @@ import { courseSlug } from '../lib/courses'
 import { RATING_ASPECTS, courseDisplayName, insertAt, myRanking, ratingFor } from '../lib/ratings'
 import { StarPicker } from './Stars'
 import { PrimaryButton } from './ui'
+import { useHoldUpdates } from '../lib/holdUpdates'
 
 // Rating a course, in two beats.
 //
@@ -24,6 +25,7 @@ export default function CourseRatingEditor({
   courseName: string
   onDone: () => void
 }) {
+  useHoldUpdates()
   const { data, rateCourse, setMyRanking } = useStore()
   const slug = courseSlug(courseName)
   const existing = ratingFor(data, slug)

@@ -5,6 +5,7 @@ import { Icon, type IconName } from './icons'
 import { fetchLinkPreview, faviconFor, normalizeUrl } from '../lib/links'
 import { fileToDataUrl, imageFromClipboard } from '../lib/images'
 import { PrimaryButton } from './ui'
+import { useHoldUpdates } from '../lib/holdUpdates'
 
 export const KIND_META: Record<ItineraryKind, { icon: IconName; label: string; placeholder: string }> = {
   tee: { icon: 'flag', label: 'Tee time', placeholder: 'Course name' },
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export default function ItineraryEditor({ initial, defaultDate, onSave, onCancel }: Props) {
+  useHoldUpdates()
   const [kind, setKind] = useState<ItineraryKind>(initial?.kind ?? 'tee')
   const [title, setTitle] = useState(initial?.title ?? '')
   const [date, setDate] = useState(initial?.date ?? defaultDate)

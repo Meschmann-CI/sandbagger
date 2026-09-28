@@ -1,8 +1,9 @@
 import { NavLink, Outlet, useLocation, useNavigationType } from 'react-router-dom'
 import { useNavigate } from '../lib/nav'
 import { useStore } from '../data/store'
-import { usePhotoOutboxFlush } from '../data/photoOutbox'
+import { hasPendingPhotos, usePhotoOutboxFlush } from '../data/photoOutbox'
 import { useNewVersion } from '../lib/useNewVersion'
+import { updatesHeld } from '../lib/holdUpdates'
 import { Avatar } from './ui'
 import { CompactTitleBar, useNavRecorder } from './Nav'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
@@ -108,9 +109,19 @@ export default function Shell() {
   const me = data.players.find((p) => p.id === data.currentUserId) ?? data.players[0]
   // Photos parked while there was no signal go out from here, whatever
   // screen is showing. And a build that's newer than the one running
-  // gets a banner rather than a close-and-reopen ritual.
+  // loads itself as the app comes back to the front, unless someone is
+  // mid-way through something; then it waits behind a banner.
   usePhotoOutboxFlush(data.rounds, updateRound)
-  const newVersion = useNewVersion()
+  const newVersion = useNewVersion(() => {
+    if (logOpen || pendingWrites > 0 || hasPendingPhotos() || updatesHeld()) return true
+    // The live card and every screen that is one big form.
+    if (/^\/rounds\/[^/]+\/(card|edit)$|^\/trips\/new$|^\/courses\/(new|[^/]+\/card)$/.test(pathname)) return true
+    // A sheet or dialog open over a page (bet editor, itinerary item,
+    // Wrapped), or the keyboard up in a field.
+    if (document.querySelector('[aria-modal="true"]')) return true
+    const focused = document.activeElement
+    return !!focused && focused.matches('input:not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable="true"]')
+  })
 
   const tabLink = (t: (typeof tabs)[number]) => (
     <NavLink

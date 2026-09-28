@@ -8,6 +8,7 @@ import { anyCards } from '../lib/holes'
 import { findCourse, hasStrokeIndex } from '../lib/courses'
 import { money } from '../lib/money'
 import { Avatar, Card, HelpTip, PrimaryButton } from '../components/ui'
+import { useHoldUpdates } from '../lib/holdUpdates'
 
 const TYPES: { key: BetType; label: string; blurb: string }[] = [
   { key: 'skins', label: 'Skins', blurb: 'Low score wins the hole. Ties carry over and stack until someone takes them.' },
@@ -17,6 +18,7 @@ const TYPES: { key: BetType; label: string; blurb: string }[] = [
 ]
 
 export default function BetEditor({ round, onSave, onCancel }: { round: Round; onSave: (bet: Omit<Bet, 'id'>) => void; onCancel: () => void }) {
+  useHoldUpdates()
   const { data } = useStore()
   const scoredIds = round.players.filter(hasScore).map((rp) => rp.playerId)
   const course = findCourse(data, round.courseName)

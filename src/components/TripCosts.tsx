@@ -7,6 +7,7 @@ import { todayISO } from '../lib/dates'
 import SettleUp from './SettleUp'
 import { Icon, type IconName } from './icons'
 import { Avatar, AvatarStack, Card, PrimaryButton, SectionLabel } from './ui'
+import { useHoldUpdates } from '../lib/holdUpdates'
 
 const CATEGORIES: { key: ExpenseCategory; icon: IconName; label: string }[] = [
   { key: 'lodging', icon: 'house', label: 'Housing' },
@@ -181,6 +182,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
 }
 
 function ExpenseForm({ trip, onSave, onCancel }: { trip: Trip; onSave: (e: Omit<import('../types').Expense, 'id'>) => void; onCancel: () => void }) {
+  useHoldUpdates()
   const { data } = useStore()
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
