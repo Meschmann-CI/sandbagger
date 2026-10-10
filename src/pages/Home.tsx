@@ -3,25 +3,25 @@ import { Link } from 'react-router-dom'
 import { useNavigate } from '../lib/nav'
 import { useLogSheet } from '../components/logSheet'
 import { useStore } from '../data/store'
-import { byDate, leaderboard, playerStats, roundStandings, saddamState, shortDate } from '../lib/stats'
+import { byDate, leaderboard, playerStats, roundStandings, saddamState, shortDate, type LeaderRow } from '../lib/stats'
 import { daysAgoISO, todayISO } from '../lib/dates'
 import { myOutstanding } from '../lib/settlements'
 import { anyCards, cardComplete, cardOf, holesEntered } from '../lib/holes'
 import { money } from '../lib/money'
 import { courseSlug, findCourse, hasPars, padded } from '../lib/courses'
 import { byGroupRank, courseSummaries, fmtStars, ratingFor } from '../lib/ratings'
-import { canSeeTrip, fmt1, hasScore, isSoloRound, pending, type Round, type Trip } from '../types'
+import { canSeeTrip, fmt1, isSoloRound, pending, type Round, type Trip } from '../types'
 import { StarRating } from '../components/Stars'
 import { Icon, IconTile } from '../components/icons'
 import CourseScene from '../components/CourseScene'
 import RoundScene from '../components/RoundScene'
-import { Avatar, AvatarStack, Card, RowButton, SaddamBadge, SectionLabel } from '../components/ui'
+import { Avatar, AvatarStack, Card, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
 import { CountUp } from '../components/Delight'
 
-// The front door. Anything that needs doing comes first (a card mid-
-// round, a score you owe), then the one hero: your season, with the
-// Saddam riding along underneath it so the trophy is on the first
-// screen every time. Money is one line until you ask for the list.
+// The front door, titled with the group's name. A round being played
+// comes first as a slim live strip, then anything you owe, then the one
+// centrepiece: the season as a race, with the Saddam's face on whoever
+// holds it so the trophy is on the first screen every time. Money is one line until you ask for the list.
 // Trips have no tab, so they live here: up top when one is close or
 // being argued about, and always reachable at the bottom.
 
@@ -66,22 +66,33 @@ export default function Home() {
   const inProgress = rounds
     .filter((r) => r.date === TODAY && anyCards(r) && r.players.some((rp) => !cardComplete(rp)))
     .at(-1)
-  const inProgressHoles = inProgress ? inProgress.players.reduce((sum, rp) => sum + holesEntered(rp), 0) : 0
-  // "thru 4 · E": my holes so far, against par when the course has one.
-  const liveLine = (() => {
-    const rp = inProgress?.players.find((p) => p.playerId === me.id)
-    if (!inProgress || !rp) return null
+  // How the live round is going for me, for the strip: my score (against
+  // par when the course has pars, strokes when it doesn't), how many holes
+  // in, and the hole I'm on. Someone else's live round (I'm not in it)
+  // just says how far along they are.
+  const live: Live | null = (() => {
+    if (!inProgress) return null
+    const rp = inProgress.players.find((p) => p.playerId === me.id)
+    if (!rp) {
+      const thru = Math.max(...inProgress.players.map((p) => holesEntered(p)))
+      return { big: `Thru ${thru}`, line: 'The group is out there without you.', next: null, thru }
+    }
     const card = cardOf(rp)
     const thru = card.filter((h) => h != null).length
-    if (thru === 0) return 'on the first tee'
+    const nextAt = card.findIndex((h) => h == null)
+    const next = nextAt >= 0 ? nextAt + 1 : null
+    if (thru === 0) return { big: 'E', line: 'on the first tee', next, thru }
     const course = findCourse(data, inProgress.courseName)
-    if (!hasPars(course)) return `thru ${thru}`
-    const pars = padded(course.pars)
-    let diff = 0
-    card.forEach((h, i) => {
-      if (h != null && pars[i] != null) diff += h - pars[i]!
-    })
-    return `thru ${thru} · ${diff === 0 ? 'E' : diff > 0 ? `+${diff}` : diff}`
+    let big = String(card.reduce<number>((acc, h) => acc + (h ?? 0), 0))
+    if (hasPars(course)) {
+      const pars = padded(course.pars)
+      let diff = 0
+      card.forEach((h, k) => {
+        if (h != null && pars[k] != null) diff += h - pars[k]!
+      })
+      big = diff === 0 ? 'E' : diff > 0 ? `+${diff}` : `−${-diff}`
+    }
+    return { big, line: `thru ${thru}`, next, thru }
   })()
 
   // The most recent round I played and haven't rated, if it's fresh.
@@ -101,17 +112,6 @@ export default function Home() {
   // This year, on the group's terms: who's winning group rounds.
   const seasonRounds = rounds.filter((r) => r.date.startsWith(YEAR))
   const board = leaderboard(data, seasonRounds).filter((row) => row.rounds > 0)
-  const myPlace = board.findIndex((row) => row.player.id === me.id)
-  const myRow = myPlace >= 0 ? board[myPlace] : undefined
-
-  // My last few posted scores this season, oldest first, for the boxes in
-  // the hero. Same season as the numbers beside them.
-  const myScores = seasonRounds
-    .map((r) => r.players.find((rp) => rp.playerId === me.id))
-    .filter((rp): rp is NonNullable<typeof rp> => !!rp && hasScore(rp))
-    .map((rp) => rp.gross as number)
-    .slice(-5)
-
   const favourite = byGroupRank(courseSummaries(data)).find((c) => c.groupRank === 1)
 
   const visibleTrips = data.trips.filter((t) => canSeeTrip(t, me.id))
@@ -126,9 +126,7 @@ export default function Home() {
   const soonTrip = upcoming.find((t) => daysBetween(TODAY, t.startDate!) <= 14)
   const planningTrip = planning[0]
 
-  // One live line under the greeting: the most pressing fact there is.
-  const hour = new Date().getHours()
-  const hello = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening'
+  // One line under the group's name, only when a trip is close.
   // The Saddam used to be the fallback here too, which said the same
   // thing as the strip under the hero. It now lives as one small mark
   // on the standings, and gets its full due on the Standings page.
@@ -138,30 +136,11 @@ export default function Home() {
         return n === 0 ? `${soonTrip.name} starts today.` : `${soonTrip.name} in ${plural(n, 'day')}.`
       })()
     : null
-  const firstName = me.name.trim().split(/\s+/)[0]
-  const first = (name: string) => name.trim().split(/\s+/)[0]
-
-  // The headline is where you stand, said the way the group would say
-  // it. "Good morning" only when there's nothing to say yet.
-  const headline = (() => {
-    if (!myRow || board.length < 2) return `${hello}, ${firstName}`
-    const leader = board[0]
-    if (myPlace === 0) {
-      const next = board[1]
-      const gap = leader.wins - next.wins
-      return gap > 0 ? `${plural(gap, 'win')} clear of ${first(next.player.name)}` : `Level with ${first(next.player.name)} at the top`
-    }
-    const gap = leader.wins - myRow.wins
-    return gap > 0
-      ? `${first(leader.player.name)} leads you by ${plural(gap, 'win')}`
-      : `Level with ${first(leader.player.name)} at the top`
-  })()
-
   return (
     <div className="rise">
       <header className="pt-5 pb-1 px-1 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-large font-bold text-ink leading-tight">{headline}</h1>
+          <h1 className="text-large font-bold text-ink leading-tight truncate">{data.group.name}</h1>
           {subline && <p className="text-footnote text-ink-dim mt-0.5">{subline}</p>}
         </div>
         <Link to="/profile" className="shrink-0">
@@ -170,29 +149,7 @@ export default function Home() {
       </header>
 
       <div className="mt-3 space-y-2.5">
-        {/* Straight back onto the card — the app's front door mid-round */}
-        {/* A round in progress, like a Live Activity: where, how far, how
-            it's going, and one tap back onto the card. */}
-        {inProgress && (
-          <button
-            type="button"
-            onClick={() => navigate(`/rounds/${inProgress.id}/card`)}
-            className="press flex w-full items-center gap-3 rounded-full bg-forest py-2.5 pl-4 pr-3 text-left text-on-forest shadow-[0_6px_18px_rgba(28,70,50,0.28)]"
-          >
-            <span className="relative flex h-2.5 w-2.5 shrink-0">
-              <span className="live-ping absolute inset-0 rounded-full bg-[#7fd39b]" />
-              <span className="relative h-2.5 w-2.5 rounded-full bg-[#7fd39b]" />
-            </span>
-            <span className="min-w-0 flex-1 truncate text-footnote">
-              <span className="font-bold">{inProgress.courseName}</span>
-              <span className="text-on-forest/70"> · live</span>
-            </span>
-            <span className="shrink-0 text-footnote font-bold tabular-nums">
-              {liveLine ?? plural(inProgressHoles, 'hole score')}
-            </span>
-            <Icon name="chevronRight" size={16} className="shrink-0 text-on-forest/60" />
-          </button>
-        )}
+        {inProgress && live && <LiveStrip round={inProgress} live={live} />}
 
         {/* Rounds someone logged you into without your score */}
         {awaiting.length > 0 && (
@@ -212,32 +169,7 @@ export default function Home() {
           </Card>
         )}
 
-        {/* The hero: my season */}
-        <div className="overflow-hidden rounded-3xl bg-forest text-on-forest shadow-[0_10px_30px_rgba(28,70,50,0.22)]">
-          <button type="button" onClick={() => navigate('/h2h')} className="relative block w-full px-5 pt-4 pb-4 text-left active:opacity-90">
-            <p className="flex items-baseline gap-2">
-              <CountUp id="home-wins" value={myRow?.wins ?? 0} className="text-hero font-extrabold leading-[0.9]" />
-              <span className="text-body font-bold text-on-forest/85">
-                group {myRow?.wins === 1 ? 'win' : 'wins'} in {YEAR}
-                {myRow && board.length > 1 && <span className="font-semibold text-on-forest/65">, {ordinal(myPlace + 1)} of {board.length}</span>}
-              </span>
-            </p>
-            <div className="mt-2 space-y-3">
-              <p className="text-footnote text-on-forest/75 tabular-nums">
-                {myRow
-                  ? [
-                      plural(myRow.rounds, 'round'),
-                      myRow.avgGross != null && `averaging ${myRow.avgGross.toFixed(1)}`,
-                      myRow.bestGross != null && `best ${myRow.bestGross}`,
-                    ]
-                      .filter(Boolean)
-                      .join(', ')
-                  : 'Nothing posted this year.'}
-              </p>
-              {myScores.length >= 2 && <RecentScores scores={myScores} />}
-            </div>
-          </button>
-        </div>
+        <SeasonRace board={board} meId={me.id} holderId={holder?.id} saddamSince={saddam.since} year={YEAR} />
 
         {/* Money: one line until you want the list. Each row in the list
             goes to the round or trip it belongs to, where Pay lives. */}
@@ -366,68 +298,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* The season, on the group's terms */}
-      <SectionLabel
-        action={
-          <Link to="/h2h" className="text-footnote font-bold text-green">
-            Full standings
-          </Link>
-        }
-      >
-        Standings
-      </SectionLabel>
-      {board.length === 0 ? (
-        <Card className="p-5 text-center">
-          <p className="text-body font-bold text-ink">Nothing on the board yet this year</p>
-          <p className="text-footnote text-ink-dim mt-1">The first group round starts the count.</p>
-        </Card>
-      ) : (
-        <Card>
-          <div className="divide-y divide-line">
-            {board.slice(0, 3).map((row, i) => (
-              <RowButton key={row.player.id} onClick={() => navigate('/h2h')} className="flex items-center gap-3 px-4 py-3">
-                <span className={`w-5 text-body font-extrabold tabular-nums ${i === 0 ? 'text-gold' : 'text-ink-faint'}`}>{i + 1}</span>
-                <Avatar player={row.player} size={30} />
-                <div className="flex-1 min-w-0">
-                  <p className="flex items-center gap-1.5 text-body font-bold text-ink">
-                    <span className="truncate">
-                      {row.player.name}
-                      {row.player.id === me.id && <span className="text-ink-faint font-semibold"> (you)</span>}
-                    </span>
-                    {holder?.id === row.player.id && <SaddamBadge size={14} />}
-                  </p>
-                  <p className="text-caption text-ink-faint tabular-nums">
-                    {plural(row.rounds, 'round')}
-                    {row.avgGross != null && ` · avg ${row.avgGross.toFixed(1)}`}
-                    {row.streak >= 2 && (
-                      <>
-                        {' '}· {row.streak} straight <Icon name="flame" size={12} className="inline -mt-0.5 text-flag" />
-                      </>
-                    )}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-headline font-extrabold text-ink tabular-nums leading-none">{row.wins}</p>
-                  <p className="text-footnote font-semibold text-ink-dim mt-0.5">{row.wins === 1 ? 'win' : 'wins'}</p>
-                </div>
-              </RowButton>
-            ))}
-          </div>
-          {myPlace >= 3 && (
-            <p className="px-4 py-2.5 border-t border-line text-footnote text-ink-dim">
-              You're {ordinal(myPlace + 1)} of {board.length} · {plural(board[myPlace].wins, 'win')}
-            </p>
-          )}
-          {holder && !board.slice(0, 3).some((row) => row.player.id === holder.id) && (
-            <RowButton onClick={() => navigate('/h2h')} className="flex items-center gap-2 border-t border-line px-4 py-2.5 text-footnote text-ink-dim">
-              <SaddamBadge size={14} />
-              {holder.id === me.id ? 'You hold' : `${holder.name.split(' ')[0]} holds`} the Saddam
-            </RowButton>
-          )}
-        </Card>
-      )}
-
-      {/* Trips: under the standings, since a round happens every weekend
+      {/* Trips: under the rounds, since a round happens every weekend
           and a trip twice a year. Booked and close first, then one being planned. */}
       {(soonTrip || planningTrip) && (
         <div className="mt-6 space-y-2.5">
@@ -483,26 +354,152 @@ export default function Home() {
   )
 }
 
-/** The last few scores written out like boxes on a card, newest on the
- *  right and filled in. The numbers say more than a line through them. */
-function RecentScores({ scores }: { scores: number[] }) {
-  const best = Math.min(...scores)
+/**
+ * The centre of Home: the season as a race. Each golfer is a column as
+ * tall as their group wins, their face on top, yours in cream (the
+ * colour of winning), the Saddam's face on whoever holds it. Under it,
+ * the story in a line.
+ */
+function SeasonRace({
+  board,
+  meId,
+  holderId,
+  saddamSince,
+  year,
+}: {
+  board: LeaderRow[]
+  meId: string
+  holderId?: string
+  saddamSince: string | null
+  year: string
+}) {
+  const navigate = useNavigate()
+  const first = (name: string) => name.trim().split(/\s+/)[0]
+  const top = Math.max(1, ...board.map((r) => r.wins))
+  const myPlace = board.findIndex((r) => r.player.id === meId)
+  const me = board[myPlace]
+  const story = (() => {
+    if (board.length === 0) return 'No group rounds yet. The first one starts the race.'
+    if (!me) return `${first(board[0].player.name)} leads with ${plural(board[0].wins, 'win')}. You haven't played a group round yet.`
+    if (myPlace === 0) {
+      const next = board[1]
+      if (!next) return `You lead with ${plural(me.wins, 'win')}.`
+      const gap = me.wins - next.wins
+      return gap > 0 ? `You lead, ${plural(gap, 'win')} clear of ${first(next.player.name)}.` : `You and ${first(next.player.name)} are level at the top.`
+    }
+    const gap = board[0].wins - me.wins
+    return gap > 0
+      ? `You're ${ordinal(myPlace + 1)}, ${plural(gap, 'win')} behind ${first(board[0].player.name)}.`
+      : `You're level with ${first(board[0].player.name)} at the top.`
+  })()
+  const holder = board.find((r) => r.player.id === holderId)?.player
   return (
-    <span className="flex shrink-0 gap-1" aria-label={`Recent scores, oldest first: ${scores.join(', ')}`}>
-      {scores.map((s, i) => {
-        const latest = i === scores.length - 1
-        return (
-          <span
-            key={i}
-            className={`grid h-7 w-7 place-items-center rounded-md text-footnote font-bold tabular-nums ${
-              latest ? 'bg-cream text-forest' : 'border border-on-forest/25 text-on-forest/80'
-            } ${s === best && !latest ? 'underline decoration-2 underline-offset-2' : ''}`}
-          >
-            {s}
+    <button
+      type="button"
+      onClick={() => navigate('/h2h')}
+      className="press block w-full overflow-hidden rounded-3xl bg-forest px-5 pt-4 pb-5 text-left text-on-forest shadow-[0_10px_30px_rgba(28,70,50,0.22)]"
+    >
+      <div className="flex items-baseline justify-between">
+        <p className="text-footnote font-bold text-on-forest/75">{year} season</p>
+        <p className="flex items-center gap-0.5 text-footnote font-bold text-on-forest/75">
+          Standings <Icon name="chevronRight" size={14} />
+        </p>
+      </div>
+
+      {board.length > 0 && (
+        <div className="mt-5 flex items-end gap-2" role="img" aria-label={`Group wins: ${board.map((r) => `${r.player.name} ${r.wins}`).join(', ')}`}>
+          {board.slice(0, 6).map((r) => {
+            const mine = r.player.id === meId
+            return (
+              <div key={r.player.id} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+                <span className="relative">
+                  <Avatar player={r.player} size={34} />
+                  {r.player.id === holderId && (
+                    <span className="absolute -top-2 -right-4 rounded-md ring-2 ring-forest">
+                      <SaddamIcon size={20} />
+                    </span>
+                  )}
+                </span>
+                <span
+                  className={`flex w-full items-start justify-center rounded-t-lg pt-1.5 text-headline font-extrabold tabular-nums ${
+                    mine ? 'bg-cream text-forest' : 'bg-on-forest/12 text-on-forest'
+                  }`}
+                  style={{ height: 34 + Math.round((r.wins / top) * 62) }}
+                >
+                  {r.wins}
+                </span>
+                <span className={`max-w-full truncate text-footnote font-bold ${mine ? 'text-on-forest' : 'text-on-forest/70'}`}>
+                  {mine ? 'You' : first(r.player.name)}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <p className="mt-4 text-headline font-bold">{story}</p>
+      {holder && (
+        <p className="text-footnote text-on-forest/75">
+          {holder.id === meId ? 'You have' : `${first(holder.name)} has`} the Saddam
+          {saddamSince && ` since ${shortDate(saddamSince).replace(/, \d{4}$/, '')}`}.
+        </p>
+      )}
+    </button>
+  )
+}
+
+interface Live {
+  /** Against par ('+6', 'E'), or strokes so far without pars. */
+  big: string
+  line: string
+  /** The next hole to play, 1-18, or null when the card is full. */
+  next: number | null
+  /** Holes played, for the progress line. */
+  thru: number
+}
+
+// The yellow of the flag on the pin: only for Live, here.
+const LIVE_YELLOW = '#F6C744'
+
+/**
+ * A round being played right now, as a slim strip like a Live Activity.
+ * Near-black, the way iOS draws a Live Activity, so it never blends into
+ * the green season race under it; yellow only on the pulsing Live and on
+ * the line along the bottom that fills as you play the eighteen. One tap
+ * goes back to the next hole, and it disappears with the round.
+ */
+function LiveStrip({ round, live }: { round: Round; live: Live }) {
+  const navigate = useNavigate()
+  return (
+    <button
+      type="button"
+      onClick={() => navigate(`/rounds/${round.id}/card`)}
+      className="press relative block w-full overflow-hidden rounded-2xl bg-[#141816] text-left text-white shadow-[0_6px_18px_rgba(20,24,22,0.25)]"
+    >
+      <span className="flex items-center gap-3 py-3 pr-3 pl-4">
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5 text-footnote font-bold" style={{ color: LIVE_YELLOW }}>
+            <span className="relative flex h-[7px] w-[7px] shrink-0">
+              <span className="live-ping absolute inset-0 rounded-full" style={{ backgroundColor: LIVE_YELLOW }} />
+              <span className="relative h-[7px] w-[7px] rounded-full" style={{ backgroundColor: LIVE_YELLOW }} />
+            </span>
+            <span className="truncate">Live · {round.courseName.replace(/ (Golf Course|Golf Club|Country Club)$/, '')}</span>
           </span>
-        )
-      })}
-    </span>
+          <span className="mt-0.5 flex items-baseline gap-2">
+            <span className="text-title font-extrabold tabular-nums">{live.big}</span>
+            <span className="truncate text-footnote text-white/70">{live.line}</span>
+          </span>
+        </span>
+        <span className="flex h-10 shrink-0 items-center gap-1 rounded-xl bg-white pr-2.5 pl-3.5 text-footnote font-bold text-ink">
+          {live.next ? `Hole ${live.next}` : 'Card'}
+          <Icon name="chevronRight" size={16} />
+        </span>
+      </span>
+      {/* How far through the round. */}
+      <span className="absolute inset-x-0 bottom-0 block h-[3px] bg-white/10" aria-hidden>
+        <span className="block h-full transition-[width] duration-500" style={{ width: `${Math.round((live.thru / 18) * 100)}%`, backgroundColor: LIVE_YELLOW }} />
+      </span>
+    </button>
   )
 }
 
