@@ -19,9 +19,10 @@ import { Avatar, AvatarStack, Card, RowButton, SaddamIcon, SectionLabel } from '
 import { CountUp } from '../components/Delight'
 
 // The front door, titled with the group's name. A round being played
-// comes first as a slim live strip, then anything you owe, then the one
-// centrepiece: the season as a race, with the Saddam's face on whoever
-// holds it so the trophy is on the first screen every time. Money is one line until you ask for the list.
+// comes first as a slim live strip, then the one centrepiece: the season
+// as a race, with the Saddam's face on whoever holds it so the trophy is
+// on the first screen every time. Money is one line until you ask for the
+// list. A score you owe sits with the recent rounds, not above the season.
 // Trips have no tab, so they live here: up top when one is close or
 // being argued about, and always reachable at the bottom.
 
@@ -151,24 +152,6 @@ export default function Home() {
       <div className="mt-3 space-y-2.5">
         {inProgress && live && <LiveStrip round={inProgress} live={live} />}
 
-        {/* Rounds someone logged you into without your score */}
-        {awaiting.length > 0 && (
-          <Card onClick={() => navigate(`/rounds/${awaiting[0].id}`)} className="p-4 border-gold/40 bg-gold-soft/60 flex items-center gap-3.5">
-            <IconTile name="pencil" tone="gold" />
-            <div className="flex-1 min-w-0">
-              <p className="text-body font-bold text-ink">
-                {awaiting.length === 1 ? 'You owe a score' : `You owe ${awaiting.length} scores`}
-              </p>
-              <p className="text-footnote text-ink-dim mt-0.5 truncate">
-                {awaiting.length === 1
-                  ? `${awaiting[0].courseName}, ${shortDate(awaiting[0].date)}`
-                  : `Starting with ${awaiting[0].courseName}, ${shortDate(awaiting[0].date)}`}
-              </p>
-            </div>
-            <Icon name="chevronRight" size={18} className="text-ink-faint" />
-          </Card>
-        )}
-
         <SeasonRace board={board} meId={me.id} holderId={holder?.id} saddamSince={saddam.since} year={YEAR} />
 
         {/* Money: one line until you want the list. Each row in the list
@@ -274,6 +257,24 @@ export default function Home() {
       >
         Recent rounds
       </SectionLabel>
+      {/* Rounds someone logged you into without your score: with the rounds,
+          not above the season. */}
+      {awaiting.length > 0 && (
+        <Card onClick={() => navigate(`/rounds/${awaiting[0].id}`)} className="mb-3 p-4 border-gold/40 bg-gold-soft/60 flex items-center gap-3.5">
+          <IconTile name="pencil" tone="gold" />
+          <div className="flex-1 min-w-0">
+            <p className="text-body font-bold text-ink">
+              {awaiting.length === 1 ? 'You owe a score' : `You owe ${awaiting.length} scores`}
+            </p>
+            <p className="text-footnote text-ink-dim mt-0.5 truncate">
+              {awaiting.length === 1
+                ? `${awaiting[0].courseName}, ${shortDate(awaiting[0].date)}`
+                : `Starting with ${awaiting[0].courseName}, ${shortDate(awaiting[0].date)}`}
+            </p>
+          </div>
+          <Icon name="chevronRight" size={18} className="text-ink-faint" />
+        </Card>
+      )}
       {recent.length === 0 ? (
         <Card className="p-5 text-center">
           <p className="text-body font-bold text-ink">No rounds logged yet</p>
