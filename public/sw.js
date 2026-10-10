@@ -95,7 +95,7 @@ self.addEventListener('push', (event) => {
     // userVisibleOnly was promised at subscribe time.
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Sandbagger', {
+    self.registration.showNotification(data.title || 'Bandit', {
       body: data.body || '',
       icon: '/sandbagger-icon-180.png',
       badge: '/sandbagger-icon-180.png',

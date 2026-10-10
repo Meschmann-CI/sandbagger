@@ -116,7 +116,7 @@ export default function SignIn() {
     <div className="mx-auto max-w-md min-h-dvh flex flex-col justify-center px-5 rise">
       <div className="text-center mb-7">
         <img src="/sandbagger-icon-180.png" alt="" width={72} height={72} className="mx-auto rounded-2xl mb-3" />
-        <h1 className="text-hero font-extrabold tracking-tight text-ink">Sandbagger</h1>
+        <h1 className="text-hero font-extrabold tracking-tight text-ink">Bandit</h1>
         <p className="text-body text-ink-dim mt-1.5">Trips, rounds, and receipts.</p>
       </div>
 

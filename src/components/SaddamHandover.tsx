@@ -98,7 +98,7 @@ export default function SaddamHandover() {
     : `${name(latest.playerId)} has the Saddam. Enjoy it while it lasts.`
 
   const talk = async () => {
-    const text = `${trash} (Sandbagger)`
+    const text = `${trash} (Bandit)`
     try {
       if (navigator.share) {
         await navigator.share({ text })

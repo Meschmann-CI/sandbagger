@@ -104,7 +104,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
             <SettleUp
               url={`/trips/${trip.id}`}
               owed={owed}
-              note={`${trip.name} (Sandbagger)`}
+              note={`${trip.name} (Bandit)`}
               onMarkPaid={(s) =>
                 addPayment({ tripId: trip.id, fromId: s.fromId, toId: s.toId, amount: s.amount, date: todayISO() })
               }

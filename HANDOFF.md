@@ -79,6 +79,12 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Decisions not to reopen
 
+- The app is called Bandit (Matt, 2026-10-10), renamed from Sandbagger: title, home-screen
+  name, manifest, sign-in, Wrapped, share cards, Venmo notes, push fallback, email templates.
+  The Sandbagger trophy and the SANDBAGGER stamp keep the word; it is the joke. The repo,
+  folder, Netlify address (thesandbagger.netlify.app) and code names stay, since changing the
+  address would break installed home screens and the sign-in links.
+
 - Light theme only, Manrope, "Scorecard Clean". Dark mode and stylized fonts were rejected.
 - Tabs (Matt, 2026-10-10): Home, Rounds, Log (raised centre), Standings (`/h2h`), You. Courses
   sit beside rounds under the Rounds tab (a Rounds | Courses switch at the top of both pages,

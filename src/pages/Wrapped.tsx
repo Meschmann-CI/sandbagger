@@ -106,7 +106,7 @@ export default function Wrapped() {
           <span className="rounded-[30px] bg-cream p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
             <SaddamIcon size={104} />
           </span>
-          <p className={kicker}>Sandbagger Wrapped</p>
+          <p className={kicker}>Bandit Wrapped</p>
           <p className="text-[44px] font-extrabold leading-none tracking-tight">{me.name}'s {year}</p>
           <p className="max-w-[260px] text-body opacity-80">Every round, every dollar, every day with the trophy. Tap to start.</p>
         </div>

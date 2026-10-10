@@ -550,7 +550,7 @@ function PushToggle({ playerId }: { playerId: string }) {
             {state === 'on'
               ? 'On for this phone: rounds, results, and money.'
               : state === 'denied'
-                ? 'Blocked in iOS Settings. Allow notifications for Sandbagger there, then come back.'
+                ? 'Blocked in iOS Settings. Allow notifications for Bandit there, then come back.'
                 : state === 'unsupported'
                   ? 'Add the app to your home screen first. iPhones only allow notifications for installed apps.'
                   : 'Hear about posted rounds, settled bets, and money coming your way.'}

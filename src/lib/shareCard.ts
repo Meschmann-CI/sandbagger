@@ -187,7 +187,7 @@ export async function drawShareCard(input: ShareInput): Promise<Blob> {
   }
   ctx.fillStyle = ON_FOREST
   ctx.font = `800 34px ${FONT}`
-  ctx.fillText('Sandbagger', 150, 1298)
+  ctx.fillText('Bandit', 150, 1298)
   ctx.globalAlpha = 0.6
   ctx.font = `600 30px ${FONT}`
   ctx.textAlign = 'right'

@@ -591,7 +591,7 @@ export default function RoundDetail() {
           <SettleUp
             url={`/rounds/${round.id}`}
             owed={betsOwed}
-            note={`${round.courseName} (Sandbagger)`}
+            note={`${round.courseName} (Bandit)`}
             squareLabel="All settled. Nobody owes anybody for this one."
             onMarkPaid={(s) =>
               addPayment({ roundId: round.id, fromId: s.fromId, toId: s.toId, amount: s.amount, date: todayISO() })
