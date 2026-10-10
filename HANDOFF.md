@@ -49,7 +49,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    only the redesign's layout and features, in the original fonts and colours: per-tee
    yardages, the tee-coloured card with Index and Out/In, the live Hole view with the pad
    always up, Home's group-name title / live strip / season race, Round detail's logo over
-   the scene. `refresh` is not pushed yet. `redesign` stays as a reference; don't merge it.
+   the scene. `refresh` was merged to main and pushed 2026-10-10 (5cb9729). `redesign` stays as a reference; don't merge it.
    Flat chosen 2026-10-10 (see Decisions). Branch `flat-preview` was the throwaway CSS
    comparison; it is superseded and can be deleted.
 9. Per-tee yardages (2026-10-10): `CourseTee.holeYards`, `yardsFor()` picks the played tee's
