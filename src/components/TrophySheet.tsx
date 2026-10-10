@@ -28,7 +28,7 @@ export function TrophySheet({ badge, onClose, onRound }: { badge: Badge; onClose
         <div className="mx-auto h-1.5 w-10 rounded-full bg-line-strong" />
         <div className="mt-6 flex justify-center">
           <span className={badge.earned ? 'trophy-drop' : ''}>
-            <Medal badge={badge} size={96} />
+            <Medal badge={badge} size={150} />
           </span>
         </div>
         <p className="mt-4 text-footnote text-ink-faint">{KIND_LABEL[badge.kind]}</p>

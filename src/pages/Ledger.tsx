@@ -5,6 +5,7 @@ import { useMembers, useStore } from '../data/store'
 import { byDate, headToHead, leaderboard, roundStandings, saddamReigns, saddamState, shortDate, trashTalk, type LeaderRow } from '../lib/stats'
 import { indexHistory } from '../lib/badges'
 import { money } from '../lib/money'
+import { coursePar, findCourse, playingHandicap } from '../lib/courses'
 import { Avatar, Card, HelpTip, SaddamIcon, SectionLabel } from '../components/ui'
 import { Icon } from '../components/icons'
 import { todayISO } from '../lib/dates'
@@ -17,6 +18,8 @@ import { todayISO } from '../lib/dates'
 
 type Scope = 'season' | 'all'
 type Form = 'win' | 'podium' | 'mid' | 'last'
+/** A round against your handicap: net par or better, within 3, or 4 or more over. */
+type Play = 'beat' | 'close' | 'off'
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 const first = (name: string) => name.trim().split(/\s+/)[0]
@@ -38,6 +41,23 @@ function formOf(groupRounds: Round[], playerId: string): Form[] {
       if (me.rank === worst) return 'last'
       return me.rank <= 3 && st.length >= 3 ? 'podium' : 'mid'
     })
+}
+
+/** How a golfer played against their handicap in each round, oldest
+ *  first: their score less the course handicap for that day's tees,
+ *  against par. Solo rounds count; a course with no par yet can't say. */
+function playOf(data: AppData, rounds: Round[], playerId: string): Play[] {
+  const out: Play[] = []
+  for (const r of rounds) {
+    const rp = scored(r).find((x) => x.playerId === playerId)
+    if (!rp) continue
+    const course = findCourse(data, r.courseName)
+    const par = coursePar(course)
+    if (par == null) continue
+    const over = rp.gross - playingHandicap(course, rp.handicapSnapshot, r.tee) - par
+    out.push(over <= 0 ? 'beat' : over <= 3 ? 'close' : 'off')
+  }
+  return out
 }
 
 /** The longest run of group rounds without a win, and whether it's still going. */
@@ -219,7 +239,7 @@ export default function Ledger() {
             lines={[
               'Wins are group rounds (two or more scores posted) won on net. A tie at the top counts as a win for everyone tied.',
               'Avg counts every round, solo ones included.',
-              'The squares are the last five group rounds, oldest first: dark green a win, light green on the podium, red last.',
+              'The squares are your last five rounds against your handicap, oldest first: dark green net par or better, light green within 3, red 4 or more over. Solo rounds count.',
               'The arrow is how far a golfer moved with the latest group round.',
             ]}
           />
@@ -236,7 +256,7 @@ export default function Ledger() {
           <div className="grid grid-cols-[16px_32px_1fr_44px_40px_26px] items-center gap-x-3 border-b border-line px-4 py-2 text-caption font-bold text-ink-faint">
             <span />
             <span />
-            <span>Last 5 group rounds</span>
+            <span>Last 5 rounds vs handicap</span>
             <span className="text-right">Avg</span>
             <span className="text-right">Wins</span>
             <span />
@@ -247,6 +267,7 @@ export default function Ledger() {
               row={row}
               place={i}
               form={formOf(groupRounds, row.player.id)}
+              play={playOf(data, byDate(scopeRounds), row.player.id).slice(-5)}
               move={moved(row.player.id, i)}
               isMe={row.player.id === meId}
             />
@@ -257,10 +278,9 @@ export default function Ledger() {
         <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-caption text-ink-faint">
           {(
             [
-              ['bg-green', 'Won'],
-              ['bg-green/40', 'Podium'],
-              ['bg-line-strong', 'Middle'],
-              ['bg-flag/50', 'Last'],
+              ['bg-green', 'Beat it'],
+              ['bg-green/40', 'Within 3'],
+              ['bg-flag/50', '4+ over'],
             ] as const
           ).map(([tone, label]) => (
             <span key={label} className="inline-flex items-center gap-1">
@@ -455,7 +475,7 @@ export default function Ledger() {
 }
 
 /** One golfer's line in the table: place, face, form squares, average, wins, and which way they moved. */
-function TableRow({ row, place, form: all, move, isMe }: { row: LeaderRow; place: number; form: Form[]; move: number; isMe: boolean }) {
+function TableRow({ row, place, form: all, play, move, isMe }: { row: LeaderRow; place: number; form: Form[]; play: Play[]; move: number; isMe: boolean }) {
   // Runs are counted over every group round in view, so the notes agree
   // with the chips; the squares show the last five.
   const run = (hit: (f: Form) => boolean) => {
@@ -465,7 +485,6 @@ function TableRow({ row, place, form: all, move, isMe }: { row: LeaderRow; place
   }
   const lastRun = run((f) => f === 'last')
   const cold = run((f) => f !== 'win')
-  const form = all.slice(-5)
   const note =
     row.streak >= 2 ? (
       <span className="inline-flex items-center gap-0.5 text-green">
@@ -478,7 +497,7 @@ function TableRow({ row, place, form: all, move, isMe }: { row: LeaderRow; place
         {cold} winless <Icon name="snowflake" size={11} strokeWidth={2.2} />
       </span>
     ) : null
-  const tone: Record<Form, string> = { win: 'bg-green', podium: 'bg-green/40', mid: 'bg-line-strong', last: 'bg-flag/50' }
+  const tone: Record<Play, string> = { beat: 'bg-green', close: 'bg-green/40', off: 'bg-flag/50' }
   return (
     <div className="grid grid-cols-[16px_32px_1fr_44px_40px_26px] items-center gap-x-3 border-b border-line px-4 py-3 last:border-0">
       <span className={`text-body font-extrabold tabular-nums ${place === 0 ? 'text-gold' : 'text-ink-faint'}`}>{place + 1}</span>
@@ -489,11 +508,11 @@ function TableRow({ row, place, form: all, move, isMe }: { row: LeaderRow; place
           {isMe && <span className="text-caption font-semibold text-ink-faint">(you)</span>}
           {note && <span className="whitespace-nowrap text-caption font-bold">{note}</span>}
         </span>
-        <span className="mt-1 flex gap-[3px]" aria-label={`Last ${form.length} group rounds: ${form.join(', ')}`}>
-          {form.map((f, k) => (
-            <span key={k} className={`h-[9px] w-[9px] rounded-[3px] ${tone[f]}`} />
+        <span className="mt-1 flex gap-[3px]" aria-label={`Last ${play.length} rounds against handicap: ${play.join(', ')}`}>
+          {play.map((p, k) => (
+            <span key={k} className={`h-[9px] w-[9px] rounded-[3px] ${tone[p]}`} />
           ))}
-          {form.length === 0 && <span className="text-caption text-ink-faint">No group rounds</span>}
+          {play.length === 0 && <span className="text-caption text-ink-faint">No rounds with a par yet</span>}
         </span>
       </span>
       <span className="text-right text-footnote tabular-nums text-ink-dim">{row.avgGross != null ? row.avgGross.toFixed(1) : '–'}</span>
