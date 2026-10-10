@@ -9,9 +9,8 @@ import { myOutstanding } from '../lib/settlements'
 import { anyCards, cardComplete, cardOf, holesEntered } from '../lib/holes'
 import { money } from '../lib/money'
 import { courseSlug, findCourse, hasPars, padded } from '../lib/courses'
-import { byGroupRank, courseSummaries, fmtStars, ratingFor } from '../lib/ratings'
+import { ratingFor } from '../lib/ratings'
 import { canSeeTrip, fmt1, isSoloRound, pending, type Round, type Trip } from '../types'
-import { StarRating } from '../components/Stars'
 import { Icon, IconTile } from '../components/icons'
 import CourseScene from '../components/CourseScene'
 import RoundScene from '../components/RoundScene'
@@ -23,8 +22,8 @@ import { CountUp } from '../components/Delight'
 // as a race, with the Saddam's face on whoever holds it so the trophy is
 // on the first screen every time. Money is one line until you ask for the
 // list. A score you owe sits with the recent rounds, not above the season.
-// Trips have no tab, so they live under More: the one that is close or
-// being argued about as its own row, then the list.
+// Trips have no tab, so they have a section of their own at the bottom:
+// the one that's close or being argued about first, then the rest ahead.
 
 const DAY = 86_400_000
 const fromISO = (iso: string) => {
@@ -113,7 +112,6 @@ export default function Home() {
   // This year, on the group's terms: who's winning group rounds.
   const seasonRounds = rounds.filter((r) => r.date.startsWith(YEAR))
   const board = leaderboard(data, seasonRounds).filter((row) => row.rounds > 0)
-  const favourite = byGroupRank(courseSummaries(data)).find((c) => c.groupRank === 1)
 
   const visibleTrips = data.trips.filter((t) => canSeeTrip(t, me.id))
   const planning = visibleTrips.filter((t) => t.status === 'planning')
@@ -126,6 +124,7 @@ export default function Home() {
   // Trips row at the bottom.
   const soonTrip = upcoming.find((t) => daysBetween(TODAY, t.startDate!) <= 14)
   const planningTrip = planning[0]
+  const tripsAhead = [...new Set([soonTrip, planningTrip, ...upcoming, ...planning].filter((t): t is Trip => !!t))].slice(0, 3)
 
   // One line under the group's name, only when a trip is close.
   // The Saddam used to be the fallback here too, which said the same
@@ -303,49 +302,35 @@ export default function Home() {
         </div>
       )}
 
-      {/* Where to next, and where we've been */}
-      <SectionLabel>More</SectionLabel>
+      {/* Trips have no tab, so this is their front door: the one that's
+          close or being argued about first, then anything else booked
+          ahead. With nothing on the go, one row to start the next. */}
+      <SectionLabel
+        action={
+          <Link to="/trips" className="text-footnote font-bold text-green">
+            All trips
+          </Link>
+        }
+      >
+        Trips
+      </SectionLabel>
       <Card>
         <div className="divide-y divide-line">
-          {/* The trip that's close or being argued about, first: booked and
-              under two weeks out, else one still being planned. */}
-          {(soonTrip ?? planningTrip) && <TripRow trip={(soonTrip ?? planningTrip)!} today={TODAY} meId={me.id} />}
-          <RowButton onClick={() => navigate('/trips')} className="flex items-center gap-3.5 px-4 py-3.5">
-            <IconTile name="suitcase" tone="sand" size={38} />
-            <div className="flex-1 min-w-0">
-              <p className="text-body font-bold text-ink">Trips</p>
-              <p className="text-caption text-ink-faint truncate">
-                {[
-                  planning.length > 0 && `${planning.length} in the works`,
-                  upcoming.length > 0 && `${upcoming.length} coming up`,
-                  past.length > 0 && `${past.length} in the archive`,
-                ]
-                  .filter(Boolean)
-                  .join(' · ') || 'Plan the first one'}
-              </p>
-            </div>
-            <Icon name="chevronRight" size={18} className="text-ink-faint" />
-          </RowButton>
-          <RowButton
-            onClick={() => navigate(favourite ? `/courses/${encodeURIComponent(favourite.slug)}` : '/courses')}
-            className="flex items-center gap-3.5 px-4 py-3.5"
-          >
-            <IconTile name="star" tone="gold" size={38} />
-            <div className="flex-1 min-w-0">
-              <p className="text-body font-bold text-ink truncate">{favourite ? favourite.name : 'No favourite yet'}</p>
-              <p className="flex items-center gap-1.5 text-caption text-ink-faint">
-                The group’s favourite
-                {favourite?.avg != null && (
-                  <>
-                    <span aria-hidden>·</span>
-                    <StarRating value={favourite.avg} size={10} />
-                    <span className="tabular-nums">{fmtStars(favourite.avg)}</span>
-                  </>
-                )}
-              </p>
-            </div>
-            <Icon name="chevronRight" size={18} className="text-ink-faint" />
-          </RowButton>
+          {tripsAhead.map((t) => (
+            <TripRow key={t.id} trip={t} today={TODAY} meId={me.id} />
+          ))}
+          {tripsAhead.length === 0 && (
+            <RowButton onClick={() => navigate('/trips/new')} className="flex items-center gap-3.5 px-4 py-3.5">
+              <IconTile name="suitcase" tone="sand" size={38} />
+              <div className="flex-1 min-w-0">
+                <p className="text-body font-bold text-ink">Plan a trip</p>
+                <p className="text-caption text-ink-faint truncate">
+                  {past.length > 0 ? `${past.length} in the archive` : 'Pick the dates, argue about where'}
+                </p>
+              </div>
+              <Icon name="chevronRight" size={18} className="text-ink-faint" />
+            </RowButton>
+          )}
         </div>
       </Card>
       <div className="h-4" />
