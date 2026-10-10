@@ -74,8 +74,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    the ratings and everyone's ranking slugs in one transaction (done by hand for Centennial
    Golf Club on 2026-10-10). And the directory search: pass the course's town so nearby
    matches come first, return more than 8, and retry on the distinctive word alone when the
-   full name finds nothing ("Centennial" in Carmel, NY was missed). Two commits are waiting
-   unpushed: the word-by-word matcher and Delete this course.
+   full name finds nothing ("Centennial" in Carmel, NY was missed). The word-by-word matcher,
+   Delete this course and the ratings tiebreak went live 2026-10-10 (0aff473).
 
 ## Decisions not to reopen
 
