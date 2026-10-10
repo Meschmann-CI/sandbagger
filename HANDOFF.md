@@ -27,6 +27,12 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   the sparkline, the four-stat tile row, the left-border quote card, page stat subtitles,
   explainer captions and em dashes in copy all removed.
 - Push only when Matt asks; Netlify credits run low, so batch changes into one push.
+  `netlify.toml` skips the build when a push only touches `.github/`, `supabase/` or `*.md`;
+  `[skip netlify]` in the head commit message skips any push outright.
+- Keep-alive (2026-10-10): `.github/workflows/keepalive.yml` runs every 6 hours; `keepalive()`
+  upserts the one row in `keepalive_heartbeat` (RLS on, no policies) and the job also reads
+  `rounds` (empty for anon). Check with `select * from keepalive_heartbeat`. The old weekly
+  read-only ping is the pattern that drew a pause warning on Process Mapper.
 
 ## Next actions
 

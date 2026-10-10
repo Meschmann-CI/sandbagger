@@ -197,15 +197,30 @@ create table if not exists push_subscriptions (
 
 create index if not exists push_subs_player_idx on push_subscriptions(player_id);
 
--- Pinged weekly by .github/workflows/keepalive.yml so the free-tier
--- project never pauses for inactivity. Deliberately callable with the
--- anon key; it reads nothing.
+-- Pinged every six hours by .github/workflows/keepalive.yml so the
+-- free-tier project never pauses for inactivity. Each ping is a real
+-- write: a bare weekly read was the old version, and on Process Mapper a
+-- daily read still drew Supabase's inactivity warning (2026-09-29).
+-- Deliberately callable with the anon key; it only ever bumps the one
+-- heartbeat row, and the table itself has RLS on with no policies.
+create table if not exists keepalive_heartbeat (
+  id        int primary key default 1 check (id = 1),
+  pinged_at timestamptz not null default now(),
+  pings     bigint not null default 0
+);
+alter table keepalive_heartbeat enable row level security;
+revoke all on keepalive_heartbeat from anon, authenticated;
+
 create or replace function keepalive()
 returns text
 language sql
 security definer
 set search_path = public
-as $$ select 'awake' $$;
+as $$
+  insert into keepalive_heartbeat (id, pinged_at, pings) values (1, now(), 1)
+  on conflict (id) do update set pinged_at = now(), pings = keepalive_heartbeat.pings + 1
+  returning 'awake, ping ' || pings
+$$;
 
 -- Migrations, for projects created before these existed.
 -- Handing the Saddam over by hand:
@@ -471,7 +486,7 @@ $$;
 -- The SECURITY DEFINER helpers all key off auth.uid(), so an anonymous
 -- call returns null or raises — harmless, but there's no reason to leave
 -- them reachable without a session. keepalive (below) stays open on
--- purpose: the weekly GitHub Action pings it with the anon key.
+-- purpose: the GitHub Action pings it every six hours with the anon key.
 alter function jsonb_without(jsonb, jsonb) set search_path = public;
 revoke execute on function current_player_id() from anon;
 revoke execute on function current_group_id() from anon;
