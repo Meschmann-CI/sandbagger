@@ -72,8 +72,13 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 ## Decisions not to reopen
 
 - Light theme only, Manrope, "Scorecard Clean". Dark mode and stylized fonts were rejected.
-- Tabs: Home, Rounds, Log (raised centre), Courses, You. Trips are reached from Home and You,
-  not a tab. Standings page is `/h2h`.
+- Tabs (Matt, 2026-10-10): Home, Rounds, Log (raised centre), Standings (`/h2h`), You. Courses
+  sit beside rounds under the Rounds tab (a Rounds | Courses switch at the top of both pages,
+  replace-navigation); Trips have a section on Home and live under You, never a tab.
+- Standings is the whole argument: 2026 / All-time chips scope everything; the Saddam as a
+  band; the table with last-5 form squares, movement since the latest group round and run
+  notes (counted in scope); money bars; your rivalries (grid behind Every matchup); records
+  and the wall of shame; handicaps this year (hidden until someone's index has moved).
 - The Saddam is minimal everywhere except Standings: one small badge beside the holder on Home.
 - Do not add more forest/green surfaces; reach for scenes, sky, sand, cream. Recent-round tiles
   stay small (124px).

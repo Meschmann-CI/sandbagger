@@ -7,6 +7,7 @@ import { StarRating } from '../components/Stars'
 import { CourseTile } from '../components/CourseLogo'
 import { Card, EmptyState, HelpTip, Pill, SectionLabel } from '../components/ui'
 import { TeeYardsCatchUp } from '../components/TeeYardsCatchUp'
+import { RoundsCoursesSwitch } from '../components/RoundsCoursesSwitch'
 
 // Every course the group has played, two ways: how it rates, and how it
 // ranks. Stars are the honest scale but bunch up around four; the
@@ -47,7 +48,7 @@ export default function Courses() {
 
   return (
     <div className="rise">
-      <header className="pt-4 pb-2 px-1 flex items-start justify-between gap-3">
+      <header className="pt-4 pb-3 px-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-large font-bold tracking-tight text-ink">Courses</h1>
         </div>
@@ -60,17 +61,20 @@ export default function Courses() {
           + Add course
         </button>
       </header>
+      <RoundsCoursesSwitch />
 
       {rows.length === 0 ? (
         <EmptyState title="No courses yet" sub="Add the course you're about to play, or log a round and it turns up here, ready to be rated." />
       ) : (
         <>
-          <div className="flex rounded-xl border border-line-strong overflow-hidden mt-2">
+          <div className="flex gap-2 mt-3">
             {(['ratings', 'rankings'] as View[]).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`flex-1 py-2.5 text-footnote font-bold capitalize ${view === v ? 'bg-forest text-on-forest' : 'bg-card text-ink-dim'}`}
+                className={`rounded-full px-4 py-2 text-footnote font-bold capitalize border transition ${
+                  view === v ? 'bg-forest text-on-forest border-forest' : 'bg-card text-ink-dim border-line-strong'
+                }`}
               >
                 {v}
               </button>

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useNavigate } from '../lib/nav'
 import { useLogSheet } from '../components/logSheet'
 import { useStore } from '../data/store'
@@ -9,6 +8,7 @@ import { AvatarStack, Card, EmptyState, Pill, PrimaryButton, RowBadge } from '..
 import { Icon } from '../components/icons'
 import RoundScene from '../components/RoundScene'
 import { CourseTile } from '../components/CourseLogo'
+import { RoundsCoursesSwitch } from '../components/RoundsCoursesSwitch'
 import { courseBrand } from '../lib/courseBrands'
 
 // A logo that reads in a square tile. Wordmarks are too wide to, so those
@@ -48,16 +48,12 @@ export default function Rounds() {
 
   return (
     <div className="rise">
-      <header className="pt-4 pb-3 px-1 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-large font-bold tracking-tight text-ink">Rounds</h1>
-        </div>
-        <Link to="/h2h" className="text-footnote font-bold text-green shrink-0 mt-2">
-          Standings →
-        </Link>
+      <header className="pt-4 pb-3 px-1">
+        <h1 className="text-large font-bold tracking-tight text-ink">Rounds</h1>
       </header>
+      <RoundsCoursesSwitch />
 
-      <div className="flex gap-2 mb-2">
+      <div className="flex gap-2 mt-3 mb-2">
         {filters.map((f) => (
           <button
             key={f.key}

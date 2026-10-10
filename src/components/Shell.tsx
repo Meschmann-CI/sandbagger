@@ -17,10 +17,11 @@ import SaddamHandover from './SaddamHandover'
 import PullToRefresh from './PullToRefresh'
 
 // The tab order is the app's opinion about what matters most often.
-// Logging rounds, arguing about courses, and settling bets happen every
-// weekend; a trip happens twice a year. So Trips has no tab: it lives on
-// Home (up top when one is being planned or is close) and under You, and
-// the middle of the bar goes to the thing done most, logging a round.
+// Logging rounds and checking who's winning happen every weekend, so
+// Standings has a tab; courses are looked at now and then, so they sit
+// beside rounds under the Rounds tab. A trip happens twice a year, so
+// Trips has no tab: it has a section on Home and lives under You. The
+// middle of the bar goes to the thing done most, logging a round.
 
 const stroke = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' } as const
 
@@ -48,12 +49,13 @@ const tabs = [
     ),
   },
   {
-    to: '/courses',
-    label: 'Courses',
+    to: '/h2h',
+    label: 'Standings',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
-        <path d="M12 21 C12 21 5 14.5 5 9.5 A7 7 0 0 1 19 9.5 C19 14.5 12 21 12 21 Z" />
-        <circle cx="12" cy="9.5" r="2.4" />
+        <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
+        <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4" />
+        <path d="M12 13v4M9 20.5h6M10 17h4v3.5h-4z" />
       </svg>
     ),
   },
@@ -66,8 +68,8 @@ const tabs = [
 
 // Which tab a screen belongs to, for the highlight. Trips hang off Home.
 function tabFor(pathname: string) {
-  if (pathname.startsWith('/rounds') || pathname.startsWith('/h2h') || pathname.startsWith('/saddam')) return '/rounds'
-  if (pathname.startsWith('/courses')) return '/courses'
+  if (pathname.startsWith('/rounds') || pathname.startsWith('/courses')) return '/rounds'
+  if (pathname.startsWith('/h2h') || pathname.startsWith('/saddam')) return '/h2h'
   if (pathname.startsWith('/profile') || pathname.startsWith('/group') || pathname.startsWith('/trophies')) return '/profile'
   return '/'
 }
