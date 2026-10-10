@@ -24,6 +24,7 @@ import { betRules } from '../lib/betRules'
 import { sandbaggers } from '../lib/delight'
 import { SandbagStamp } from '../components/Delight'
 import { Icon, type IconName } from '../components/icons'
+import { courseBrand } from '../lib/courseBrands'
 import CourseScene, { lightFor } from '../components/CourseScene'
 import { useRoundWeather } from '../lib/weather'
 import { AttestSheet, readAttestation, type Attestation } from '../components/Attest'
@@ -101,6 +102,7 @@ export default function RoundDetail() {
   const course = findCourse(data, round.courseName)
   const par = coursePar(course)
   const saddam = saddamState(data)
+  const brand = courseBrand(round.courseName)
   const saddamChangedHere = saddam.since === round.date && saddam.holderId === standings[0]?.playerId && !solo
   const iAmWaiting = waiting.some((rp) => rp.playerId === data.currentUserId)
 
@@ -180,7 +182,7 @@ export default function RoundDetail() {
             podium: rows,
             headline: solo || !top ? `${top?.name ?? ''} shot ${standings[0]?.gross ?? ''}` : margin === 0 ? 'Dead heat at the top' : `${top.name} by ${fmt1(margin)}`,
             groupName: data.group.name,
-            banner: document.querySelector('[data-shared-hero] svg, [data-shared-hero] img'),
+            banner: document.querySelector('[data-share-banner] svg, [data-share-banner] img'),
           })
           await shareCard(blob, `${round.courseName.replace(/[^a-z0-9]+/gi, '-')}-${round.date}.png`, `${round.courseName}, ${prettyDate(round.date)}`)
         } finally {
@@ -200,11 +202,13 @@ export default function RoundDetail() {
         ? `${top.name} out on the solo grind. ${standings[0].gross} on the card.`
         : margin === 0
         ? 'Dead heat at the top. Nobody gets bragging rights today.'
-        : margin >= 8
-          ? `${top.name} won by ${fmt1(margin)}. That's not a win, that's a crime scene.`
-          : margin >= 4
-            ? `${top.name} won comfortably by ${fmt1(margin)}.`
-            : `${top.name} escaped with it by ${fmt1(margin)}.`
+        : `${
+            margin >= 8
+              ? `By ${fmt1(margin)}. That's not a win, that's a crime scene.`
+              : margin >= 4
+                ? `Comfortably, by ${fmt1(margin)}.`
+                : `Escaped with it by ${fmt1(margin)}.`
+          }${saddamChangedHere ? ' And walked off with the Saddam.' : ''}`
 
   return (
     <div className="rise">
@@ -213,35 +217,41 @@ export default function RoundDetail() {
         {/* The round as a picture: its first photo, or its course painted
             with the day's actual weather. The thumbnail you tapped grows
             into this. */}
-        <div data-shared={round.id} data-shared-hero className="relative -mx-1 mb-3 mt-1 h-44 overflow-hidden rounded-3xl bg-paper">
-          {round.photos?.[0] ? (
-            <img src={round.photos[0].url} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <CourseScene course={round.courseName} light={lightFor(round.id)} weather={weather} className="h-full w-full" />
-          )}
+        <div data-shared={round.id} data-shared-hero className="relative -mx-1 mb-3 mt-1 h-52 overflow-hidden rounded-3xl bg-paper">
+          <div data-share-banner className="absolute inset-0">
+            {round.photos?.[0] ? (
+              <img src={round.photos[0].url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <CourseScene course={round.courseName} light={lightFor(round.id)} weather={weather} className="h-full w-full" />
+            )}
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/60" />
           {weather && (
-            <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-black/35 px-2.5 py-1 text-caption font-bold text-white backdrop-blur-sm tabular-nums">
+            <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/35 px-2.5 py-1 text-caption font-bold text-white backdrop-blur-sm tabular-nums">
               {weather.label} · {weather.tempF}°F · wind {weather.windMph} mph
             </span>
           )}
-        </div>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-large font-bold tracking-tight leading-tight text-ink">{round.courseName}</h1>
-            <p className="text-footnote text-ink-dim mt-1">
-              {prettyDate(round.date)}
-              {par != null && ` · par ${par}`}
-              {round.tee && ` · ${round.tee} tees`}
-            </p>
+          <div className="absolute inset-x-4 bottom-4 flex items-center gap-3 text-white">
+            {brand?.logo && (
+              <span
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
+                style={brand.dark ? { backgroundColor: brand.color } : undefined}
+              >
+                <img src={brand.logo} alt="" className="max-h-full max-w-full object-contain" />
+              </span>
+            )}
+            <div className="min-w-0">
+              <h1 className="text-title font-bold tracking-tight leading-tight [text-shadow:0_1px_12px_rgba(0,0,0,0.35)]">{round.courseName}</h1>
+              <p className="text-footnote text-white/85 [text-shadow:0_1px_8px_rgba(0,0,0,0.35)]">
+                {prettyDate(round.date)}
+                {par != null && ` · par ${par}`}
+                {round.tee && ` · ${round.tee} tees`}
+              </p>
+            </div>
           </div>
-          <button
-            onClick={() => navigate(`/rounds/${round.id}/edit`)}
-            className={`shrink-0 rounded-xl px-4 py-2 text-footnote ${SECONDARY_BTN}`}
-          >
-            Edit
-          </button>
         </div>
-        <div className="flex flex-wrap gap-2 mt-2">
+        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
           {!solo && round.players.length > 1 && saddamCounts(round) && <Pill tone="cream">Saddam on the line</Pill>}
           {solo && standings.length > 0 && <Pill>Solo round</Pill>}
           {waiting.length > 0 && <Pill tone="flag">{waiting.length} score{waiting.length === 1 ? '' : 's'} outstanding</Pill>}
@@ -252,6 +262,13 @@ export default function RoundDetail() {
               </Pill>
             </Link>
           )}
+        </div>
+          <button
+            onClick={() => navigate(`/rounds/${round.id}/edit`)}
+            className={`shrink-0 rounded-xl px-4 py-2 text-footnote ${SECONDARY_BTN}`}
+          >
+            Edit
+          </button>
         </div>
       </header>
 
