@@ -42,6 +42,15 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    `supabase/email-templates/` into Authentication > Emails > Templates (no MCP tool for that).
 6. iOS haptics trick (`buzz()` via a switch input) is untested on a real iPhone.
 
+7. Redesign in Claude Design: canvas https://claude.ai/artifact/2XSg6hhea91gscdJeUmm3s (brief +
+   current screens; seed files in `../design-seed/`). Decided 2026-10-10: SF Pro replaces
+   Manrope, light only for now, green surfaces and cream are out. When Matt brings the
+   finished design back, rebuild the web UI to match.
+8. Long term: a native SwiftUI app. Needs a Mac with Xcode (none on this Windows laptop) and
+   the $99/yr Apple Developer Program for TestFlight. Supabase, the Edge Functions and the
+   schema carry over unchanged; the TS logic in `src/lib` (bets, handicaps, money, ghost,
+   badges) has to be ported to Swift. The design brief asks for native iOS idioms for this.
+
 ## Decisions not to reopen
 
 - Light theme only, Manrope, "Scorecard Clean". Dark mode and stylized fonts were rejected.
