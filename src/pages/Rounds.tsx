@@ -8,6 +8,15 @@ import { fmt1, isSoloRound, pending } from '../types'
 import { AvatarStack, Card, EmptyState, Pill, PrimaryButton, RowBadge } from '../components/ui'
 import { Icon } from '../components/icons'
 import RoundScene from '../components/RoundScene'
+import { CourseTile } from '../components/CourseLogo'
+import { courseBrand } from '../lib/courseBrands'
+
+// A logo that reads in a square tile. Wordmarks are too wide to, so those
+// rounds fall through to the photo or the scene, as on the course list.
+const squareLogo = (courseName: string) => {
+  const brand = courseBrand(courseName)
+  return !!brand?.logo && !brand.wide
+}
 
 type Filter = 'all' | 'mine' | 'group'
 
@@ -90,9 +99,17 @@ export default function Rounds() {
                 </p>
               )}
               <Card onClick={() => navigate(`/rounds/${r.id}`, { shared: r.id })} className={`p-3.5 flex items-center gap-3.5 ${newMonth ? '' : 'border-t-0'}`}>
-                {/* The round's first photo, or its course's scene */}
-                <div data-shared={r.id} className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-xl bg-paper">
-                  {r.photos?.[0] ? (
+                {/* The course's logo when it has one that fits a square, else
+                    the round's first photo, else the course's scene. The
+                    photo or scene grows into the round's header; a logo
+                    doesn't, since the header is the scene. */}
+                <div
+                  data-shared={squareLogo(r.courseName) ? undefined : r.id}
+                  className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-xl bg-paper"
+                >
+                  {squareLogo(r.courseName) ? (
+                    <CourseTile name={r.courseName} className="h-full w-full rounded-xl" />
+                  ) : r.photos?.[0] ? (
                     <img src={r.photos[0].url} alt="" loading="lazy" className="h-full w-full object-cover" />
                   ) : (
                     <RoundScene round={r} />
