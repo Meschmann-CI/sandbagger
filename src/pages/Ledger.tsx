@@ -239,7 +239,7 @@ export default function Ledger() {
             lines={[
               'Wins are group rounds (two or more scores posted) won on net. A tie at the top counts as a win for everyone tied.',
               'Avg counts every round, solo ones included.',
-              'The squares are your last five rounds against your handicap, oldest first: dark green net par or better, light green within 3, red 4 or more over. Solo rounds count.',
+              'The squares are your last five rounds against your handicap, oldest first: dark green net par or better, beige within 3, red 4 or more over. Solo rounds count.',
               'The arrow is how far a golfer moved with the latest group round.',
             ]}
           />
@@ -254,9 +254,7 @@ export default function Ledger() {
       ) : (
         <Card>
           <div className="grid grid-cols-[16px_32px_1fr_44px_40px_26px] items-center gap-x-3 border-b border-line px-4 py-2 text-caption font-bold text-ink-faint">
-            <span />
-            <span />
-            <span>Last 5 rounds vs handicap</span>
+            <span className="col-span-3">Last 5 rounds vs your handicap</span>
             <span className="text-right">Avg</span>
             <span className="text-right">Wins</span>
             <span />
@@ -279,7 +277,7 @@ export default function Ledger() {
           {(
             [
               ['bg-green', 'Beat it'],
-              ['bg-green/40', 'Within 3'],
+              ['bg-cream-deep', 'Within 3'],
               ['bg-flag/50', '4+ over'],
             ] as const
           ).map(([tone, label]) => (
@@ -497,7 +495,7 @@ function TableRow({ row, place, form: all, play, move, isMe }: { row: LeaderRow;
         {cold} winless <Icon name="snowflake" size={11} strokeWidth={2.2} />
       </span>
     ) : null
-  const tone: Record<Play, string> = { beat: 'bg-green', close: 'bg-green/40', off: 'bg-flag/50' }
+  const tone: Record<Play, string> = { beat: 'bg-green', close: 'bg-cream-deep', off: 'bg-flag/50' }
   return (
     <div className="grid grid-cols-[16px_32px_1fr_44px_40px_26px] items-center gap-x-3 border-b border-line px-4 py-3 last:border-0">
       <span className={`text-body font-extrabold tabular-nums ${place === 0 ? 'text-gold' : 'text-ink-faint'}`}>{place + 1}</span>
