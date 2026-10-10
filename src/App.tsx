@@ -74,7 +74,7 @@ function Splash({ message, error }: { message: string; error?: boolean }) {
     <div className="mx-auto max-w-md min-h-dvh flex flex-col items-center justify-center px-6 text-center">
       <img src="/sandbagger-icon-180.png" alt="" width={64} height={64} className="rounded-2xl mb-4" />
       {error ? (
-        <Card className="p-5">
+        <Card tile className="p-5">
           <p className="text-body font-bold text-ink">Something went wrong</p>
           <p className="text-footnote text-ink-dim mt-1.5 break-words">{message}</p>
           <button onClick={() => window.location.reload()} className="mt-4 text-footnote font-bold text-green">

@@ -70,7 +70,7 @@ export default function Rounds() {
         />
       )}
 
-      <div className="space-y-3">
+      <div>
         {rounds.map((r, i) => {
           const standings = roundStandings(r)
           const top = standings.length ? data.players.find((p) => p.id === standings[0].playerId) : undefined
@@ -89,7 +89,7 @@ export default function Rounds() {
                   {monthLabel(month)}
                 </p>
               )}
-              <Card onClick={() => navigate(`/rounds/${r.id}`, { shared: r.id })} className="p-3.5 flex items-center gap-3.5">
+              <Card onClick={() => navigate(`/rounds/${r.id}`, { shared: r.id })} className={`p-3.5 flex items-center gap-3.5 ${newMonth ? '' : 'border-t-0'}`}>
                 {/* The round's first photo, or its course's scene */}
                 <div data-shared={r.id} className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-xl bg-paper">
                   {r.photos?.[0] ? (

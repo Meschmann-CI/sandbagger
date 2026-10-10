@@ -50,10 +50,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    yardages, the tee-coloured card with Index and Out/In, the live Hole view with the pad
    always up, Home's group-name title / live strip / season race, Round detail's logo over
    the scene. `refresh` is not pushed yet. `redesign` stays as a reference; don't merge it.
-   Open question: tiles vs flat. Branch `flat-preview` (off `refresh`) flattens cards into
-   edge-to-edge sections behind `?flat=1`; comparison images are
-   `../design-seed/compare-home.png` and `compare-round.png`. Build the chosen one properly
-   (not the CSS preview), then also fix the tab bar if Matt still wants it changed.
+   Flat chosen 2026-10-10 (see Decisions). Branch `flat-preview` was the throwaway CSS
+   comparison; it is superseded and can be deleted.
 9. Per-tee yardages (2026-10-10): `CourseTee.holeYards`, `yardsFor()` picks the played tee's
    yards, `course-lookup` v3 (deployed) returns every tee's holes. Courses page "Every tee's
    yardage" pulls 16 courses a tap (35 requests a day); Matt taps it over a few days after
@@ -91,6 +89,15 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 - Live round on Home is the near-black strip (yellow Live, score thru N, white Hole N
   button, yellow progress line). Matt rejected a big tile, a yellow strip and a white card.
 - Round detail: with the podium showing, no "X won" line; the trash talk sits under it.
+- Flat, not tiles (Matt, 2026-10-10, after a side-by-side): `Card` in `components/ui.tsx` is
+  an edge-to-edge section of the page (`.sb-section`: past the gutter, a hairline above and
+  below, no corners, shadow or fill; tinted ones keep their tint). Pass `tile` only where a
+  box is the point: sign-in, setup, the error splash, boxes inside the bet editor. The live
+  strip, the season race, hero banners, photos and scenes stay as they are. Stacked cards
+  sit flush (no space-y) so they share one line. Sticky table cells inside a section are
+  `bg-paper`, not `bg-card`. Matt found rounded tiles everywhere looked "designed in PPT".
+- Home: the trip in play is a row under More (scene thumbnail, votes or days out, a Vote
+  nudge), not a big card; the score you owe sits under Recent rounds.
 - `src/data/seed.ts` ships in the public bundle and holds fictional demo data only. Never put
   real trip details (door codes, confirmations) back in it.
 

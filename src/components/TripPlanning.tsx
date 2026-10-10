@@ -41,7 +41,7 @@ export default function TripPlanning({ trip }: { trip: Trip }) {
       </Card>
 
       <SectionLabel>Destinations</SectionLabel>
-      <div className="space-y-3">
+      <div>
         {trip.options.length === 0 && (
           <Card className="p-5 text-center text-footnote text-ink-dim">Nothing on the table yet. Add the first contender below.</Card>
         )}

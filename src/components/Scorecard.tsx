@@ -90,7 +90,7 @@ export default function Scorecard({ round }: { round: Round }) {
                 the dot and the label say which tee. */}
             {yc && (
               <tr className="border-b border-line">
-                <td className="sticky left-0 z-10 bg-card px-3 py-1 text-caption font-semibold uppercase text-ink-faint whitespace-nowrap">
+                <td className="sticky left-0 z-10 bg-paper px-3 py-1 text-caption font-semibold uppercase text-ink-faint whitespace-nowrap">
                   <span className="inline-flex items-center gap-1">
                     {ydsDot && <span className="h-2 w-2 rounded-full ring-1 ring-ink/20" style={{ backgroundColor: ydsDot }} aria-hidden />}
                     Yds{yc.tee ? ` · ${yc.tee}` : ''}
@@ -121,7 +121,7 @@ export default function Scorecard({ round }: { round: Round }) {
                 the strokes land. */}
             {index && (
               <tr className="border-b border-line">
-                <td className="sticky left-0 z-10 bg-card px-3 py-1 text-caption font-semibold uppercase text-ink-faint">Index</td>
+                <td className="sticky left-0 z-10 bg-paper px-3 py-1 text-caption font-semibold uppercase text-ink-faint">Index</td>
                 {index.slice(0, 9).map((x, i) => (
                   <td key={i} className="px-1 py-1 text-center text-caption text-ink-faint tabular-nums">
                     {x ?? ''}
@@ -206,7 +206,7 @@ export default function Scorecard({ round }: { round: Round }) {
               return (
                 <Fragment key={rp.playerId}>
                 <tr className="border-b border-line last:border-0">
-                  <td className="sticky left-0 z-10 bg-card px-3 py-2">
+                  <td className="sticky left-0 z-10 bg-paper px-3 py-2">
                     <div className="flex items-center gap-2">
                       <Avatar player={p} size={22} />
                       <span className="text-footnote font-bold text-ink whitespace-nowrap">{p.name}</span>

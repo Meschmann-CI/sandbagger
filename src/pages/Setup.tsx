@@ -90,7 +90,7 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
       {mode === 'choose' && (
         <div className="space-y-3">
           {groupExists && (
-            <Card className="p-5">
+            <Card tile className="p-5">
               <p className="text-body font-bold text-ink">Waiting on an invite?</p>
               <p className="text-footnote text-ink-dim mt-1.5">
                 A group already exists. Ask whoever set it up to add {email ? <span className="font-bold text-ink">{email}</span> : 'your email'} as a
@@ -98,11 +98,11 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
               </p>
             </Card>
           )}
-          <Card onClick={() => setMode('join')} className="p-5">
+          <Card tile onClick={() => setMode('join')} className="p-5">
             <p className="text-body font-bold text-ink">I have an invite code</p>
             <p className="text-footnote text-ink-dim mt-1">Join an existing group with its six-character code.</p>
           </Card>
-          <Card onClick={() => setMode('create')} className="p-5">
+          <Card tile onClick={() => setMode('create')} className="p-5">
             <p className="text-body font-bold text-ink">Start a new group</p>
             <p className="text-footnote text-ink-dim mt-1">You'll be the organizer and can add everyone else.</p>
           </Card>
@@ -113,7 +113,7 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
       )}
 
       {mode === 'create' && (
-        <Card className="p-5 space-y-3.5">
+        <Card tile className="p-5 space-y-3.5">
           <div>
             <label className={label}>Group name</label>
             <input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="Sunday Foursome" className={field} autoFocus />
@@ -167,7 +167,7 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
       )}
 
       {mode === 'join' && (
-        <Card className="p-5 space-y-3.5">
+        <Card tile className="p-5 space-y-3.5">
           <div>
             <label className={label}>Invite code</label>
             <input

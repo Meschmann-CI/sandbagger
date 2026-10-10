@@ -23,8 +23,8 @@ import { CountUp } from '../components/Delight'
 // as a race, with the Saddam's face on whoever holds it so the trophy is
 // on the first screen every time. Money is one line until you ask for the
 // list. A score you owe sits with the recent rounds, not above the season.
-// Trips have no tab, so they live here: up top when one is close or
-// being argued about, and always reachable at the bottom.
+// Trips have no tab, so they live under More: the one that is close or
+// being argued about as its own row, then the list.
 
 const DAY = 86_400_000
 const fromISO = (iso: string) => {
@@ -153,6 +153,10 @@ export default function Home() {
         {inProgress && live && <LiveStrip round={inProgress} live={live} />}
 
         <SeasonRace board={board} meId={me.id} holderId={holder?.id} saddamSince={saddam.since} year={YEAR} />
+      </div>
+
+      {/* Money and a course to rate: rows on the page under the race. */}
+      <div className="mt-4">
 
         {/* Money: one line until you want the list. Each row in the list
             goes to the round or trip it belongs to, where Pay lives. */}
@@ -299,19 +303,13 @@ export default function Home() {
         </div>
       )}
 
-      {/* Trips: under the rounds, since a round happens every weekend
-          and a trip twice a year. Booked and close first, then one being planned. */}
-      {(soonTrip || planningTrip) && (
-        <div className="mt-6 space-y-2.5">
-          {soonTrip && <TripHero trip={soonTrip} today={TODAY} meId={me.id} />}
-          {planningTrip && planningTrip.id !== soonTrip?.id && <TripHero trip={planningTrip} today={TODAY} meId={me.id} />}
-        </div>
-      )}
-
       {/* Where to next, and where we've been */}
       <SectionLabel>More</SectionLabel>
       <Card>
         <div className="divide-y divide-line">
+          {/* The trip that's close or being argued about, first: booked and
+              under two weeks out, else one still being planned. */}
+          {(soonTrip ?? planningTrip) && <TripRow trip={(soonTrip ?? planningTrip)!} today={TODAY} meId={me.id} />}
           <RowButton onClick={() => navigate('/trips')} className="flex items-center gap-3.5 px-4 py-3.5">
             <IconTile name="suitcase" tone="sand" size={38} />
             <div className="flex-1 min-w-0">
@@ -523,9 +521,9 @@ function RoundTile({ round: r, onOpen }: { round: Round; onOpen: () => void }) {
     <button
       type="button"
       onClick={onOpen}
-      className="w-[124px] shrink-0 snap-start overflow-hidden rounded-2xl border border-line bg-card text-left shadow-[0_1px_2px_rgba(24,32,25,0.05)] transition-transform active:scale-[0.98]"
+      className="w-[124px] shrink-0 snap-start text-left transition-transform active:scale-[0.98]"
     >
-      <div data-shared={r.id} className="relative h-[62px] bg-paper">
+      <div data-shared={r.id} className="relative h-[70px] overflow-hidden rounded-xl bg-paper">
         {photo ? (
           <img src={photo.url} alt="" loading="lazy" className="h-full w-full object-cover" />
         ) : (
@@ -536,11 +534,11 @@ function RoundTile({ round: r, onOpen }: { round: Round; onOpen: () => void }) {
             <Icon name="camera" size={11} strokeWidth={2.2} /> {r.photos!.length}
           </span>
         )}
-        <div className="absolute -bottom-2.5 left-2">
+        <div className="absolute bottom-1.5 left-1.5">
           <AvatarStack players={r.players.map((rp) => data.players.find((p) => p.id === rp.playerId))} size={20} />
         </div>
       </div>
-      <div className="px-2.5 pb-2.5 pt-3.5">
+      <div className="px-0.5 pt-2">
         <p className="truncate text-footnote font-bold text-ink">{r.courseName}</p>
         <p className="truncate text-caption text-ink-dim tabular-nums">{line}</p>
         <p className="text-caption text-ink-faint tabular-nums">{shortDate(r.date)}</p>
@@ -549,42 +547,32 @@ function RoundTile({ round: r, onOpen }: { round: Round; onOpen: () => void }) {
   )
 }
 
-/** A trip on Home: booked and close, or still being planned. */
-function TripHero({ trip, today, meId }: { trip: Trip; today: string; meId: string }) {
+/** The trip in play, as the first row under More: its scene, where it
+ *  stands, and a nudge if your vote is the one missing. */
+function TripRow({ trip, today, meId }: { trip: Trip; today: string; meId: string }) {
   const navigate = useNavigate()
   const isPlanning = trip.status === 'planning'
   const votesIn = isPlanning ? new Set(trip.options.flatMap((o) => o.votes)).size : 0
   const myVoteCast = isPlanning && trip.options.some((o) => o.votes.includes(meId))
   const days = trip.startDate ? daysBetween(today, trip.startDate) : null
   return (
-    <Card onClick={() => navigate(`/trips/${trip.id}`)} className="overflow-hidden">
-      {/* The scene stays clear: its flag sits somewhere different in each one. */}
-      <CourseScene course={trip.location || trip.name} light="golden" className="h-24 w-full" />
-      <div className="px-5 pt-3">
-        <h2 className="text-title font-bold leading-tight text-ink">{trip.name}</h2>
-        <p className="mt-0.5 text-footnote text-ink-dim">
+    <RowButton onClick={() => navigate(`/trips/${trip.id}`)} className="flex items-center gap-3.5 px-4 py-3.5">
+      <span className="h-[38px] w-[38px] shrink-0 overflow-hidden rounded-xl">
+        <CourseScene course={trip.location || trip.name} light="golden" className="h-full w-full" />
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-body font-bold text-ink truncate">{trip.name}</p>
+        <p className="text-caption text-ink-faint truncate">
           {isPlanning
-            ? `${plural(trip.options.length, 'destination')} on the table, nothing booked`
-            : [trip.location, days === 0 ? 'starts today' : `${plural(days ?? 0, 'day')} out`].filter(Boolean).join(', ')}
+            ? `${votesIn} of ${trip.attendeeIds.length} votes in`
+            : [trip.location, days === 0 ? 'starts today' : `in ${plural(days ?? 0, 'day')}`].filter(Boolean).join(' · ')}
         </p>
       </div>
-      <div className="mt-3 flex items-center justify-between border-t border-line px-5 py-3">
-        {isPlanning ? (
-          <>
-            <p className="text-footnote text-ink-dim">
-              {votesIn} of {trip.attendeeIds.length} votes in
-            </p>
-            <span className={`text-footnote font-bold ${myVoteCast ? 'text-ink-faint' : 'text-green'}`}>
-              {myVoteCast ? 'Vote cast ✓' : 'Cast your vote'}
-            </span>
-          </>
-        ) : (
-          <>
-            <p className="text-footnote text-ink-dim">{trip.attendeeIds.length} going</p>
-            <Icon name="chevronRight" size={18} className="text-ink-faint" />
-          </>
-        )}
-      </div>
-    </Card>
+      {isPlanning && !myVoteCast ? (
+        <span className="shrink-0 rounded-lg bg-green-soft px-2.5 py-1 text-footnote font-bold text-green">Vote</span>
+      ) : (
+        <Icon name="chevronRight" size={18} className="text-ink-faint" />
+      )}
+    </RowButton>
   )
 }

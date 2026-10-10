@@ -56,6 +56,20 @@
   --text-hero--letter-spacing: -0.04em;
 }
 
+/* A Card is a section of the page rather than a box on it: it runs to
+   the screen's edges past the page gutter, with a hairline above and
+   below. Two in a row share one line. */
+@layer components {
+  .sb-section {
+    margin-inline: -1rem;
+    width: calc(100% + 2rem);
+    border-block: 1px solid var(--color-line);
+  }
+  .sb-section + .sb-section {
+    border-top-width: 0;
+  }
+}
+
 html {
   background: var(--color-paper);
 }

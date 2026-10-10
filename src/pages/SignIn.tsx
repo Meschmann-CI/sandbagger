@@ -121,7 +121,7 @@ export default function SignIn() {
       </div>
 
       {sent ? (
-        <Card className="p-5">
+        <Card tile className="p-5">
           <div className="flex justify-center mb-3">
             <IconTile name="mail" tone="sky" size={48} />
           </div>
@@ -178,7 +178,7 @@ export default function SignIn() {
           </button>
         </Card>
       ) : (
-        <Card className="p-5">
+        <Card tile className="p-5">
           <label className="block text-footnote font-semibold text-ink-dim mb-2">Email</label>
           <input
             type="email"

@@ -83,25 +83,43 @@ export function AvatarStack({
   )
 }
 
-const CARD_BASE = 'rounded-2xl border border-line bg-card shadow-[0_1px_2px_rgba(24,32,25,0.05)]'
+const TILE = 'rounded-2xl border border-line bg-card shadow-[0_1px_2px_rgba(24,32,25,0.05)]'
 
+// A Card lies flat on the page: edge to edge, a hairline above and below,
+// no corners or shadow, so what's in it reads as part of the screen
+// instead of a box laid on top of it (`.sb-section` in index.css). A
+// tinted one (a gold callout, the settle-up band) keeps its colour. `tile`
+// keeps the boxed card, for the few places a box is the point: inside a
+// sheet, side by side in a grid, or one card inside another.
+//
 // Navigation cards are the app's main control, so a tappable one renders
 // as a real button: reachable by keyboard, announced as an action, and it
 // gets a focus ring. As a bare div with a click handler it was none of
 // those things.
-export function Card({ children, className = '', onClick }: { children: ReactNode; className?: string; onClick?: () => void }) {
+export function Card({
+  children,
+  className = '',
+  onClick,
+  tile = false,
+}: {
+  children: ReactNode
+  className?: string
+  onClick?: () => void
+  tile?: boolean
+}) {
+  const base = tile ? TILE : 'sb-section'
   if (onClick) {
     return (
       <button
         type="button"
         onClick={onClick}
-        className={`${CARD_BASE} press w-full text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green ${className}`}
+        className={`${base} ${tile ? 'press w-full' : 'active:bg-ink/[0.04]'} block text-left cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green ${className}`}
       >
         {children}
       </button>
     )
   }
-  return <div className={`${CARD_BASE} ${className}`}>{children}</div>
+  return <div className={`${base} ${className}`}>{children}</div>
 }
 
 /** A tappable row inside a Card list — same reasoning as Card above. */

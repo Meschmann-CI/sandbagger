@@ -112,7 +112,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
           </Card>
 
           {/* Expense list */}
-          <div className="mt-3 space-y-2.5">
+          <div className="mt-3">
             {expenses
               .slice()
               .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))

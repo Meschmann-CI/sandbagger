@@ -980,7 +980,7 @@ export default function HoleEntry() {
                 return (
                   <Fragment key={rp.playerId}>
                   <tr className="border-b border-line last:border-0">
-                    <th className="sticky left-0 z-20 bg-card px-3 text-left">
+                    <th className="sticky left-0 z-20 bg-paper px-3 text-left">
                       <div className="flex items-center gap-2">
                         <Avatar player={p} size={22} />
                         <span className="text-footnote font-bold text-ink whitespace-nowrap">{p.name.split(' ')[0]}</span>

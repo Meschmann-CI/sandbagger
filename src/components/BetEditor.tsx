@@ -249,7 +249,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
 
       {/* Result */}
       {!showManual ? (
-        <Card className="p-3.5 bg-paper">
+        <Card tile className="p-3.5 bg-paper">
           <div className="flex items-baseline justify-between mb-2">
             <p className="text-footnote font-semibold text-ink-dim">Works out to</p>
             {type !== 'custom' && (
@@ -291,7 +291,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
           </div>
         </Card>
       ) : (
-        <Card className="p-3.5 bg-paper">
+        <Card tile className="p-3.5 bg-paper">
           <div className="flex items-baseline justify-between mb-2">
             <p className="text-footnote font-semibold text-ink-dim">Amounts</p>
             {outcome.computable && (
