@@ -5,7 +5,7 @@ import { hasScore } from '../types'
 import { calcCustom, calcMatchPlay, calcNassau, calcSkins } from '../lib/bets'
 import { betRules } from '../lib/betRules'
 import { anyCards } from '../lib/holes'
-import { findCourse, hasStrokeIndex } from '../lib/courses'
+import { courseForRound, hasStrokeIndex } from '../lib/courses'
 import { money } from '../lib/money'
 import { Avatar, Card, HelpTip, PrimaryButton } from '../components/ui'
 import { useHoldUpdates } from '../lib/holdUpdates'
@@ -21,7 +21,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
   useHoldUpdates()
   const { data } = useStore()
   const scoredIds = round.players.filter(hasScore).map((rp) => rp.playerId)
-  const course = findCourse(data, round.courseName)
+  const course = courseForRound(data, round)
 
   const [type, setType] = useState<BetType>('skins')
   const [name, setName] = useState('')

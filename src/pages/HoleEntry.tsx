@@ -4,9 +4,10 @@ import { useNavigate } from '../lib/nav'
 import { useStore } from '../data/store'
 import { HOLE_COUNT, cardOf, cardTotal, holesEntered, puttsOf, tracksPutts } from '../lib/holes'
 import {
-  findCourse,
+  courseForRound,
   hasPars,
   hasStrokeIndex,
+  ninesLabel,
   padded,
   playingHandicap,
   scoreKind,
@@ -119,7 +120,7 @@ export default function HoleEntry() {
     }),
   )
 
-  const course = findCourse(data, round?.courseName ?? '')
+  const course = (round ? courseForRound(data, round) : undefined)
   const brand = courseBrand(round?.courseName)
   const pars = hasPars(course) ? padded(course.pars) : null
   const index = hasStrokeIndex(course) ? padded(course.strokeIndex) : null
@@ -826,6 +827,7 @@ export default function HoleEntry() {
       <header className="pt-4 pb-3 px-1">
         <h1 className="text-title font-bold tracking-tight text-ink truncate">{round.courseName}</h1>
         <p className="text-footnote text-ink-dim tabular-nums">
+          {ninesLabel(course, round) && `${ninesLabel(course, round)} · `}
           {round.tee ? `${round.tee} tees` : 'Tees not noted'}
           {coursePar != null && ` · par ${coursePar}`}
           {totalYards != null &&

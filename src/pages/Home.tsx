@@ -8,7 +8,7 @@ import { daysAgoISO, todayISO } from '../lib/dates'
 import { myOutstanding } from '../lib/settlements'
 import { anyCards, cardComplete, cardOf, holesEntered } from '../lib/holes'
 import { money } from '../lib/money'
-import { courseSlug, findCourse, hasPars, padded } from '../lib/courses'
+import { courseSlug, courseForRound, hasPars, padded } from '../lib/courses'
 import { ratingFor } from '../lib/ratings'
 import { canSeeTrip, fmt1, isSoloRound, pending, type Round, type Trip } from '../types'
 import { Icon, IconTile } from '../components/icons'
@@ -82,7 +82,7 @@ export default function Home() {
     const nextAt = card.findIndex((h) => h == null)
     const next = nextAt >= 0 ? nextAt + 1 : null
     if (thru === 0) return { big: 'E', line: 'on the first tee', next, thru }
-    const course = findCourse(data, inProgress.courseName)
+    const course = courseForRound(data, inProgress)
     let big = String(card.reduce<number>((acc, h) => acc + (h ?? 0), 0))
     if (hasPars(course)) {
       const pars = padded(course.pars)

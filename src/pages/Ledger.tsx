@@ -5,7 +5,7 @@ import { useMembers, useStore } from '../data/store'
 import { byDate, headToHead, leaderboard, roundStandings, saddamReigns, saddamState, shortDate, trashTalk, type LeaderRow } from '../lib/stats'
 import { indexHistory } from '../lib/badges'
 import { money } from '../lib/money'
-import { coursePar, findCourse, playingHandicap } from '../lib/courses'
+import { coursePar, courseForRound, playingHandicap } from '../lib/courses'
 import { Avatar, Card, HelpTip, SaddamIcon, SectionLabel } from '../components/ui'
 import { Icon } from '../components/icons'
 import { todayISO } from '../lib/dates'
@@ -51,7 +51,7 @@ function playOf(data: AppData, rounds: Round[], playerId: string): Play[] {
   for (const r of rounds) {
     const rp = scored(r).find((x) => x.playerId === playerId)
     if (!rp) continue
-    const course = findCourse(data, r.courseName)
+    const course = courseForRound(data, r)
     const par = coursePar(course)
     if (par == null) continue
     const over = rp.gross - playingHandicap(course, rp.handicapSnapshot, r.tee) - par

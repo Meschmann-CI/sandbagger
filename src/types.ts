@@ -101,7 +101,24 @@ export interface Course {
   town?: string
   /** Per-hole yardage for one tee set (`yardsTee`), the way a card prints it. Imported, not hand-entered. */
   yards?: (number | null)[]
+  /**
+   * A 27-hole course's three (or more) nines, any two of which make a
+   * round. The first two listed are the course's default 18, the one its
+   * `pars` and `strokeIndex` describe.
+   */
+  nines?: CourseNine[]
   yardsTee?: string
+}
+
+/** One nine of a 27-hole course, as its card prints it. */
+export interface CourseNine {
+  name: string
+  /** 9 entries. */
+  pars: (number | null)[]
+  /** 9 entries, the card's men's handicap for the nine, 1-9. */
+  strokeIndex?: (number | null)[]
+  /** Each tee's 9 hole yards, by the card's tee name. */
+  tees?: { name: string; holeYards: (number | null)[] }[]
 }
 
 export interface CourseTee {
@@ -160,6 +177,8 @@ export interface Round {
   date: string // ISO yyyy-mm-dd
   courseName: string
   tee?: string
+  /** On a 27-hole course, the two nines played, in order. Unset: the course's first two. */
+  nines?: [string, string]
   tripId?: string
   players: RoundPlayer[]
   notes?: string

@@ -23,7 +23,10 @@ export default function TeePicker({
   course?: Course
   className: string
 }) {
-  const own = (course?.tees ?? []).filter((t) => (t.gender ?? 'M') === 'M')
+  // The course's tees; on a 27-hole course whose card is only on file a
+  // nine at a time, the tee names that card prints.
+  const fromTees: { name: string; yards?: number }[] = (course?.tees ?? []).filter((t) => (t.gender ?? 'M') === 'M')
+  const own: { name: string; yards?: number }[] = fromTees.length ? fromTees : (course?.nines?.[0]?.tees ?? []).map((t) => ({ name: t.name }))
   const known = new Set(own.map((t) => t.name.toLowerCase()))
   const common = COMMON.filter((c) => !known.has(c.toLowerCase()))
   const listed = [...own.map((t) => t.name), ...common].map((n) => n.toLowerCase())

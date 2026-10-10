@@ -7,6 +7,7 @@ import { courseSuggestions } from '../lib/stats'
 import { hasCard } from '../lib/holes'
 import { findCourse } from '../lib/courses'
 import TeePicker from '../components/TeePicker'
+import NinesPicker from '../components/NinesPicker'
 import { Avatar, Card, GhostButton, PrimaryButton, SaddamIcon } from '../components/ui'
 import { useConfirm } from '../components/Confirm'
 
@@ -23,6 +24,7 @@ export default function EditRound() {
   const [courseName, setCourseName] = useState(round?.courseName ?? '')
   const [date, setDate] = useState(round?.date ?? '')
   const [tee, setTee] = useState(round?.tee ?? '')
+  const [nines, setNines] = useState<[string, string] | undefined>(round?.nines)
   const [tripId, setTripId] = useState(round?.tripId ?? '')
   const [entries, setEntries] = useState<RoundPlayer[]>(round?.players ?? [])
   // Rounds from before the toggle existed count as on-the-line, and this
@@ -67,6 +69,7 @@ export default function EditRound() {
       courseName: courseName.trim(),
       date,
       tee: tee.trim() || undefined,
+      nines: findCourse(data, courseName)?.nines ? nines : undefined,
       tripId: tripId || undefined,
       saddamOnTheLine: entries.length >= 2 ? saddamOn : false,
       players: entries,
@@ -114,6 +117,14 @@ export default function EditRound() {
             <TeePicker value={tee} onChange={setTee} course={findCourse(data, courseName)} className={field} />
           </div>
         </div>
+
+        {/* A 27-hole course: which two nines, front first. */}
+        {findCourse(data, courseName)?.nines && (
+          <div>
+            <label className={label}>Which nines</label>
+            <NinesPicker course={findCourse(data, courseName)} value={nines} onChange={setNines} />
+          </div>
+        )}
 
         {bookedTrips.length > 0 && (
           <div>

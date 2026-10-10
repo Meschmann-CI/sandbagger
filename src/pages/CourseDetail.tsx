@@ -223,8 +223,19 @@ export default function CourseDetail() {
       >
         <div className="min-w-0">
           <p className="text-body font-bold text-ink">
-            {par != null ? `Par ${par}` : parsIn > 0 ? `${parsIn} of ${HOLE_COUNT} holes` : 'No par yet'}
+            {course?.nines
+              ? `27 holes: ${course.nines.map((n) => n.name).join(', ')}`
+              : par != null
+                ? `Par ${par}`
+                : parsIn > 0
+                  ? `${parsIn} of ${HOLE_COUNT} holes`
+                  : 'No par yet'}
           </p>
+          {course?.nines && (
+            <p className="text-footnote text-ink-dim mt-0.5">
+              Any two make a round, picked when it's logged. The par and index here are {course.nines[0].name} then {course.nines[1].name}.
+            </p>
+          )}
           <p className="text-footnote text-ink-dim mt-0.5">
             {par == null
               ? 'Eighteen taps off the card, and every round here shows scores against par.'

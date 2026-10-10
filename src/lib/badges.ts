@@ -3,7 +3,7 @@ import { canSeeTrip, hasScore, isGroupRound } from '../types'
 import type { IconName } from '../components/icons'
 import { byDate, roundStandings, roundWinnerIds, saddamDays } from './stats'
 import { HOLE_COUNT, cardOf } from './holes'
-import { courseSlug, findCourse, hasPars, hasStrokeIndex, padded, strokesOffLow } from './courses'
+import { courseSlug, courseForRound, hasPars, hasStrokeIndex, padded, strokesOffLow } from './courses'
 
 // The trophy case. Every trophy is worked out from data the app already
 // keeps (totals, hole-by-hole cards, course pars, bets, the Saddam's
@@ -113,7 +113,7 @@ interface SkinsHole {
   carryIn: number
 }
 function skinsHoles(data: AppData, round: Round): SkinsHole[] {
-  const course = findCourse(data, round.courseName)
+  const course = courseForRound(data, round)
   const out: SkinsHole[] = []
   for (const bet of data.bets.filter((b) => b.roundId === round.id && b.type === 'skins' && !b.manual && b.net !== undefined)) {
     const entries = bet.results.map((r) => round.players.find((p) => p.playerId === r.playerId)).filter((p): p is RoundPlayer => !!p)
@@ -516,7 +516,7 @@ const DEFS: Def[] = [
 
 function factsFor(data: AppData, round: Round, rp: RoundPlayer): Facts {
   const card = cardOf(rp)
-  const course = findCourse(data, round.courseName)
+  const course = courseForRound(data, round)
   const pars = hasPars(course) ? padded(course.pars) : null
   const diffs = card.map((s, i) => (s != null && pars?.[i] != null ? s - pars[i]! : null))
   const complete = card.length >= HOLE_COUNT && card.slice(0, HOLE_COUNT).every((h) => h != null)

@@ -232,6 +232,11 @@ alter table groups add column if not exists saddam_award jsonb;
 alter table round_players alter column gross drop not null;
 -- Putts, added 2026-10-10:
 alter table round_players add column if not exists putts integer[];
+-- 27-hole courses, added 2026-10-10: each nine's pars, men's handicaps
+-- and yards per tee; a round names the two it played, in order (unset:
+-- the course's first two, which its own 18-hole pars describe).
+alter table courses add column if not exists nines jsonb;
+alter table rounds add column if not exists nines text[];
 -- Venmo handles, for settling up. Public usernames, nothing linked.
 alter table players add column if not exists venmo text;
 -- Match play joined the bet types. `create table if not exists` never

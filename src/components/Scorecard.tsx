@@ -5,7 +5,7 @@ import { HOLE_COUNT, cardOf, hasPutts, inTotal, outTotal, puttsOf } from '../lib
 import { PuttsRow } from './PuttsRow'
 import { fmtDiff, ghostDiff, ghostFor } from '../lib/ghost'
 import { shortDate } from '../lib/stats'
-import { findCourse, hasPars, hasStrokeIndex, padded, scoreKind, strokesOffLow, toPar, yardsFor } from '../lib/courses'
+import { courseForRound, hasPars, hasStrokeIndex, ninesLabel, padded, scoreKind, strokesOffLow, toPar, yardsFor } from '../lib/courses'
 import { Avatar, Card } from './ui'
 import { CourseLogo } from './CourseLogo'
 import { courseBrand, inkOn, teeColour } from '../lib/courseBrands'
@@ -21,7 +21,7 @@ import { MarkLegend, SCORE_MARK, StrokeDots } from './scoreMarks'
 
 export default function Scorecard({ round }: { round: Round }) {
   const { data } = useStore()
-  const course = findCourse(data, round.courseName)
+  const course = courseForRound(data, round)
   // The hole row is the colour of the tees being played, the way the
   // tee box looks when you walk up to it; a tee with no clear colour
   // gets the course's own, and a course with neither the Sandbagger
@@ -66,6 +66,7 @@ export default function Scorecard({ round }: { round: Round }) {
             <p className="text-footnote font-bold text-ink truncate">{course?.name ?? round.courseName}</p>
             <p className="text-caption text-ink-faint">
               {shortDate(round.date)}
+              {ninesLabel(course, round) && `, ${ninesLabel(course, round)}`}
               {round.tee && `, ${round.tee} tees`}
             </p>
           </div>

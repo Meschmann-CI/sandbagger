@@ -14,6 +14,7 @@ import { fmt1, type Round } from '../types'
 import { findCourse, hasPars } from '../lib/courses'
 import { directorySupported, fetchDirectoryCourse, searchDirectory, type DirectoryMatch } from '../lib/courseLookup'
 import TeePicker from '../components/TeePicker'
+import NinesPicker from '../components/NinesPicker'
 import { Avatar, Card, PrimaryButton, SaddamIcon, SECONDARY_BTN } from '../components/ui'
 
 // Logging a round, as a sheet over whatever screen you were on: it's a
@@ -61,6 +62,7 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
   const [courseName, setCourseName] = useState('')
   const [date, setDate] = useState(todayISO)
   const [tee, setTee] = useState('')
+  const [nines, setNines] = useState<[string, string] | undefined>(undefined)
   const [tripId, setTripId] = useState<string>('')
   // Most rounds are just rounds. The trip picker stays folded until
   // somebody says otherwise, rather than listing every trip the group
@@ -128,6 +130,7 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
       date,
       courseName: courseName.trim(),
       tee: tee.trim() || undefined,
+      nines: findCourse(data, courseName)?.nines ? nines : undefined,
       tripId: tripId || undefined,
       saddamOnTheLine: playerIds.length >= 2 ? saddamOn : false,
       ghosts: ghost ? [{ playerId: data.currentUserId, roundId: ghost.round.id }] : undefined,
@@ -487,6 +490,14 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
                     course={findCourse(data, courseName)}
                     className="w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
                   />
+                </div>
+              )}
+
+              {/* A 27-hole course: which two nines, front first. */}
+              {findCourse(data, courseName)?.nines && (
+                <div>
+                  <span className={label}>Which nines</span>
+                  <NinesPicker course={findCourse(data, courseName)} value={nines} onChange={setNines} />
                 </div>
               )}
 

@@ -1,4 +1,4 @@
-import type { AppData, Course, RoundPlayer } from '../types'
+import type { AppData, Course, CourseNine, Round, RoundPlayer } from '../types'
 import { HOLE_COUNT, cardOf } from './holes'
 
 // Par lives on the course, not the round, so filling it in once reaches
@@ -13,6 +13,72 @@ export const courseSlug = (name: string) => name.trim().toLowerCase().replace(/\
 
 export const findCourse = (data: AppData, courseName: string): Course | undefined =>
   data.courses.find((c) => c.slug === courseSlug(courseName))
+
+// ---------- 27-hole courses ----------
+// A course with three nines plays any two, in either order, and each
+// pairing is its own 18: its own pars in order, its own stroke index and
+// its own yards. Everything that scores a round asks courseForRound
+// rather than findCourse, so the pairing reaches the cards, the strokes,
+// the bets, the stats and the trophies from this one place.
+
+const NINE = 9
+const nine = (xs: (number | null)[] | undefined) => Array.from({ length: NINE }, (_, i) => xs?.[i] ?? null)
+const teeKey = (name: string) => name.trim().toLowerCase().replace(/\s*tees?$/, '').replace(/s$/, '')
+/** The nine's length off its longest tee, as the stand-in for which nine is harder. */
+const nineLength = (n: CourseNine) => Math.max(0, ...(n.tees ?? []).map((t) => t.holeYards.reduce<number>((s, y) => s + (y ?? 0), 0)))
+
+/** A round's two nines in the order played, or null on an ordinary course. */
+export function ninesFor(course: Course | undefined, round: Pick<Round, 'nines'>): [CourseNine, CourseNine] | null {
+  const nines = course?.nines
+  if (!nines || nines.length < 2) return null
+  const byName = (name?: string) => nines.find((n) => !!name && n.name.toLowerCase() === name.toLowerCase())
+  const a = byName(round.nines?.[0])
+  const b = byName(round.nines?.[1])
+  return a && b && a !== b ? [a, b] : [nines[0], nines[1]]
+}
+
+/** "Meadows · Lakes", for a round on a 27-hole course. */
+export function ninesLabel(course: Course | undefined, round: Pick<Round, 'nines'>): string | null {
+  const pair = ninesFor(course, round)
+  return pair ? `${pair[0].name} · ${pair[1].name}` : null
+}
+
+/**
+ * The course as this round played it. On an ordinary course that's just
+ * the course. On a 27-hole course it's the two nines joined in order: the
+ * pars, the yards off every tee the card prints on both, and the stroke
+ * index. The card gives each nine a 1-9 handicap; joined, the harder nine
+ * takes the odd strokes and the other the evens, the usual rule, with the
+ * longer nine standing in for the harder. Rating and slope stay the
+ * course's own, since cards don't print one per pairing.
+ */
+export function courseForRound(data: AppData, round: Pick<Round, 'courseName' | 'nines' | 'tee'>): Course | undefined {
+  const course = findCourse(data, round.courseName)
+  const pair = ninesFor(course, round)
+  if (!course || !pair) return course
+  const [a, b] = pair
+  const isDefault = course.nines![0] === a && course.nines![1] === b
+  const joinedPars = [...nine(a.pars), ...nine(b.pars)]
+  const aOdd = nineLength(a) >= nineLength(b)
+  const index = (n: CourseNine, odd: boolean) => nine(n.strokeIndex).map((h) => (h == null ? null : odd ? 2 * h - 1 : 2 * h))
+  const strokeIndex =
+    a.strokeIndex && b.strokeIndex ? [...index(a, aOdd), ...index(b, !aOdd)] : isDefault ? course.strokeIndex : undefined
+  const joined = (a.tees ?? []).flatMap((ta) => {
+    const tb = b.tees?.find((t) => teeKey(t.name) === teeKey(ta.name))
+    return tb ? [{ name: ta.name, holeYards: [...nine(ta.holeYards), ...nine(tb.holeYards)] }] : []
+  })
+  const tees = course.tees?.map((t) => ({ ...t, holeYards: joined.find((j) => teeKey(j.name) === teeKey(t.name))?.holeYards }))
+  const row =
+    joined.find((j) => !!round.tee && teeKey(j.name) === teeKey(round.tee)) ?? joined.find((j) => teeKey(j.name) === 'white') ?? joined[0]
+  return {
+    ...course,
+    pars: joinedPars.every((p) => p != null) ? joinedPars : isDefault ? course.pars : joinedPars,
+    strokeIndex,
+    tees,
+    yards: row?.holeYards ?? (isDefault ? course.yards : undefined),
+    yardsTee: row?.name ?? (isDefault ? course.yardsTee : undefined),
+  }
+}
 
 export const emptyPars = (): (number | null)[] => Array(HOLE_COUNT).fill(null)
 

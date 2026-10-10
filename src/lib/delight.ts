@@ -1,7 +1,7 @@
 import type { AppData, Round } from '../types'
 import { hasScore, isGroupRound, isSoloRound, net, round1 } from '../types'
 import { byDate, roundWinnerIds } from './stats'
-import { coursePar, findCourse } from './courses'
+import { coursePar, courseForRound } from './courses'
 
 // The rules behind the app's little reactions. Kept apart from the UI so
 // the thresholds are in one place to argue about.
@@ -27,7 +27,7 @@ const AVERAGE_NEEDS = 3
  */
 export function sandbaggers(data: AppData, round: Round): Sandbag[] {
   if (isSoloRound(round) || !isGroupRound(round)) return []
-  const par = coursePar(findCourse(data, round.courseName))
+  const par = coursePar(courseForRound(data, round))
   const out: Sandbag[] = []
   for (const rp of round.players.filter(hasScore)) {
     if (par != null) {

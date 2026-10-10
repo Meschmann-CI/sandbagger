@@ -1,5 +1,5 @@
 import type { AppData, Round } from '../types'
-import { courseSlug } from './courses'
+import { courseSlug, findCourse, ninesLabel } from './courses'
 import { HOLE_COUNT, cardOf, hasCard } from './holes'
 
 // Racing yourself. A ghost is one of your own earlier cards at the same
@@ -14,11 +14,15 @@ export interface GhostOption {
   best: boolean
 }
 
-/** Earlier cards this golfer has at the round's course, newest first. */
+/** Earlier cards this golfer has at the round's course, newest first. On a
+ *  27-hole course, only the same two nines in the same order, or the
+ *  race would put different holes side by side. */
 export function ghostOptions(data: AppData, round: Round, playerId: string): GhostOption[] {
   const slug = courseSlug(round.courseName)
+  const course = findCourse(data, round.courseName)
+  const pairing = ninesLabel(course, round)
   const rows = data.rounds
-    .filter((r) => r.id !== round.id && courseSlug(r.courseName) === slug && r.date <= round.date)
+    .filter((r) => r.id !== round.id && courseSlug(r.courseName) === slug && r.date <= round.date && ninesLabel(course, r) === pairing)
     .map((r) => ({ round: r, rp: r.players.find((p) => p.playerId === playerId) }))
     .filter((x): x is { round: Round; rp: NonNullable<typeof x.rp> } => !!x.rp && hasCard(x.rp))
     .map(({ round: r, rp }) => ({ round: r, gross: cardOf(rp).reduce<number>((s, h) => s + (h ?? 0), 0), best: false }))

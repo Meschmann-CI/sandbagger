@@ -70,6 +70,7 @@ const courseRow = (c: Course) => ({
   town: c.town ?? null,
   yards: c.yards ?? null,
   yards_tee: c.yardsTee ?? null,
+  nines: c.nines ?? null,
 })
 
 const courseRatingRow = (r: CourseRating) => ({
@@ -114,6 +115,7 @@ const roundRow = (r: Round) => ({
   saddam: r.saddamOnTheLine ?? null,
   ghosts: r.ghosts ?? null,
   photos: r.photos ?? null,
+  nines: r.nines ?? null,
 })
 
 const expenseRow = (e: Expense) => ({
@@ -255,6 +257,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           town: c.town ?? undefined,
           yards: Array.isArray(c.yards) && c.yards.length ? c.yards : undefined,
           yardsTee: c.yards_tee ?? undefined,
+          nines: Array.isArray(c.nines) && c.nines.length >= 2 ? c.nines : undefined,
         })),
         courseRatings: (ratingsRes.data ?? []).map(toCourseRating),
         courseRankings: (rankingsRes.data ?? []).map((r: any) => ({
@@ -274,6 +277,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           saddamOnTheLine: r.saddam ?? undefined,
           ghosts: Array.isArray(r.ghosts) && r.ghosts.length ? r.ghosts : undefined,
           photos: Array.isArray(r.photos) && r.photos.length ? r.photos : undefined,
+          nines: Array.isArray(r.nines) && r.nines.length === 2 ? (r.nines as [string, string]) : undefined,
           players: scoresByRound.get(r.id) ?? [],
         })),
         bets: (betsRes.data ?? []).map((b: any) => ({

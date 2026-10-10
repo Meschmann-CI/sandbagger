@@ -12,7 +12,7 @@ import {
   type ScoredRoundPlayer,
 } from '../types'
 import { cardOf, hasCard } from './holes'
-import { courseSlug, findCourse, hasPars, padded, scoreKind, type ScoreKind } from './courses'
+import { courseSlug, courseForRound, hasPars, padded, scoreKind, type ScoreKind } from './courses'
 
 export const byDate = (rounds: Round[]) =>
   [...rounds].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
@@ -407,7 +407,7 @@ export function holeStats(data: AppData, playerId: string): HoleStats {
   for (const round of data.rounds) {
     const rp = round.players.find((p) => p.playerId === playerId)
     if (!rp || !hasCard(rp)) continue
-    const course = findCourse(data, round.courseName)
+    const course = courseForRound(data, round)
     if (!hasPars(course)) continue
     const pars = padded(course.pars)
     const card = cardOf(rp)

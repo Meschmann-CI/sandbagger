@@ -7,7 +7,7 @@ import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, saddamCo
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
 import { anyCards, cardComplete, holesEntered } from '../lib/holes'
 import { settleFromCard } from '../lib/bets'
-import { coursePar, courseSlug, findCourse, toPar } from '../lib/courses'
+import { courseForRound, coursePar, courseSlug, ninesLabel, toPar } from '../lib/courses'
 import { todayISO } from '../lib/dates'
 import { grossWarning } from '../lib/scores'
 import { money } from '../lib/money'
@@ -99,7 +99,7 @@ export default function RoundDetail() {
   const roundPaybacks = data.payments.filter((p) => p.roundId === round.id)
   const betsOwed = roundBetSettlements(data, round)
 
-  const course = findCourse(data, round.courseName)
+  const course = courseForRound(data, round)
   const par = coursePar(course)
   const saddam = saddamState(data)
   const brand = courseBrand(round.courseName)
@@ -245,6 +245,7 @@ export default function RoundDetail() {
               <p className="text-footnote text-white/85 [text-shadow:0_1px_8px_rgba(0,0,0,0.35)]">
                 {prettyDate(round.date)}
                 {par != null && ` · par ${par}`}
+                {ninesLabel(course, round) && ` · ${ninesLabel(course, round)}`}
                 {round.tee && ` · ${round.tee} tees`}
               </p>
             </div>
