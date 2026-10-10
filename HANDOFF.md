@@ -50,6 +50,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    the $99/yr Apple Developer Program for TestFlight. Supabase, the Edge Functions and the
    schema carry over unchanged; the TS logic in `src/lib` (bets, handicaps, money, ghost,
    badges) has to be ported to Swift. The design brief asks for native iOS idioms for this.
+   Matt has no Mac as of 2026-10-10, so the web redesign comes first and the port waits. If a
+   Mac stays out of reach, React Native + Expo (cloud iOS builds) is the fallback.
 
 ## Decisions not to reopen
 
