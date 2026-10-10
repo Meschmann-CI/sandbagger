@@ -4,10 +4,10 @@ import type { Round } from '../types'
 import { HOLE_COUNT, cardOf, inTotal, outTotal } from '../lib/holes'
 import { fmtDiff, ghostDiff, ghostFor } from '../lib/ghost'
 import { shortDate } from '../lib/stats'
-import { findCourse, hasPars, hasStrokeIndex, padded, scoreKind, strokesOffLow, toPar } from '../lib/courses'
+import { findCourse, hasPars, hasStrokeIndex, padded, scoreKind, strokesOffLow, toPar, yardsFor } from '../lib/courses'
 import { Avatar, Card } from './ui'
 import { CourseLogo } from './CourseLogo'
-import { courseBrand } from '../lib/courseBrands'
+import { courseBrand, inkOn, teeColour } from '../lib/courseBrands'
 import { Icon } from './icons'
 import { MarkLegend, SCORE_MARK, StrokeDots } from './scoreMarks'
 
@@ -21,11 +21,20 @@ import { MarkLegend, SCORE_MARK, StrokeDots } from './scoreMarks'
 export default function Scorecard({ round }: { round: Round }) {
   const { data } = useStore()
   const course = findCourse(data, round.courseName)
-  // The course's own colours on the hole row, the way its printed card
-  // has them. Without a brand, the Sandbagger forest.
+  // The hole row is the colour of the tees being played, the way the
+  // tee box looks when you walk up to it; a tee with no clear colour
+  // gets the course's own, and a course with neither the Sandbagger
+  // forest. A white tee gets a hairline so the row doesn't vanish.
   const brand = courseBrand(round.courseName)
-  const headStyle = brand ? { backgroundColor: brand.color, color: brand.ink } : undefined
+  const ribbon = teeColour(round.tee) ?? brand?.color
+  const headStyle = ribbon ? { backgroundColor: ribbon, color: inkOn(ribbon) } : undefined
+  const pale = !!ribbon && inkOn(ribbon) !== '#FFFFFF'
   const pars = hasPars(course) ? padded(course.pars) : null
+  const index = hasStrokeIndex(course) ? padded(course.strokeIndex) : null
+  // The played tee's yards where the course has them, else the one set
+  // it has, labelled with its tee either way.
+  const yc = yardsFor(course, round.tee)
+  const ydsDot = teeColour(yc?.tee)
 
   // The dots a paper card would carry: who gets a stroke where, off the
   // low handicap in the round. Only when there's a stroke index to say
@@ -42,7 +51,7 @@ export default function Scorecard({ round }: { round: Round }) {
   })
 
   const headerCell = (i: number) => (
-    <th key={i} className={`w-8 px-1 py-2 font-bold ${brand ? 'opacity-85' : 'text-on-forest/80'}`}>
+    <th key={i} className={`w-8 px-1 py-2 font-bold ${ribbon ? 'opacity-85' : 'text-on-forest/80'}`}>
       {i + 1}
     </th>
   )
@@ -64,9 +73,9 @@ export default function Scorecard({ round }: { round: Round }) {
       <div className="overflow-x-auto">
         <table className="text-footnote tabular-nums">
           <thead>
-            <tr className={brand ? '' : 'bg-forest text-on-forest'} style={headStyle}>
+            <tr className={`${ribbon ? '' : 'bg-forest text-on-forest'} ${pale ? 'border-b border-line-strong' : ''}`} style={headStyle}>
               <th
-                className={`sticky left-0 z-10 px-3 py-2 text-left text-caption font-semibold uppercase ${brand ? '' : 'bg-forest text-on-forest'}`}
+                className={`sticky left-0 z-10 px-3 py-2 text-left text-caption font-semibold uppercase ${ribbon ? '' : 'bg-forest text-on-forest'}`}
                 style={headStyle}
               >
                 Hole
@@ -77,32 +86,55 @@ export default function Scorecard({ round }: { round: Round }) {
               <th className="w-9 px-1 py-2 font-bold">In</th>
               <th className="w-10 px-1 py-2 font-bold">Tot</th>
             </tr>
-            {/* Yardage, where the card came with it. One tee set; the
-                label says which. */}
-            {course?.yards && course.yards.length === HOLE_COUNT && (
+            {/* Yardage off the tees being played, where the course has it;
+                the dot and the label say which tee. */}
+            {yc && (
               <tr className="border-b border-line">
                 <td className="sticky left-0 z-10 bg-card px-3 py-1 text-caption font-semibold uppercase text-ink-faint whitespace-nowrap">
-                  Yds{course.yardsTee ? ` · ${course.yardsTee}` : ''}
+                  <span className="inline-flex items-center gap-1">
+                    {ydsDot && <span className="h-2 w-2 rounded-full ring-1 ring-ink/20" style={{ backgroundColor: ydsDot }} aria-hidden />}
+                    Yds{yc.tee ? ` · ${yc.tee}` : ''}
+                  </span>
                 </td>
-                {course.yards.slice(0, 9).map((y, i) => (
+                {yc.yards.slice(0, 9).map((y, i) => (
                   <td key={i} className="px-1 py-1 text-center text-caption text-ink-faint tabular-nums">
                     {y ?? ''}
                   </td>
                 ))}
                 <td className="px-1 text-center text-caption text-ink-faint tabular-nums">
-                  {course.yards.slice(0, 9).reduce<number>((s, y) => s + (y ?? 0), 0)}
+                  {yc.yards.slice(0, 9).reduce<number>((s, y) => s + (y ?? 0), 0)}
                 </td>
-                {course.yards.slice(9).map((y, i) => (
+                {yc.yards.slice(9).map((y, i) => (
                   <td key={i + 9} className="px-1 py-1 text-center text-caption text-ink-faint tabular-nums">
                     {y ?? ''}
                   </td>
                 ))}
                 <td className="px-1 text-center text-caption text-ink-faint tabular-nums">
-                  {course.yards.slice(9).reduce<number>((s, y) => s + (y ?? 0), 0)}
+                  {yc.yards.slice(9).reduce<number>((s, y) => s + (y ?? 0), 0)}
                 </td>
                 <td className="px-1 text-center text-caption text-ink-faint tabular-nums">
-                  {course.yards.reduce<number>((s, y) => s + (y ?? 0), 0)}
+                  {yc.yards.reduce<number>((s, y) => s + (y ?? 0), 0)}
                 </td>
+              </tr>
+            )}
+            {/* The stroke index: which holes are hardest, and so where
+                the strokes land. */}
+            {index && (
+              <tr className="border-b border-line">
+                <td className="sticky left-0 z-10 bg-card px-3 py-1 text-caption font-semibold uppercase text-ink-faint">Index</td>
+                {index.slice(0, 9).map((x, i) => (
+                  <td key={i} className="px-1 py-1 text-center text-caption text-ink-faint tabular-nums">
+                    {x ?? ''}
+                  </td>
+                ))}
+                <td />
+                {index.slice(9).map((x, i) => (
+                  <td key={i + 9} className="px-1 py-1 text-center text-caption text-ink-faint tabular-nums">
+                    {x ?? ''}
+                  </td>
+                ))}
+                <td />
+                <td />
               </tr>
             )}
             {pars && (

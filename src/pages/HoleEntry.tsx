@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useNavigate } from '../lib/nav'
 import { useStore } from '../data/store'
@@ -13,9 +13,9 @@ import {
   strokesOffLow,
   teeFor,
   toPar,
+  yardsFor,
 } from '../lib/courses'
 import { settleFromCard } from '../lib/bets'
-import { BackButton } from '../components/Nav'
 import { Confetti, buzz } from '../components/Delight'
 import { MarkLegend, SCORE_MARK, StrokeDots } from '../components/scoreMarks'
 import { fmtDiff, ghostDiff, ghostFor, ghostOptions } from '../lib/ghost'
@@ -26,16 +26,21 @@ import { fmt1, type Round } from '../types'
 import { Avatar, Card, HelpTip, PrimaryButton } from '../components/ui'
 import { betRules } from '../lib/betRules'
 import { Icon, IconTile } from '../components/icons'
-import { courseBrand } from '../lib/courseBrands'
+import { courseBrand, inkOn, teeColour } from '../lib/courseBrands'
+import RoundScene from '../components/RoundScene'
 
-// The live card, laid out like the card in your pocket.
+// The live card, in two views.
 //
-// One grid: hole, yards, par, stroke index across the top, then a row
-// per golfer, scrolling sideways with the labels pinned. Tap a cell,
-// type the number on the pad, tap Next. That's the GHIN posting screen,
-// borrowed on purpose — everyone in the group already knows it — with
-// the things it can't do: four golfers on one card, strokes marked on
-// the holes they land on, and the bets settling underneath as it fills.
+// Hole: the hole you're on as one column cut out of the card, on a band
+// the colour of the tees being played, with the yards, par and index under
+// it and a row per golfer. The pad is always up, pointed at the next box
+// to fill, and the last key reads Next hole. That's the GHIN posting
+// screen, borrowed on purpose, since everyone in the group already knows it.
+//
+// Card: the whole card like the one in your pocket, all eighteen across
+// with Out and In, scrolling sideways with the names pinned, strokes
+// marked on the holes they land on, ghosts under their golfers, and the
+// bets settling above it as it fills.
 //
 // Still a companion, not an editor. Every tap saves itself, nothing
 // moves unless you tap Next, and leaving mid-round costs nothing.
@@ -65,7 +70,10 @@ export default function HoleEntry() {
   const commitRef = useRef<() => void>(() => {})
   const commitTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const scroller = useRef<HTMLDivElement>(null)
-  const columns = useRef<(HTMLTableCellElement | null)[]>([])
+  const [view, setView] = useState<'hole' | 'card'>('hole')
+  // The hole the Hole view shows. Starts on the first hole nobody has
+  // filled in, and follows the pad as Next walks the card.
+  const [hole, setHole] = useState<number | null>(null)
   // The last score worth a reaction, so its cell can pop, and a counter
   // that fires the confetti for the big ones.
   const [cheer, setCheer] = useState<{ playerId: string; hole: number; label: string; big: boolean; n: number } | null>(null)
@@ -96,10 +104,12 @@ export default function HoleEntry() {
 
   const course = findCourse(data, round?.courseName ?? '')
   const brand = courseBrand(round?.courseName)
-  const headStyle = brand ? { backgroundColor: brand.color, color: brand.ink } : undefined
   const pars = hasPars(course) ? padded(course.pars) : null
   const index = hasStrokeIndex(course) ? padded(course.strokeIndex) : null
-  const yards = course?.yards && course.yards.length === HOLE_COUNT ? course.yards : null
+  // The yards off the tee being played when the course has that tee's
+  // holes, else the card's own row, labelled with the tee it is from.
+  const yardsCard = yardsFor(course, round?.tee)
+  const yards = yardsCard?.yards ?? null
   const strokeDots =
     hasStrokeIndex(course) && players.length > 1 ? strokesOffLow(course, players, round?.tee) : null
 
@@ -110,11 +120,12 @@ export default function HoleEntry() {
     .map((bet) => ({ bet, outcome: settleFromCard(bet, liveRound!, course) }))
     .filter((x): x is { bet: (typeof x)['bet']; outcome: NonNullable<(typeof x)['outcome']> } => x.outcome != null)
 
-  // Keep the column you're typing in on screen as Next walks across.
+  // Keep the column you're on in view on the card, as Next walks across
+  // or when the card opens.
   useEffect(() => {
-    if (!active) return
-    columns.current[active.hole]?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
-  }, [active])
+    if (view !== 'card') return
+    scroller.current?.querySelector('[data-current]')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+  }, [active, view, hole])
 
   if (!round) {
     return (
@@ -193,46 +204,85 @@ export default function HoleEntry() {
     buzz(big ? [30, 50, 30, 50, 70] : 25)
   }
 
+  // Start on the first hole nobody has filled in.
+  const firstOpenHole = Math.min(
+    Math.max(0, ...round.players.map((rp) => holesEntered(rp))),
+    HOLE_COUNT - 1,
+  )
+  const h = hole ?? firstOpenHole
+  // On the Hole view the pad is always up, pointed at the first golfer on
+  // this hole without a score (the first golfer once they're all in), so
+  // the only thing to do is type. On the Card view it's up once a box is
+  // picked.
+  const cur: Active | null =
+    active ??
+    (view === 'hole'
+      ? { playerId: (round.players.find((rp) => cards[rp.playerId][h] == null) ?? round.players[0]).playerId, hole: h }
+      : null)
+
   // A lone "1" might be the start of a 12, so an ace only counts once
   // the cell is left with the 1 still in it.
   const leaveCell = () => {
-    if (active && buffer === '1') celebrate(active.playerId, active.hole, 1)
+    if (cur && buffer === '1') celebrate(cur.playerId, cur.hole, 1)
   }
 
+  // Picking a box (or Next walking to another hole) takes the Hole view
+  // with it.
   const select = (cell: Active) => {
     leaveCell()
     setActive(cell)
+    setHole(cell.hole)
     setBuffer('')
   }
 
   // Down the golfers on this hole, then on to the next hole's first —
   // the order a scorekeeper reads names off a green.
+  const isLastGolfer = !!cur && round.players[round.players.length - 1].playerId === cur.playerId
   const advance = () => {
-    if (!active) return
-    const i = round.players.findIndex((rp) => rp.playerId === active.playerId)
-    if (i < round.players.length - 1) return select({ playerId: round.players[i + 1].playerId, hole: active.hole })
-    if (active.hole < HOLE_COUNT - 1) return select({ playerId: round.players[0].playerId, hole: active.hole + 1 })
+    if (!cur) return
+    const i = round.players.findIndex((rp) => rp.playerId === cur.playerId)
+    if (i < round.players.length - 1) return select({ playerId: round.players[i + 1].playerId, hole: cur.hole })
+    if (cur.hole < HOLE_COUNT - 1) return select({ playerId: round.players[0].playerId, hole: cur.hole + 1 })
     leaveCell()
     setActive(null)
+    if (view === 'hole') done()
   }
 
+  // Typing pins the box the pad was pointing at, so a 1 then a 2 lands
+  // as a 12 in the same box instead of the pad moving on after the 1.
   const typeDigit = (d: number) => {
-    if (!active) return
+    if (!cur) return
+    if (!active) setActive(cur)
     if (buffer === '1' && d >= 0 && d <= 9) {
-      setScore(active.playerId, active.hole, 10 + d)
+      setScore(cur.playerId, cur.hole, 10 + d)
       setBuffer('')
       return
     }
     if (d === 0) return
-    setScore(active.playerId, active.hole, d)
+    setScore(cur.playerId, cur.hole, d)
     setBuffer(String(d))
-    if (d !== 1) celebrate(active.playerId, active.hole, d)
+    if (d !== 1) celebrate(cur.playerId, cur.hole, d)
   }
 
   const clearActive = () => {
-    if (!active) return
-    setScore(active.playerId, active.hole, null)
+    if (!cur) return
+    if (!active) setActive(cur)
+    setScore(cur.playerId, cur.hole, null)
     setBuffer('')
+  }
+
+  // Stepping to another hole with the arrows: the pad points at that
+  // hole's first open box.
+  const goHole = (i: number) => {
+    leaveCell()
+    setActive(null)
+    setBuffer('')
+    setHole(Math.max(0, Math.min(HOLE_COUNT - 1, i)))
+  }
+
+  const closePad = () => {
+    leaveCell()
+    setActive(null)
   }
 
   // Ghosts: each golfer races their own earlier card here, if they have
@@ -337,34 +387,347 @@ export default function HoleEntry() {
     return par === 0 ? null : toPar(strokes - par)
   }
 
-  // Start on the first hole nobody has filled in.
-  const firstOpenHole = Math.min(
-    Math.max(0, ...round.players.map((rp) => holesEntered(rp))),
-    HOLE_COUNT - 1,
-  )
-  const totalEntered = round.players.reduce((n, rp) => n + (cards[rp.playerId]?.filter((h) => h != null).length ?? 0), 0)
-  const totalYards = yards ? yards.reduce<number>((s, y) => s + (y ?? 0), 0) : null
-  const coursePar = pars ? pars.reduce<number>((s, p) => s + (p ?? 0), 0) : null
-
   const cellBase =
     'w-11 h-11 flex flex-col items-center justify-center text-body tabular-nums select-none active:bg-paper transition'
+
+  // Who gets what off this tee: the first-tee conversation, settled.
+  const handicapLine = tee && courseHandicaps.length > 0 && (
+        <p className="mt-2 px-1 text-caption text-ink-faint tabular-nums">
+          Course handicaps{round.tee ? ` off the ${round.tee}s` : ''} ({tee.rating}/{tee.slope}):{' '}
+          {courseHandicaps.map((c) => `${c.name} ${c.hcp}`).join(' · ')}
+          {courseHandicaps.length > 1 &&
+            hasStrokeIndex(course) &&
+            `. Strokes off ${courseHandicaps.find((c) => c.hcp === lowHcp)?.name}: ${courseHandicaps
+              .filter((c) => c.hcp > lowHcp)
+              .map((c) => `${c.name} ${c.hcp - lowHcp}`)
+              .join(', ') || 'none'}`}
+        </p>
+      )
+
+  // Race yourself: pick one of your earlier cards here. Shown only to the
+  // golfer it's for; the ghost is personal, even if everyone can see the
+  // race once it's on.
+  const ghostPicker = iPlay && myGhostOptions.length > 0 && (
+        <Card className="mt-3 p-3.5">
+          {myGhost ? (
+            <div className="flex items-center gap-3">
+              <IconTile name="ghost" tone="plain" size={34} />
+              <p className="flex-1 min-w-0 text-footnote text-ink-dim">
+                Racing your <span className="font-extrabold text-ink tabular-nums">{myGhost.card.reduce<number>((s, h) => s + (h ?? 0), 0)}</span> from{' '}
+                {shortDate(myGhost.round.date)}. Its scores show a hole at a time, as you post yours.
+              </p>
+              <button onClick={() => setMyGhost(null)} className="text-footnote font-bold text-ink-faint shrink-0">
+                Drop it
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-3">
+                <IconTile name="ghost" tone="plain" size={34} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-footnote font-bold text-ink">Race a ghost?</p>
+                  <p className="text-footnote text-ink-dim">
+                    You’ve played here before. Put one of those cards under yours and chase it hole by hole.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2.5">
+                {myGhostOptions.slice(0, 5).map((o) => (
+                  <button
+                    key={o.round.id}
+                    onClick={() => setMyGhost(o.round.id)}
+                    className={`rounded-full px-3.5 py-2 text-footnote font-bold border transition active:scale-95 ${
+                      o.best ? 'border-gold/50 bg-gold-soft text-ink' : 'border-line-strong bg-card text-ink-dim'
+                    }`}
+                  >
+                    <span className="tabular-nums">{o.gross}</span> · {shortDate(o.round.date)}
+                    {o.best && <span className="ml-1 text-caption font-semibold text-gold">best</span>}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </Card>
+      )
+
+  const betLine = (detail: string[]) =>
+    detail
+      .map((line) => {
+        const [text, playerId] = line.split('|')
+        const who = playerId ? data.players.find((p) => p.id === playerId)?.name : null
+        return who ? `${who} ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text
+      })
+      .join(' · ')
+
+  const totalEntered = round.players.reduce((n, rp) => n + (cards[rp.playerId]?.filter((x) => x != null).length ?? 0), 0)
+  const totalYards = yards ? yards.reduce<number>((s, y) => s + (y ?? 0), 0) : null
+  const coursePar = pars ? pars.reduce<number>((s, p) => s + (p ?? 0), 0) : null
+  const myCard = iPlay ? cards[me] : null
+
+  // The hole row, on the Hole view and the card alike, is the colour of
+  // the tees being played, like the marker on the tee box. A tee with no
+  // clear colour gets the course's own (its logo's), and a course with
+  // neither the Sandbagger forest. A pale tee (white, gold) gets dark ink
+  // and a hairline so it doesn't wash out.
+  const ribbon = teeColour(round.tee) ?? brand?.color
+  const ribbonInk = ribbon ? inkOn(ribbon) : '#FFFFFF'
+  const pale = ribbonInk !== '#FFFFFF'
+  const bandStyle = ribbon ? { backgroundColor: ribbon, color: ribbonInk } : undefined
+  const yardsDot = teeColour(yardsCard?.tee)
+  // The column the card is on: the box being typed in, else the hole the
+  // Hole view was showing.
+  const here = cur?.hole ?? h
+
+  // A score worth cheering, drawn over its box: a ring (two for the big
+  // ones) spreading off it, and the word floating up.
+  const cheerBits = (playerId: string, i: number) => {
+    if (!cheer || cheer.playerId !== playerId || cheer.hole !== i) return null
+    return (
+      <>
+        <i className="cheer-ring pointer-events-none absolute inset-0 rounded-full border-2 border-green" />
+        {cheer.big && (
+          <i className="cheer-ring pointer-events-none absolute inset-0 rounded-full border-2 border-gold" style={{ animationDelay: '0.15s' }} />
+        )}
+        <span
+          className={`cheer-float pointer-events-none absolute left-1/2 -top-4 whitespace-nowrap text-caption font-extrabold uppercase ${
+            cheer.big ? 'text-gold' : 'text-green'
+          }`}
+        >
+          {cheer.label}
+        </span>
+      </>
+    )
+  }
+  const isCheering = (playerId: string, i: number) => cheer != null && cheer.playerId === playerId && cheer.hole === i
+
+  // The front nine, Out, the back nine, In: the order a paper card runs.
+  const across = (hole: (i: number) => ReactNode, out: ReactNode, inn: ReactNode) => [
+    ...Array.from({ length: 9 }, (_, i) => hole(i)),
+    out,
+    ...Array.from({ length: 9 }, (_, i) => hole(i + 9)),
+    inn,
+  ]
+
+  // Back to the round, and the Hole / Card switch.
+  const topBar = (overScene: boolean) => (
+    <div className="flex items-center justify-between">
+      <button
+        type="button"
+        onClick={done}
+        aria-label="Back to the round"
+        className={`flex h-10 w-10 items-center justify-center rounded-full text-ink active:scale-95 transition ${
+          overScene ? 'bg-white/85 backdrop-blur' : 'bg-card border border-line'
+        }`}
+      >
+        <Icon name="chevronLeft" size={20} />
+      </button>
+      <div role="tablist" aria-label="View" className="flex rounded-xl border border-line-strong overflow-hidden bg-card">
+        {(['hole', 'card'] as const).map((v) => (
+          <button
+            key={v}
+            role="tab"
+            aria-selected={view === v}
+            onClick={() => {
+              closePad()
+              setView(v)
+            }}
+            className={`px-5 py-2 text-footnote font-bold capitalize ${view === v ? 'bg-forest text-on-forest' : 'bg-card text-ink-dim'}`}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+      <span className="w-10" />
+    </div>
+  )
+
+  // One golfer's box on the Hole view: big, with the mark it earns, and
+  // outlined in green while the pad is pointed at it.
+  const bigBox = (playerId: string, i: number) => {
+    const v = cards[playerId][i]
+    const pointed = cur?.playerId === playerId && cur.hole === i
+    const par = pars?.[i]
+    const mark = v != null && par != null ? SCORE_MARK[scoreKind(v, par)] : 'text-ink font-extrabold'
+    const cheering = isCheering(playerId, i)
+    return (
+      <button
+        type="button"
+        onClick={() => select({ playerId, hole: i })}
+        aria-label={`${data.players.find((pl) => pl.id === playerId)?.name ?? ''}, hole ${i + 1}${v != null ? `, ${v}` : ', no score'}`}
+        className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${pointed ? 'ring-2 ring-green bg-green-soft/60' : ''}`}
+      >
+        {v == null ? (
+          !pointed && <span className="h-11 w-11 rounded-lg border-[1.5px] border-dashed border-line-strong" />
+        ) : (
+          <span
+            key={cheering ? `cheer-${cheer!.n}` : 'mark'}
+            className={`relative inline-flex h-11 w-11 items-center justify-center text-title tabular-nums ${mark} ${cheering ? 'cheer-pop' : ''}`}
+          >
+            {v}
+            {cheerBits(playerId, i)}
+          </span>
+        )}
+      </button>
+    )
+  }
+
+  // ---------------- Hole view ----------------
+  // The hole as one column cut out of the scorecard: the hole number on
+  // the tee-coloured band, the yards, par and index under it the way a
+  // card prints them, then a row per golfer with their box. The course's
+  // scene fills whatever the golfers leave, big for a solo round and a
+  // slim band for a foursome, and the pad sits underneath, always up.
+  const facts: { label: string; value: string; dot?: string }[] = [
+    yards?.[h] != null && { label: yardsCard?.tee ? `${yardsCard.tee} yds` : 'Yards', value: String(yards[h]), dot: yardsDot },
+    pars?.[h] != null && { label: 'Par', value: String(pars[h]) },
+    index?.[h] != null && { label: 'Index', value: String(index[h]) },
+  ].filter((x): x is { label: string; value: string; dot?: string } => !!x)
+  const holeView = (
+    <div className="-mx-4 -mt-3 flex flex-col" style={{ minHeight: 'calc(100dvh - 290px)' }}>
+      <div className="relative min-h-[132px] flex-1 overflow-hidden">
+        <RoundScene round={round} className="absolute inset-0 h-full w-full" />
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/20 to-transparent" />
+        <div className="absolute inset-x-4 top-3">{topBar(true)}</div>
+      </div>
+
+      <div className={`flex items-center gap-2 px-3 py-2.5 ${ribbon ? '' : 'bg-forest text-on-forest'} ${pale ? 'border-b border-line-strong' : ''}`} style={bandStyle}>
+        <button
+          type="button"
+          onClick={() => goHole(h - 1)}
+          disabled={h === 0}
+          aria-label="Previous hole"
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full disabled:opacity-30 ${pale ? 'bg-black/[0.07]' : 'bg-white/15'}`}
+        >
+          <Icon name="chevronLeft" size={20} />
+        </button>
+        <div className="flex min-w-0 flex-1 items-center justify-center gap-2.5">
+          {brand?.logo && (
+            <span
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white p-0.5 ${pale ? 'ring-1 ring-line-strong' : ''}`}
+              style={brand.dark ? { backgroundColor: brand.color } : undefined}
+            >
+              <img src={brand.logo} alt="" className="max-h-full max-w-full object-contain" />
+            </span>
+          )}
+          <h1 className="text-title font-extrabold tracking-tight">Hole {h + 1}</h1>
+        </div>
+        <button
+          type="button"
+          onClick={() => goHole(h + 1)}
+          disabled={h === HOLE_COUNT - 1}
+          aria-label="Next hole"
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full disabled:opacity-30 ${pale ? 'bg-black/[0.07]' : 'bg-white/15'}`}
+        >
+          <Icon name="chevronRight" size={20} />
+        </button>
+      </div>
+
+      {/* What the card prints under the hole number. */}
+      <div
+        className="grid divide-x divide-line border-b border-line bg-paper"
+        style={{ gridTemplateColumns: `repeat(${Math.max(1, facts.length)}, minmax(0, 1fr))` }}
+      >
+        {facts.length > 0 ? (
+          facts.map((x) => (
+            <div key={x.label} className="flex flex-col items-center py-2">
+              <span className="flex items-center gap-1.5 text-caption font-semibold text-ink-faint">
+                {x.dot && <span className="h-2.5 w-2.5 rounded-full ring-1 ring-ink/20" style={{ backgroundColor: x.dot }} aria-hidden />}
+                {x.label}
+              </span>
+              <span className="text-title font-extrabold tabular-nums text-ink">{x.value}</span>
+            </div>
+          ))
+        ) : (
+          <p className="py-3 text-center text-footnote text-ink-dim">No card for this course yet. Add it from the course page.</p>
+        )}
+      </div>
+
+      <div className="bg-card">
+        {round.players.map((rp) => {
+          const p = data.players.find((pl) => pl.id === rp.playerId)
+          if (!p) return null
+          const card = cards[rp.playerId]
+          const thru = card.filter((x) => x != null).length
+          const vs = toParThru(card)
+          const strokes = strokeDots?.[rp.playerId]?.[h] ?? 0
+          const ghost = ghostFor(data, round, rp.playerId)
+          const ghostHere = ghost?.card[h]
+          const pointing = cur?.playerId === rp.playerId
+          return (
+            <div
+              key={rp.playerId}
+              className={`flex min-h-[64px] items-center gap-3 border-b border-line px-4 py-1 ${pointing ? 'bg-green-soft/40' : ''}`}
+            >
+              <Avatar player={p} size={32} />
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 text-headline font-bold text-ink">
+                  <span className="truncate">{p.name.split(' ')[0]}</span>
+                  {strokes > 0 && (
+                    <span className="shrink-0 rounded-full bg-gold-soft px-2 py-0.5 text-caption font-bold text-gold">
+                      {'•'.repeat(Math.min(strokes, 3))} stroke{strokes > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </p>
+                <p className="truncate text-footnote text-ink-dim tabular-nums">
+                  {thru === 0 ? 'No scores yet' : `${sum(card, 0, HOLE_COUNT)}${vs ? ` (${vs})` : ''} thru ${thru}`}
+                  {ghostHere != null && (
+                    <>
+                      {' · '}
+                      <Icon name="ghost" size={12} className="inline -mt-0.5" /> made {ghostHere}
+                    </>
+                  )}
+                </p>
+              </div>
+              {bigBox(rp.playerId, h)}
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="space-y-3 px-4 pt-3">
+        {totalEntered === 0 && handicapLine}
+        {liveBets.length > 0 && (
+          <Card className="p-3.5 bg-gold-soft/40 border-gold/30 space-y-1">
+            {liveBets.slice(0, 2).map(({ bet, outcome }) => (
+              <p key={bet.id} className="text-footnote text-ink">
+                <span className="font-bold">{bet.name}:</span> {betLine(outcome.detail)}
+              </p>
+            ))}
+            {liveBets.length > 2 && (
+              <button onClick={() => setView('card')} className="text-footnote font-bold text-green">
+                All {liveBets.length} bets on the card
+              </button>
+            )}
+          </Card>
+        )}
+        {/* The ghost is offered on the first tee, before you've scored. */}
+        {myCard && myCard.every((x) => x == null) && ghostPicker}
+      </div>
+    </div>
+  )
 
   return (
     // No entry animation here: it leaves a transform on the wrapper, and
     // a fixed element inside a transformed box is fixed to the box, not
     // the screen — the first cut had the tab bar drawn over the pad.
-    <div className={active ? 'pb-72' : ''}>
+    <div className={view === 'hole' ? 'pb-[150px]' : active ? 'pb-72' : ''}>
       <Confetti fire={confetti} originY={0.4} />
+      {view === 'hole' ? (
+        holeView
+      ) : (
+        <>
+      <div className="pt-1">{topBar(false)}</div>
       <header className="pt-4 pb-3 px-1">
-        <BackButton fallback={`/rounds/${round.id}`} onBack={done} label="Round" />
         <h1 className="text-title font-bold tracking-tight text-ink truncate">{round.courseName}</h1>
         <p className="text-footnote text-ink-dim tabular-nums">
           {round.tee ? `${round.tee} tees` : 'Tees not noted'}
           {coursePar != null && ` · par ${coursePar}`}
-          {totalYards != null && ` · ${totalYards.toLocaleString()} yds${course?.yardsTee && round.tee && course.yardsTee.toLowerCase() !== round.tee.toLowerCase() ? ` (${course.yardsTee})` : ''}`}
+          {totalYards != null &&
+            ` · ${totalYards.toLocaleString()} yds${yardsCard?.tee && round.tee && teeColour(yardsCard.tee) !== teeColour(round.tee) ? ` (${yardsCard.tee})` : ''}`}
           {` · ${totalEntered} score${totalEntered === 1 ? '' : 's'} in`}
         </p>
       </header>
+
 
       {/* Where everyone stands, thru whatever they've scored */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
@@ -401,19 +764,7 @@ export default function HoleEntry() {
         })}
       </div>
 
-      {/* Who gets what off this tee — the first-tee conversation, settled */}
-      {tee && courseHandicaps.length > 0 && (
-        <p className="mt-2 px-1 text-caption text-ink-faint tabular-nums">
-          Course handicaps{round.tee ? ` off the ${round.tee}s` : ''} ({tee.rating}/{tee.slope}):{' '}
-          {courseHandicaps.map((c) => `${c.name} ${c.hcp}`).join(' · ')}
-          {courseHandicaps.length > 1 &&
-            hasStrokeIndex(course) &&
-            `. Strokes off ${courseHandicaps.find((c) => c.hcp === lowHcp)?.name}: ${courseHandicaps
-              .filter((c) => c.hcp > lowHcp)
-              .map((c) => `${c.name} ${c.hcp - lowHcp}`)
-              .join(', ') || 'none'}`}
-        </p>
-      )}
+      {handicapLine}
 
       {/* The paper card, read into the phone. For the round nobody
           scored live: photograph the filled card and every row lands
@@ -517,51 +868,7 @@ export default function HoleEntry() {
         </>
       )}
 
-      {/* Race yourself: pick one of your earlier cards here. Shown only
-          to the golfer it's for — the ghost is personal, even if
-          everyone can see the race once it's on. */}
-      {iPlay && myGhostOptions.length > 0 && (
-        <Card className="mt-3 p-3.5">
-          {myGhost ? (
-            <div className="flex items-center gap-3">
-              <IconTile name="ghost" tone="plain" size={34} />
-              <p className="flex-1 min-w-0 text-footnote text-ink-dim">
-                Racing your <span className="font-extrabold text-ink tabular-nums">{myGhost.card.reduce<number>((s, h) => s + (h ?? 0), 0)}</span> from{' '}
-                {shortDate(myGhost.round.date)}. Its scores show a hole at a time, as you post yours.
-              </p>
-              <button onClick={() => setMyGhost(null)} className="text-footnote font-bold text-ink-faint shrink-0">
-                Drop it
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-3">
-                <IconTile name="ghost" tone="plain" size={34} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-footnote font-bold text-ink">Race a ghost?</p>
-                  <p className="text-footnote text-ink-dim">
-                    You’ve played here before. Put one of those cards under yours and chase it hole by hole.
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2.5">
-                {myGhostOptions.slice(0, 5).map((o) => (
-                  <button
-                    key={o.round.id}
-                    onClick={() => setMyGhost(o.round.id)}
-                    className={`rounded-full px-3.5 py-2 text-footnote font-bold border transition active:scale-95 ${
-                      o.best ? 'border-gold/50 bg-gold-soft text-ink' : 'border-line-strong bg-card text-ink-dim'
-                    }`}
-                  >
-                    <span className="tabular-nums">{o.gross}</span> · {shortDate(o.round.date)}
-                    {o.best && <span className="ml-1 text-caption font-semibold text-gold">best</span>}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </Card>
-      )}
+      {ghostPicker}
 
       {/* The bets riding on this card, as it stands right now */}
       {liveBets.length > 0 && (
@@ -584,58 +891,78 @@ export default function HoleEntry() {
         </Card>
       )}
 
-      {/* The card */}
+      {/* The card: all eighteen across with Out after the ninth and In
+          and Tot at the end, scrolling sideways under the names. */}
       <Card className="mt-3 overflow-hidden">
         <div ref={scroller} className="overflow-x-auto">
           <table className="border-collapse tabular-nums">
             <thead>
-              <tr className={brand ? '' : 'bg-forest text-on-forest'} style={headStyle}>
+              <tr className={`${ribbon ? '' : 'bg-forest text-on-forest'} ${pale ? 'border-b border-line-strong' : ''}`} style={bandStyle}>
                 <th
-                  className={`sticky left-0 z-20 px-3 text-left text-caption font-semibold uppercase ${brand ? '' : 'bg-forest'}`}
-                  style={headStyle}
+                  className={`sticky left-0 z-20 px-3 text-left text-caption font-semibold uppercase ${ribbon ? '' : 'bg-forest'}`}
+                  style={bandStyle}
                 >
                   Hole
                 </th>
-                {Array.from({ length: HOLE_COUNT }, (_, i) => (
-                  <th
-                    key={i}
-                    ref={(el) => {
-                      columns.current[i] = el
-                    }}
-                    onClick={() => select({ playerId: round.players[0].playerId, hole: i })}
-                    className={`w-11 h-9 text-footnote font-extrabold cursor-pointer ${active?.hole === i ? (brand ? 'bg-black/25' : 'bg-green') : ''}`}
-                  >
-                    {i + 1}
-                  </th>
-                ))}
+                {across(
+                  (i) => (
+                    <th
+                      key={i}
+                      data-current={i === here ? '' : undefined}
+                      onClick={() => select({ playerId: round.players[0].playerId, hole: i })}
+                      className={`w-11 h-9 text-footnote font-extrabold cursor-pointer ${
+                        i === here ? (ribbon ? (pale ? 'bg-black/15' : 'bg-black/25') : 'bg-green') : ''
+                      }`}
+                    >
+                      {i + 1}
+                    </th>
+                  ),
+                  <th key="out" className="w-11 h-9 text-caption font-bold">Out</th>,
+                  <th key="in" className="w-11 h-9 text-caption font-bold">In</th>,
+                )}
                 <th className="w-12 h-9 text-caption font-bold">Tot</th>
               </tr>
               {yards && (
                 <tr className="bg-paper/70">
                   <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-semibold uppercase text-ink-faint whitespace-nowrap">
-                    Yds{course?.yardsTee ? ` ${course.yardsTee}` : ''}
+                    <span className="inline-flex items-center gap-1">
+                      {yardsDot && <span className="h-2 w-2 rounded-full ring-1 ring-ink/20" style={{ backgroundColor: yardsDot }} aria-hidden />}
+                      Yds{yardsCard?.tee ? ` ${yardsCard.tee}` : ''}
+                    </span>
                   </th>
-                  {yards.map((y, i) => (
-                    <td key={i} className="h-7 text-center text-caption text-ink-dim">{y ?? ''}</td>
-                  ))}
+                  {across(
+                    (i) => (
+                      <td key={i} className="h-7 text-center text-caption text-ink-dim">{yards[i] ?? ''}</td>
+                    ),
+                    <td key="out" className="h-7 text-center text-caption text-ink-dim">{sum(yards, 0, 9) || ''}</td>,
+                    <td key="in" className="h-7 text-center text-caption text-ink-dim">{sum(yards, 9, 18) || ''}</td>,
+                  )}
                   <td className="h-7 text-center text-caption text-ink-dim">{totalYards?.toLocaleString()}</td>
                 </tr>
               )}
               {pars && (
                 <tr className="bg-paper/70">
                   <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-semibold uppercase text-ink-faint">Par</th>
-                  {pars.map((p, i) => (
-                    <td key={i} className="h-7 text-center text-footnote font-bold text-ink-dim">{p}</td>
-                  ))}
+                  {across(
+                    (i) => (
+                      <td key={i} className="h-7 text-center text-footnote font-bold text-ink-dim">{pars[i]}</td>
+                    ),
+                    <td key="out" className="h-7 text-center text-footnote font-extrabold text-ink-dim">{sum(pars, 0, 9)}</td>,
+                    <td key="in" className="h-7 text-center text-footnote font-extrabold text-ink-dim">{sum(pars, 9, 18)}</td>,
+                  )}
                   <td className="h-7 text-center text-footnote font-extrabold text-ink-dim">{coursePar}</td>
                 </tr>
               )}
               {index && (
                 <tr className="bg-paper/70 border-b border-line">
-                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-semibold uppercase text-ink-faint whitespace-nowrap">S. index</th>
-                  {index.map((n, i) => (
-                    <td key={i} className="h-7 text-center text-caption text-ink-faint">{n}</td>
-                  ))}
+                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-semibold uppercase text-ink-faint whitespace-nowrap">Index</th>
+                  {across(
+                    (i) => (
+                      <td key={i} className="h-7 text-center text-caption text-ink-faint">{index[i]}</td>
+                    ),
+                    <td key="out" />,
+                    <td key="in" />,
+                  )}
                   <td />
                 </tr>
               )}
@@ -659,52 +986,40 @@ export default function HoleEntry() {
                         <span className="text-footnote font-bold text-ink whitespace-nowrap">{p.name.split(' ')[0]}</span>
                       </div>
                     </th>
-                    {card.map((v, i) => {
-                      const isActive = active?.playerId === rp.playerId && active.hole === i
-                      const par = pars?.[i]
-                      const mark = v != null && par != null ? SCORE_MARK[scoreKind(v, par)] : 'text-ink font-bold'
-                      const cheering = cheer != null && cheer.playerId === rp.playerId && cheer.hole === i
-                      return (
-                        <td key={i} className="p-0">
-                          <button
-                            onClick={() => select({ playerId: rp.playerId, hole: i })}
-                            aria-label={`${p.name}, hole ${i + 1}${v != null ? `, ${v}` : ''}`}
-                            className={`${cellBase} ${isActive ? 'ring-2 ring-inset ring-green bg-green-soft/40' : ''}`}
-                          >
-                            {/* The stroke dots a paper card would carry */}
-                            <StrokeDots count={dots?.[i]} />
-                            {v == null ? (
-                              <span className="text-ink-faint">{isActive ? '_' : '·'}</span>
-                            ) : (
-                              <span
-                                key={cheering ? `cheer-${cheer.n}` : 'mark'}
-                                className={`relative mt-0.5 inline-flex h-7 w-7 items-center justify-center ${mark} ${cheering ? 'cheer-pop' : ''}`}
-                              >
-                                {v}
-                                {cheering && (
-                                  <>
-                                    <i className="cheer-ring pointer-events-none absolute inset-0 rounded-full border-2 border-green" />
-                                    {cheer.big && (
-                                      <i
-                                        className="cheer-ring pointer-events-none absolute inset-0 rounded-full border-2 border-gold"
-                                        style={{ animationDelay: '0.15s' }}
-                                      />
-                                    )}
-                                    <span
-                                      className={`cheer-float pointer-events-none absolute left-1/2 -top-4 whitespace-nowrap text-caption font-extrabold uppercase ${
-                                        cheer.big ? 'text-gold' : 'text-green'
-                                      }`}
-                                    >
-                                      {cheer.label}
-                                    </span>
-                                  </>
-                                )}
-                              </span>
-                            )}
-                          </button>
-                        </td>
-                      )
-                    })}
+                    {across(
+                      (i) => {
+                        const v = card[i]
+                        const isActive = active?.playerId === rp.playerId && active.hole === i
+                        const par = pars?.[i]
+                        const mark = v != null && par != null ? SCORE_MARK[scoreKind(v, par)] : 'text-ink font-bold'
+                        const cheering = isCheering(rp.playerId, i)
+                        return (
+                          <td key={i} className="p-0">
+                            <button
+                              onClick={() => select({ playerId: rp.playerId, hole: i })}
+                              aria-label={`${p.name}, hole ${i + 1}${v != null ? `, ${v}` : ''}`}
+                              className={`${cellBase} ${isActive ? 'ring-2 ring-inset ring-green bg-green-soft/40' : ''}`}
+                            >
+                              {/* The stroke dots a paper card would carry */}
+                              <StrokeDots count={dots?.[i]} />
+                              {v == null ? (
+                                <span className="text-ink-faint">{isActive ? '_' : '·'}</span>
+                              ) : (
+                                <span
+                                  key={cheering ? `cheer-${cheer!.n}` : 'mark'}
+                                  className={`relative mt-0.5 inline-flex h-7 w-7 items-center justify-center ${mark} ${cheering ? 'cheer-pop' : ''}`}
+                                >
+                                  {v}
+                                  {cheerBits(rp.playerId, i)}
+                                </span>
+                              )}
+                            </button>
+                          </td>
+                        )
+                      },
+                      <td key="out" className="bg-paper/60 text-center text-body font-extrabold text-ink-dim">{sum(card, 0, 9) || '–'}</td>,
+                      <td key="in" className="bg-paper/60 text-center text-body font-extrabold text-ink-dim">{sum(card, 9, 18) || '–'}</td>,
+                    )}
                     <td className="text-center">
                       <p className="text-body font-extrabold text-ink">{total || '–'}</p>
                       {vs && <p className="text-caption font-bold text-ink-faint -mt-0.5">{vs}</p>}
@@ -716,22 +1031,27 @@ export default function HoleEntry() {
                     <tr className="border-b border-line last:border-0 bg-paper/60">
                       <th className="sticky left-0 z-20 bg-paper px-3 text-left leading-tight">
                         <span className="flex items-center gap-1 text-caption font-bold text-ink-dim whitespace-nowrap">
-                        <Icon name="ghost" size={13} /> Ghost {p.name.split(' ')[0]}
-                      </span>
+                          <Icon name="ghost" size={13} /> Ghost {p.name.split(' ')[0]}
+                        </span>
                         <span className="block text-caption text-ink-faint whitespace-nowrap tabular-nums">{shortDate(ghost.round.date)}</span>
                       </th>
-                      {card.map((v, i) => {
-                        const g = ghost.card[i]
-                        const shown = v != null && g != null
-                        // Beat the ghost on a hole and it flickers out there,
-                        // struck through; lose one and it stays, in red.
-                        const tone = !shown ? 'text-ink-faint' : v < g ? 'ghost-out text-ink-faint line-through' : v > g ? 'text-flag' : 'text-ink-dim'
-                        return (
-                          <td key={i} className={`h-8 text-center text-footnote font-bold tabular-nums ${tone}`}>
-                            {shown ? g : '·'}
-                          </td>
-                        )
-                      })}
+                      {across(
+                        (i) => {
+                          const v = card[i]
+                          const g = ghost.card[i]
+                          const shown = v != null && g != null
+                          // Beat the ghost on a hole and it flickers out there,
+                          // struck through; lose one and it stays, in red.
+                          const tone = !shown ? 'text-ink-faint' : v < g ? 'ghost-out text-ink-faint line-through' : v > g ? 'text-flag' : 'text-ink-dim'
+                          return (
+                            <td key={i} className={`h-8 text-center text-footnote font-bold tabular-nums ${tone}`}>
+                              {shown ? g : '·'}
+                            </td>
+                          )
+                        },
+                        <td key="out" />,
+                        <td key="in" />,
+                      )}
                       <td className="text-center">
                         {race.holes > 0 ? (
                           <>
@@ -758,14 +1078,6 @@ export default function HoleEntry() {
         </div>
         <div className="flex items-center gap-x-3.5 gap-y-1 flex-wrap border-t border-line px-3 py-2 text-caption text-ink-faint">
           <MarkLegend pars={!!pars} strokeLabel={strokeDots ? 'stroke here' : undefined} />
-          {!active && (
-            <button
-              onClick={() => select({ playerId: round.players[0].playerId, hole: firstOpenHole })}
-              className="ml-auto text-footnote font-bold text-green"
-            >
-              Score hole {firstOpenHole + 1} →
-            </button>
-          )}
         </div>
       </Card>
 
@@ -773,9 +1085,9 @@ export default function HoleEntry() {
           Done buttons on one screen meant two different things. */}
       {!active && (
         <>
-          <div className="mt-4">
-            <PrimaryButton onClick={done} className="w-full !py-4">
-              Back to the round
+          <div className="mt-4 flex gap-2">
+            <PrimaryButton onClick={() => setView('hole')} className="flex-1 !py-4">
+              Back to hole {h + 1}
             </PrimaryButton>
           </div>
           <p className="text-caption text-ink-faint px-1 mt-2">
@@ -783,33 +1095,32 @@ export default function HoleEntry() {
           </p>
         </>
       )}
+        </>
+      )}
       <div className="h-4" />
 
-      {/* The pad. Fixed to the bottom like a keyboard, over the tab bar,
-          and only there while a cell is picked. */}
-      {active && (
-        <div data-pad className="fixed inset-x-0 bottom-0 z-50 sheet-up">
+      {/* The pad. Fixed to the bottom like a keyboard, over the tab bar:
+          always up on the Hole view, and up on the Card view once a box
+          is picked. */}
+      {cur && (
+        <div data-pad className={`fixed inset-x-0 bottom-0 z-50 ${view === 'card' ? 'sheet-up' : ''}`}>
           <div className="mx-auto max-w-md bg-card border-t border-line shadow-[0_-8px_24px_rgba(24,32,25,0.12)] pb-[env(safe-area-inset-bottom)]">
             <div className="flex items-center justify-between px-4 py-2 bg-paper border-b border-line">
               <p className="text-footnote text-ink-dim">
                 <span className="font-bold text-ink">
-                  {data.players.find((pl) => pl.id === active.playerId)?.name.split(' ')[0]}
+                  {data.players.find((pl) => pl.id === cur.playerId)?.name.split(' ')[0]}
                 </span>{' '}
-                · hole {active.hole + 1}
-                {pars?.[active.hole] != null && ` · par ${pars[active.hole]}`}
-                {(strokeDots?.[active.playerId]?.[active.hole] ?? 0) > 0 && (
-                  <span className="text-gold font-bold"> · {'•'.repeat(Math.min(strokeDots![active.playerId][active.hole], 3))} stroke</span>
+                · hole {cur.hole + 1}
+                {pars?.[cur.hole] != null && ` · par ${pars[cur.hole]}`}
+                {(strokeDots?.[cur.playerId]?.[cur.hole] ?? 0) > 0 && (
+                  <span className="text-gold font-bold"> · {'•'.repeat(Math.min(strokeDots![cur.playerId][cur.hole], 3))} stroke</span>
                 )}
               </p>
-              <button
-                onClick={() => {
-                  leaveCell()
-                  setActive(null)
-                }}
-                className="text-footnote font-bold text-green"
-              >
-                Done
-              </button>
+              {view === 'card' && (
+                <button onClick={closePad} className="text-footnote font-bold text-green">
+                  Done
+                </button>
+              )}
             </div>
             <div className="grid grid-cols-3">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
@@ -817,7 +1128,7 @@ export default function HoleEntry() {
                   key={d}
                   onClick={() => typeDigit(d)}
                   className={`h-14 border-b border-r border-line text-large font-bold text-ink active:bg-paper ${
-                    pars?.[active.hole] === d ? 'bg-green-soft/40' : 'bg-card'
+                    pars?.[cur.hole] === d ? 'bg-green-soft/40' : 'bg-card'
                   }`}
                 >
                   {d}
@@ -830,7 +1141,7 @@ export default function HoleEntry() {
                 0
               </button>
               <button onClick={advance} className="h-14 bg-green text-body font-bold text-white active:bg-green-deep">
-                Next →
+                {view === 'hole' && isLastGolfer ? (cur.hole === HOLE_COUNT - 1 ? 'Finish' : 'Next hole') : 'Next →'}
               </button>
             </div>
           </div>
