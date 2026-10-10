@@ -16,7 +16,9 @@ const BATCH = 16
 
 export function TeeYardsCatchUp() {
   const { data, saveCourse } = useStore()
-  const skippedKey = `sandbagger-tee-yards-skipped:${data.group.id}`
+  // Versioned: when the matcher improves, everything it gave up on gets
+  // one more try.
+  const skippedKey = `sandbagger-tee-yards-skipped:v2:${data.group.id}`
   const [skipped, setSkipped] = useState<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem(skippedKey) ?? '[]')

@@ -78,18 +78,35 @@ const bare = (s: string) =>
     .toLowerCase()
     .replace(/&/g, ' and ')
     .replace(/[^a-z0-9 ]/g, ' ')
-    .replace(/\b(the|golf|course|club|country|links|gc|cc|state|park|at)\b/g, ' ')
+    .replace(/\b(the|golf|courses?|clubs?|country|links|gc|cc|state|park|at)\b/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+const words = (s: string) => bare(s).split(' ').filter(Boolean)
 const city = (town?: string | null) => (town ?? '').split(',')[0].trim().toLowerCase()
 
-/** The one directory match that is plainly this course, or null when it isn't clear. */
+/**
+ * The one directory match that is plainly this course, or null when it
+ * isn't clear. Compared word by word rather than as a string: a club with
+ * several courses comes back as "Bethpage State Park Golf Courses" plus
+ * "Black", which has every word of "Bethpage Black" but isn't spelled
+ * like it. Two candidates that both fit still return null; a town breaks
+ * the tie when there is one.
+ */
 export function pickMatch(name: string, town: string | null | undefined, results: DirectoryMatch[]): DirectoryMatch | null {
-  const want = bare(name)
+  const want = words(name)
   const withCard = results.filter((r) => r.hasCard)
-  const exact = withCard.filter((r) => bare(r.name) === want)
+  const same = (r: DirectoryMatch) => {
+    const w = words(r.name)
+    return w.length === want.length && want.every((t) => w.includes(t))
+  }
+  const exact = withCard.filter(same)
   if (exact.length === 1) return exact[0]
-  const pool = exact.length > 1 ? exact : withCard.filter((r) => bare(r.name).includes(want) || want.includes(bare(r.name)))
+  // Every word of ours in theirs, or every word of theirs in ours.
+  const covers = (r: DirectoryMatch) => {
+    const w = words(r.name)
+    return want.every((t) => w.includes(t)) || (w.length > 0 && w.every((t) => want.includes(t)))
+  }
+  const pool = exact.length > 1 ? exact : withCard.filter(covers)
   const inTown = town ? pool.filter((r) => city(r.town) === city(town)) : pool
   if (inTown.length === 1) return inTown[0]
   return pool.length === 1 && !town ? pool[0] : null
