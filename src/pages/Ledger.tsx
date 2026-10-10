@@ -253,6 +253,24 @@ export default function Ledger() {
           ))}
         </Card>
       )}
+      {board.length > 0 && (
+        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-caption text-ink-faint">
+          {(
+            [
+              ['bg-green', 'Won'],
+              ['bg-green/40', 'Podium'],
+              ['bg-line-strong', 'Middle'],
+              ['bg-flag/50', 'Last'],
+            ] as const
+          ).map(([tone, label]) => (
+            <span key={label} className="inline-flex items-center gap-1">
+              <span className={`h-[9px] w-[9px] rounded-[3px] ${tone}`} />
+              {label}
+            </span>
+          ))}
+          <span>· oldest on the left</span>
+        </p>
+      )}
 
       {/* Money */}
       {moneyRows.length > 0 && (

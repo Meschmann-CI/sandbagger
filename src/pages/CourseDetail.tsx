@@ -16,8 +16,9 @@ import { StarRating } from '../components/Stars'
 import { Avatar, Card, Pill, SectionLabel } from '../components/ui'
 import { IconTile } from '../components/icons'
 
-// One course: what the group thinks of it, what you think of it, and
-// the reference data (scorecard, rounds played) underneath.
+// One course: what the group thinks of it (the verdict, then each detail
+// with your score beside the average, then everyone's take with yours
+// first), and the reference data (scorecard, tees, rounds) underneath.
 
 export default function CourseDetail() {
   const { slug = '' } = useParams()
@@ -48,6 +49,7 @@ export default function CourseDetail() {
     .filter((r) => courseSlug(r.courseName) === slug)
     .sort((a, b) => b.date.localeCompare(a.date))
   const detailed = RATING_ASPECTS.filter((a) => summary.aspectAvg[a.key] != null)
+  const myAspects = !!summary.mine?.aspects && Object.keys(summary.mine.aspects).length > 0
   const others = summary.ratings
     .filter((r) => r.playerId !== data.currentUserId)
     .sort((a, b) => b.overall - a.overall || b.date.localeCompare(a.date))
@@ -107,20 +109,55 @@ export default function CourseDetail() {
         )}
       </Card>
 
-      {/* Yours */}
+      {/* The details: the group's average on each, with your own score
+          beside it, so you can see where you part ways with everyone. */}
+      {detailed.length > 0 && (
+        <>
+          <SectionLabel>The details</SectionLabel>
+          <Card className="divide-y divide-line">
+            {myAspects && (
+              <div className="flex items-center gap-3 px-4 py-2 text-caption font-bold text-ink-faint">
+                <span className="flex-1" />
+                <span className="w-[92px] text-right">Group</span>
+                <span className="w-9 text-right">You</span>
+              </div>
+            )}
+            {detailed.map((a) => {
+              const v = summary.aspectAvg[a.key]!
+              const mineHere = summary.mine?.aspects?.[a.key]
+              return (
+                <div key={a.key} className="flex items-center gap-3 px-4 py-2.5">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-footnote font-bold text-ink">{a.label}</p>
+                    <p className="text-caption text-ink-faint">{a.hint}</p>
+                  </div>
+                  <StarRating value={v} size={12} />
+                  <span className="w-8 text-right text-footnote font-extrabold text-ink tabular-nums">{fmtStars(v)}</span>
+                  {myAspects && (
+                    <span className="w-9 text-right text-footnote font-bold text-ink-dim tabular-nums">{mineHere != null ? `${mineHere}★` : '–'}</span>
+                  )}
+                </div>
+              )
+            })}
+          </Card>
+        </>
+      )}
+
+      {/* Everyone's take, yours first: one list, so your review sits with
+          the rest rather than off on its own. */}
       <SectionLabel
         action={
           summary.mine && !editing ? (
             <button onClick={() => setEditing(true)} className="text-footnote font-bold text-green">
-              Edit
+              Edit yours
             </button>
           ) : undefined
         }
       >
-        Your take
+        Everyone’s take
       </SectionLabel>
-      {editing ? (
-        <>
+      {editing && (
+        <div className="mb-3">
           <CourseRatingEditor courseName={summary.name} onDone={() => setEditing(false)} />
           {summary.mine && (
             <button
@@ -141,90 +178,42 @@ export default function CourseDetail() {
               Remove my rating
             </button>
           )}
-        </>
-      ) : summary.mine ? (
-        <Card className="p-4">
-          <div className="flex items-center gap-2">
-            <StarRating value={summary.mine.overall} size={16} />
-            <span className="text-body font-extrabold text-ink tabular-nums">{summary.mine.overall}</span>
-            <span className="text-caption text-ink-faint ml-auto">{shortDate(summary.mine.date)}</span>
-          </div>
-          {summary.mine.note && <p className="text-footnote text-ink-dim mt-2">{summary.mine.note}</p>}
-          {summary.mine.aspects && Object.keys(summary.mine.aspects).length > 0 && (
-            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
-              {RATING_ASPECTS.filter((a) => summary.mine!.aspects?.[a.key] != null).map((a) => (
-                <div key={a.key} className="flex items-center justify-between text-footnote">
-                  <span className="text-ink-dim">{a.label}</span>
-                  <span className="font-bold text-ink tabular-nums">{summary.mine!.aspects![a.key]}★</span>
+        </div>
+      )}
+      <Card className="divide-y divide-line">
+        {!summary.mine && !editing && (
+          <button type="button" onClick={() => setEditing(true)} className="flex w-full items-center gap-3 bg-green-soft/40 px-4 py-3 text-left active:bg-green-soft">
+            <IconTile name="star" tone="gold" size={28} />
+            <span className="flex-1 text-footnote font-bold text-ink">Rate {summary.name}</span>
+            <span className="shrink-0 text-footnote font-bold text-green">Rate →</span>
+          </button>
+        )}
+        {[...(summary.mine ? [summary.mine] : []), ...others].map((r) => {
+          const p = data.players.find((pl) => pl.id === r.playerId)
+          if (!p) return null
+          const isMe = r.playerId === data.currentUserId
+          return (
+            <div key={r.id} className={`flex items-start gap-3 px-4 py-3 ${isMe ? 'bg-green-soft/30' : ''}`}>
+              <Avatar player={p} size={28} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-footnote font-bold text-ink">{isMe ? 'You' : p.name}</span>
+                  <StarRating value={r.overall} size={11} />
+                  <span className="text-caption text-ink-faint ml-auto tabular-nums">{shortDate(r.date)}</span>
                 </div>
-              ))}
+                {r.note && <p className="text-footnote text-ink-dim mt-0.5">{r.note}</p>}
+                {r.aspects && Object.keys(r.aspects).length > 0 && (
+                  <p className="text-caption text-ink-faint mt-1 tabular-nums">
+                    {RATING_ASPECTS.filter((a) => r.aspects?.[a.key] != null)
+                      .map((a) => `${a.label} ${r.aspects![a.key]}★`)
+                      .join(' · ')}
+                  </p>
+                )}
+              </div>
             </div>
-          )}
-        </Card>
-      ) : (
-        <Card onClick={() => setEditing(true)} className="p-4 border-green/30 bg-green-soft/40 flex items-center gap-3">
-          <IconTile name="star" tone="gold" />
-          <div className="flex-1 min-w-0">
-            <p className="text-body font-bold text-ink">Rate {summary.name}</p>
-          </div>
-          <span className="text-footnote font-bold text-green shrink-0">Rate →</span>
-        </Card>
-      )}
-
-      {/* The details, averaged, only where anyone said anything */}
-      {detailed.length > 0 && (
-        <>
-          <SectionLabel>The details</SectionLabel>
-          <Card className="divide-y divide-line">
-            {detailed.map((a) => {
-              const v = summary.aspectAvg[a.key]!
-              return (
-                <div key={a.key} className="flex items-center gap-3 px-4 py-2.5">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-footnote font-bold text-ink">{a.label}</p>
-                    <p className="text-caption text-ink-faint">{a.hint}</p>
-                  </div>
-                  <StarRating value={v} size={12} />
-                  <span className="w-8 text-right text-footnote font-extrabold text-ink tabular-nums">{fmtStars(v)}</span>
-                </div>
-              )
-            })}
-          </Card>
-        </>
-      )}
-
-      {/* Everyone else */}
-      {others.length > 0 && (
-        <>
-          <SectionLabel>Everyone’s take</SectionLabel>
-          <Card className="divide-y divide-line">
-            {others.map((r) => {
-              const p = data.players.find((pl) => pl.id === r.playerId)
-              if (!p) return null
-              return (
-                <div key={r.id} className="flex items-start gap-3 px-4 py-3">
-                  <Avatar player={p} size={28} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-footnote font-bold text-ink">{p.name}</span>
-                      <StarRating value={r.overall} size={11} />
-                      <span className="text-caption text-ink-faint ml-auto tabular-nums">{shortDate(r.date)}</span>
-                    </div>
-                    {r.note && <p className="text-footnote text-ink-dim mt-0.5">{r.note}</p>}
-                    {r.aspects && Object.keys(r.aspects).length > 0 && (
-                      <p className="text-caption text-ink-faint mt-1 tabular-nums">
-                        {RATING_ASPECTS.filter((a) => r.aspects?.[a.key] != null)
-                          .map((a) => `${a.label} ${r.aspects![a.key]}★`)
-                          .join(' · ')}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </Card>
-        </>
-      )}
+          )
+        })}
+      </Card>
 
       {/* Reference data */}
       <SectionLabel>Scorecard</SectionLabel>
