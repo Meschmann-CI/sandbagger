@@ -99,7 +99,7 @@ export default function CourseEdit() {
           name: c.name,
           town: c.town,
           holes: Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: c.pars[i] ?? null, strokeIndex: c.strokeIndex[i] ?? null, yards: c.yards[i] ?? null })),
-          tees: c.tees.map((t) => (t.name === c.yardsTee ? { ...t, holeYards: c.yards } : t)),
+          tees: c.tees,
           notes: [c.hasCard ? 'From the course directory. Check it against the card if you have one.' : 'The directory only had the name and town for this one. The card is still yours to fill in.'],
         },
         [],
@@ -173,9 +173,9 @@ export default function CourseEdit() {
       return
     }
     // Everything a scanned card knows beyond par rides along: the tee
-    // list, and per-hole yards from the default tee's row (or whichever
-    // tee had one).
-    const tees = scanned?.tees.filter((t) => t.rating != null && t.slope != null).map(({ holeYards: _drop, ...t }) => t)
+    // list with each tee's per-hole yards, and the default tee's yards
+    // (or whichever tee had some) as the course's own row.
+    const tees = scanned?.tees.filter((t) => t.rating != null && t.slope != null)
     // Per-hole yards from the default tee's row where the card had one,
     // else from whichever tee did.
     const defName = scanned ? defaultTee(scanned.tees)?.name : undefined

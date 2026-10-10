@@ -82,6 +82,30 @@ const BRANDS: Entry[] = [
   { match: /^(dunwoodie|maple moor|mohansic|saxon woods|sprain lake|hudson hills)/, ...WESTCHESTER },
 ]
 
+// The colour of a tee marker, from its name, for the dot beside the
+// yardage. Combination and unusual tees get no dot rather than a guess.
+const TEE_COLOUR: Record<string, string> = {
+  blue: '#1F5FBF',
+  white: '#FFFFFF',
+  red: '#C8102E',
+  gold: '#E0A800',
+  yellow: '#E0A800',
+  black: '#1A1A1A',
+  green: '#127A4D',
+  silver: '#A7B0B5',
+  gray: '#A7B0B5',
+  grey: '#A7B0B5',
+  orange: '#E06A1B',
+  purple: '#6B3FA0',
+  copper: '#B87333',
+  tan: '#C9A97A',
+}
+export const teeColour = (name?: string | null) => {
+  if (!name) return undefined
+  const word = name.trim().toLowerCase().replace(/\s*tees?$/, '').split(/[\s/-]+/)[0]
+  return TEE_COLOUR[word] ?? TEE_COLOUR[word.replace(/s$/, '')]
+}
+
 /** Black or white, whichever reads on `hex`. */
 export function inkOn(hex: string): string {
   const n = parseInt(hex.replace('#', ''), 16)

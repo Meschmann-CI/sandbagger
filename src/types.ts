@@ -105,6 +105,8 @@ export interface CourseTee {
   slope: number
   /** Men's ratings are the default; a women's set is kept but not used for strokes. */
   gender?: 'M' | 'W'
+  /** Each hole's yards off this tee, when the card or the directory had them. */
+  holeYards?: (number | null)[]
 }
 
 // ---------- Course ratings ----------

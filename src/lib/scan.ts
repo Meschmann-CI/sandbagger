@@ -21,7 +21,7 @@ export interface ScannedCard {
   name: string | null
   town: string | null
   holes: ScannedHole[]
-  tees: (CourseTee & { holeYards?: (number | null)[] })[]
+  tees: CourseTee[]
   /** Anything the reader wasn't sure of, in its own words. */
   notes: string[]
 }

@@ -114,6 +114,26 @@ export function teeFor(course: Course | undefined, teeName?: string): { rating: 
 }
 
 /**
+ * Each hole's yards for the tee a round is played from, read as loosely as
+ * teeFor reads the tee. When that tee's holes aren't on file, the course's
+ * own yardage row (from whichever tee the card was saved with) stands in,
+ * and `tee` says which tee those yards really are.
+ */
+export function yardsFor(course: Course | undefined, teeName?: string): { yards: (number | null)[]; tee?: string } | null {
+  if (!course) return null
+  const norm = (s?: string) => s?.trim().toLowerCase().replace(/\s*tees?$/, '').replace(/s$/, '')
+  const wanted = norm(teeName)
+  const full = (ys?: (number | null)[]) => !!ys && ys.length === HOLE_COUNT && ys.some((y) => y != null)
+  if (wanted && course.tees) {
+    const hits = course.tees.filter((t) => norm(t.name) === wanted && full(t.holeYards))
+    const hit = hits.find((t) => (t.gender ?? 'M') === 'M') ?? hits[0]
+    if (hit) return { yards: hit.holeYards!, tee: hit.name }
+  }
+  if (full(course.yards)) return { yards: course.yards!, tee: course.yardsTee }
+  return null
+}
+
+/**
  * The GHIN conversion: index × (slope ÷ 113) + (rating − par). This is
  * the number the GHIN app shows per course, and the one strokes should
  * come from — a 133 slope turns a 37.3 into a 43, not a 37. Falls back

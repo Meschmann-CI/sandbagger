@@ -4,9 +4,9 @@
 //   { q: "bethpage" }  → up to eight matches: id, name, town, and whether
 //                        the directory has a scorecard for it
 //   { id: "49wvt3sr" } → the course in the shape the app stores: pars,
-//                        stroke index, yardage, every tee's rating and
-//                        slope, and the town (which also switches on the
-//                        weather painting for its rounds)
+//                        stroke index, yardage, every tee's rating, slope
+//                        and hole-by-hole yards, and the town (which also
+//                        switches on the weather painting for its rounds)
 //
 // The API key stays here, as the secret GOLFCOURSE_API_KEY; the key
 // holder's terms don't allow handing it to other people's phones. The
@@ -156,6 +156,9 @@ Deno.serve(async (req) => {
           rating: Number(t.course_rating),
           slope: Math.round(Number(t.slope_rating)),
           gender,
+          // Every tee's own hole yardages, so a round off the Golds shows
+          // the Golds' yards rather than the default tee's.
+          holeYards: full(t) && t.holes!.some((h) => h.yardage != null) ? pad(t.holes!.map((h) => h.yardage ?? null)) : undefined,
         }))
       const holes = card?.holes ?? []
       return json({
