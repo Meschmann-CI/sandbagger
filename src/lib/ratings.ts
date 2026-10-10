@@ -146,11 +146,20 @@ export function courseSummaries(data: AppData): CourseSummary[] {
   return rows
 }
 
-/** Sorted for the ratings view: best-rated first, unrated (but played) after, by how often. */
+/**
+ * Sorted for the ratings view: best-rated first, unrated (but played)
+ * after, by how often. Stars bunch up (two 5.0s are common), so a tie
+ * goes to the group's ranking, which is the group saying outright which
+ * it prefers; then to more ratings, more rounds, and the name.
+ */
 export const byRating = (rows: CourseSummary[]) =>
   [...rows].sort(
     (a, b) =>
-      (b.avg ?? -1) - (a.avg ?? -1) || b.ratings.length - a.ratings.length || b.rounds - a.rounds || a.name.localeCompare(b.name),
+      (b.avg ?? -1) - (a.avg ?? -1) ||
+      (a.groupRank ?? Infinity) - (b.groupRank ?? Infinity) ||
+      b.ratings.length - a.ratings.length ||
+      b.rounds - a.rounds ||
+      a.name.localeCompare(b.name),
   )
 
 /** Sorted for the rankings view: the group's order, then everything nobody has ranked. */
