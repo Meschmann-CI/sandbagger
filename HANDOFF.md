@@ -42,10 +42,22 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    `supabase/email-templates/` into Authentication > Emails > Templates (no MCP tool for that).
 6. iOS haptics trick (`buzz()` via a switch input) is untested on a real iPhone.
 
-7. Redesign in Claude Design: canvas https://claude.ai/artifact/2XSg6hhea91gscdJeUmm3s (brief +
-   current screens; seed files in `../design-seed/`). Decided 2026-10-10: SF Pro replaces
-   Manrope, light only for now, green surfaces and cream are out. When Matt brings the
-   finished design back, rebuild the web UI to match.
+7. Redesign, rolled back 2026-10-10. The Claude Design pass (canvas
+   https://claude.ai/artifact/2XSg6hhea91gscdJeUmm3s) was built on branch `redesign` (SF Pro,
+   new tokens, capsule tab bar, tiles and sheets everywhere) for Home, Live scoring and Round
+   detail. Matt preferred the deployed look, so branch `refresh` starts from main and keeps
+   only the redesign's layout and features, in the original fonts and colours: per-tee
+   yardages, the tee-coloured card with Index and Out/In, the live Hole view with the pad
+   always up, Home's group-name title / live strip / season race, Round detail's logo over
+   the scene. `refresh` is not pushed yet. `redesign` stays as a reference; don't merge it.
+   Open question: tiles vs flat. Branch `flat-preview` (off `refresh`) flattens cards into
+   edge-to-edge sections behind `?flat=1`; comparison images are
+   `../design-seed/compare-home.png` and `compare-round.png`. Build the chosen one properly
+   (not the CSS preview), then also fix the tab bar if Matt still wants it changed.
+9. Per-tee yardages (2026-10-10): `CourseTee.holeYards`, `yardsFor()` picks the played tee's
+   yards, `course-lookup` v3 (deployed) returns every tee's holes. Courses page "Every tee's
+   yardage" pulls 16 courses a tap (35 requests a day); Matt taps it over a few days after
+   the push.
 8. Long term: a native SwiftUI app. Needs a Mac with Xcode (none on this Windows laptop) and
    the $99/yr Apple Developer Program for TestFlight. Supabase, the Edge Functions and the
    schema carry over unchanged; the TS logic in `src/lib` (bets, handicaps, money, ghost,
@@ -71,8 +83,14 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 - Copy reads like a person wrote it for four friends: no tracked all-caps labels (form labels,
   eyebrows, table heads are sentence case; only the scorecard grid's HOLE/PAR row and the
   rubber-stamp and cheer exclamations stay caps), no em dashes, no caption explaining what a
-  control obviously does, no stat-summary subtitle under page titles. Headlines say where
-  you stand ("2 wins clear of Ravi"); "Good morning" only when there is nothing to say.
+  control obviously does, no stat-summary subtitle under page titles. Home's title is the
+  group's name, not a sentence; where you stand is the line under the season race.
+- Live scoring keeps the number pad, always up on the Hole view; its last key reads Next hole.
+  The hole row (Hole view and every card) is the colour of the tees being played, falling
+  back to the course colour. The card scrolls sideways with names pinned, Out after 9.
+- Live round on Home is the near-black strip (yellow Live, score thru N, white Hole N
+  button, yellow progress line). Matt rejected a big tile, a yellow strip and a white card.
+- Round detail: with the podium showing, no "X won" line; the trash talk sits under it.
 - `src/data/seed.ts` ships in the public bundle and holds fictional demo data only. Never put
   real trip details (door codes, confirmations) back in it.
 
