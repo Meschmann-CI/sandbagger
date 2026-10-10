@@ -21,7 +21,7 @@ const TYPICAL_HIGH = 160
 /** A nudge to show under the input, or null when the number looks normal. */
 export function grossWarning(n: number): string | null {
   if (!Number.isFinite(n)) return null
-  if (n < TYPICAL_LOW) return `${n} is very low for eighteen holes — check the number?`
-  if (n > TYPICAL_HIGH) return `${n} is very high — check the number?`
+  if (n < TYPICAL_LOW) return `${n} for eighteen holes? Check that.`
+  if (n > TYPICAL_HIGH) return `${n}? Check that, or don't tell anyone.`
   return null
 }

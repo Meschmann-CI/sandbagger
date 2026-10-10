@@ -42,7 +42,7 @@ export const localBackend: Backend = {
     } catch {
       // Browser storage is only a few megabytes and trip photos are the
       // one thing big enough to fill it.
-      alert("Couldn't save — browser storage is full. Remove a photo or two and try again.")
+      alert("Couldn't save. Browser storage is full. Remove a photo or two and try again.")
     }
   },
 }

@@ -3,10 +3,9 @@ import { Link } from 'react-router-dom'
 import { useNavigate } from '../lib/nav'
 import { useLogSheet } from '../components/logSheet'
 import { useStore } from '../data/store'
-import { byDate, leaderboard, roundStandings, shortDate } from '../lib/stats'
-import { todayISO } from '../lib/dates'
+import { byDate, roundStandings, shortDate } from '../lib/stats'
 import { fmt1, isSoloRound, pending } from '../types'
-import { AvatarStack, Card, EmptyState, Meta, Pill, PrimaryButton, RowBadge } from '../components/ui'
+import { AvatarStack, Card, EmptyState, Pill, PrimaryButton, RowBadge } from '../components/ui'
 import { Icon } from '../components/icons'
 import RoundScene from '../components/RoundScene'
 
@@ -24,7 +23,6 @@ export default function Rounds() {
   const navigate = useNavigate()
   const { open: openLog } = useLogSheet()
   const [filter, setFilter] = useState<Filter>('all')
-  const YEAR = todayISO().slice(0, 4)
 
   const all = byDate(data.rounds).reverse()
   const rounds = all.filter((r) =>
@@ -32,9 +30,6 @@ export default function Rounds() {
   )
 
 
-  // One line on the season, so the list has a headline.
-  const season = all.filter((r) => r.date.startsWith(YEAR))
-  const leader = leaderboard(data, season).find((row) => row.wins > 0)
 
   const filters: { key: Filter; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -47,14 +42,6 @@ export default function Rounds() {
       <header className="pt-4 pb-3 px-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-large font-bold tracking-tight text-ink">Rounds</h1>
-          <Meta
-            className="text-footnote text-ink-dim"
-            parts={[
-              season.length > 0 && `${season.length} this year`,
-              `${all.length} on the books`,
-              leader && `${leader.player.name} leads with ${leader.wins} win${leader.wins === 1 ? '' : 's'}`,
-            ]}
-          />
         </div>
         <Link to="/h2h" className="text-footnote font-bold text-green shrink-0 mt-2">
           Standings →
@@ -78,7 +65,7 @@ export default function Rounds() {
       {rounds.length === 0 && (
         <EmptyState
           title={filter === 'mine' ? 'Nothing logged yet' : 'No rounds here'}
-          sub="Log one — solo grinds count too."
+          sub="Solo grinds count too."
           cta={<PrimaryButton onClick={() => openLog()}>Log a round</PrimaryButton>}
         />
       )}
@@ -98,7 +85,7 @@ export default function Rounds() {
           return (
             <div key={r.id}>
               {newMonth && (
-                <p className={`px-1 text-caption font-bold uppercase tracking-[0.12em] text-ink-faint ${i === 0 ? 'mt-3' : 'mt-6'} mb-2`}>
+                <p className={`px-1 text-footnote font-bold text-ink-dim ${i === 0 ? 'mt-3' : 'mt-6'} mb-2`}>
                   {monthLabel(month)}
                 </p>
               )}

@@ -30,7 +30,7 @@ const MAX_CODE = 10
 function friendlyAuthError(message: string): string {
   const m = message.toLowerCase()
   if (m.includes('rate limit') || m.includes('too many requests')) {
-    return "Too many sign-in emails were sent recently, so this one didn't go out. Wait a few minutes and try once more — retrying now only pushes it further out."
+    return "Too many sign-in emails were sent recently, so this one didn't go out. Wait a few minutes and try once more. Retrying now only pushes it further out."
   }
   // The link and the code are the same one-time token, so opening the
   // link spends the code too. Someone who taps it out of habit and then
@@ -40,7 +40,7 @@ function friendlyAuthError(message: string): string {
     return 'That code has expired or was already used (opening a link in an older sign-in email uses it up too). Send a new email and use the code from that one.'
   }
   if (m.includes('invalid') && (m.includes('token') || m.includes('otp') || m.includes('code'))) {
-    return "That code wasn't right. Check the email again — it's the most recent one that counts."
+    return "That code wasn't right. Check the email again. Only the most recent one counts."
   }
   if (m.includes('invalid') && m.includes('email')) {
     return "That doesn't look like a valid email address."
@@ -130,7 +130,7 @@ export default function SignIn() {
             We sent a sign-in code to <span className="font-bold text-ink">{email.trim()}</span>.
           </p>
 
-          <label htmlFor="signin-code" className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mt-5 mb-2">
+          <label htmlFor="signin-code" className="block text-footnote font-semibold text-ink-dim mt-5 mb-2">
             Enter the code
           </label>
           <input
@@ -164,7 +164,7 @@ export default function SignIn() {
           {error && <p className="text-footnote text-flag font-semibold mt-2.5">{error}</p>}
 
           <p className="text-caption text-ink-faint mt-3.5">
-            The code is all you need, so there's nothing to tap in the email. On an iPhone, the code usually shows up above the keyboard, ready to fill in.
+            On an iPhone the code usually shows up above the keyboard.
           </p>
           <button
             onClick={() => {
@@ -179,7 +179,7 @@ export default function SignIn() {
         </Card>
       ) : (
         <Card className="p-5">
-          <label className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-2">Email</label>
+          <label className="block text-footnote font-semibold text-ink-dim mb-2">Email</label>
           <input
             type="email"
             inputMode="email"

@@ -171,7 +171,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
     const { data: gone, error } = await client.from(table).delete().eq('id', id).select('id')
     guard(error, what)
     if (!gone || gone.length === 0) {
-      throw new Error(`${what}: nothing was deleted — you may not have permission`)
+      throw new Error(`${what}: nothing was deleted (you may not have permission)`)
     }
   }
 

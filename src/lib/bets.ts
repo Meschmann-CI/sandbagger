@@ -69,7 +69,7 @@ export function calcSkins(
   if (useNet && !ranked) {
     return emptyOutcome(
       playerIds,
-      "Net skins needs this course's stroke index — add it from the Courses page, or play them gross.",
+      "Net skins needs this course's stroke index. Add it from the Courses page, or play them gross.",
     )
   }
 
@@ -135,16 +135,16 @@ export function calcSkins(
           : `Holding the pot as it stands|${leaders[0]}`,
       )
     } else {
-      detail.push(`Tied at ${most} skins apiece — the pot splits.`)
+      detail.push(`Tied at ${most} skins apiece, so the pot splits.`)
     }
   } else if (winnerTakeAll) {
-    detail.push('No skins won yet — the pot sits.')
+    detail.push('No skins won yet. The pot sits.')
   }
   if (carrying > 0) {
     detail.push(
       holesJudged === HOLE_COUNT
         ? `${carrying} skin${carrying === 1 ? '' : 's'} died on the 18th unclaimed.`
-        : `${carrying} skin${carrying === 1 ? '' : 's'} carrying — next outright winner takes ${carrying + 1}.`,
+        : `${carrying} skin${carrying === 1 ? '' : 's'} carrying. Next outright winner takes ${carrying + 1}.`,
     )
   }
   return { results: toResults(totals), detail, computable: true }
@@ -260,7 +260,7 @@ export function calcMatchPlay(
   // otherwise a stray id silently turns a threesome into somebody
   // else's head-to-head.
   if (playerIds.length !== 2 || entries.length !== 2) {
-    return emptyOutcome(playerIds, 'Match play is one on one — pick exactly two golfers from this round.')
+    return emptyOutcome(playerIds, 'Match play is one on one. Pick exactly two golfers from this round.')
   }
 
   const [a, b] = entries
@@ -268,7 +268,7 @@ export function calcMatchPlay(
   if (useNet && !ranked) {
     return emptyOutcome(
       playerIds,
-      "Net match play needs this course's stroke index — add it from the Courses page, or play the match gross.",
+      "Net match play needs this course's stroke index. Add it from the Courses page, or play the match gross.",
     )
   }
 
@@ -334,7 +334,7 @@ export function calcMatchPlay(
   // Still live.
   const remaining = HOLE_COUNT - thru
   if (up === 0) detail.push(`All square thru ${thru}.`)
-  else detail.push(`${Math.abs(up)} up thru ${thru}${Math.abs(up) === remaining ? ' — dormie' : ''}|${leaderId}`)
+  else detail.push(`${Math.abs(up)} up thru ${thru}${Math.abs(up) === remaining ? ', dormie' : ''}|${leaderId}`)
   return { results: toResults(totals), detail, computable: false }
 }
 

@@ -166,7 +166,7 @@ export default function RoundPhotos({ round, openerRef }: { round: Round; opener
               aria-label="Photo waiting for signal"
             >
               <img src={p.dataUrl} alt="" className="h-full w-full object-cover opacity-50" />
-              <span className="absolute inset-x-0 bottom-0 bg-gold-soft/95 px-1.5 py-1 text-center text-caption font-semibold uppercase tracking-wider text-gold">
+              <span className="absolute inset-x-0 bottom-0 bg-gold-soft/95 px-1.5 py-1 text-center text-caption font-semibold text-gold">
                 Waiting for signal
               </span>
             </div>

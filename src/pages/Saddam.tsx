@@ -52,7 +52,6 @@ export default function Saddam() {
         <div className="min-w-0">
           <BackButton fallback="/h2h" onBack={goBack} />
           <h1 className="text-large font-bold tracking-tight text-ink">The Saddam</h1>
-          <p className="text-footnote text-ink-dim">Held by whoever won the last group round.</p>
         </div>
         <button
           type="button"
@@ -94,7 +93,7 @@ export default function Saddam() {
             ))}
           </div>
           <div>
-            <label className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5">Why (optional)</label>
+            <label className="block text-footnote font-semibold text-ink-dim mb-1.5">Why (optional)</label>
             <input
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -122,7 +121,7 @@ export default function Saddam() {
         </span>
         {holder && current ? (
           <>
-            <p className="relative mt-5 text-caption font-semibold uppercase tracking-[0.18em] text-on-forest/70">Current holder</p>
+            <p className="relative mt-5 text-footnote font-semibold text-on-forest/75">Current holder</p>
             <p className="relative mt-1 text-hero font-bold leading-none tracking-tight">{holder.name}</p>
             <p className="relative mt-2.5 text-body text-on-forest/85">
               <CountUp id="saddam-days" value={current.days} format={(n) => plural(Math.round(n), 'day')} className="font-extrabold" />

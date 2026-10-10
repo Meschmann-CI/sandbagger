@@ -30,7 +30,7 @@ export default function EditGolfer({ player, cloud, onDone }: { player: Player; 
 
   const field =
     'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5'
+  const label = 'block text-footnote font-semibold text-ink-dim mb-1.5'
 
   const save = () => {
     if (!name.trim()) return

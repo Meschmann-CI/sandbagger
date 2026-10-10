@@ -77,13 +77,13 @@ export default function TripDetail() {
         {(until != null || dayOf != null) && (
           <div className="absolute right-3 top-3 rounded-2xl bg-cream px-3 py-2 text-center text-forest shadow-[0_6px_16px_rgba(0,0,0,0.2)]">
             <p className="text-title font-extrabold leading-none tabular-nums">{until ?? `${dayOf}/${tripDays}`}</p>
-            <p className="mt-1 text-caption font-semibold uppercase tracking-wider">
+            <p className="mt-1 text-caption font-semibold">
               {until != null ? (until === 1 ? 'day to go' : 'days to go') : 'day of trip'}
             </p>
           </div>
         )}
         <div className="absolute inset-x-0 bottom-0 px-5 pb-4 text-white">
-          <span className="inline-flex rounded-full bg-white/20 px-2.5 py-0.5 text-caption font-semibold uppercase tracking-wider backdrop-blur-sm">
+          <span className="inline-flex rounded-full bg-white/20 px-2.5 py-0.5 text-caption font-semibold backdrop-blur-sm">
             {trip.status === 'planning' ? 'Planning' : isPast ? 'Archived' : onNow ? 'Happening now' : 'Booked'}
           </span>
           <h1 className="mt-1.5 text-large font-bold leading-tight tracking-tight [text-shadow:0_1px_12px_rgba(0,0,0,0.25)]">{trip.name}</h1>

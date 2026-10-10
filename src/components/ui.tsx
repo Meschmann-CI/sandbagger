@@ -237,7 +237,7 @@ export function HelpTip({ title, lines }: { title: string; lines: string[] }) {
             style={{ transform: `translateX(${shift}px)` }}
             className="absolute right-0 top-[calc(100%+6px)] z-50 w-[264px] rounded-xl border border-line-strong bg-card p-3 text-left shadow-[0_8px_24px_rgba(24,32,25,0.16)]"
           >
-            <span className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5">{title}</span>
+            <span className="block text-footnote font-semibold text-ink-dim mb-1.5">{title}</span>
             {lines.map((line, i) => (
               <span key={i} className="block text-footnote leading-[1.45] text-ink-dim mb-1.5 last:mb-0">
                 {line}
@@ -261,7 +261,7 @@ export function Pill({ children, tone = 'default' }: { children: ReactNode; tone
     sand: 'bg-sand-soft text-sand border-sand/25',
   }
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-caption font-semibold uppercase tracking-wide ${tones[tone]}`}>
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-caption font-semibold ${tones[tone]}`}>
       {children}
     </span>
   )

@@ -31,7 +31,7 @@ export function TrophySheet({ badge, onClose, onRound }: { badge: Badge; onClose
             <Medal badge={badge} size={96} />
           </span>
         </div>
-        <p className="mt-4 text-caption font-semibold uppercase tracking-[0.16em] text-ink-faint">{KIND_LABEL[badge.kind]}</p>
+        <p className="mt-4 text-footnote text-ink-faint">{KIND_LABEL[badge.kind]}</p>
         <h2 className="mt-1 text-title font-bold tracking-tight text-ink">{badge.label}</h2>
         <p className="mx-auto mt-2 max-w-[300px] text-body text-ink-dim">{badge.how}</p>
 

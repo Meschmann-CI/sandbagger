@@ -4,7 +4,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 `../golf-app-handoff.md.txt` is the original brief. Personal app for Matt's golf group
 (Matt, Nader, Barry, Pat), not CI work: no CI brand or house voice, trash-talk copy welcome.
 
-## Current state, 2026-10-08
+## Current state, 2026-10-10
 
 - Live at https://thesandbagger.netlify.app (Netlify team "CI", auto-deploys on push). Repo
   `Meschmann-CI/sandbagger`, rooted here so the trip PDFs in `../Past Trips Details/` stay out.
@@ -18,17 +18,29 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 - Edge Functions in `supabase/functions/`: `notify` (push, secret VAPID_PRIVATE_KEY),
   `scan-card` (claude-opus-5, secret `sandbag-api-key`), `course-lookup` (GolfCourseAPI, secret
   `GOLFCOURSE_API_KEY`, added by Matt 2026-09-26, not yet exercised by a real search).
-- Unpushed as of the last note: 6e1623f (auto-update on resume). Push only when Matt asks;
-  Netlify credits run low, so batch changes into one push.
+- Course branding (2026-10-10): `src/lib/courseBrands.ts` maps a course name to its logo
+  (`public/logos/`, pulled from each course's own site) and hole-row colour. The scorecard,
+  the live card, the course page and the course list use it; a course with no entry keeps the
+  Sandbagger card. 40 of the 45 prod courses have one; Central, Dutcher, Overpeck, Hendricks
+  Field and Weequahic publish no logo, and Eisenhower is colour only.
+- "Generic AI" pass (2026-10-10): tracked all-caps eyebrow labels, the time-of-day greeting,
+  the sparkline, the four-stat tile row, the left-border quote card, page stat subtitles,
+  explainer captions and em dashes in copy all removed.
+- Push only when Matt asks; Netlify credits run low, so batch changes into one push.
 
 ## Next actions
 
 1. Confirm the course directory works on a real search (read `course-lookup` logs if not).
 2. `Attest` signatures live per phone in localStorage; sharing them needs a DB column.
-3. Prod has a duplicate "Kissena Golf Course" (0 rounds) beside "Kissena Park Golf Course".
-4. Magic Link email templates: Matt pastes the code-only versions from
+3. A new course gets a brand only by a code change in `courseBrands.ts`. Next step: a
+   `brand` column on courses, filled by the scorecard scanner (colours + logo crop) or a
+   pasted logo, so nobody has to deploy for it.
+4. GPS yardages from OpenStreetMap (golf=hole / golf=green): fetch once when a course is
+   added, store in Supabase, never query Overpass live on the course (it was down on
+   2026-10-10). Fallback: an "I'm on the green" button that pins a green for the group.
+5. Magic Link email templates: Matt pastes the code-only versions from
    `supabase/email-templates/` into Authentication > Emails > Templates (no MCP tool for that).
-5. iOS haptics trick (`buzz()` via a switch input) is untested on a real iPhone.
+6. iOS haptics trick (`buzz()` via a switch input) is untested on a real iPhone.
 
 ## Decisions not to reopen
 
@@ -45,6 +57,11 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 - Use the named text scale (text-caption … text-hero), never `text-[Npx]`; section titles in
   sentence case; `BackButton` from `components/Nav.tsx`, never a literal "← Back";
   `useLogSheet().open`, never `navigate('/log')`; new inline editors call `useHoldUpdates()`.
+- Copy reads like a person wrote it for four friends: no tracked all-caps labels (form labels,
+  eyebrows, table heads are sentence case; only the scorecard grid's HOLE/PAR row and the
+  rubber-stamp and cheer exclamations stay caps), no em dashes, no caption explaining what a
+  control obviously does, no stat-summary subtitle under page titles. Headlines say where
+  you stand ("2 wins clear of Ravi"); "Good morning" only when there is nothing to say.
 - `src/data/seed.ts` ships in the public bundle and holds fictional demo data only. Never put
   real trip details (door codes, confirmations) back in it.
 
@@ -64,6 +81,10 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 - Pushing: the auto-mode classifier refuses a command chain containing `git push`. Commit,
   then run `git push origin main` alone once Matt asks. Verify with `git ls-remote origin main`
   and by curling the hashed bundle for a new UI string; one of Matt's own pushes did not land.
+- Course brands match on the course slug by regex, first match first, so a facility's
+  specific courses (Bethpage Black) sit above the facility (Bethpage). Logos with white
+  artwork need `dark: true` or they vanish on white; long wordmarks need `wide: true` or
+  they shrink to nothing in the square list tiles.
 - Money arithmetic is integer cents with remainder cents spread across the first sharers.
 - No ffmpeg: media work uses WebCodecs + mp4-muxer in the browser pane
   (`../marketing-video/`). pdf-parse reads the trip PDFs (`new PDFParse({data}).getText()`).

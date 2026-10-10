@@ -288,7 +288,7 @@ export default function CourseEdit() {
 
       {/* A photo of the card does the eighteen taps. Reviewed, not
           trusted: the fields fill in and the golfer reads them against
-          the card before Add — a wrong stroke index changes who gets a
+          the card before Add. A wrong stroke index changes who gets a
           shot on which hole. */}
       <Card className={`mt-2 p-3.5 ${scanned ? 'border-gold/40 bg-gold-soft/40' : 'border-green/30 bg-green-soft/40'}`}>
         <input
@@ -310,7 +310,7 @@ export default function CourseEdit() {
               {scanning
                 ? 'Ten seconds or so. Par, stroke index, tees and yards.'
                 : scanned
-                  ? 'Check every row against the card before you save — especially the stroke index.'
+                  ? 'Check it against the card before you save, the stroke index most of all.'
                   : scanSupported()
                     ? 'Photograph the printed card and the fields fill in for you to check.'
                     : 'Scanning needs the online app.'}
@@ -350,7 +350,7 @@ export default function CourseEdit() {
       {/* Running totals, so a typo in the composition is obvious */}
       <Card className={`mt-2 p-4 ${complete ? 'border-green/30 bg-green-soft/40' : ''}`}>
         <div className="flex items-baseline justify-between">
-          <p className="text-footnote font-semibold uppercase tracking-wider text-ink-faint">
+          <p className="text-footnote font-bold text-ink">
             {complete ? 'Par' : `${parsIn} of ${HOLE_COUNT} holes`}
           </p>
           <p className="text-large font-extrabold text-ink tabular-nums">{total || '—'}</p>
@@ -410,7 +410,7 @@ export default function CourseEdit() {
       {!showIndex ? (
         <Card className="p-4">
           <p className="text-footnote text-ink-dim">
-            The 1–18 difficulty ranking. Optional — it only changes how strokes are handed out in nassau and skins. Without
+            The 1–18 difficulty ranking. Optional. It only changes how strokes are handed out in nassau and skins. Without
             it the bets split your handicap evenly over the nines, which is the usual casual shortcut.
           </p>
         </Card>
@@ -444,7 +444,7 @@ export default function CourseEdit() {
           </Card>
           <p className={`text-footnote px-2 mt-2 font-semibold ${duplicates.size ? 'text-flag' : 'text-ink-faint'}`}>
             {duplicates.size > 0
-              ? `Each hole gets its own rank — ${[...duplicates].sort((a, b) => a - b).join(' and ')} used more than once.`
+              ? `Each hole gets its own rank, and ${[...duplicates].sort((a, b) => a - b).join(' and ')} used more than once.`
               : indexComplete
                 ? 'All eighteen ranked.'
                 : `${indexIn} of ${HOLE_COUNT}. Partly filled in is fine; the bets use it once it's complete.`}
@@ -458,7 +458,7 @@ export default function CourseEdit() {
         {/* Imported tees: one tap copies a tee's numbers in as the default. */}
         {existing?.tees && existing.tees.some((t) => (t.gender ?? 'M') === 'M') && (
           <div className="mb-3">
-            <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5">Default tee</p>
+            <p className="text-footnote font-semibold text-ink-dim mb-1.5">Default tee</p>
             <div className="flex flex-wrap gap-2">
               {existing.tees
                 .filter((t) => (t.gender ?? 'M') === 'M')
@@ -485,7 +485,7 @@ export default function CourseEdit() {
         )}
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1">
+            <label className="block text-footnote font-semibold text-ink-dim mb-1">
               Course rating
             </label>
             <input
@@ -501,7 +501,7 @@ export default function CourseEdit() {
             />
           </div>
           <div className="flex-1">
-            <label className="block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1">Slope</label>
+            <label className="block text-footnote font-semibold text-ink-dim mb-1">Slope</label>
             <input
               type="text"
               inputMode="numeric"
@@ -517,8 +517,8 @@ export default function CourseEdit() {
         </div>
         <p className={`text-footnote mt-2 ${ratingBad || slopeBad ? 'text-flag font-semibold' : 'text-ink-dim'}`}>
           {ratingBad || slopeBad
-            ? 'That doesn’t look right — rating reads like 70.6, slope is a whole number from 55 to 155.'
-            : 'From the tees you play, printed on the card next to the tee name. With both in, strokes come off GHIN course handicaps — the number the GHIN app shows for this course — instead of raw indexes.'}
+            ? 'That doesn’t look right. Rating reads like 70.6, and slope is a whole number from 55 to 155.'
+            : 'From the tees you play, printed on the card next to the tee name. With both in, strokes come off GHIN course handicaps (the number the GHIN app shows for this course) instead of raw indexes.'}
         </p>
       </Card>
 
@@ -544,7 +544,7 @@ export default function CourseEdit() {
       </div>
       {!complete && parsIn > 0 && (
         <p className="text-caption text-ink-faint px-2 mt-2">
-          Scores against par only appear once all eighteen are in — "+4" would be a lie with holes missing.
+          Scores against par only appear once all eighteen are in. "+4" would be a lie with holes missing.
         </p>
       )}
 

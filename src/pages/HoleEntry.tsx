@@ -26,6 +26,7 @@ import { fmt1, type Round } from '../types'
 import { Avatar, Card, HelpTip, PrimaryButton } from '../components/ui'
 import { betRules } from '../lib/betRules'
 import { Icon, IconTile } from '../components/icons'
+import { courseBrand } from '../lib/courseBrands'
 
 // The live card, laid out like the card in your pocket.
 //
@@ -94,6 +95,8 @@ export default function HoleEntry() {
   )
 
   const course = findCourse(data, round?.courseName ?? '')
+  const brand = courseBrand(round?.courseName)
+  const headStyle = brand ? { backgroundColor: brand.color, color: brand.ink } : undefined
   const pars = hasPars(course) ? padded(course.pars) : null
   const index = hasStrokeIndex(course) ? padded(course.strokeIndex) : null
   const yards = course?.yards && course.yards.length === HOLE_COUNT ? course.yards : null
@@ -405,7 +408,7 @@ export default function HoleEntry() {
           {courseHandicaps.map((c) => `${c.name} ${c.hcp}`).join(' · ')}
           {courseHandicaps.length > 1 &&
             hasStrokeIndex(course) &&
-            ` — strokes off ${courseHandicaps.find((c) => c.hcp === lowHcp)?.name}: ${courseHandicaps
+            `. Strokes off ${courseHandicaps.find((c) => c.hcp === lowHcp)?.name}: ${courseHandicaps
               .filter((c) => c.hcp > lowHcp)
               .map((c) => `${c.name} ${c.hcp - lowHcp}`)
               .join(', ') || 'none'}`}
@@ -551,7 +554,7 @@ export default function HoleEntry() {
                     }`}
                   >
                     <span className="tabular-nums">{o.gross}</span> · {shortDate(o.round.date)}
-                    {o.best && <span className="ml-1 text-caption uppercase tracking-wider text-gold">best</span>}
+                    {o.best && <span className="ml-1 text-caption font-semibold text-gold">best</span>}
                   </button>
                 ))}
               </div>
@@ -586,8 +589,13 @@ export default function HoleEntry() {
         <div ref={scroller} className="overflow-x-auto">
           <table className="border-collapse tabular-nums">
             <thead>
-              <tr className="bg-forest text-on-forest">
-                <th className="sticky left-0 z-20 bg-forest px-3 text-left text-caption font-semibold uppercase tracking-wider">Hole</th>
+              <tr className={brand ? '' : 'bg-forest text-on-forest'} style={headStyle}>
+                <th
+                  className={`sticky left-0 z-20 px-3 text-left text-caption font-semibold uppercase ${brand ? '' : 'bg-forest'}`}
+                  style={headStyle}
+                >
+                  Hole
+                </th>
                 {Array.from({ length: HOLE_COUNT }, (_, i) => (
                   <th
                     key={i}
@@ -595,7 +603,7 @@ export default function HoleEntry() {
                       columns.current[i] = el
                     }}
                     onClick={() => select({ playerId: round.players[0].playerId, hole: i })}
-                    className={`w-11 h-9 text-footnote font-extrabold cursor-pointer ${active?.hole === i ? 'bg-green' : ''}`}
+                    className={`w-11 h-9 text-footnote font-extrabold cursor-pointer ${active?.hole === i ? (brand ? 'bg-black/25' : 'bg-green') : ''}`}
                   >
                     {i + 1}
                   </th>
@@ -604,7 +612,7 @@ export default function HoleEntry() {
               </tr>
               {yards && (
                 <tr className="bg-paper/70">
-                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-semibold uppercase tracking-wider text-ink-faint whitespace-nowrap">
+                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-semibold uppercase text-ink-faint whitespace-nowrap">
                     Yds{course?.yardsTee ? ` ${course.yardsTee}` : ''}
                   </th>
                   {yards.map((y, i) => (
@@ -615,7 +623,7 @@ export default function HoleEntry() {
               )}
               {pars && (
                 <tr className="bg-paper/70">
-                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-semibold uppercase tracking-wider text-ink-faint">Par</th>
+                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-semibold uppercase text-ink-faint">Par</th>
                   {pars.map((p, i) => (
                     <td key={i} className="h-7 text-center text-footnote font-bold text-ink-dim">{p}</td>
                   ))}
@@ -624,7 +632,7 @@ export default function HoleEntry() {
               )}
               {index && (
                 <tr className="bg-paper/70 border-b border-line">
-                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-semibold uppercase tracking-wider text-ink-faint whitespace-nowrap">S. index</th>
+                  <th className="sticky left-0 z-20 bg-paper px-3 text-left text-caption font-semibold uppercase text-ink-faint whitespace-nowrap">S. index</th>
                   {index.map((n, i) => (
                     <td key={i} className="h-7 text-center text-caption text-ink-faint">{n}</td>
                   ))}
@@ -683,7 +691,7 @@ export default function HoleEntry() {
                                       />
                                     )}
                                     <span
-                                      className={`cheer-float pointer-events-none absolute left-1/2 -top-4 whitespace-nowrap text-caption font-extrabold uppercase tracking-wider ${
+                                      className={`cheer-float pointer-events-none absolute left-1/2 -top-4 whitespace-nowrap text-caption font-extrabold uppercase ${
                                         cheer.big ? 'text-gold' : 'text-green'
                                       }`}
                                     >
@@ -771,7 +779,7 @@ export default function HoleEntry() {
             </PrimaryButton>
           </div>
           <p className="text-caption text-ink-faint px-1 mt-2">
-            Every tap saves by itself, so pocket the phone whenever. Coming back picks up right where the card left off.
+            Saves as you go. Pocket the phone whenever.
           </p>
         </>
       )}

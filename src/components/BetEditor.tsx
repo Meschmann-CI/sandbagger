@@ -14,7 +14,7 @@ const TYPES: { key: BetType; label: string; blurb: string }[] = [
   { key: 'skins', label: 'Skins', blurb: 'Low score wins the hole. Ties carry over and stack until someone takes them.' },
   { key: 'nassau', label: 'Nassau', blurb: 'Three bets: front nine, back nine, and the eighteen.' },
   { key: 'match', label: 'Match', blurb: 'One on one, hole by hole. Most holes up takes the stake.' },
-  { key: 'custom', label: 'Custom', blurb: 'One-off — closest to the pin, longest drive, whatever.' },
+  { key: 'custom', label: 'Custom', blurb: 'Closest to the pin, longest drive, whatever you made up on the tee.' },
 ]
 
 export default function BetEditor({ round, onSave, onCancel }: { round: Round; onSave: (bet: Omit<Bet, 'id'>) => void; onCancel: () => void }) {
@@ -78,7 +78,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
         ? outcome.computable
         : true)
 
-  const label = 'block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5'
+  const label = 'block text-footnote font-semibold text-ink-dim mb-1.5'
   const field =
     'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
 
@@ -130,7 +130,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
           {type === 'skins'
             ? winnerTakeAll
               ? `${money(stakeNum)} in from each player. Most skins at the end takes the pot; a tie for most splits it.`
-              : `${money(stakeNum)} per skin, from each of the others. A carried hole pays its whole stack — no separate kitty.`
+              : `${money(stakeNum)} per skin, from each of the others. A carried hole pays its whole stack. No separate kitty.`
             : type === 'match'
               ? `${money(stakeNum)} on the match. Winner takes it; all square and nobody pays.`
               : `${money(stakeNum)} on each of the three, paid by everyone else to whoever wins it.`}
@@ -210,11 +210,11 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
             {type === 'match'
               ? hasStrokeIndex(course)
                 ? 'Net gives the difference in handicaps as strokes on the hardest holes, off this course’s stroke index.'
-                : 'Net needs this course’s stroke index — which holes get a stroke decides who wins them. Add it from the Courses page, or play it gross.'
+                : 'Net needs this course’s stroke index, since which holes get a stroke decides who wins them. Add it from the Courses page, or play it gross.'
               : type === 'skins'
                 ? hasStrokeIndex(course)
                   ? 'Net gives strokes off the low handicap: the best player plays scratch, everyone else gets their difference on the hardest holes.'
-                  : 'Net skins need this course’s stroke index — which holes get a stroke decides who wins them. Add it from the Courses page, or play them gross.'
+                  : 'Net skins need this course’s stroke index, since which holes get a stroke decides who wins them. Add it from the Courses page, or play them gross.'
                 : hasStrokeIndex(course)
                   ? 'Net gives strokes hole by hole off this course’s stroke index.'
                   : 'Net takes off the full handicap over eighteen and half of it on each nine. Add this course’s stroke index for the real hole-by-hole allocation.'}
@@ -251,7 +251,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
       {!showManual ? (
         <Card className="p-3.5 bg-paper">
           <div className="flex items-baseline justify-between mb-2">
-            <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint">Works out to</p>
+            <p className="text-footnote font-semibold text-ink-dim">Works out to</p>
             {type !== 'custom' && (
               <button onClick={() => setManualMode(true)} className="text-caption font-bold text-green">
                 Enter by hand
@@ -262,7 +262,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
             const [text, playerId] = line.split('|')
             return (
               <p key={i} className="text-footnote text-ink-dim">
-                {playerId ? `${text.replace(/^won$/, 'won')} — ${nameFor(playerId)}` : text}
+                {playerId ? `${text.replace(/^won$/, 'won')}: ${nameFor(playerId)}` : text}
               </p>
             )
           })}
@@ -293,7 +293,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
       ) : (
         <Card className="p-3.5 bg-paper">
           <div className="flex items-baseline justify-between mb-2">
-            <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint">Amounts</p>
+            <p className="text-footnote font-semibold text-ink-dim">Amounts</p>
             {outcome.computable && (
               <button onClick={() => setManualMode(false)} className="text-caption font-bold text-green">
                 Work it out for me
@@ -329,7 +329,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
           <p className={`text-caption mt-2 font-semibold ${balanced ? 'text-ink-faint' : 'text-flag'}`}>
             {balanced
               ? 'Winnings and losses cancel out. Use a minus sign for money lost.'
-              : `Off by ${money(Math.abs(Math.round(manualSum * 100) / 100))} — winnings and losses have to cancel out.`}
+              : `Off by ${money(Math.abs(Math.round(manualSum * 100) / 100))}. Winnings and losses have to cancel out.`}
           </p>
         </Card>
       )}
@@ -354,7 +354,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
           disabled={!canSave}
           className="flex-1 !py-2.5"
         >
-          {liveSave ? 'Save — settles from the card' : 'Save bet'}
+          {liveSave ? 'Save, the card settles it' : 'Save bet'}
         </PrimaryButton>
         <button onClick={onCancel} className="px-4 text-footnote font-bold text-ink-faint">Cancel</button>
       </div>

@@ -104,7 +104,7 @@ export default function ItineraryEditor({ initial, defaultDate, onSave, onCancel
   }
 
   const field = 'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5'
+  const label = 'block text-footnote font-semibold text-ink-dim mb-1.5'
 
   return (
     <div className="rounded-2xl border border-green/30 bg-card p-4 space-y-3.5">
@@ -217,7 +217,7 @@ export default function ItineraryEditor({ initial, defaultDate, onSave, onCancel
               >
                 ✕
               </button>
-              <span className="absolute bottom-1 left-1 rounded bg-ink/75 px-1.5 py-0.5 text-caption font-semibold uppercase text-white">From link</span>
+              <span className="absolute bottom-1 left-1 rounded bg-ink/75 px-1.5 py-0.5 text-caption font-semibold text-white">From link</span>
             </div>
           )}
           {photos.map((src, i) => (

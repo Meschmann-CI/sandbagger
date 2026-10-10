@@ -135,7 +135,7 @@ export default function Profile() {
               className="text-left"
               aria-label={`Handicap index ${fmt1(me.handicap)}. Update it`}
             >
-              <span className="block text-caption font-semibold uppercase tracking-[0.16em] text-on-forest/70">Handicap index</span>
+              <span className="block text-footnote font-semibold text-on-forest/75">Handicap index</span>
               <CountUp id="you-index" value={me.handicap} format={(n) => n.toFixed(1)} className="block text-hero font-extrabold leading-[0.95]" />
               {indexMove != null && indexMove !== 0 ? (
                 <span className={`block text-footnote font-bold ${indexMove < 0 ? 'text-[#bfe2c9]' : 'text-on-forest/70'}`}>
@@ -148,19 +148,27 @@ export default function Profile() {
             {indexPoints.length >= 3 && <IndexLine points={indexPoints} />}
           </div>
 
-          <div className="mt-4 grid grid-cols-4 border-t border-on-forest/15 pt-3.5">
-            {[
-              { value: String(stats.rounds), label: 'Rounds' },
-              { value: stats.bestGross != null ? String(stats.bestGross) : '—', label: 'Best' },
-              { value: String(myReigns?.days ?? 0), label: 'Saddam days' },
-              { value: `${stats.money > 0 ? '+' : stats.money < 0 ? '−' : ''}$${Math.abs(Math.round(stats.money))}`, label: 'All-time', tone: stats.money > 0 ? 'text-[#bfe2c9]' : '' },
-            ].map((x) => (
-              <div key={x.label} className="min-w-0">
-                <p className={`text-headline font-extrabold tabular-nums ${x.tone ?? ''}`}>{x.value}</p>
-                <p className="whitespace-nowrap text-caption font-semibold text-on-forest/65">{x.label}</p>
-              </div>
-            ))}
-          </div>
+          {/* The career in one sentence rather than four stat tiles. */}
+          <p className="mt-4 border-t border-on-forest/15 pt-3.5 text-footnote text-on-forest/80 tabular-nums">
+            <b className="font-extrabold text-on-forest">{stats.rounds}</b> {stats.rounds === 1 ? 'round' : 'rounds'}
+            {stats.bestGross != null && (
+              <>
+                , best <b className="font-extrabold text-on-forest">{stats.bestGross}</b>
+              </>
+            )}
+            {(myReigns?.days ?? 0) > 0 && (
+              <>
+                , <b className="font-extrabold text-on-forest">{myReigns!.days}</b> days holding the Saddam
+              </>
+            )}
+            {Math.round(stats.money) !== 0 && (
+              <>
+                , {stats.money > 0 ? 'up ' : 'down '}
+                <b className={`font-extrabold ${stats.money > 0 ? 'text-[#bfe2c9]' : 'text-on-forest'}`}>${Math.abs(Math.round(stats.money))}</b> on the bets
+              </>
+            )}
+            .
+          </p>
         </div>
       </div>
 
@@ -178,7 +186,7 @@ export default function Profile() {
         <Card className="mt-3 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-footnote font-semibold uppercase tracking-wider text-ink-faint">Handicap index</p>
+              <p className="text-footnote font-bold text-ink">Handicap index</p>
               <input
                 value={hcpDraft}
                 onChange={(e) => setHcpDraft(e.target.value.replace(/[^\d.]/g, ''))}
@@ -318,7 +326,7 @@ export default function Profile() {
                   <p className="text-title font-extrabold text-ink tabular-nums">
                     {game.avgByPar[par] != null ? game.avgByPar[par]!.toFixed(2) : '—'}
                   </p>
-                  <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint mt-0.5">on par {par}s</p>
+                  <p className="text-footnote font-semibold text-ink-dim mt-0.5">on par {par}s</p>
                 </div>
               ))}
             </div>
@@ -439,7 +447,7 @@ export default function Profile() {
           <SectionLabel>Account</SectionLabel>
           <Card className="p-4 flex items-center justify-between gap-3">
             <p className="text-footnote text-ink-dim">
-              Everything syncs across everyone's phones.
+              Signed in.
               {syncError && <span className="block text-flag font-semibold mt-0.5">Last sync failed: {syncError}</span>}
             </p>
             <button
@@ -515,11 +523,11 @@ function PushToggle({ playerId }: { playerId: string }) {
           <p className="text-footnote font-bold text-ink">Notifications</p>
           <p className="text-footnote text-ink-dim mt-0.5">
             {state === 'on'
-              ? 'On for this phone — rounds, results, and money.'
+              ? 'On for this phone: rounds, results, and money.'
               : state === 'denied'
                 ? 'Blocked in iOS Settings. Allow notifications for Sandbagger there, then come back.'
                 : state === 'unsupported'
-                  ? 'Add the app to your home screen first — iPhones only allow notifications for installed apps.'
+                  ? 'Add the app to your home screen first. iPhones only allow notifications for installed apps.'
                   : 'Hear about posted rounds, settled bets, and money coming your way.'}
           </p>
         </div>

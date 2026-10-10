@@ -8,6 +8,8 @@ import { roundStandings, shortDate } from '../lib/stats'
 import { useGoBack, useNavigate } from '../lib/nav'
 import { BackButton } from '../components/Nav'
 import CourseScene from '../components/CourseScene'
+import { CourseLogo } from '../components/CourseLogo'
+import { courseBrand } from '../lib/courseBrands'
 import { useConfirm } from '../components/Confirm'
 import CourseRatingEditor from '../components/CourseRatingEditor'
 import { StarRating } from '../components/Stars'
@@ -40,6 +42,7 @@ export default function CourseDetail() {
 
   const course = data.courses.find((c) => c.slug === slug)
   const par = coursePar(course)
+  const brand = courseBrand(summary.name)
   const parsIn = parsEntered(course)
   const rounds = data.rounds
     .filter((r) => courseSlug(r.courseName) === slug)
@@ -53,7 +56,16 @@ export default function CourseDetail() {
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
         <BackButton fallback="/courses" onBack={goBack} />
-        <h1 className="text-large font-bold tracking-tight text-ink leading-tight">{summary.name}</h1>
+        {/* A long wordmark gets its own line; a square mark sits beside the name. */}
+        {brand?.wide && (
+          <div className="mb-2">
+            <CourseLogo brand={brand} name={summary.name} size={40} />
+          </div>
+        )}
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-large font-bold tracking-tight text-ink leading-tight">{summary.name}</h1>
+          {brand && !brand.wide && <CourseLogo brand={brand} name={summary.name} size={brand.tall ? 64 : 52} className="mt-1" />}
+        </div>
         <p className="text-footnote text-ink-dim mt-1 tabular-nums">
           {course?.town && `${course.town} · `}
           {summary.rounds > 0 ? `${summary.rounds} round${summary.rounds === 1 ? '' : 's'}` : 'No rounds logged'}
@@ -91,7 +103,7 @@ export default function CourseDetail() {
             </div>
           </div>
         ) : (
-          <p className="text-footnote text-ink-dim">Nobody has rated it yet. Be the first — it takes one tap.</p>
+          <p className="text-footnote text-ink-dim">Nobody's rated it yet.</p>
         )}
       </Card>
 
@@ -154,7 +166,6 @@ export default function CourseDetail() {
           <IconTile name="star" tone="gold" />
           <div className="flex-1 min-w-0">
             <p className="text-body font-bold text-ink">Rate {summary.name}</p>
-            <p className="text-footnote text-ink-dim mt-0.5">One overall out of five. The details are optional.</p>
           </div>
           <span className="text-footnote font-bold text-green shrink-0">Rate →</span>
         </Card>
@@ -244,7 +255,7 @@ export default function CourseDetail() {
         <>
           <SectionLabel>Tees</SectionLabel>
           <Card>
-            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 px-4 py-2 border-b border-line text-caption font-semibold uppercase tracking-wider text-ink-faint">
+            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 px-4 py-2 border-b border-line text-footnote font-semibold text-ink-dim">
               <span>Tee</span>
               <span className="text-right">Yards</span>
               <span className="text-right">Rating / slope</span>
@@ -260,7 +271,7 @@ export default function CourseDetail() {
                   >
                     <span className={`truncate ${isDefault ? 'font-bold text-ink' : 'font-bold text-ink-dim'}`}>
                       {t.name}
-                      {isDefault && <span className="ml-1.5 text-caption font-semibold uppercase tracking-wider text-green">default</span>}
+                      {isDefault && <span className="ml-1.5 text-caption font-semibold text-green">default</span>}
                     </span>
                     <span className="text-right tabular-nums text-ink-dim">{t.yards ?? '—'}</span>
                     <span className="text-right tabular-nums font-bold text-ink">

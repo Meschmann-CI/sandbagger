@@ -44,7 +44,6 @@ export default function Trips() {
         <div className="flex items-end justify-between gap-3">
           <div>
             <h1 className="text-large font-bold tracking-tight text-ink">Trips</h1>
-            <p className="text-footnote text-ink-dim">Past, present, and hotly debated</p>
           </div>
           <button
             onClick={() => navigate('/trips/new')}
@@ -74,7 +73,7 @@ export default function Trips() {
                   </div>
                   <p className="text-footnote text-ink-dim mt-1.5">
                     {trip.options.length === 0
-                      ? 'No destinations yet — add the first one'
+                      ? 'No destinations yet'
                       : `${trip.options.length} destinations · ${votesIn} of ${trip.attendeeIds.length} votes in`}
                   </p>
                   {leadingOption && leadingOption.votes.length > 0 && (
@@ -141,7 +140,7 @@ export default function Trips() {
                   {champ && (
                     <div className="text-right shrink-0 flex items-center gap-2">
                       <div>
-                        <p className="text-caption font-semibold uppercase tracking-wider text-gold">Champ</p>
+                        <p className="text-caption font-semibold text-gold">Champ</p>
                         <p className="text-footnote font-bold text-ink">{champ.name}</p>
                       </div>
                       <Avatar player={champ} size={30} />

@@ -192,7 +192,7 @@ export default function RoundDetail() {
   const holesIn = round.players.reduce((sum, rp) => sum + holesEntered(rp), 0)
   const blurb = !top
     ? anyCards(round)
-      ? `Card's going — ${holesIn} hole score${holesIn === 1 ? '' : 's'} in so far.`
+      ? `Card's going, ${holesIn} hole score${holesIn === 1 ? '' : 's'} in so far.`
       : 'Nobody has posted a score for this round yet.'
     : waiting.length > 0
       ? `${top.name} posted ${standings[0].gross}. Still waiting on ${waitingNames}.`
@@ -419,7 +419,7 @@ export default function RoundDetail() {
 
       <SectionLabel>Scorecard</SectionLabel>
       <Card>
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 px-4 py-2.5 border-b border-line text-caption font-semibold uppercase tracking-wider text-ink-faint">
+        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 px-4 py-2.5 border-b border-line text-footnote font-semibold text-ink-dim">
           <span>Player</span>
           <span className="w-12 text-right">Net</span>
           <span className="w-10 text-right">Gross</span>
@@ -569,7 +569,7 @@ export default function RoundDetail() {
           about whether it's actually changed hands. */}
       {bets.length > 0 && (
         <Card className={`mb-3 p-4 ${betsOwed.length === 0 ? 'bg-green-soft/50 border-green/25' : 'bg-gold-soft/40 border-gold/30'}`}>
-          <p className="text-footnote font-semibold uppercase tracking-wider text-ink-faint mb-2.5">Settle up</p>
+          <p className="text-footnote font-bold text-ink mb-2.5">Settle up</p>
           <SettleUp
             url={`/rounds/${round.id}`}
             owed={betsOwed}

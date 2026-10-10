@@ -25,7 +25,7 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
 
   const field =
     'w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5'
+  const label = 'block text-footnote font-semibold text-ink-dim mb-1.5'
 
   const signOut = async () => {
     await requireSupabase().auth.signOut()
@@ -151,7 +151,7 @@ export default function Setup({ email, groupExists, onReady }: { email: string |
               <span className="block text-body font-bold text-ink">Load sample data</span>
               <span className="block text-footnote text-ink-dim mt-0.5">
                 A worked example: one past trip with its itinerary and cost split, one in the planning stage, and a season of
-                rounds. Handy for a look around — delete it whenever.
+                rounds. Handy for a look around. Delete it whenever.
               </span>
             </span>
           </button>

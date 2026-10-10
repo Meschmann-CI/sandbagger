@@ -27,7 +27,7 @@ export default function Group() {
 
   const field =
     'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5'
+  const label = 'block text-footnote font-semibold text-ink-dim mb-1.5'
 
   return (
     <div className="rise">
@@ -146,7 +146,7 @@ export default function Group() {
                     {p.email ? (
                       <span className="text-green font-semibold">{p.email}</span>
                     ) : (
-                      <span className="text-flag font-semibold">No email — can't sign in yet</span>
+                      <span className="text-flag font-semibold">No email, can't sign in yet</span>
                     )}
                   </p>
                 )}
@@ -168,12 +168,12 @@ export default function Group() {
       {cloud && members.some((p) => !p.email) && (
         <p className="text-caption text-ink-dim px-2 mt-2">
           Add an email to each golfer before you send them the link. When they sign in with that exact address, this
-          profile becomes theirs — history and all. Without it they'd end up with a second, empty profile.
+          profile becomes theirs, history and all. Without it they'd end up with a second, empty profile.
         </p>
       )}
       {!cloud && (
         <p className="text-caption text-ink-faint px-2 mt-2">
-          "Switch to" stands in for real logins until the app is online — handy for checking what each golfer sees.
+          "Switch to" stands in for real logins until the app is online. Handy for checking what each golfer sees.
         </p>
       )}
 

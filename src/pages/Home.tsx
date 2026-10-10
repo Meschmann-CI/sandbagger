@@ -104,14 +104,13 @@ export default function Home() {
   const myPlace = board.findIndex((row) => row.player.id === me.id)
   const myRow = myPlace >= 0 ? board[myPlace] : undefined
 
-  // My last few posted scores this season, oldest first, for the line in
-  // the hero. Same season as the numbers beside it, or it read "5 rounds"
-  // next to "LAST 6".
+  // My last few posted scores this season, oldest first, for the boxes in
+  // the hero. Same season as the numbers beside them.
   const myScores = seasonRounds
     .map((r) => r.players.find((rp) => rp.playerId === me.id))
     .filter((rp): rp is NonNullable<typeof rp> => !!rp && hasScore(rp))
     .map((rp) => rp.gross as number)
-    .slice(-6)
+    .slice(-5)
 
   const favourite = byGroupRank(courseSummaries(data)).find((c) => c.groupRank === 1)
 
@@ -140,17 +139,29 @@ export default function Home() {
       })()
     : null
   const firstName = me.name.trim().split(/\s+/)[0]
+  const first = (name: string) => name.trim().split(/\s+/)[0]
+
+  // The headline is where you stand, said the way the group would say
+  // it. "Good morning" only when there's nothing to say yet.
+  const headline = (() => {
+    if (!myRow || board.length < 2) return `${hello}, ${firstName}`
+    const leader = board[0]
+    if (myPlace === 0) {
+      const next = board[1]
+      const gap = leader.wins - next.wins
+      return gap > 0 ? `${plural(gap, 'win')} clear of ${first(next.player.name)}` : `Level with ${first(next.player.name)} at the top`
+    }
+    const gap = leader.wins - myRow.wins
+    return gap > 0
+      ? `${first(leader.player.name)} leads you by ${plural(gap, 'win')}`
+      : `Level with ${first(leader.player.name)} at the top`
+  })()
 
   return (
     <div className="rise">
-      <header className="pt-4 pb-1 px-1 flex items-center justify-between gap-3">
+      <header className="pt-5 pb-1 px-1 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <Link to="/group" className="text-caption font-semibold uppercase tracking-[0.14em] text-ink-faint">
-            {data.group.name}
-          </Link>
-          <h1 className="text-large font-bold text-ink truncate">
-            {hello}, {firstName}
-          </h1>
+          <h1 className="text-large font-bold text-ink leading-tight">{headline}</h1>
           {subline && <p className="text-footnote text-ink-dim mt-0.5">{subline}</p>}
         </div>
         <Link to="/profile" className="shrink-0">
@@ -204,33 +215,26 @@ export default function Home() {
         {/* The hero: my season */}
         <div className="overflow-hidden rounded-3xl bg-forest text-on-forest shadow-[0_10px_30px_rgba(28,70,50,0.22)]">
           <button type="button" onClick={() => navigate('/h2h')} className="relative block w-full px-5 pt-4 pb-4 text-left active:opacity-90">
-            <div className="flex items-center justify-between">
-              <p className="text-caption font-semibold uppercase tracking-[0.16em] text-on-forest/70">Your {YEAR}</p>
-              {myRow && (
-                <span className="rounded-full bg-on-forest/15 px-2.5 py-0.5 text-caption font-extrabold tabular-nums">
-                  {ordinal(myPlace + 1)} of {board.length}
-                </span>
-              )}
-            </div>
-            <div className="mt-2 flex items-end justify-between gap-4">
-              <div className="min-w-0">
-                <p className="flex items-baseline gap-2">
-                  <CountUp id="home-wins" value={myRow?.wins ?? 0} className="text-hero font-extrabold leading-[0.9]" />
-                  <span className="text-body font-bold text-on-forest/85">group {myRow?.wins === 1 ? 'win' : 'wins'}</span>
-                </p>
-                <p className="mt-1.5 text-footnote text-on-forest/75 tabular-nums">
-                  {myRow
-                    ? [
-                        plural(myRow.rounds, 'round'),
-                        myRow.avgGross != null && `avg ${myRow.avgGross.toFixed(1)}`,
-                        myRow.bestGross != null && `best ${myRow.bestGross}`,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')
-                    : 'No rounds yet this year. The first one starts the count.'}
-                </p>
-              </div>
-              {myScores.length >= 3 && <Sparkline scores={myScores} />}
+            <p className="flex items-baseline gap-2">
+              <CountUp id="home-wins" value={myRow?.wins ?? 0} className="text-hero font-extrabold leading-[0.9]" />
+              <span className="text-body font-bold text-on-forest/85">
+                group {myRow?.wins === 1 ? 'win' : 'wins'} in {YEAR}
+                {myRow && board.length > 1 && <span className="font-semibold text-on-forest/65">, {ordinal(myPlace + 1)} of {board.length}</span>}
+              </span>
+            </p>
+            <div className="mt-2 space-y-3">
+              <p className="text-footnote text-on-forest/75 tabular-nums">
+                {myRow
+                  ? [
+                      plural(myRow.rounds, 'round'),
+                      myRow.avgGross != null && `averaging ${myRow.avgGross.toFixed(1)}`,
+                      myRow.bestGross != null && `best ${myRow.bestGross}`,
+                    ]
+                      .filter(Boolean)
+                      .join(', ')
+                  : 'Nothing posted this year.'}
+              </p>
+              {myScores.length >= 2 && <RecentScores scores={myScores} />}
             </div>
           </button>
         </div>
@@ -247,7 +251,7 @@ export default function Home() {
               )}
               <div className="min-w-0 flex-1">
                 <p
-                  className={`truncate text-headline font-extrabold tabular-nums leading-tight ${
+                  className={`whitespace-nowrap text-headline font-extrabold tabular-nums leading-tight ${
                     netPosition > 0 ? 'text-green' : netPosition < 0 ? 'text-flag' : 'text-ink'
                   }`}
                 >
@@ -257,7 +261,7 @@ export default function Home() {
                     <>
                       {netPosition > 0 && '+'}
                       <CountUp id="home-money" value={Math.abs(netPosition)} format={(n) => money(Math.round(n))} />
-                      {netPosition > 0 ? ' coming' : ' to pay'}
+                      <span className="text-body font-bold">{netPosition > 0 ? ' coming' : ' to pay'}</span>
                     </>
                   )}
                 </p>
@@ -322,7 +326,6 @@ export default function Home() {
             <IconTile name="star" tone="gold" />
             <div className="flex-1 min-w-0">
               <p className="text-body font-bold text-ink truncate">How was {toRate.courseName}?</p>
-              <p className="text-footnote text-ink-dim mt-0.5">One tap for the stars, one for where it lands on your list.</p>
             </div>
             <Icon name="chevronRight" size={18} className="text-ink-faint" />
           </Card>
@@ -342,7 +345,7 @@ export default function Home() {
       {recent.length === 0 ? (
         <Card className="p-5 text-center">
           <p className="text-body font-bold text-ink">No rounds logged yet</p>
-          <p className="text-footnote text-ink-dim mt-1">Log one and the records start keeping themselves. Solo rounds count too.</p>
+          <p className="text-footnote text-ink-dim mt-1">Solo rounds count too.</p>
           <button onClick={() => openLog()} className="mt-3 rounded-xl bg-green px-5 py-2.5 text-body font-bold text-white">
             Log a round
           </button>
@@ -405,7 +408,7 @@ export default function Home() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-headline font-extrabold text-ink tabular-nums leading-none">{row.wins}</p>
-                  <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint mt-0.5">{row.wins === 1 ? 'win' : 'wins'}</p>
+                  <p className="text-footnote font-semibold text-ink-dim mt-0.5">{row.wins === 1 ? 'win' : 'wins'}</p>
                 </div>
               </RowButton>
             ))}
@@ -480,31 +483,26 @@ export default function Home() {
   )
 }
 
-/** The last few scores as a line: lower is better, so lower draws higher. */
-function Sparkline({ scores }: { scores: number[] }) {
-  const W = 112
-  const H = 40
-  const min = Math.min(...scores)
-  const max = Math.max(...scores)
-  const span = Math.max(1, max - min)
-  const pts = scores.map((s, i) => [4 + (i * (W - 8)) / (scores.length - 1), 4 + ((s - min) / span) * (H - 8)] as const)
-  const last = pts[pts.length - 1]
+/** The last few scores written out like boxes on a card, newest on the
+ *  right and filled in. The numbers say more than a line through them. */
+function RecentScores({ scores }: { scores: number[] }) {
+  const best = Math.min(...scores)
   return (
-    <svg width={W} height={H + 12} viewBox={`0 0 ${W} ${H + 12}`} className="shrink-0" aria-label={`Last ${scores.length} scores: ${scores.join(', ')}`}>
-      <polyline
-        points={pts.map((p) => p.join(',')).join(' ')}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.8"
-      />
-      <circle cx={last[0]} cy={last[1]} r="3.4" fill="currentColor" />
-      <text x={W - 2} y={H + 10} textAnchor="end" fontSize="8.5" fontWeight="800" letterSpacing="1" fill="currentColor" opacity="0.6">
-        LAST {scores.length} · {scores[scores.length - 1]}
-      </text>
-    </svg>
+    <span className="flex shrink-0 gap-1" aria-label={`Recent scores, oldest first: ${scores.join(', ')}`}>
+      {scores.map((s, i) => {
+        const latest = i === scores.length - 1
+        return (
+          <span
+            key={i}
+            className={`grid h-7 w-7 place-items-center rounded-md text-footnote font-bold tabular-nums ${
+              latest ? 'bg-cream text-forest' : 'border border-on-forest/25 text-on-forest/80'
+            } ${s === best && !latest ? 'underline decoration-2 underline-offset-2' : ''}`}
+          >
+            {s}
+          </span>
+        )
+      })}
+    </span>
   )
 }
 
@@ -565,15 +563,11 @@ function TripHero({ trip, today, meId }: { trip: Trip; today: string; meId: stri
       {/* The scene stays clear: its flag sits somewhere different in each one. */}
       <CourseScene course={trip.location || trip.name} light="golden" className="h-24 w-full" />
       <div className="px-5 pt-3">
-        <p className="flex items-center gap-1.5 text-caption font-semibold uppercase tracking-[0.14em] text-sand">
-          <Icon name="suitcase" size={13} strokeWidth={2.2} />
-          {isPlanning ? 'Trip in the works' : days === 0 ? 'Trip starts today' : `Trip in ${plural(days ?? 0, 'day')}`}
-        </p>
-        <h2 className="mt-0.5 text-title font-bold leading-tight text-ink">{trip.name}</h2>
+        <h2 className="text-title font-bold leading-tight text-ink">{trip.name}</h2>
         <p className="mt-0.5 text-footnote text-ink-dim">
           {isPlanning
-            ? `${plural(trip.options.length, 'destination')} on the table`
-            : `${trip.location}${trip.startDate ? ` · ${shortDate(trip.startDate)}` : ''}`}
+            ? `${plural(trip.options.length, 'destination')} on the table, nothing booked`
+            : [trip.location, days === 0 ? 'starts today' : `${plural(days ?? 0, 'day')} out`].filter(Boolean).join(', ')}
         </p>
       </div>
       <div className="mt-3 flex items-center justify-between border-t border-line px-5 py-3">
@@ -588,7 +582,7 @@ function TripHero({ trip, today, meId }: { trip: Trip; today: string; meId: stri
           </>
         ) : (
           <>
-            <p className="text-footnote text-ink-dim">Itinerary, tee times, standings</p>
+            <p className="text-footnote text-ink-dim">{trip.attendeeIds.length} going</p>
             <Icon name="chevronRight" size={18} className="text-ink-faint" />
           </>
         )}

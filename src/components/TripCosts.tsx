@@ -75,7 +75,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
           {/* Totals */}
           <Card className="p-4">
             <div className="flex items-baseline justify-between">
-              <p className="text-footnote font-semibold uppercase tracking-wider text-ink-faint">Trip total</p>
+              <p className="text-footnote font-bold text-ink">Trip total</p>
               <p className="text-large font-extrabold text-ink tabular-nums">{money(total)}</p>
             </div>
             <div className="mt-3 pt-3 border-t border-line space-y-2">
@@ -100,7 +100,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
 
           {/* Settle up */}
           <Card className={`mt-3 p-4 ${owed.length === 0 ? 'bg-green-soft/50 border-green/25' : 'bg-gold-soft/40 border-gold/30'}`}>
-            <p className="text-footnote font-semibold uppercase tracking-wider text-ink-faint mb-2.5">Settle up</p>
+            <p className="text-footnote font-bold text-ink mb-2.5">Settle up</p>
             <SettleUp
               url={`/trips/${trip.id}`}
               owed={owed}
@@ -153,7 +153,7 @@ export default function TripCosts({ trip }: { trip: Trip }) {
           {/* Paybacks already recorded */}
           {payments.length > 0 && (
             <Card className="mt-3 divide-y divide-line">
-              <p className="px-4 py-2 text-caption font-semibold uppercase tracking-wider text-ink-faint">Paybacks recorded</p>
+              <p className="px-4 py-2 text-footnote font-semibold text-ink-dim">Paybacks recorded</p>
               {payments.map((p) => (
                 <div key={p.id} className="flex items-center gap-2.5 px-4 py-2.5">
                   <span className="text-footnote text-ink-dim flex-1">
@@ -196,7 +196,7 @@ function ExpenseForm({ trip, onSave, onCancel }: { trip: Trip; onSave: (e: Omit<
   const valid = description.trim() && value > 0 && sharedByIds.length > 0
 
   const field = 'w-full rounded-lg border border-line-strong bg-card px-3.5 py-2.5 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-caption font-semibold uppercase tracking-wider text-ink-faint mb-1.5'
+  const label = 'block text-footnote font-semibold text-ink-dim mb-1.5'
 
   return (
     <div className="rounded-2xl border border-green/30 bg-card p-4 space-y-3.5">

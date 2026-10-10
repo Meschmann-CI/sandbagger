@@ -54,7 +54,7 @@ export function enqueuePhoto(item: PendingPhoto) {
     persist()
   } catch {
     queue = queue.filter((q) => q.id !== item.id)
-    throw new Error('Too many photos waiting for signal — try this one again when you’re back online.')
+    throw new Error('Too many photos waiting for signal. Try this one again when you’re back online.')
   }
   announce()
 }

@@ -729,7 +729,6 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
                   </Card>
                 )
               })}
-              <p className="text-caption text-ink-faint px-1 pt-1">Tap − / + to nudge from 90, or type it straight in.</p>
               {missing.length > 0 && anyScored && (
                 <Card className="p-3.5 border-gold/30 bg-gold-soft/40">
                   <p className="text-footnote text-ink">

@@ -6,6 +6,8 @@ import { fmtDiff, ghostDiff, ghostFor } from '../lib/ghost'
 import { shortDate } from '../lib/stats'
 import { findCourse, hasPars, hasStrokeIndex, padded, scoreKind, strokesOffLow, toPar } from '../lib/courses'
 import { Avatar, Card } from './ui'
+import { CourseLogo } from './CourseLogo'
+import { courseBrand } from '../lib/courseBrands'
 import { Icon } from './icons'
 import { MarkLegend, SCORE_MARK, StrokeDots } from './scoreMarks'
 
@@ -19,6 +21,10 @@ import { MarkLegend, SCORE_MARK, StrokeDots } from './scoreMarks'
 export default function Scorecard({ round }: { round: Round }) {
   const { data } = useStore()
   const course = findCourse(data, round.courseName)
+  // The course's own colours on the hole row, the way its printed card
+  // has them. Without a brand, the Sandbagger forest.
+  const brand = courseBrand(round.courseName)
+  const headStyle = brand ? { backgroundColor: brand.color, color: brand.ink } : undefined
   const pars = hasPars(course) ? padded(course.pars) : null
 
   // The dots a paper card would carry: who gets a stroke where, off the
@@ -36,18 +42,33 @@ export default function Scorecard({ round }: { round: Round }) {
   })
 
   const headerCell = (i: number) => (
-    <th key={i} className="w-8 px-1 py-2 font-bold text-on-forest/80">
+    <th key={i} className={`w-8 px-1 py-2 font-bold ${brand ? 'opacity-85' : 'text-on-forest/80'}`}>
       {i + 1}
     </th>
   )
 
   return (
     <Card className="overflow-hidden">
+      {brand?.logo && (
+        <div className={`flex gap-3 border-b border-line px-4 py-3 ${brand.wide ? 'flex-col items-start gap-2' : 'items-center'}`}>
+          <CourseLogo brand={brand} name={round.courseName} size={brand.tall ? 56 : brand.wide ? 34 : 44} />
+          <div className="min-w-0">
+            <p className="text-footnote font-bold text-ink truncate">{course?.name ?? round.courseName}</p>
+            <p className="text-caption text-ink-faint">
+              {shortDate(round.date)}
+              {round.tee && `, ${round.tee} tees`}
+            </p>
+          </div>
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="text-footnote tabular-nums">
           <thead>
-            <tr className="bg-forest text-on-forest">
-              <th className="sticky left-0 z-10 bg-forest px-3 py-2 text-left text-caption font-semibold uppercase tracking-wider text-on-forest">
+            <tr className={brand ? '' : 'bg-forest text-on-forest'} style={headStyle}>
+              <th
+                className={`sticky left-0 z-10 px-3 py-2 text-left text-caption font-semibold uppercase ${brand ? '' : 'bg-forest text-on-forest'}`}
+                style={headStyle}
+              >
                 Hole
               </th>
               {Array.from({ length: 9 }, (_, i) => headerCell(i))}
@@ -60,7 +81,7 @@ export default function Scorecard({ round }: { round: Round }) {
                 label says which. */}
             {course?.yards && course.yards.length === HOLE_COUNT && (
               <tr className="border-b border-line">
-                <td className="sticky left-0 z-10 bg-card px-3 py-1 text-caption font-semibold uppercase tracking-wider text-ink-faint whitespace-nowrap">
+                <td className="sticky left-0 z-10 bg-card px-3 py-1 text-caption font-semibold uppercase text-ink-faint whitespace-nowrap">
                   Yds{course.yardsTee ? ` · ${course.yardsTee}` : ''}
                 </td>
                 {course.yards.slice(0, 9).map((y, i) => (
@@ -86,7 +107,7 @@ export default function Scorecard({ round }: { round: Round }) {
             )}
             {pars && (
               <tr className="border-b border-line bg-paper/60">
-                <td className="sticky left-0 z-10 bg-paper px-3 py-1.5 text-caption font-semibold uppercase tracking-wider text-ink-faint">
+                <td className="sticky left-0 z-10 bg-paper px-3 py-1.5 text-caption font-semibold uppercase text-ink-faint">
                   Par
                 </td>
                 {pars.slice(0, 9).map((p, i) => (

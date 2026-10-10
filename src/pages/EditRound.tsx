@@ -76,7 +76,7 @@ export default function EditRound() {
 
   const field =
     'w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none'
-  const label = 'block text-footnote font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2 px-1'
+  const label = 'block text-footnote font-semibold text-ink-dim mb-2 px-1'
 
   return (
     <div className="rise">
@@ -202,7 +202,7 @@ export default function EditRound() {
           </div>
           <p className="text-caption text-ink-faint px-1 mt-2">
             Clear a score to blank and it goes back on that golfer's list to fill in. Anyone with a hole-by-hole card gets
-            their total from it — tap through to change that.
+            their total from it. Tap through to change that.
           </p>
         </div>
 
@@ -215,7 +215,7 @@ export default function EditRound() {
             <div className="flex-1 min-w-0 text-left">
               <p className="text-body font-bold text-ink">The Saddam is on the line</p>
               <p className="text-caption text-ink-faint">
-                {saddamOn ? 'Winner takes the trophy.' : 'Off — this round can’t move the trophy.'}
+                {saddamOn ? 'Winner takes the trophy.' : 'Off. This round can’t move the trophy.'}
               </p>
             </div>
             <span className={`h-7 w-12 rounded-full p-1 transition shrink-0 ${saddamOn ? 'bg-gold' : 'bg-line-strong'}`}>

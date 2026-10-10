@@ -55,7 +55,7 @@ function labelFor(entry: Entry | undefined, path: string) {
   const section = sectionLabel(path)
   if (section) return section
   const t = entry?.title?.trim()
-  if (t) return t.length > 18 ? `${t.slice(0, 17)}…` : t
+  if (t) return t
   return fallbackLabel(path)
 }
 

@@ -34,7 +34,7 @@ export default function Trophies() {
         <BackButton fallback="/profile" onBack={goBack} />
         <h1 className="text-large font-bold tracking-tight text-ink">Trophy case</h1>
         <p className="text-footnote text-ink-dim">
-          {earned} of {badges.length} earned. Tap any medal to see what it takes.
+          {earned} of {badges.length}.
         </p>
       </header>
 

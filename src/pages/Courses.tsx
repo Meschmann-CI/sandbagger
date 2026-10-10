@@ -4,8 +4,8 @@ import { useMembers, useStore } from '../data/store'
 import { hasPars } from '../lib/courses'
 import { byGroupRank, byRating, courseSummaries, fmtStars, moveBy, myRanking, ordinal } from '../lib/ratings'
 import { StarRating } from '../components/Stars'
-import CourseScene from '../components/CourseScene'
-import { Card, EmptyState, HelpTip, Meta, Pill, SectionLabel } from '../components/ui'
+import { CourseTile } from '../components/CourseLogo'
+import { Card, EmptyState, HelpTip, Pill, SectionLabel } from '../components/ui'
 
 // Every course the group has played, two ways: how it rates, and how it
 // ranks. Stars are the honest scale but bunch up around four; the
@@ -25,7 +25,6 @@ export default function Courses() {
 
   const rows = courseSummaries(data)
   const played = rows.filter((r) => r.rounds > 0)
-  const rated = rows.filter((r) => r.ratings.length > 0).length
   const needCard = played.filter((r) => !hasPars(data.courses.find((c) => c.slug === r.slug))).length
   const mine = myRanking(data)
   const unranked = rows.filter((r) => !mine.includes(r.slug) && r.rounds > 0)
@@ -50,18 +49,6 @@ export default function Courses() {
       <header className="pt-4 pb-2 px-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-large font-bold tracking-tight text-ink">Courses</h1>
-          {rows.length === 0 ? (
-            <p className="text-footnote text-ink-dim">Add one ahead of playing it, or log a round and it turns up here.</p>
-          ) : (
-            <Meta
-              className="text-footnote text-ink-dim"
-              parts={[
-                `${played.length} played`,
-                rated > 0 && `${rated} rated`,
-                rows.length > played.length && `${rows.length - played.length} not played yet`,
-              ]}
-            />
-          )}
         </div>
         {/* Adding ahead of time: the card, stroke index and slope go in
             before the first tee, and the round finds them by name. */}
@@ -110,7 +97,7 @@ export default function Courses() {
                         className="w-full text-left flex items-center gap-3 px-3.5 py-3 active:bg-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green"
                       >
                         <span data-shared={`course:${row.slug}`} className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">
-                          <CourseScene course={row.name} className="h-full w-full" />
+                          <CourseTile name={row.name} className="h-full w-full" />
                         </span>
                         <div className="flex-1 min-w-0">
                           <p className="text-body font-bold text-ink truncate">{row.name}</p>
@@ -159,7 +146,7 @@ export default function Courses() {
                           onClick={() => navigate(`/courses/${encodeURIComponent(row.slug)}`)}
                           className="w-full text-left flex items-center gap-3 px-3.5 py-2.5 active:bg-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-green"
                         >
-                          <CourseScene course={row.name} className="h-9 w-9 shrink-0 rounded-lg overflow-hidden opacity-90" />
+                          <CourseTile name={row.name} className="h-9 w-9 shrink-0 rounded-lg overflow-hidden" />
                           <div className="flex-1 min-w-0">
                             <p className="text-footnote font-bold text-ink truncate">{row.name}</p>
                             <p className="text-caption text-ink-faint truncate">
@@ -183,10 +170,6 @@ export default function Courses() {
                   Nothing matches “{query.trim()}”. Add it with the button above.
                 </Card>
               )}
-
-              <p className="text-caption text-ink-faint px-2 mt-2">
-                Tap a course for everyone’s take, the tees, and its scorecard.
-              </p>
             </>
           ) : (
             <>
@@ -197,7 +180,7 @@ export default function Courses() {
               </SectionLabel>
               {rows.every((r) => r.groupRank == null) ? (
                 <Card className="p-4 text-footnote text-ink-dim">
-                  Nobody has ranked a course yet. Rate one and you’ll be asked where it lands on your list.
+                  Nobody has ranked a course yet.
                 </Card>
               ) : (
                 <Card className="divide-y divide-line">
@@ -234,7 +217,7 @@ export default function Courses() {
               <SectionLabel>Your order</SectionLabel>
               {mine.length === 0 ? (
                 <Card className="p-4 text-footnote text-ink-dim">
-                  Nothing on your list yet. Rate a course, or add one from below and sort it with the arrows.
+                  Nothing on your list yet.
                 </Card>
               ) : (
                 <Card className="divide-y divide-line">
@@ -327,7 +310,7 @@ export default function Courses() {
 
 const GROUP_ORDER_RULES = [
   'Everyone keeps their own list of courses, favourite first. This is the group’s lists combined.',
-  'Each list hands out points by position — top of your list scores full marks, bottom scores least — so a long list and a short one carry the same weight.',
+  'Each list hands out points by position (top of your list scores full marks, bottom scores least), so a long list and a short one carry the same weight.',
   'A course’s score is the average across the people who ranked it, pulled slightly toward the middle for every member who hasn’t. One person’s lone favourite doesn’t leapfrog a course three people put near the top.',
   'Ties break on the star rating, then on how often the group actually plays there.',
 ]

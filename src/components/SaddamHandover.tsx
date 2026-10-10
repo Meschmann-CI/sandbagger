@@ -129,7 +129,7 @@ export default function SaddamHandover() {
       <div className={`rounded-[36px] bg-cream p-2 shadow-[0_0_0_8px_rgba(239,227,200,0.14),0_22px_50px_rgba(0,0,0,0.35)] ${motion ? 'trophy-drop' : ''}`}>
         <SaddamIcon size={128} />
       </div>
-      <p className={`mt-7 text-caption font-bold uppercase tracking-[0.2em] text-on-forest/70 ${motion ? 'lift-in' : ''}`} style={{ animationDelay: '0.55s' }}>
+      <p className={`mt-7 text-body font-semibold text-on-forest/75 ${motion ? 'lift-in' : ''}`} style={{ animationDelay: '0.55s' }}>
         The Saddam changes hands
       </p>
       <h1 className={`mt-1 text-hero font-extrabold leading-none ${motion ? 'lift-in' : ''}`} style={{ animationDelay: '0.65s' }}>

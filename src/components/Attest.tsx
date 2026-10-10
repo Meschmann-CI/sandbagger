@@ -109,7 +109,7 @@ export function AttestSheet({
 
         {/* The signing strip, drawn like the bottom of a scorecard */}
         <div className="relative mt-4 overflow-hidden rounded-2xl border border-line-strong bg-card">
-          <div className="flex border-b border-line text-caption font-semibold uppercase tracking-wider text-ink-faint">
+          <div className="flex border-b border-line text-footnote font-semibold text-ink-dim">
             <span className="flex-1 px-3 py-1.5">Attested</span>
             <span className="border-l border-line px-3 py-1.5">{name}</span>
           </div>

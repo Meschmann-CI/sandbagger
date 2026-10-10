@@ -31,7 +31,7 @@ export function betRules(
         title: 'Skins',
         lines: [
           'Low score on a hole wins it. That hole is a skin.',
-          'Tie a hole and nobody wins it — the skin carries onto the next one, and they keep stacking until somebody wins a hole outright and takes the whole pile.',
+          'Tie a hole and nobody wins it. The skin carries onto the next one, and they keep stacking until somebody wins a hole outright and takes the whole pile.',
           winnerTakeAll
             ? 'Winner takes all: everyone antes the stake into one pot, and whoever holds the most skins at the end takes it. A tie for most splits the pot.'
             : 'Per skin: every skin pays the stake from each of the other players, so a hole carrying two pushes pays three stakes a head. No separate end-of-round kitty.',
@@ -45,7 +45,7 @@ export function betRules(
         lines: [
           'Three separate bets at the same stake: the front nine, the back nine, and the full eighteen.',
           'Lowest total wins each one, and each pays the stake from every other player. Win all three and you collect three times.',
-          'A tied segment is halved — nobody pays on it.',
+          'A tied segment is halved and nobody pays on it.',
           strokes('each golfer’s own course handicap'),
         ],
       }
@@ -55,7 +55,7 @@ export function betRules(
         lines: [
           'One on one, hole by hole. Win a hole and you go one up; tie it and the hole is halved, which moves nothing.',
           'Most holes up at the end takes the stake. All square after eighteen and nobody pays.',
-          'The match closes early the moment the lead is bigger than the holes left — a 3-up lead with 2 to play is "3&2", and it ends there.',
+          'The match closes early the moment the lead is bigger than the holes left. A 3-up lead with 2 to play is "3&2", and it ends there.',
           'Dormie means the lead exactly equals the holes left: the leader can’t lose from there, only be caught.',
           strokes('the difference between the two course handicaps'),
         ],

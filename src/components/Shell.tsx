@@ -127,7 +127,7 @@ export default function Shell() {
     <NavLink
       key={t.to}
       to={t.to}
-      className={`flex flex-col items-center gap-1 py-2.5 text-caption font-bold tracking-wide transition-colors ${
+      className={`flex flex-col items-center gap-1 py-2.5 text-caption font-bold transition-colors ${
         current === t.to ? 'text-green' : 'text-ink-faint hover:text-ink-dim'
       }`}
     >
@@ -173,7 +173,7 @@ export default function Shell() {
           <div className="sticky top-0 z-50 mx-4 mt-3 rounded-xl border border-flag/40 bg-flag-soft px-4 py-3">
             <p className="text-footnote font-bold text-flag">That didn't save to the group</p>
             <p className="text-footnote text-ink-dim mt-0.5">
-              {syncError}. What you see may not have stuck — reload to check.
+              {syncError}. What you see may not have stuck. Reload to check.
             </p>
             <button onClick={() => window.location.reload()} className="mt-1.5 text-footnote font-bold text-green">
               Reload
@@ -196,7 +196,7 @@ export default function Shell() {
                 onClick={openLog}
                 aria-label="Log a round"
                 aria-haspopup="dialog"
-                className={`flex flex-col items-center gap-1 pb-2.5 text-caption font-bold tracking-wide ${
+                className={`flex flex-col items-center gap-1 pb-2.5 text-caption font-bold ${
                   logOpen ? 'text-green' : 'text-ink-faint'
                 }`}
               >

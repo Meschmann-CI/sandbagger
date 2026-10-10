@@ -94,7 +94,7 @@ export default function Wrapped() {
   }, [bestPhoto, turfPhoto, pile, montage])
 
   const big = 'text-[76px] font-extrabold leading-[0.9] tracking-[-0.04em]'
-  const kicker = 'text-caption font-semibold uppercase tracking-[0.18em] opacity-75'
+  const kicker = 'text-body font-semibold opacity-75'
 
   const slides: Slide[] = [
     {

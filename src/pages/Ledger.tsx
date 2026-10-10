@@ -44,7 +44,6 @@ export default function Ledger() {
       <header className="pt-4 pb-2 px-1">
         <BackButton fallback="/rounds" onBack={goBack} />
         <h1 className="text-large font-bold tracking-tight text-ink">Standings</h1>
-        <p className="text-footnote text-ink-dim">Group rounds only. The record is permanent.</p>
       </header>
 
       {/* The Saddam gets its full due here and nowhere else: everywhere
@@ -58,7 +57,7 @@ export default function Ledger() {
           <SaddamIcon size={72} />
         </span>
         <span className="relative min-w-0 flex-1">
-          <span className="block text-caption font-semibold uppercase tracking-[0.16em] text-on-forest/70">The Saddam</span>
+          <span className="block text-footnote font-semibold text-on-forest/75">The Saddam</span>
           {holder ? (
             <>
               <span className="mt-0.5 block truncate text-title font-bold leading-tight">{holder.name}</span>
@@ -86,17 +85,16 @@ export default function Ledger() {
       </button>
 
       {talk.length > 0 && (
-        <Card className="mt-3 p-4 border-l-4 border-l-flag/50">
+        <Card className="mt-3 p-4">
           <p className="text-body font-bold text-ink leading-snug">
             {talk[(data.rounds.length + talk.length) % talk.length]}
           </p>
-          <p className="text-caption font-semibold uppercase tracking-wider text-ink-faint mt-1.5">The ledger never lies</p>
         </Card>
       )}
 
       <SectionLabel>Group leaderboard</SectionLabel>
       <Card>
-        <div className="grid grid-cols-[1fr_repeat(4,auto)] gap-x-3.5 px-4 py-2.5 border-b border-line text-caption font-semibold uppercase tracking-wider text-ink-faint">
+        <div className="grid grid-cols-[1fr_repeat(4,auto)] gap-x-3.5 px-4 py-2.5 border-b border-line text-footnote font-semibold text-ink-dim">
           <span>Player</span>
           <span className="w-8 text-right">W</span>
           <span className="w-8 text-right">Rds</span>
