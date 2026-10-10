@@ -40,6 +40,13 @@ export default function CourseEdit() {
   // A course reached from a round it hasn't got a record for yet — or,
   // when adding, one that already exists under the name being typed.
   const existing = data.courses.find((c) => !!slug && c.slug === slug)
+  // Whether anything still points at this course: a round played there,
+  // someone's rating, or a spot on someone's list.
+  const inUse =
+    !!existing &&
+    (data.rounds.some((r) => courseSlug(r.courseName) === existing.slug) ||
+      data.courseRatings.some((r) => r.courseSlug === existing.slug) ||
+      data.courseRankings.some((r) => r.slugs.includes(existing.slug)))
   const nameFromRounds = data.rounds.find((r) => courseSlug(r.courseName) === slug)?.courseName
   const name = isNew ? typedName.trim() : (existing?.name ?? nameFromRounds ?? '')
 
@@ -548,24 +555,39 @@ export default function CourseEdit() {
         </p>
       )}
 
+      {/* With rounds, ratings or a ranking pointing at it, the course stays
+          on the list whatever happens here, so this only clears the card.
+          With nothing pointing at it (a typo, a directory pick that wasn't
+          the course), the same delete takes it off the list completely, and
+          the button says so. */}
       {existing && !isNew && (
         <div className="mt-8 mb-4 text-center">
           <button
             onClick={async () => {
-              const ok = await confirm({
-                title: `Clear the scorecard for ${existing.name}?`,
-                body: 'Rounds played here stay exactly as they are. They just stop showing scores against par.',
-                confirmLabel: 'Clear it',
-                danger: true,
-              })
+              const ok = await confirm(
+                inUse
+                  ? {
+                      title: `Clear the scorecard for ${existing.name}?`,
+                      body: 'Rounds played here stay exactly as they are. They just stop showing scores against par.',
+                      confirmLabel: 'Clear it',
+                      danger: true,
+                    }
+                  : {
+                      title: `Delete ${existing.name}?`,
+                      body: 'No rounds, ratings or rankings use it, so it comes off the course list completely.',
+                      confirmLabel: 'Delete it',
+                      danger: true,
+                    },
+              )
               if (ok) {
                 deleteCourse(existing.id)
-                goBack()
+                if (inUse) goBack()
+                else navigate('/courses', { replace: true })
               }
             }}
             className="text-footnote font-bold text-flag/80"
           >
-            Clear this scorecard
+            {inUse ? 'Clear this scorecard' : 'Delete this course'}
           </button>
         </div>
       )}
