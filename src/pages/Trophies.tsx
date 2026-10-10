@@ -70,8 +70,8 @@ export default function Trophies() {
       })}
 
       <p className="mt-8 px-2 text-caption text-ink-faint">
-        Putts, penalty strokes, tee times and birthdays aren't tracked yet, so Flatstick, Four-Jack, Splash Zone, Early Bird,
-        Morning Wood and Age Shooter will join the case when they are.
+        Penalty strokes, tee times and birthdays aren't tracked yet, so Splash Zone, Early Bird, Morning Wood and Age
+        Shooter will join the case when they are.
       </p>
       <div className="h-4" />
 

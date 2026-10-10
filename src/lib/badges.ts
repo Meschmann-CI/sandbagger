@@ -62,6 +62,8 @@ interface Facts {
   parTotal: number | null
   out: number
   in: number
+  /** Putts per hole when tracked, null otherwise. */
+  putts: (number | null)[] | null
 }
 
 type Check = (f: Facts, ctx: Ctx) => boolean
@@ -180,6 +182,14 @@ const DEFS: Def[] = [
   { key: 'partrain', kind: 'brag', label: 'Par Train', mark: '5', how: 'Five straight holes at par or better.', check: (f) => run(f.diffs, 5, (d) => d <= 0) },
   { key: 'pb', kind: 'brag', label: 'Personal Best', mark: 'PB', how: 'Beat your lowest recorded score.', check: (f, c) => f.gross != null && c.prior.length > 0 && f.gross < Math.min(...c.prior) },
   { key: 'netpar', kind: 'brag', label: 'Playing to Your Number', mark: 'N', how: 'Shoot net par or better.', check: (f) => f.gross != null && f.parTotal != null && f.gross - f.rp.handicapSnapshot <= f.parTotal },
+  {
+    key: 'flatstick',
+    kind: 'brag',
+    label: 'Flatstick',
+    mark: '29',
+    how: 'Under 30 putts in a full round, with every hole’s putts tracked.',
+    check: (f) => !!f.putts && f.putts.every((p) => p != null) && f.putts.reduce<number>((s, p) => s + (p ?? 0), 0) < 30,
+  },
   {
     key: 'sweep',
     kind: 'brag',
@@ -343,6 +353,7 @@ const DEFS: Def[] = [
 
   // ---- More of the ones nobody wants ----
   { key: 'boxcars', kind: 'shame', label: 'Boxcars', mark: '12', how: 'A 12 on any hole.', check: (f) => some(f.card, (s) => s === 12) },
+  { key: 'fourjack', kind: 'shame', label: 'Four-Jack', mark: '4', how: 'Four putts or more on a hole.', check: (f) => !!f.putts && f.putts.some((p) => p != null && p >= 4) },
   {
     key: 'ghosted',
     kind: 'shame',
@@ -521,6 +532,7 @@ function factsFor(data: AppData, round: Round, rp: RoundPlayer): Facts {
     parTotal: pars && pars.every((p) => p != null) ? pars.reduce<number>((s, p) => s + (p as number), 0) : null,
     out: sum(0, 9),
     in: sum(9, 18),
+    putts: rp.putts?.some((p) => p != null) ? Array.from({ length: HOLE_COUNT }, (_, i) => rp.putts![i] ?? null) : null,
   }
 }
 

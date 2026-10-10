@@ -13,6 +13,23 @@ export function cardOf(rp: RoundPlayer): (number | null)[] {
 }
 
 export const hasCard = (rp: RoundPlayer) => cardOf(rp).some((h) => h != null)
+
+/** A golfer's putts as 18 holes, blank where none were entered. */
+export function puttsOf(rp: RoundPlayer): (number | null)[] {
+  const putts = rp.putts ?? []
+  return Array.from({ length: HOLE_COUNT }, (_, i) => putts[i] ?? null)
+}
+
+/**
+ * Whether a golfer's putts are tracked this round. A round that never
+ * said tracks the current golfer and nobody else; after that it's what
+ * was chosen (an empty list is off).
+ */
+export const tracksPutts = (rp: RoundPlayer, currentUserId: string) =>
+  rp.putts === undefined ? rp.playerId === currentUserId : rp.putts.length > 0
+
+/** Whether any putts were actually entered, for the card and the stats. */
+export const hasPutts = (rp: RoundPlayer) => !!rp.putts?.some((p) => p != null)
 export const holesEntered = (rp: RoundPlayer) => cardOf(rp).filter((h) => h != null).length
 export const cardComplete = (rp: RoundPlayer) => holesEntered(rp) === HOLE_COUNT
 

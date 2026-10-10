@@ -143,6 +143,9 @@ create table if not exists round_players (
   -- Snapshotted so history stays accurate when a handicap changes.
   handicap_snapshot numeric(4,1) not null,
   holes integer[],
+  -- Putts per hole when tracked. Null: never said (the app tracks the
+  -- current golfer by default); empty: tracking turned off.
+  putts integer[],
   primary key (round_id, player_id)
 );
 
@@ -227,6 +230,8 @@ $$;
 alter table groups add column if not exists saddam_award jsonb;
 -- Scores that aren't in yet:
 alter table round_players alter column gross drop not null;
+-- Putts, added 2026-10-10:
+alter table round_players add column if not exists putts integer[];
 -- Venmo handles, for settling up. Public usernames, nothing linked.
 alter table players add column if not exists venmo text;
 -- Match play joined the bet types. `create table if not exists` never

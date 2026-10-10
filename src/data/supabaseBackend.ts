@@ -222,6 +222,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           gross: rp.gross,
           handicapSnapshot: num(rp.handicap_snapshot),
           holes: rp.holes ?? undefined,
+          putts: rp.putts ?? undefined,
         })
         scoresByRound.set(rp.round_id, list)
       }
@@ -328,6 +329,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
                     gross: rp.gross,
                     handicap_snapshot: rp.handicapSnapshot,
                     holes: rp.holes ?? null,
+                    putts: rp.putts ?? null,
                   })),
                   { onConflict: 'round_id,player_id' },
                 )

@@ -139,6 +139,7 @@ export async function seedCloudGroup(
           gross: rp.gross,
           handicap_snapshot: rp.handicapSnapshot,
           holes: rp.holes ?? null,
+          putts: rp.putts ?? null,
         })),
     )
     if (scores.length) {

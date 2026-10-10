@@ -47,6 +47,12 @@ export interface RoundPlayer {
   gross: number | null
   handicapSnapshot: number
   holes?: (number | null)[] // 18 entries when per-hole entry was used
+  /**
+   * Putts per hole. Undefined: the round never said, so the app tracks
+   * the current golfer and nobody else. 18 entries: tracking. Empty:
+   * tracking turned off for this golfer and round.
+   */
+  putts?: (number | null)[]
 }
 
 export interface ScoredRoundPlayer extends RoundPlayer {

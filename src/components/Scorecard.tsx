@@ -1,7 +1,8 @@
 import { Fragment } from 'react'
 import { useStore } from '../data/store'
 import type { Round } from '../types'
-import { HOLE_COUNT, cardOf, inTotal, outTotal } from '../lib/holes'
+import { HOLE_COUNT, cardOf, hasPutts, inTotal, outTotal, puttsOf } from '../lib/holes'
+import { PuttsRow } from './PuttsRow'
 import { fmtDiff, ghostDiff, ghostFor } from '../lib/ghost'
 import { shortDate } from '../lib/stats'
 import { findCourse, hasPars, hasStrokeIndex, padded, scoreKind, strokesOffLow, toPar, yardsFor } from '../lib/courses'
@@ -203,9 +204,12 @@ export default function Scorecard({ round }: { round: Round }) {
               const total = out + inn
               const ghost = ghostFor(data, round, rp.playerId)
               const race = ghost ? ghostDiff(card, ghost.card) : null
+              // Putts only once some were entered: a tracked round with none
+              // in yet would just be a row of dots.
+              const putts = hasPutts(rp) ? puttsOf(rp) : null
               return (
                 <Fragment key={rp.playerId}>
-                <tr className="border-b border-line last:border-0">
+                <tr className={putts ? '' : 'border-b border-line last:border-0'}>
                   <td className="sticky left-0 z-10 bg-paper px-3 py-2">
                     <div className="flex items-center gap-2">
                       <Avatar player={p} size={22} />
@@ -223,6 +227,7 @@ export default function Scorecard({ round }: { round: Round }) {
                     )}
                   </td>
                 </tr>
+                {putts && <PuttsRow putts={putts} />}
                 {/* The ghost they raced: shown on the holes the live card
                     has, with the running difference. */}
                 {ghost && race && (

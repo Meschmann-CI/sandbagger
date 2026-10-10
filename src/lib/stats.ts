@@ -429,6 +429,49 @@ export function holeStats(data: AppData, playerId: string): HoleStats {
   return { holes, avgByPar, holesByPar: holesByPar as HoleStats['holesByPar'], counts }
 }
 
+// Putting, from the rounds where putts were tracked. Per hole counts every
+// hole with putts in; per round counts only rounds with all eighteen in,
+// so a nine-hole stretch of tracking doesn't pass for a cheap round.
+
+export interface PuttStats {
+  /** Holes with putts entered. */
+  holes: number
+  perHole: number | null
+  /** Average over complete rounds only. */
+  perRound: number | null
+  fullRounds: number
+  threePuttsPerRound: number | null
+  onePuttRate: number | null
+}
+
+export function puttStats(data: AppData, playerId: string): PuttStats {
+  let holes = 0
+  let total = 0
+  let threes = 0
+  let ones = 0
+  const fullTotals: number[] = []
+  for (const round of data.rounds) {
+    const rp = round.players.find((p) => p.playerId === playerId)
+    if (!rp?.putts?.some((x) => x != null)) continue
+    const putts = Array.from({ length: 18 }, (_, i) => rp.putts![i] ?? null)
+    const entered = putts.filter((x): x is number => x != null)
+    holes += entered.length
+    total += entered.reduce((s, x) => s + x, 0)
+    threes += entered.filter((x) => x >= 3).length
+    ones += entered.filter((x) => x === 1).length
+    if (entered.length === 18) fullTotals.push(entered.reduce((s, x) => s + x, 0))
+  }
+  const r2 = (n: number) => Math.round(n * 100) / 100
+  return {
+    holes,
+    perHole: holes ? r2(total / holes) : null,
+    perRound: fullTotals.length ? Math.round((fullTotals.reduce((s, x) => s + x, 0) / fullTotals.length) * 10) / 10 : null,
+    fullRounds: fullTotals.length,
+    threePuttsPerRound: holes ? Math.round(((threes / holes) * 18) * 10) / 10 : null,
+    onePuttRate: holes ? ones / holes : null,
+  }
+}
+
 // ---------- Dates & copy ----------
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']

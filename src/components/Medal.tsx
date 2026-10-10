@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import type { Badge } from '../lib/badges'
 import { COLORS, ICONS, SHAPES, TROPHY_ART, type ArtShelf, type TrophyArt } from '../lib/trophyArt'
+import { EXTRA_TROPHY_ART } from '../lib/trophyArtExtra'
 
 // The shelf a trophy's kind sits on, for one the art file doesn't know yet.
 const SHELF_OF: Record<Badge['kind'], ArtShelf> = { legend: 'legend', brag: 'brag', group: 'group', odd: 'odd', locker: 'locker', shame: 'nobody' }
@@ -13,7 +14,7 @@ const SHELF_OF: Record<Badge['kind'], ArtShelf> = { legend: 'legend', brag: 'bra
  * (lib/trophyArt.ts); the dots sit on top as HTML, as it specifies.
  */
 export function Medal({ badge, size = 66 }: { badge: Badge; size?: number }) {
-  const art: TrophyArt = TROPHY_ART[badge.key] ?? { shelf: SHELF_OF[badge.kind], num: badge.mark }
+  const art: TrophyArt = TROPHY_ART[badge.key] ?? EXTRA_TROPHY_ART[badge.key] ?? { shelf: SHELF_OF[badge.kind], num: badge.mark }
   const dot = Math.max(18, Math.round(size * 0.26))
   return (
     <span className="relative inline-flex shrink-0" style={{ width: size, height: size }}>

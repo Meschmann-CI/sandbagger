@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useNavigate } from '../lib/nav'
 import { useStore } from '../data/store'
-import { HOLE_COUNT, cardOf, cardTotal, holesEntered } from '../lib/holes'
+import { HOLE_COUNT, cardOf, cardTotal, holesEntered, puttsOf, tracksPutts } from '../lib/holes'
 import {
   findCourse,
   hasPars,
@@ -18,6 +18,7 @@ import {
 import { settleFromCard } from '../lib/bets'
 import { Confetti, buzz } from '../components/Delight'
 import { MarkLegend, SCORE_MARK, StrokeDots } from '../components/scoreMarks'
+import { PuttsRow } from '../components/PuttsRow'
 import { fmtDiff, ghostDiff, ghostFor, ghostOptions } from '../lib/ghost'
 import { scanScores, scanSupported, type ScannedScoreRow } from '../lib/scan'
 import { roundStandings, shortDate } from '../lib/stats'
@@ -62,6 +63,11 @@ export default function HoleEntry() {
   // so a score somebody posts from another phone mid-round shows up here
   // rather than being silently overwritten when this card is saved.
   const [edits, setEdits] = useState<Record<string, Record<number, number | null>>>({})
+  // Putts, the same way: what this session tapped, laid over the round.
+  // And who this session switched putts tracking on or off for.
+  const [puttEdits, setPuttEdits] = useState<Record<string, Record<number, number | null>>>({})
+  const [trackEdits, setTrackEdits] = useState<Record<string, boolean>>({})
+  const [pickingPutters, setPickingPutters] = useState(false)
   const [active, setActive] = useState<Active | null>(null)
   // Digits typed into the active cell so far. "1" then "2" is a 12; any
   // other pair, the second replaces the first. No timers — the first
@@ -98,6 +104,17 @@ export default function HoleEntry() {
     players.map((rp) => {
       const merged = cardOf(rp)
       for (const [index, value] of Object.entries(edits[rp.playerId] ?? {})) merged[Number(index)] = value
+      return [rp.playerId, merged]
+    }),
+  )
+  const tracking = (playerId: string) => {
+    const rp = players.find((x) => x.playerId === playerId)
+    return trackEdits[playerId] ?? (rp ? tracksPutts(rp, data.currentUserId) : false)
+  }
+  const puttCards: Record<string, (number | null)[]> = Object.fromEntries(
+    players.map((rp) => {
+      const merged = puttsOf(rp)
+      for (const [index, value] of Object.entries(puttEdits[rp.playerId] ?? {})) merged[Number(index)] = value
       return [rp.playerId, merged]
     }),
   )
@@ -142,10 +159,22 @@ export default function HoleEntry() {
     const nextPlayers = round.players.map((rp) => {
       const card = cards[rp.playerId]
       const complete = card.every((h) => h != null)
+      // Putts: the holes when tracked, an empty list once turned off,
+      // and nothing at all for a round that never said either way.
+      const putts = puttCards[rp.playerId]
+      const said = rp.putts !== undefined || trackEdits[rp.playerId] !== undefined
+      const nextPutts = tracking(rp.playerId)
+        ? said || putts.some((p) => p != null)
+          ? putts
+          : undefined
+        : said
+          ? []
+          : undefined
       return {
         ...rp,
         holes: card.some((h) => h != null) ? card : undefined,
         gross: complete ? cardTotal(card) : rp.gross,
+        putts: nextPutts,
       }
     })
     updateRound({ ...round, players: nextPlayers })
@@ -185,6 +214,18 @@ export default function HoleEntry() {
       ...all,
       [playerId]: { ...(all[playerId] ?? {}), [hole]: value == null ? null : Math.max(1, Math.min(20, value)) },
     }))
+    queueCommit()
+  }
+
+  // Tapping the putts already showing clears them; anything else sets them.
+  const setPutts = (playerId: string, hole: number, value: number) => {
+    const now = puttCards[playerId]?.[hole]
+    setPuttEdits((all) => ({ ...all, [playerId]: { ...(all[playerId] ?? {}), [hole]: now === value ? null : value } }))
+    queueCommit()
+  }
+
+  const toggleTracking = (playerId: string) => {
+    setTrackEdits((all) => ({ ...all, [playerId]: !tracking(playerId) }))
     queueCommit()
   }
 
@@ -677,11 +718,76 @@ export default function HoleEntry() {
                     </>
                   )}
                 </p>
+                {/* Putts, for the golfers tracking them: one tap, and
+                    tapping the same number again clears it. */}
+                {tracking(rp.playerId) && (
+                  <div className="mt-1 mb-0.5 flex items-center gap-1" role="group" aria-label={`${p.name.split(' ')[0]}'s putts on hole ${h + 1}`}>
+                    <span className="mr-0.5 text-caption font-semibold text-ink-faint">Putts</span>
+                    {[0, 1, 2, 3, 4].map((n) => {
+                      const on = puttCards[rp.playerId][h] === n
+                      return (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setPutts(rp.playerId, h, n)}
+                          aria-pressed={on}
+                          className={`h-7 min-w-7 rounded-lg border px-1.5 text-footnote font-extrabold tabular-nums transition active:scale-95 ${
+                            on ? 'border-forest bg-forest text-on-forest' : 'border-line-strong bg-card text-ink-dim'
+                          }`}
+                        >
+                          {n === 4 ? '4+' : n}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
               {bigBox(rp.playerId, h)}
             </div>
           )
         })}
+      </div>
+
+      {/* Who's tracking putts this round: you, unless you say otherwise. */}
+      <div className="px-4 pt-2.5">
+        <div className="flex items-center justify-between gap-3">
+          <p className="min-w-0 truncate text-footnote text-ink-dim">
+            Putts:{' '}
+            <span className="font-bold text-ink">
+              {(() => {
+                const names = round.players
+                  .filter((rp) => tracking(rp.playerId))
+                  .map((rp) => (rp.playerId === me ? 'You' : (data.players.find((pl) => pl.id === rp.playerId)?.name.split(' ')[0] ?? '?')))
+                return names.length ? names.join(', ') : 'off'
+              })()}
+            </span>
+          </p>
+          <button type="button" onClick={() => setPickingPutters((v) => !v)} className="shrink-0 text-footnote font-bold text-green">
+            {pickingPutters ? 'Done' : 'Change'}
+          </button>
+        </div>
+        {pickingPutters && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {round.players.map((rp) => {
+              const pl = data.players.find((x) => x.id === rp.playerId)
+              if (!pl) return null
+              const on = tracking(rp.playerId)
+              return (
+                <button
+                  key={rp.playerId}
+                  type="button"
+                  onClick={() => toggleTracking(rp.playerId)}
+                  aria-pressed={on}
+                  className={`rounded-full border px-3.5 py-1.5 text-footnote font-bold transition ${
+                    on ? 'border-forest bg-forest text-on-forest' : 'border-line-strong bg-card text-ink-dim'
+                  }`}
+                >
+                  {rp.playerId === me ? 'You' : pl.name.split(' ')[0]}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <div className="space-y-3 px-4 pt-3">
@@ -977,9 +1083,10 @@ export default function HoleEntry() {
                 const vs = toParThru(card)
                 const ghost = ghostFor(data, round, rp.playerId)
                 const race = ghost ? ghostDiff(card, ghost.card) : null
+                const putts = tracking(rp.playerId) ? puttCards[rp.playerId] : null
                 return (
                   <Fragment key={rp.playerId}>
-                  <tr className="border-b border-line last:border-0">
+                  <tr className={putts ? '' : 'border-b border-line last:border-0'}>
                     <th className="sticky left-0 z-20 bg-paper px-3 text-left">
                       <div className="flex items-center gap-2">
                         <Avatar player={p} size={22} />
@@ -1025,6 +1132,7 @@ export default function HoleEntry() {
                       {vs && <p className="text-caption font-bold text-ink-faint -mt-0.5">{vs}</p>}
                     </td>
                   </tr>
+                  {putts && <PuttsRow putts={putts} />}
                   {/* The ghost's card, one hole at a time: a hole shows only
                       once the live card has a score on it. */}
                   {ghost && race && (

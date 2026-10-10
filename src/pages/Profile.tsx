@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from '../lib/nav'
 import { useLogSheet } from '../components/logSheet'
 import { useMembers, useStore } from '../data/store'
-import { HANDICAP_NUDGE_AFTER, holeStats, playerStats, roundsAtCurrentHandicap, saddamDays, shortDate } from '../lib/stats'
+import { HANDICAP_NUDGE_AFTER, holeStats, playerStats, puttStats, roundsAtCurrentHandicap, saddamDays, shortDate } from '../lib/stats'
 import { badgesFor, indexHistory, shelfOrder } from '../lib/badges'
 import { Medal } from '../components/Medal'
 import { TrophySheet } from '../components/TrophySheet'
@@ -38,6 +38,7 @@ export default function Profile() {
   const myTrips = data.trips.filter((t) => canSeeTrip(t, me.id)).length
   const stats = playerStats(data, me.id)
   const game = holeStats(data, me.id)
+  const putting = puttStats(data, me.id)
   const [editingMe, setEditingMe] = useState(false)
   const [trophy, setTrophy] = useState<string | null>(null)
   const [editingHcp, setEditingHcp] = useState(false)
@@ -361,6 +362,30 @@ export default function Profile() {
                 </>
               )
             })()}
+            {/* Putting, once there are nine holes of it to go on. */}
+            {putting.holes >= 9 && (
+              <div className="mt-4 border-t border-line pt-3">
+                <p className="text-caption font-bold text-ink-faint">Putting · {putting.holes} holes</p>
+                <div className="mt-2 grid grid-cols-3 divide-x divide-line">
+                  {[
+                    { value: putting.perRound != null ? putting.perRound.toFixed(1) : '–', label: 'putts a round' },
+                    { value: putting.perHole != null ? putting.perHole.toFixed(2) : '–', label: 'a hole' },
+                    { value: putting.threePuttsPerRound != null ? putting.threePuttsPerRound.toFixed(1) : '–', label: '3-putts a round' },
+                  ].map((x) => (
+                    <div key={x.label} className="text-center">
+                      <p className="text-title font-extrabold text-ink tabular-nums">{x.value}</p>
+                      <p className="mt-0.5 text-footnote font-semibold text-ink-dim">{x.label}</p>
+                    </div>
+                  ))}
+                </div>
+                {putting.onePuttRate != null && (
+                  <p className="mt-2.5 text-caption text-ink-faint">
+                    One-putts on {Math.round(putting.onePuttRate * 100)}% of holes
+                    {putting.fullRounds === 0 && '. Putts a round shows once a full eighteen is tracked.'}
+                  </p>
+                )}
+              </div>
+            )}
           </Card>
         </>
       ) : (
