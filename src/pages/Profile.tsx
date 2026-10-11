@@ -301,16 +301,20 @@ export default function Profile() {
         <button
           type="button"
           onClick={() => navigate(`/wrapped/${today.slice(0, 4)}`, { transition: 'fade' })}
-          className="press mt-6 flex w-full items-center gap-3.5 overflow-hidden rounded-2xl bg-[linear-gradient(120deg,#1c4632,#2f6fa3)] p-4 text-left text-on-forest shadow-[0_8px_22px_rgba(28,70,50,0.22)]"
+          className="press relative mt-6 flex h-24 w-full items-center gap-3.5 overflow-hidden rounded-2xl p-4 text-left text-white shadow-[0_8px_22px_rgba(28,40,60,0.25)]"
         >
-          <span className="shrink-0 rounded-xl bg-cream p-1">
+          {/* The season's last light: a scene like the round pages, at
+              twilight, rather than the app's one gradient. */}
+          <CourseScene course={`wrapped ${today.slice(0, 4)}`} light="twilight" frame="horizon" className="absolute inset-0 h-full w-full" />
+          <span className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/25 to-transparent" />
+          <span className="relative shrink-0 rounded-xl bg-cream p-1 shadow-sm">
             <SaddamIcon size={36} />
           </span>
-          <span className="min-w-0 flex-1">
+          <span className="relative min-w-0 flex-1">
             <span className="block text-body font-bold">Your {today.slice(0, 4)}, wrapped</span>
-            <span className="block text-footnote text-on-forest/75">{yearRounds} rounds, your best, your rival, the money</span>
+            <span className="block text-footnote text-white/80">{yearRounds} rounds, your best, the money</span>
           </span>
-          <Icon name="chevronRight" size={18} className="shrink-0 text-on-forest/70" />
+          <Icon name="chevronRight" size={18} className="relative shrink-0 text-white/80" />
         </button>
       )}
 

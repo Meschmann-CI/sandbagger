@@ -271,12 +271,15 @@ export default function CourseScene({
   course,
   light,
   weather,
+  frame = 'ground',
   className = '',
 }: {
   course: string
   light?: Light
   /** The day's actual weather, from lib/weather, when it's known. */
   weather?: DayWeather | null
+  /** What a wide, short crop keeps: the green and fairway (the default), or the horizon and sky. */
+  frame?: 'ground' | 'horizon'
   className?: string
 }) {
   const sky = `sky${useId().replace(/:/g, '')}`
@@ -289,7 +292,7 @@ export default function CourseScene({
   return (
     <svg
       viewBox="0 0 160 100"
-      preserveAspectRatio="xMidYMax slice"
+      preserveAspectRatio={frame === 'horizon' ? 'xMidYMid slice' : 'xMidYMax slice'}
       className={`block ${className}`}
       style={weather?.windy ? ({ '--flutter': '0.45s' } as CSSProperties) : undefined}
       aria-hidden
