@@ -241,7 +241,7 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
   const ghost = ghosts.find((g) => g.round.id === ghostId)
   const label = 'block text-footnote font-semibold text-ink-dim mb-2 px-1'
   const toggle = (on: boolean) =>
-    `rounded-full px-3.5 py-2 text-footnote font-bold transition active:scale-95 ${on ? 'bg-forest text-on-forest' : 'bg-card text-ink-dim ring-1 ring-inset ring-line-strong'}`
+    `rounded-full px-3.5 py-2 text-footnote font-bold transition active:scale-95 ${on ? 'bg-ink text-white' : 'bg-card text-ink-dim ring-1 ring-inset ring-line-strong'}`
 
   const everyone = [...members, ...guests]
 

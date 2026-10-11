@@ -31,7 +31,7 @@ export default function NinesPicker({
             aria-checked={on}
             onClick={() => onChange(p)}
             className={`rounded-full border px-3.5 py-2 text-footnote font-bold transition active:scale-95 ${
-              on ? 'border-forest bg-forest text-on-forest' : 'border-line-strong bg-card text-ink-dim'
+              on ? 'border-ink bg-ink text-white' : 'border-line-strong bg-card text-ink-dim'
             }`}
           >
             {p[0]} → {p[1]}

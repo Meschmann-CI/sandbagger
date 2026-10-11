@@ -132,7 +132,7 @@ export default function EditRound() {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setTripId('')}
-                className={`rounded-full px-4 py-2.5 text-footnote font-bold border transition ${!tripId ? 'bg-forest text-on-forest border-forest' : 'border-line-strong bg-card text-ink-dim'}`}
+                className={`rounded-full px-4 py-2.5 text-footnote font-bold border transition ${!tripId ? 'bg-ink text-white border-ink' : 'border-line-strong bg-card text-ink-dim'}`}
               >
                 Just a round
               </button>
@@ -140,7 +140,7 @@ export default function EditRound() {
                 <button
                   key={t.id}
                   onClick={() => setTripId(t.id)}
-                  className={`rounded-full px-4 py-2.5 text-footnote font-bold border transition ${tripId === t.id ? 'bg-forest text-on-forest border-forest' : 'border-line-strong bg-card text-ink-dim'}`}
+                  className={`rounded-full px-4 py-2.5 text-footnote font-bold border transition ${tripId === t.id ? 'bg-ink text-white border-ink' : 'border-line-strong bg-card text-ink-dim'}`}
                 >
                   {t.name}
                 </button>

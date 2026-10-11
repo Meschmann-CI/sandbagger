@@ -59,7 +59,7 @@ export default function Rounds() {
             key={f.key}
             onClick={() => setFilter(f.key)}
             className={`rounded-full px-4 py-2 text-footnote font-bold border transition ${
-              filter === f.key ? 'bg-forest text-on-forest border-forest' : 'bg-card text-ink-dim border-line-strong'
+              filter === f.key ? 'bg-ink text-white border-ink' : 'bg-card text-ink-dim border-line-strong'
             }`}
           >
             {f.label}

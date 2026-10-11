@@ -26,7 +26,7 @@ import { scanScores, scanSupported, type ScannedScoreRow } from '../lib/scan'
 import { roundStandings, shortDate } from '../lib/stats'
 import { notifyGroup } from '../lib/push'
 import { fmt1, type Round } from '../types'
-import { Avatar, Card, HelpTip, PrimaryButton } from '../components/ui'
+import { Avatar, Card, HelpTip, PrimaryButton, Segmented } from '../components/ui'
 import { betRules } from '../lib/betRules'
 import { Icon, IconTile } from '../components/icons'
 import { courseBrand, inkOn, teeColour } from '../lib/courseBrands'
@@ -591,22 +591,20 @@ export default function HoleEntry() {
       >
         <Icon name="chevronLeft" size={20} />
       </button>
-      <div role="tablist" aria-label="View" className="flex rounded-xl border border-line-strong overflow-hidden bg-card">
-        {(['hole', 'card'] as const).map((v) => (
-          <button
-            key={v}
-            role="tab"
-            aria-selected={view === v}
-            onClick={() => {
-              closePad()
-              setView(v)
-            }}
-            className={`px-5 py-2 text-footnote font-bold capitalize ${view === v ? 'bg-forest text-on-forest' : 'bg-card text-ink-dim'}`}
-          >
-            {v}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        label="View"
+        overlay={overScene}
+        options={[
+          ['hole', 'Hole'],
+          ['card', 'Card'],
+        ]}
+        value={view}
+        onChange={(v) => {
+          closePad()
+          setView(v)
+        }}
+        className="w-40"
+      />
       <span className="w-10" />
     </div>
   )
@@ -847,7 +845,7 @@ export default function HoleEntry() {
                           onClick={() => setPutts(rp.playerId, h, n)}
                           aria-pressed={on}
                           className={`h-7 min-w-7 rounded-lg border px-1.5 text-footnote font-extrabold tabular-nums transition active:scale-95 ${
-                            on ? 'border-forest bg-forest text-on-forest' : 'border-line-strong bg-card text-ink-dim'
+                            on ? 'border-ink bg-ink text-white' : 'border-line-strong bg-card text-ink-dim'
                           }`}
                         >
                           {n === 4 ? '4+' : n}
@@ -894,7 +892,7 @@ export default function HoleEntry() {
                   onClick={() => toggleTracking(rp.playerId)}
                   aria-pressed={on}
                   className={`rounded-full border px-3.5 py-1.5 text-footnote font-bold transition ${
-                    on ? 'border-forest bg-forest text-on-forest' : 'border-line-strong bg-card text-ink-dim'
+                    on ? 'border-ink bg-ink text-white' : 'border-line-strong bg-card text-ink-dim'
                   }`}
                 >
                   {rp.playerId === me ? 'You' : pl.name.split(' ')[0]}

@@ -5,7 +5,7 @@ import { hasPars } from '../lib/courses'
 import { byGroupRank, byRating, courseSummaries, fmtStars, moveBy, myRanking, ordinal } from '../lib/ratings'
 import { StarRating } from '../components/Stars'
 import { CourseTile } from '../components/CourseLogo'
-import { Card, EmptyState, HelpTip, Pill, SectionLabel } from '../components/ui'
+import { Card, chip, EmptyState, HelpTip, Pill, SectionLabel } from '../components/ui'
 import { TeeYardsCatchUp } from '../components/TeeYardsCatchUp'
 import { HoleMapsCatchUp } from '../components/HoleMapsCatchUp'
 import { RoundsCoursesSwitch } from '../components/RoundsCoursesSwitch'
@@ -68,14 +68,12 @@ export default function Courses() {
         <EmptyState title="No courses yet" sub="Add the course you're about to play, or log a round and it turns up here, ready to be rated." />
       ) : (
         <>
-          <div className="flex gap-2 mt-3">
+          <div className="mt-3 flex gap-2">
             {(['ratings', 'rankings'] as View[]).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`rounded-full px-4 py-2 text-footnote font-bold capitalize border transition ${
-                  view === v ? 'bg-forest text-on-forest border-forest' : 'bg-card text-ink-dim border-line-strong'
-                }`}
+                className={`rounded-full border px-4 py-2 text-footnote font-bold capitalize transition ${chip(view === v)}`}
               >
                 {v}
               </button>

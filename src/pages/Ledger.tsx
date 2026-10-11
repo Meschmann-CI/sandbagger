@@ -189,7 +189,7 @@ export default function Ledger() {
               key={key}
               onClick={() => setScope(key)}
               className={`rounded-full border px-3.5 py-1.5 text-footnote font-bold transition ${
-                scope === key ? 'border-forest bg-forest text-on-forest' : 'border-line-strong bg-card text-ink-dim'
+                scope === key ? 'border-ink bg-ink text-white' : 'border-line-strong bg-card text-ink-dim'
               }`}
             >
               {label}

@@ -348,8 +348,8 @@ export default function RoundDetail() {
                     {bagged.has(s.playerId) && <SandbagStamp />}
                     <span className="text-caption text-ink-faint tabular-nums">net {fmt1(s.netScore)}</span>
                     <div
-                      className={`mt-1 flex w-full justify-center rounded-t-xl pt-1.5 text-headline font-extrabold text-on-forest tabular-nums ${
-                        s.rank === 1 ? 'h-16 bg-forest' : s.rank === 2 ? 'h-11 bg-forest-soft' : 'h-8 bg-forest/55'
+                      className={`mt-1 flex w-full justify-center rounded-t-xl pt-1.5 text-headline font-extrabold tabular-nums ${
+                        s.rank === 1 ? 'h-16 bg-forest text-on-forest' : s.rank === 2 ? 'h-11 bg-cream-deep text-ink' : 'h-8 bg-cream text-ink/70'
                       }`}
                     >
                       {s.rank}

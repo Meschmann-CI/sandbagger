@@ -150,7 +150,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
                 key={o.l}
                 onClick={() => setWinnerTakeAll(o.v)}
                 className={`flex-1 rounded-lg py-2 text-footnote font-bold border transition ${
-                  winnerTakeAll === o.v ? 'bg-forest text-on-forest border-forest' : 'border-line-strong text-ink-dim'
+                  winnerTakeAll === o.v ? 'bg-ink text-white border-ink' : 'border-line-strong text-ink-dim'
                 }`}
               >
                 {o.l}
@@ -199,7 +199,7 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
                 key={o.l}
                 onClick={() => setUseNet(o.v)}
                 className={`flex-1 rounded-lg py-2 text-footnote font-bold border transition ${
-                  useNet === o.v ? 'bg-forest text-on-forest border-forest' : 'border-line-strong text-ink-dim'
+                  useNet === o.v ? 'bg-ink text-white border-ink' : 'border-line-strong text-ink-dim'
                 }`}
               >
                 {o.l}

@@ -336,6 +336,50 @@ export function SaddamBadge({ size = 18 }: { size?: number }) {
 // it, so a dismiss never competes with the action next to it.
 export const SECONDARY_BTN = 'bg-green-soft text-green-deep font-bold active:bg-green/15 transition disabled:opacity-50'
 
+// A picked choice is ink, not forest. Forest is kept for the few big
+// moments (the season race, your header, the Saddam, the Log button), and
+// it only reads as big if the chips around it aren't forest too.
+export const chip = (on: boolean) => (on ? 'bg-ink text-white border-ink' : 'bg-card text-ink-dim border-line-strong')
+
+/**
+ * Two or three ways to look at one thing, the iOS way: a white thumb on a
+ * soft grey track. `overlay` is for one sitting on a picture.
+ */
+export function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+  label,
+  overlay = false,
+  className = '',
+}: {
+  options: readonly (readonly [T, string])[]
+  value: T
+  onChange: (v: T) => void
+  label: string
+  overlay?: boolean
+  className?: string
+}) {
+  return (
+    <div role="tablist" aria-label={label} className={`flex rounded-xl p-0.5 ${overlay ? 'bg-white/80 backdrop-blur' : 'bg-ink/[0.06]'} ${className}`}>
+      {options.map(([v, text]) => (
+        <button
+          key={v}
+          type="button"
+          role="tab"
+          aria-selected={value === v}
+          onClick={() => value !== v && onChange(v)}
+          className={`flex-1 rounded-[10px] px-4 py-2 text-footnote font-bold transition-colors ${
+            value === v ? 'bg-card text-ink shadow-[0_1px_3px_rgba(24,32,25,0.14)]' : 'text-ink-dim'
+          }`}
+        >
+          {text}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function PrimaryButton({ children, onClick, disabled, className = '' }: { children: ReactNode; onClick?: () => void; disabled?: boolean; className?: string }) {
   return (
     <button

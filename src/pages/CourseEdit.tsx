@@ -549,7 +549,7 @@ export default function CourseEdit() {
                         setSlope(String(t.slope))
                       }}
                       className={`rounded-full px-3 py-1.5 text-footnote font-bold border transition ${
-                        on ? 'bg-forest text-on-forest border-forest' : 'border-line-strong bg-card text-ink-dim'
+                        on ? 'bg-ink text-white border-ink' : 'border-line-strong bg-card text-ink-dim'
                       }`}
                     >
                       {t.name}
