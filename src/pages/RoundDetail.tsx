@@ -143,28 +143,31 @@ export default function RoundDetail() {
   const podium = !solo && waiting.length === 0 ? standings.slice(0, 3) : []
   const podiumOrder = podium.length === 3 ? [podium[1], podium[0], podium[2]] : podium
 
-  const chips: { key: string; label: string; icon: IconName; hot?: boolean; onClick: () => void }[] = []
-  if (askForRating) chips.push({ key: 'rate', label: 'Rate it', icon: 'star', hot: true, onClick: () => setRating(true) })
+  // `short` sits under the round button; `label` is what a screen reader hears.
+  const chips: { key: string; label: string; short: string; icon: IconName; hot?: boolean; onClick: () => void }[] = []
+  if (askForRating) chips.push({ key: 'rate', label: 'Rate it', short: 'Rate', icon: 'star', hot: true, onClick: () => setRating(true) })
   if (iPlayed && courseTake?.mine)
     chips.push({
       key: 'rated',
       label: `You gave it ${courseTake.mine.overall}${courseTake.avg != null && courseTake.ratings.length > 1 ? ` · group ${fmtStars(courseTake.avg)}` : ''}`,
+      short: `You: ${courseTake.mine.overall}★`,
       icon: 'star',
       onClick: () => navigate(`/courses/${encodeURIComponent(slug)}`),
     })
   // Par is entered once per course and reaches back through every round
   // already played there, so it's worth asking for here.
-  if (!par) chips.push({ key: 'par', label: 'Add par', icon: 'flag', onClick: () => navigate(`/courses/${encodeURIComponent(slug)}/card`) })
+  if (!par) chips.push({ key: 'par', label: 'Add par', short: 'Add par', icon: 'flag', onClick: () => navigate(`/courses/${encodeURIComponent(slug)}/card`) })
   // Each missing thing is asked for once, here. Its section only shows
   // up below once there's something in it.
-  if (!anyCards(round)) chips.push({ key: 'card', label: 'Score by hole', icon: 'pencil', onClick: () => navigate(`/rounds/${round.id}/card`) })
-  if ((round.photos?.length ?? 0) === 0) chips.push({ key: 'photos', label: 'Add photos', icon: 'camera', onClick: () => openPhotos.current?.() })
-  if (bets.length === 0 && !addingBet) chips.push({ key: 'bet', label: 'Add a bet', icon: 'cash', onClick: () => setAddingBet(true) })
+  if (!anyCards(round)) chips.push({ key: 'card', label: 'Score by hole', short: 'By hole', icon: 'pencil', onClick: () => navigate(`/rounds/${round.id}/card`) })
+  if ((round.photos?.length ?? 0) === 0) chips.push({ key: 'photos', label: 'Add photos', short: 'Photos', icon: 'camera', onClick: () => openPhotos.current?.() })
+  if (bets.length === 0 && !addingBet) chips.push({ key: 'bet', label: 'Add a bet', short: 'Bet', icon: 'cash', onClick: () => setAddingBet(true) })
   // The result as a picture for the group text, once there is a result.
   if (podium.length >= 2 || (solo && standings.length > 0))
     chips.unshift({
       key: 'share',
       label: sharing ? 'Drawing…' : 'Share result',
+      short: sharing ? 'Drawing…' : 'Share',
       icon: 'share',
       hot: true,
       onClick: async () => {
@@ -413,18 +416,25 @@ export default function RoundDetail() {
 
       {/* The chores, as one row of chips instead of a stack of cards */}
       {chips.length > 0 && !rating && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        // One row of round buttons, labels underneath: the iOS action row.
+        // Up to five fit across a phone; a sixth wraps to a second row.
+        <div className="mt-4 grid gap-y-3" style={{ gridTemplateColumns: `repeat(${Math.min(chips.length, 5)}, minmax(0, 1fr))` }}>
           {chips.map((c) => (
             <button
               key={c.key}
               type="button"
               onClick={c.onClick}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-footnote font-bold transition active:scale-95 ${
-                c.hot ? 'border-green/25 bg-green-soft text-green-deep' : 'border-line-strong bg-card text-ink-dim'
-              }`}
+              aria-label={c.label}
+              className="group flex flex-col items-center gap-1.5"
             >
-              <Icon name={c.icon} size={15} strokeWidth={2.1} className={c.hot ? '' : 'text-ink-faint'} />
-              {c.label}
+              <span
+                className={`flex h-12 w-12 items-center justify-center rounded-full transition group-active:scale-90 ${
+                  c.hot ? 'bg-green text-white shadow-[0_4px_12px_rgba(28,124,74,0.25)]' : 'bg-card text-ink ring-1 ring-inset ring-line-strong'
+                }`}
+              >
+                <Icon name={c.icon} size={20} strokeWidth={2} />
+              </span>
+              <span className={`max-w-full truncate px-1 text-caption font-semibold ${c.hot ? 'text-green-deep' : 'text-ink-dim'}`}>{c.short}</span>
             </button>
           ))}
         </div>
