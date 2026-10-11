@@ -126,12 +126,13 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    yards, `course-lookup` v3 (deployed) returns every tee's holes. Courses page "Every tee's
    yardage" pulls 16 courses a tap (35 requests a day); Matt taps it over a few days after
    the push.
-8. Long term: a native SwiftUI app. Needs a Mac with Xcode (none on this Windows laptop) and
-   the $99/yr Apple Developer Program for TestFlight. Supabase, the Edge Functions and the
-   schema carry over unchanged; the TS logic in `src/lib` (bets, handicaps, money, ghost,
-   badges) has to be ported to Swift. The design brief asks for native iOS idioms for this.
-   Matt has no Mac as of 2026-10-10, so the web redesign comes first and the port waits. If a
-   Mac stays out of reach, React Native + Expo (cloud iOS builds) is the fallback.
+8. The native SwiftUI port is under way (since 2026-10-11, on the Mac) in
+   `../bandit-swift/`, GitHub `Meschmann-CI/bandit` (private). Its README "State" section
+   is the port's state document. `BanditCore` ports all of `src/lib` with the logic tests;
+   the app has the shell, every tab, cloud mode against the same Supabase project, trophy
+   art, scenes and logos, the live card and the bets editor. New logic in `src/lib` has to
+   land in `BanditCore` too, or the two apps settle the same bet differently. The web app
+   stays live and is the design reference for the port.
 
 10. Course rename + directory search (live 2026-10-10, d0a5b48).
    - Rename on the course Edit card. `rename_course(old_slug, new_name)` in schema.sql
