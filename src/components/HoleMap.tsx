@@ -203,7 +203,8 @@ export default function HoleMap({ map, hole, from, mode, target, onTarget, padTo
         return (
           <span
             className="pointer-events-none absolute right-3 flex items-center gap-1.5 rounded-xl bg-white/95 px-2.5 py-1.5 shadow-sm"
-            style={{ top: mode === 'mini' ? padTop + 4 : 12 }}
+            // Small map: bottom right, clear of the note that drops in at the top.
+            style={mode === 'mini' ? { bottom: 22 } : { top: 12 }}
             aria-label={`Wind ${wind.mph} miles an hour, ${words}`}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" style={{ transform: `rotate(${arrowDeg}deg)` }} aria-hidden>
