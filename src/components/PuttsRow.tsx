@@ -27,7 +27,7 @@ export function PuttsRow({ putts }: { putts: (number | null)[] }) {
   )
   return (
     <tr className="border-b border-line last:border-0">
-      <td className="sticky left-0 z-20 bg-paper pb-1.5 pl-[42px] text-left text-[10px] font-semibold leading-none text-ink-faint">putts</td>
+      <td className="sticky left-0 z-20 bg-paper pb-1.5 pl-[42px] text-left text-[10px] font-semibold leading-none text-ink-faint">Putts</td>
       {Array.from({ length: 9 }, (_, i) => hole(i))}
       {total(0, 9, 'out')}
       {Array.from({ length: 9 }, (_, i) => hole(i + 9))}
