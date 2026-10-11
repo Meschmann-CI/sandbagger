@@ -22,6 +22,11 @@ const emptyOutcome = (playerIds: string[], why: string): BetOutcome => ({
 
 const zeroed = (playerIds: string[]) => new Map(playerIds.map((id) => [id, 0]))
 
+// Money moves only between golfers actually on the round. A bet keeps
+// the ids it was placed with, so someone taken off the round after the
+// first tee would otherwise still be charged for holes they never played.
+const idsOf = (entries: RoundPlayer[]) => entries.map((rp) => rp.playerId)
+
 function pay(totals: Map<string, number>, winnerId: string, others: string[], stake: number) {
   totals.set(winnerId, (totals.get(winnerId) ?? 0) + stake * others.length)
   for (const id of others) totals.set(id, (totals.get(id) ?? 0) - stake)
@@ -79,7 +84,8 @@ export function calcSkins(
     for (const rp of entries) strokes.set(rp.playerId, given[rp.playerId])
   }
 
-  const totals = zeroed(playerIds)
+  const ids = idsOf(entries)
+  const totals = zeroed(ids)
   const detail: string[] = []
   const won = new Map<string, number>()
   let holesJudged = 0
@@ -102,7 +108,7 @@ export function calcSkins(
     const skins = 1 + carrying
     carrying = 0
     const winnerId = winners[0].id
-    if (!winnerTakeAll) pay(totals, winnerId, playerIds.filter((id) => id !== winnerId), stake * skins)
+    if (!winnerTakeAll) pay(totals, winnerId, ids.filter((id) => id !== winnerId), stake * skins)
     won.set(winnerId, (won.get(winnerId) ?? 0) + skins)
   }
 
@@ -125,9 +131,15 @@ export function calcSkins(
   if (winnerTakeAll && won.size > 0) {
     const most = Math.max(...won.values())
     const leaders = [...won.entries()].filter(([, n]) => n === most).map(([id]) => id)
-    const losers = playerIds.filter((id) => !leaders.includes(id))
-    for (const id of losers) totals.set(id, (totals.get(id) ?? 0) - stake)
-    for (const id of leaders) totals.set(id, (totals.get(id) ?? 0) + (stake * losers.length) / leaders.length)
+    const losers = ids.filter((id) => !leaders.includes(id))
+    // Split in whole cents, the leftover cent or two to the first leaders
+    // (the money.ts rule), so the pot nets to exactly zero.
+    const stakeCents = Math.round(stake * 100)
+    const potCents = stakeCents * losers.length
+    const base = Math.floor(potCents / leaders.length)
+    const remainder = potCents - base * leaders.length
+    for (const id of losers) totals.set(id, (totals.get(id) ?? 0) - stakeCents / 100)
+    leaders.forEach((id, i) => totals.set(id, (totals.get(id) ?? 0) + (base + (i < remainder ? 1 : 0)) / 100))
     if (leaders.length === 1) {
       detail.push(
         holesJudged === HOLE_COUNT
@@ -169,7 +181,8 @@ export function calcNassau(
     .filter((rp): rp is RoundPlayer => !!rp)
   if (entries.length < 2) return emptyOutcome(playerIds, 'Needs at least two golfers.')
 
-  const totals = zeroed(playerIds)
+  const ids = idsOf(entries)
+  const totals = zeroed(ids)
   const detail: string[] = []
   let decided = 0
 
@@ -199,9 +212,12 @@ export function calcNassau(
     }
     const scores = entries.map((rp) => {
       const given = allocation.get(rp.playerId)
+      // Without an index to allocate by, the course handicap (a whole
+      // number, slope-adjusted where the course has one) is halved for a
+      // nine and rounded, so a 16.9 and a 17.0 get the same strokes.
       const allowance = given
         ? given.slice(seg.from, seg.to).reduce((sum, n) => sum + n, 0)
-        : rp.handicapSnapshot * seg.allowance
+        : Math.round(Math.round(playingHandicap(course, rp.handicapSnapshot, round.tee)) * seg.allowance)
       return {
         id: rp.playerId,
         score: strokes(rp, seg.from, seg.to) - (useNet ? allowance : 0),
@@ -215,7 +231,7 @@ export function calcNassau(
     }
     decided++
     const winnerId = winners[0].id
-    pay(totals, winnerId, playerIds.filter((id) => id !== winnerId), stake)
+    pay(totals, winnerId, ids.filter((id) => id !== winnerId), stake)
     detail.push(`${seg.label}: won|${winnerId}`)
   }
 
@@ -306,7 +322,7 @@ export function calcMatchPlay(
 
   if (thru === 0) return emptyOutcome(playerIds, 'No hole has a score for both golfers yet.')
 
-  const totals = zeroed(playerIds)
+  const totals = zeroed(idsOf(entries))
   const detail: string[] = []
   const leaderId = up > 0 ? a.playerId : b.playerId
   const loserId = up > 0 ? b.playerId : a.playerId

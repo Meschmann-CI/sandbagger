@@ -76,13 +76,31 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   to the group and the four sign-in actions revoked from `public, anon` (verified). When
   `faces` merges, its `player_photos_read` policy in schema.sql needs the same
   `to authenticated` + folder scope (prod already has it).
+  Second pass the same day (`audit-fixes-2`, the "worth fixing soon" list): the outbox
+  keeps a write whose token expired (`RetryLater` from `supabaseBackend.guard` and a
+  `requireSession` check before every write; 401 / PGRST301 / "JWT expired" are
+  retryable); `course.upsert` looks the row up by id and by slug first and upserts on the
+  primary key (a row that exists keeps the server's name and slug, so a queued save can't
+  undo a rename; a same-slug row from another phone is merged); the logo editor removes
+  the old file only after `whenSettled()` says the write landed; bets pay only golfers
+  still on the round, Nassau net with no stroke index rounds the course handicap first,
+  winner-take-all skins split in integer cents; `teeFor` normalises both sides with
+  `teeKey`; a nine's tee without `holeYards` no longer throws; `badgesFor` takes a `year`
+  so Wrapped only lists the season's trophies; `skinsWon` is per bet (max); ghost options
+  need a complete card; the wind resets when the key goes null; HoleEntry flushes a
+  pending commit on unmount, writes on exit only when dirty, nulls a gross whose card is
+  no longer complete, and shows an error when "I'm on the green" can't save;
+  `link-preview` checks the caller's origin, refuses private hosts and IP literals, walks
+  redirects by hand and streams the body to the 400 KB cap. `npm test` now runs
+  `tests/outbox.test.mts` and `tests/logic.test.mts` (55 checks).
 
 ## Next actions
 
-0. Audit follow-ups (2026-10-11): the SQL and the push are done; next is the
-   "Worth fixing soon" list in `AUDIT-2026-10-11.md`, first the outbox dropping a queued
-   score after an expired token, bets charging a removed golfer, and the fractional cents
-   in winner-take-all skins.
+0. Audit follow-ups (2026-10-11): all done except the three faces-only items
+   (sticky Avatar failure, EXIF orientation, EditGolfer deleting the old photo before the
+   row lands), which wait on the `faces` decision. The hygiene list at the bottom of
+   `AUDIT-2026-10-11.md` (nine inline editors without `useHoldUpdates`, Wrapped's
+   `text-[Npx]`, Attest's UTC date, link-preview DNS rebinding) is still open.
 1. Done: the directory search worked on Matt's phone (2026-10-10).
 2. `Attest` signatures live per phone in localStorage; sharing them needs a DB column.
 3. Course logos in the app: built 2026-10-10 (see Current state). After the push, try it
@@ -265,7 +283,11 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   then run `git push origin main` alone once Matt asks. Verify with `git ls-remote origin main`
   and by curling the hashed bundle for a new UI string; one of Matt's own pushes did not land.
 - `course.upsert` writes the whole row (`courseRow` sends every column), so anything that
-  rebuilds a Course must start from the existing one. `saveCourse` dropped `nines` until
+  rebuilds a Course must start from the existing one. Since 2026-10-11 it also keeps the
+  server's `name` and `slug` when the row already exists: a rename only ever goes through
+  `rename_course`. A course editor that wants to change the name must call that RPC.
+- The lib files import each other extensionless (`'./holes'`), which Node's loader rejects
+  outside Vite; `tests/logic.test.mts` registers a small resolve hook before importing. `saveCourse` dropped `nines` until
   2026-10-10 (any scorecard save on Centennial would have wiped its three nines); it now
   spreads `existing` first. A new course column needs adding to `courseRow` and the load map.
 - Course brands match on the course slug by regex, first match first, so a facility's

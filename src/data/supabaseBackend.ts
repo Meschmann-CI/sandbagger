@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AppData, Bet, Course, CourseRanking, CourseRating, Expense, Group, Payment, Player, Round, Trip } from '../types'
 import type { Backend, Change } from './backend'
+import { RetryLater } from './outbox'
 
 // Maps between the app's camelCase shapes and the snake_case tables in
 // supabase/schema.sql. Rounds keep their player scores in a child table;
@@ -163,8 +164,29 @@ export class NoPlayerError extends Error {
 }
 
 export function makeSupabaseBackend(client: SupabaseClient, playerId: string, groupId: string): Backend {
-  const guard = (error: { message: string } | null, what: string) => {
-    if (error) throw new Error(`${what}: ${error.message}`)
+  const guard = (error: { message: string; code?: string; status?: number; statusCode?: string | number } | null, what: string) => {
+    if (!error) return
+    // A stale token is not a refusal of this write: PostgREST answers
+    // PGRST301 ("JWT expired") and storage answers 401. The outbox keeps
+    // the change and retries once the session is refreshed.
+    const stale =
+      error.code === 'PGRST301' ||
+      error.code === 'PGRST302' ||
+      error.status === 401 ||
+      String(error.statusCode ?? '') === '401' ||
+      /\bjwt\b|expired/i.test(error.message)
+    if (stale) throw new RetryLater(`${what}: ${error.message}`)
+    throw new Error(`${what}: ${error.message}`)
+  }
+
+  // supabase-js sends a request with the anon key when the session is
+  // gone (the token expired while the phone slept and the refresh failed),
+  // and row-level security then refuses it with the same message a bad row
+  // gets. Check first so the outbox queues the write instead of dropping
+  // it. getSession refreshes an expired token itself when it can.
+  const requireSession = async () => {
+    const { data } = await client.auth.getSession()
+    if (!data.session) throw new RetryLater('Not signed in right now; the change is saved on this phone and will be sent once the session is back')
   }
 
   // A delete blocked by row-level security comes back as success with zero
@@ -316,6 +338,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
     },
 
     async apply(change: Change) {
+      await requireSession()
       switch (change.kind) {
         case 'round.upsert': {
           const r = change.round
@@ -364,9 +387,37 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           await removeRow('rounds', change.id, 'Deleting round')
           return
         }
-        case 'course.upsert':
-          guard((await client.from('courses').upsert(courseRow(change.course), { onConflict: 'group_id,slug' })).error, 'Saving course')
+        case 'course.upsert': {
+          // The row is keyed by id, but the app keys a course by its slug
+          // (saveCourse reuses the local course with the same slug, so
+          // "add the same course twice by name" edits one course). Two
+          // phones adding the same course offline each mint their own id,
+          // and a rename moves the slug on the server (rename_course) while
+          // a queued save still carries the old one. Upserting on
+          // (group_id, slug) with a different id tried to rewrite the
+          // primary key (course_maps points at it); upserting on id alone
+          // would create a duplicate slug or revert a rename. So look the
+          // course up both ways first:
+          //  - a row with this id exists: write into it, but keep the
+          //    server's name and slug (only rename_course may change them,
+          //    and it already updated rounds and ratings to match);
+          //  - no row with this id but one with this slug: that is the
+          //    same course added from another phone; merge into its id.
+          // After that the upsert is on the primary key and the
+          // (group_id, slug) unique index only ever rejects a real clash.
+          const c = change.course
+          const [byIdRes, bySlugRes] = await Promise.all([
+            client.from('courses').select('id, name, slug').eq('id', c.id).maybeSingle(),
+            client.from('courses').select('id, name, slug').eq('group_id', c.groupId).eq('slug', c.slug).maybeSingle(),
+          ])
+          guard(byIdRes.error, 'Saving course')
+          guard(bySlugRes.error, 'Saving course')
+          const byId = byIdRes.data as { id: string; name: string; slug: string } | null
+          const bySlug = bySlugRes.data as { id: string; name: string; slug: string } | null
+          const row = byId ? { ...courseRow(c), name: byId.name, slug: byId.slug } : bySlug ? { ...courseRow(c), id: bySlug.id } : courseRow(c)
+          guard((await client.from('courses').upsert(row)).error, 'Saving course')
           return
+        }
         case 'course.delete':
           await removeRow('courses', change.id, 'Deleting course')
           return

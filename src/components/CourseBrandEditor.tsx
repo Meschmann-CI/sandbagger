@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { whenSettled } from '../data/outbox'
 import { useStore } from '../data/store'
 import { builtInBrand, courseBrand, inkOn } from '../lib/courseBrands'
 import { prepareLogo, readClipboardImage, removeCourseLogoFile, uploadCourseLogo, type Box, type PreparedLogo } from '../lib/courseLogo'
@@ -25,6 +26,19 @@ interface Draft {
 }
 
 const FALLBACK = '#1F4D3A'
+
+// The old logo file goes only after the course row has stopped pointing
+// at it on the server. The store call returns before the write lands (it
+// may sit in the outbox until there's signal, or be refused), and deleting
+// first left every other phone with a dead URL. If the write is refused,
+// or the removal itself fails, the file stays: an orphan is cheaper than
+// a dead link.
+function retireLogo(old: string | undefined) {
+  if (!old) return
+  void whenSettled()
+    .then((landed) => (landed ? removeCourseLogoFile(old) : undefined))
+    .catch(() => {})
+}
 
 export default function CourseBrandEditor({ course, proposal }: { course: Course; proposal?: BrandProposal | null }) {
   const { setCourseBrand } = useStore()
@@ -95,7 +109,7 @@ export default function CourseBrandEditor({ course, proposal }: { course: Course
       const brand: CourseBrand = { logo, color: draft.color, dark: draft.dark || undefined, wide: shown.wide || undefined, tall: shown.tall || undefined }
       const old = course.brand?.logo
       setCourseBrand(course.id, brand)
-      if (old && old !== logo) void removeCourseLogoFile(old)
+      if (old && old !== logo) retireLogo(old)
       setDraft(null)
     } catch (err) {
       setError((err as Error).message)
@@ -107,7 +121,7 @@ export default function CourseBrandEditor({ course, proposal }: { course: Course
   const reset = () => {
     const old = course.brand?.logo
     setCourseBrand(course.id, null)
-    void removeCourseLogoFile(old)
+    retireLogo(old)
     setDraft(null)
   }
 

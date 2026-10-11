@@ -36,7 +36,12 @@ export function useLiveWind(at: LngLat | null): Wind | null {
   const key = at ? `${at[0].toFixed(2)},${at[1].toFixed(2)}` : null
   const [wind, setWind] = useState<Wind | null>(() => (key ? (memo.get(key)?.wind ?? null) : null))
   useEffect(() => {
-    if (!key || !at) return
+    // No place any more (hole map closed, no green pinned): clear the
+    // arrow rather than keep the last place's wind.
+    if (!key || !at) {
+      setWind(null)
+      return
+    }
     let live = true
     const load = async () => {
       if (document.visibilityState !== 'visible') return

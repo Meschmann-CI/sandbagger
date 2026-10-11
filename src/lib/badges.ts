@@ -1,7 +1,7 @@
 import type { AppData, Round, RoundPlayer } from '../types'
 import { canSeeTrip, hasScore, isGroupRound } from '../types'
 import type { IconName } from '../components/icons'
-import { byDate, roundStandings, roundWinnerIds, saddamDays } from './stats'
+import { byDate, roundStandings, roundWinnerIds, saddamDays, saddamReigns } from './stats'
 import { HOLE_COUNT, cardOf } from './holes'
 import { courseSlug, courseForRound, hasPars, hasStrokeIndex, padded, strokesOffLow } from './courses'
 
@@ -112,13 +112,15 @@ interface SkinsHole {
   /** Skins carried in from tied holes before this one. */
   carryIn: number
 }
-function skinsHoles(data: AppData, round: Round): SkinsHole[] {
+/** The round's skins games one at a time, each replayed hole by hole. */
+function skinsByBet(data: AppData, round: Round): SkinsHole[][] {
   const course = courseForRound(data, round)
-  const out: SkinsHole[] = []
+  const out: SkinsHole[][] = []
   for (const bet of data.bets.filter((b) => b.roundId === round.id && b.type === 'skins' && !b.manual && b.net !== undefined)) {
     const entries = bet.results.map((r) => round.players.find((p) => p.playerId === r.playerId)).filter((p): p is RoundPlayer => !!p)
     if (entries.length < 2 || (bet.net && !hasStrokeIndex(course))) continue
     const given = bet.net && course ? strokesOffLow(course, entries, round.tee) : {}
+    const holes: SkinsHole[] = []
     let carry = 0
     for (let h = 0; h < HOLE_COUNT; h++) {
       const scores = entries.map((rp) => ({ id: rp.playerId, s: cardOf(rp)[h] == null ? null : (cardOf(rp)[h] as number) - (given[rp.playerId]?.[h] ?? 0) }))
@@ -126,20 +128,30 @@ function skinsHoles(data: AppData, round: Round): SkinsHole[] {
       const best = Math.min(...scores.map((x) => x.s as number))
       const top = scores.filter((x) => x.s === best).map((x) => x.id)
       if (top.length === 1) {
-        out.push({ winner: top[0], tied: [], carryIn: carry })
+        holes.push({ winner: top[0], tied: [], carryIn: carry })
         carry = 0
       } else {
-        out.push({ winner: null, tied: top, carryIn: carry })
+        holes.push({ winner: null, tied: top, carryIn: carry })
         carry++
       }
     }
+    out.push(holes)
   }
   return out
 }
-/** Skins won per golfer in this round's skins games. */
+const skinsHoles = (data: AppData, round: Round): SkinsHole[] => skinsByBet(data, round).flat()
+/**
+ * Skins won per golfer in this round, read off one skins game: the one
+ * that gave them the most. Three overlapping bets on the same card are
+ * the same holes three times over, not three times the skins.
+ */
 function skinsWon(data: AppData, round: Round): Map<string, number> {
   const out = new Map<string, number>()
-  for (const h of skinsHoles(data, round)) if (h.winner) out.set(h.winner, (out.get(h.winner) ?? 0) + 1 + h.carryIn)
+  for (const holes of skinsByBet(data, round)) {
+    const inBet = new Map<string, number>()
+    for (const h of holes) if (h.winner) inBet.set(h.winner, (inBet.get(h.winner) ?? 0) + 1 + h.carryIn)
+    for (const [id, n] of inBet) out.set(id, Math.max(out.get(id) ?? 0, n))
+  }
   return out
 }
 
@@ -538,7 +550,14 @@ function factsFor(data: AppData, round: Round, rp: RoundPlayer): Facts {
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
-export function badgesFor(data: AppData, playerId: string, today: string): Badge[] {
+/**
+ * The trophy case, all-time, or with `year` only what was earned that
+ * year (for Wrapped). The checks still see the whole history, so a
+ * personal best in March is judged against every round before it, but
+ * only rounds in the year count toward the shelf.
+ */
+export function badgesFor(data: AppData, playerId: string, today: string, year?: string): Badge[] {
+  const inYear = (date: string | undefined) => !year || !!date?.startsWith(year)
   const mine = byDate(data.rounds)
     .map((r) => ({ r, rp: r.players.find((p) => p.playerId === playerId) }))
     .filter((x): x is { r: Round; rp: RoundPlayer } => !!x.rp && (hasScore(x.rp) || cardOf(x.rp).some((h) => h != null)))
@@ -549,13 +568,16 @@ export function badgesFor(data: AppData, playerId: string, today: string): Badge
   const soFar: Facts[] = []
   // Career milestones count once, on the round that got you there.
   const once = new Set(['globetrotter', 'regular'])
+  const reached = new Set<string>()
   for (const f of mine) {
     soFar.push(f)
     const ctx: Ctx = { data, me: playerId, today, prior: [...prior], soFar }
     for (const def of DEFS) {
-      const t = tally.get(def.key)
-      if (once.has(def.key) && t) continue
+      if (once.has(def.key) && reached.has(def.key)) continue
       if (!def.check(f, ctx)) continue
+      reached.add(def.key)
+      if (!inYear(f.round.date)) continue
+      const t = tally.get(def.key)
       tally.set(def.key, { count: (t?.count ?? 0) + 1, firstDate: t?.firstDate ?? f.round.date, roundId: f.round.id })
     }
     if (f.gross != null) prior.push(f.gross)
@@ -567,19 +589,33 @@ export function badgesFor(data: AppData, playerId: string, today: string): Badge
   })
 
   // The ones that come from the group's history rather than a single card.
-  const saddam = saddamDays(data, today).get(playerId)
+  // In a year: reigns that began, a streak that hit three, trips that
+  // started and the tenth rating given within it.
+  const saddam = year
+    ? (() => {
+        const reigns = saddamReigns(data, today).filter((r) => r.playerId === playerId && inYear(r.date))
+        return reigns.length ? { days: reigns.reduce((s, r) => s + r.days, 0), reigns: reigns.length } : undefined
+      })()
+    : saddamDays(data, today).get(playerId)
   let streak = 0
   let bestStreak = 0
-  let streakDate: string | undefined
+  // Every day a run reached three, so a year's Wrapped finds its own.
+  const streakDates: string[] = []
   for (const f of mine.filter((x) => isGroupRound(x.round))) {
     streak = roundWinnerIds(f.round).length === 1 && roundWinnerIds(f.round)[0] === playerId ? streak + 1 : 0
-    if (streak > bestStreak) {
-      bestStreak = streak
-      if (streak === 3) streakDate = f.round.date
-    }
+    if (streak > bestStreak) bestStreak = streak
+    if (streak === 3) streakDates.push(f.round.date)
   }
-  const trips = data.trips.filter((t) => t.status !== 'planning' && t.attendeeIds.includes(playerId) && canSeeTrip(t, playerId))
-  const rated = data.courseRatings.filter((r) => r.playerId === playerId).length
+  const streakDate = streakDates.find((d) => inYear(d))
+  const trips = data.trips.filter(
+    (t) => t.status !== 'planning' && t.attendeeIds.includes(playerId) && canSeeTrip(t, playerId) && inYear(t.startDate),
+  )
+  const ratingDates = data.courseRatings
+    .filter((r) => r.playerId === playerId)
+    .map((r) => r.date)
+    .sort()
+  const rated = ratingDates.length
+  const criticEarned = rated >= 10 && inYear(ratingDates[9])
 
   badges.unshift({
     key: 'saddam',
@@ -599,8 +635,8 @@ export function badgesFor(data: AppData, playerId: string, today: string): Badge
     mark: '3',
     icon: 'flame',
     how: 'Three group wins in a row.',
-    earned: bestStreak >= 3,
-    count: bestStreak >= 3 ? 1 : 0,
+    earned: !!streakDate,
+    count: streakDate ? 1 : 0,
     firstDate: streakDate,
     note: bestStreak >= 3 ? `Best run: ${bestStreak} straight` : undefined,
   })
@@ -623,8 +659,8 @@ export function badgesFor(data: AppData, playerId: string, today: string): Badge
       mark: '10',
       icon: 'star',
       how: 'Rate ten different courses.',
-      earned: rated >= 10,
-      count: rated >= 10 ? 1 : 0,
+      earned: criticEarned,
+      count: criticEarned ? 1 : 0,
       note: rated && rated < 10 ? `${rated} of 10 rated` : undefined,
     },
   )

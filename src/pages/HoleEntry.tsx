@@ -85,6 +85,20 @@ export default function HoleEntry() {
   const [buffer, setBuffer] = useState('')
   const commitRef = useRef<() => void>(() => {})
   const commitTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  // Whether anything has been typed since the last save, and whether the
+  // round is still in the store (set every render, above the not-found
+  // return, so a stale commit never brings back a round deleted meanwhile).
+  const dirty = useRef(false)
+  const roundAlive = useRef(false)
+  // Leaving inside the 800 ms window: the timer is dropped and the last
+  // keystroke saved once, so backing out of the page costs nothing.
+  useEffect(
+    () => () => {
+      clearTimeout(commitTimer.current)
+      if (dirty.current) commitRef.current()
+    },
+    [],
+  )
   const scroller = useRef<HTMLDivElement>(null)
   const [view, setView] = useState<'hole' | 'card'>('hole')
   // The hole the Hole view shows. Starts on the first hole nobody has
@@ -194,6 +208,8 @@ export default function HoleEntry() {
   }, [courseMap, courseId])
   const [mapOpen, setMapOpen] = useState<number | null>(null)
   const [marking, setMarking] = useState(false)
+  const [markError, setMarkError] = useState<string | null>(null)
+  roundAlive.current = !!round
 
   const liveRound: Round | null = round
     ? { ...round, players: round.players.map((rp) => ({ ...rp, holes: cards[rp.playerId] })) }
@@ -219,11 +235,17 @@ export default function HoleEntry() {
 
   // Writes the card, the grosses, and the live bets in one pass. The
   // gross comes from the card only once the card is finished: a ten-hole
-  // card summing to 41 is not a round of 41.
+  // card summing to 41 is not a round of 41. Taking a hole back off a
+  // finished card takes that gross away again; a gross typed in by hand
+  // on a round with no card is left alone.
   const commitCards = () => {
+    if (!roundAlive.current) return
+    dirty.current = false
     const nextPlayers = round.players.map((rp) => {
       const card = cards[rp.playerId]
       const complete = card.every((h) => h != null)
+      const before = cardOf(rp)
+      const grossFromCard = before.every((h) => h != null) && rp.gross === cardTotal(before)
       // Putts: the holes when tracked, an empty list once turned off,
       // and nothing at all for a round that never said either way.
       const putts = puttCards[rp.playerId]
@@ -238,7 +260,7 @@ export default function HoleEntry() {
       return {
         ...rp,
         holes: card.some((h) => h != null) ? card : undefined,
-        gross: complete ? cardTotal(card) : rp.gross,
+        gross: complete ? cardTotal(card) : grossFromCard ? null : rp.gross,
         putts: nextPutts,
       }
     })
@@ -270,6 +292,7 @@ export default function HoleEntry() {
   // as one write. The store already applies it on screen instantly and
   // queues it offline, so there is nothing for a save button to add.
   const queueCommit = () => {
+    dirty.current = true
     clearTimeout(commitTimer.current)
     commitTimer.current = setTimeout(() => commitRef.current(), 800)
   }
@@ -470,10 +493,11 @@ export default function HoleEntry() {
     setScanRows(null)
   }
 
-  // "Done" just leaves — with any pending write flushed first.
+  // "Done" just leaves, with any pending write flushed first. Nothing
+  // typed since the last save means nothing to write.
   const done = () => {
     clearTimeout(commitTimer.current)
-    commitCards()
+    if (dirty.current) commitCards()
     navigate(`/rounds/${round.id}`, { replace: true })
   }
 
@@ -709,10 +733,13 @@ export default function HoleEntry() {
   const markGreenHere = async () => {
     if (!course || !pos.at) return
     setMarking(true)
+    setMarkError(null)
     try {
       const base = courseMap ?? emptyCourseMap()
       await saveCourseMap(course, { ...base, marked: { ...base.marked, [markKey(h, ninePair)]: pos.at } })
       reloadMap()
+    } catch {
+      setMarkError('Couldn’t save the green. Try again in a bit.')
     } finally {
       setMarking(false)
     }
@@ -774,6 +801,9 @@ export default function HoleEntry() {
               </button>
             )}
             {greenButton}
+            {greenButton && markError && (
+              <span className="max-w-[240px] rounded-xl bg-white/95 px-3 py-2 text-caption font-semibold text-flag">{markError}</span>
+            )}
             {distanceChip}
           </div>
         )}

@@ -33,7 +33,7 @@ Object.defineProperty(globalThis, 'navigator', { value: net, configurable: true,
   visibilityState: 'visible',
 }
 
-const { withOutbox, outboxStatus } = await import('../src/data/outbox.ts')
+const { withOutbox, outboxStatus, whenSettled, RetryLater } = await import('../src/data/outbox.ts')
 
 // --- a backend we can break on demand ---
 let mode: 'ok' | 'offline' | 'refuse' = 'ok'
@@ -114,7 +114,92 @@ check('poisoned change does not block the queue', outboxStatus().pending, 0)
 check('the good one still got through', sent.at(-1), 'trip.upsert:good')
 check('and the failure is reported', outboxStatus().error, null)
 
-// 6. The queue survives a reload.
+// 6. A stale token is not a refusal. After a long sleep the phone is
+//    online, the refresh hasn't happened yet, and the server answers 401 /
+//    "JWT expired" or, with the anon key, an RLS error. The write itself is
+//    fine; it has to wait for the session, not be dropped as poison.
+let stale = true
+inner.apply = async (change: any) => {
+  if (stale) throw new Error('Saving round: JWT expired')
+  sent.push(change.kind + ':' + change.id)
+}
+let threw401: string | null = null
+try {
+  await backend.apply(change('round.upsert', 'r401'), snap)
+} catch (err) {
+  threw401 = (err as Error).message
+}
+check('a 401 is not surfaced as a refusal', threw401, null)
+check('a 401 is queued, not dropped', outboxStatus().pending, 1)
+
+for (const fn of listeners['online'] ?? []) fn()
+await new Promise((r) => setTimeout(r, 20))
+check('still queued while the token is stale', outboxStatus().pending, 1)
+check('and not reported as an error', outboxStatus().error, null)
+
+stale = false
+for (const fn of listeners['online'] ?? []) fn()
+await new Promise((r) => setTimeout(r, 20))
+check('sent once the session is back', sent.at(-1), 'round.upsert:r401')
+check('queue empty after the retry', outboxStatus().pending, 0)
+
+// 6b. The backend can say so explicitly (no session at all) with RetryLater.
+inner.apply = async () => {
+  throw new RetryLater('Not signed in right now')
+}
+let threwRetry: string | null = null
+try {
+  await backend.apply(change('bet.upsert', 'b401'), snap)
+} catch (err) {
+  threwRetry = (err as Error).message
+}
+check('RetryLater is not surfaced', threwRetry, null)
+check('RetryLater is queued', outboxStatus().pending, 1)
+inner.apply = async (change: any) => {
+  sent.push(change.kind + ':' + change.id)
+}
+for (const fn of listeners['online'] ?? []) fn()
+await new Promise((r) => setTimeout(r, 20))
+check('RetryLater change drains later', sent.at(-1), 'bet.upsert:b401')
+
+// 7. whenSettled waits for the write it was called after, and says whether
+//    it landed. Cleanup that depends on a row (deleting the logo file the
+//    old row pointed at) hangs off this.
+let release: (() => void) | null = null
+inner.apply = async (change: any) => {
+  await new Promise<void>((r) => (release = r))
+  sent.push(change.kind + ':' + change.id)
+}
+const pendingApply = backend.apply(change('course.upsert', 'c1'), snap)
+let settledEarly = false
+const settled = whenSettled().then((ok) => {
+  settledEarly = true
+  return ok
+})
+await new Promise((r) => setTimeout(r, 5))
+check('whenSettled waits while a write is in flight', settledEarly, false)
+release!()
+await pendingApply
+check('whenSettled resolves true once it landed', await settled, true)
+
+inner.apply = async () => {
+  throw new Error('permission denied')
+}
+let refusedMsg: string | null = null
+try {
+  await backend.apply(change('course.upsert', 'c2'), snap)
+} catch (err) {
+  refusedMsg = (err as Error).message
+}
+check('refusal still propagates', refusedMsg, 'permission denied')
+check('whenSettled after an old refusal resolves true', await whenSettled(), true)
+// Called right after the store call, the way CourseBrandEditor does it.
+const refusedApply = backend.apply(change('course.upsert', 'c3'), snap).catch(() => {})
+const duringRefusal = whenSettled()
+await refusedApply
+check('whenSettled reports false when that write was refused', await duringRefusal, false)
+
+// 8. The queue survives a reload.
 check('queue persisted to storage', typeof store.get('sandbagger-outbox-v1'), 'string')
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)

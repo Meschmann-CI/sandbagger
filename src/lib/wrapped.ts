@@ -124,7 +124,7 @@ export function wrappedFor(data: AppData, playerId: string, year: string, today:
     money: moneyTotals(data, new Set(mine.map((r) => r.id))).get(playerId) ?? 0,
     moneyLine,
     saddamDays,
-    badges: badgesFor(data, playerId, today).filter((b) => b.earned),
+    badges: badgesFor(data, playerId, today, year).filter((b) => b.earned),
   }
 }
 

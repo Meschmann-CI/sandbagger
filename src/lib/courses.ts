@@ -96,9 +96,11 @@ export function renameCourseIn(data: AppData, oldSlug: string, newName: string):
 
 const NINE = 9
 const nine = (xs: (number | null)[] | undefined) => Array.from({ length: NINE }, (_, i) => xs?.[i] ?? null)
+/** A tee name as typed anywhere, loosely: "White", "white", "Whites", "White Tees" all read "white". */
 const teeKey = (name: string) => name.trim().toLowerCase().replace(/\s*tees?$/, '').replace(/s$/, '')
 /** The nine's length off its longest tee, as the stand-in for which nine is harder. */
-const nineLength = (n: CourseNine) => Math.max(0, ...(n.tees ?? []).map((t) => t.holeYards.reduce<number>((s, y) => s + (y ?? 0), 0)))
+const nineLength = (n: CourseNine) =>
+  Math.max(0, ...(n.tees ?? []).map((t) => (t.holeYards ?? []).reduce<number>((s, y) => s + (y ?? 0), 0)))
 
 /** A round's two nines in the order played, or null on an ordinary course. */
 export function ninesFor(course: Course | undefined, round: Pick<Round, 'nines'>): [CourseNine, CourseNine] | null {
@@ -229,11 +231,11 @@ export function hasSlopeRating(course: Course | undefined): course is Course {
  */
 export function teeFor(course: Course | undefined, teeName?: string): { rating: number; slope: number } | null {
   if (!course) return null
-  const wanted = teeName?.trim().toLowerCase().replace(/\s*tees?$/, '').replace(/s$/, '')
+  // Both sides go through teeKey, so a course tee saved as "White Tees"
+  // still matches a round typed "white".
+  const wanted = teeName ? teeKey(teeName) : ''
   if (wanted && course.tees) {
-    const hit = course.tees.find(
-      (t) => (t.gender ?? 'M') === 'M' && t.name.toLowerCase().replace(/s$/, '') === wanted,
-    )
+    const hit = course.tees.find((t) => (t.gender ?? 'M') === 'M' && teeKey(t.name) === wanted)
     if (hit) return { rating: hit.rating, slope: hit.slope }
   }
   if (course.rating != null && course.slope != null) return { rating: course.rating, slope: course.slope }
@@ -248,7 +250,7 @@ export function teeFor(course: Course | undefined, teeName?: string): { rating: 
  */
 export function yardsFor(course: Course | undefined, teeName?: string): { yards: (number | null)[]; tee?: string } | null {
   if (!course) return null
-  const norm = (s?: string) => s?.trim().toLowerCase().replace(/\s*tees?$/, '').replace(/s$/, '')
+  const norm = (s?: string) => (s ? teeKey(s) : undefined)
   const wanted = norm(teeName)
   const full = (ys?: (number | null)[]) => !!ys && ys.length === HOLE_COUNT && ys.some((y) => y != null)
   if (wanted && course.tees) {
