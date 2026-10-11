@@ -71,15 +71,15 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   fails. Cleanup: dead files and exports removed, PuttsRow on `text-caption`, empty-value
   glyph is `–` everywhere, README/SETUP brought up to date, eight merged branches and
   `flat-preview` deleted. `faces` was left alone on purpose (Matt undecided).
-  Still to apply in prod: `supabase/apply-2026-10-11.sql` (storage listing policies
-  scoped to the group, anon revokes); the MCP migration was blocked here, paste it into
-  the SQL editor. When `faces` merges, its `player_photos_read` policy in schema.sql needs
-  the same `to authenticated` + folder scope.
+  Applied to prod by Matt through the SQL editor the same day (the MCP migration call is
+  blocked in auto mode): `supabase/apply-2026-10-11.sql`, storage listing policies scoped
+  to the group and the four sign-in actions revoked from `public, anon` (verified). When
+  `faces` merges, its `player_photos_read` policy in schema.sql needs the same
+  `to authenticated` + folder scope (prod already has it).
 
 ## Next actions
 
-0. Audit follow-ups (2026-10-11): paste `supabase/apply-2026-10-11.sql` into the SQL
-   editor; merge `audit-fixes` to main and push with `faces` (or without it); then the
+0. Audit follow-ups (2026-10-11): the SQL and the push are done; next is the
    "Worth fixing soon" list in `AUDIT-2026-10-11.md`, first the outbox dropping a queued
    score after an expired token, bets charging a removed golfer, and the fractional cents
    in winner-take-all skins.
@@ -243,6 +243,11 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   transition and `TOKEN_REFRESHED` every hour. Never key an effect on the session object;
   key on `session.user.id` (App.tsx). Keying on the object rebooted the app on every
   resume until 2026-10-11.
+- `revoke execute ... from anon` does nothing on its own: Supabase grants execute on every
+  function to `public`, which `anon` inherits. Revoke from `public, anon` and grant back
+  to `authenticated, service_role`. Leave `current_group_id`, `current_player_id` and
+  `keepalive` open: RLS policies call the first two as the querying role, and the keep-alive
+  Action reads `rounds` and calls `keepalive()` with the anon key.
 - The service worker caches any same-origin GET it is told to. A probe with a unique
   query string (`?check=<ts>`) must be excluded or it adds a cache entry per call.
 - Supabase's built-in mailer caps at 2 emails/hour and the rate-limit field is locked until
