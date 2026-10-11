@@ -44,6 +44,21 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   `rounds` (empty for anon). Check with `select * from keepalive_heartbeat`. The old weekly
   read-only ping is the pattern that drew a pause warning on Process Mapper.
 
+- Design polish (2026-10-11, branch `polish`, not merged or pushed yet): explainer captions
+  trimmed; forest kept for the big moments (season race, You header, Saddam, Log button),
+  picked chips are ink via `chip()` and view switches are the iOS `Segmented` in
+  `components/ui.tsx`; podium 2nd/3rd sand; Round detail actions are a row of round buttons
+  with short labels; the number pad is keys (par key labelled, haptic tick); Rounds and
+  Courses have one control row (filter / view as a title-row pill, Add course a round +);
+  tab icons fill when active; Wrapped banner is a twilight scene (`CourseScene frame="horizon"`);
+  white-tee bands shaded via `bandFill`; Card view golfers in a flat strip; bigger record
+  numbers. Delights: live wind on the hole map (`lib/liveWind.ts`, Open-Meteo current, live
+  rounds only) and a note plus box ring when another phone posts a score.
+- Hole-map runs (2026-10-11): "Get them" lives in `lib/mapJobs.ts`, outside the Courses page,
+  so it keeps going across screens; the queue is saved on the phone and resumes at launch
+  (`resumeMaps` in Shell); it holds app updates while running. Matt reported the old version
+  stopping when he changed screens.
+
 ## Next actions
 
 1. Done: the directory search worked on Matt's phone (2026-10-10).

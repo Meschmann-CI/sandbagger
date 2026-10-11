@@ -2,6 +2,7 @@ import { NavLink, Outlet, useLocation, useNavigationType } from 'react-router-do
 import { useNavigate } from '../lib/nav'
 import { useStore } from '../data/store'
 import { hasPendingPhotos, usePhotoOutboxFlush } from '../data/photoOutbox'
+import { resumeMaps } from '../lib/mapJobs'
 import { useNewVersion } from '../lib/useNewVersion'
 import { updatesHeld } from '../lib/holdUpdates'
 import { Avatar } from './ui'
@@ -129,6 +130,8 @@ export default function Shell() {
   // loads itself as the app comes back to the front, unless someone is
   // mid-way through something; then it waits behind a banner.
   usePhotoOutboxFlush(data.rounds, updateRound)
+  // A hole-map run the app was closed in the middle of carries on.
+  useEffect(() => resumeMaps(), [])
   const newVersion = useNewVersion(() => {
     if (logOpen || pendingWrites > 0 || hasPendingPhotos() || updatesHeld()) return true
     // The live card and every screen that is one big form.

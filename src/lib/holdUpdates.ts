@@ -9,6 +9,17 @@ let holds = 0
 
 export const updatesHeld = () => holds > 0
 
+/** The same hold for work outside React (pulling hole maps). Call the result to let go. */
+export function holdUpdates(): () => void {
+  holds++
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    holds--
+  }
+}
+
 export function useHoldUpdates() {
   useEffect(() => {
     holds++
