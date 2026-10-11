@@ -5,6 +5,7 @@ import { HOLE_COUNT } from '../lib/holes'
 import { cleanCourseName, courseSlug, currentSlug, emptyPars, padded, renameProblem, renameReach } from '../lib/courses'
 import { useHoldUpdates } from '../lib/holdUpdates'
 import { prepareLogo, uploadCourseLogo, type PreparedLogo } from '../lib/courseLogo'
+import { autoFetchCourseMap } from '../lib/courseMap'
 import CourseBrandEditor, { type BrandProposal } from '../components/CourseBrandEditor'
 import { defaultTee, scanCard, scanSupported, type ScannedCard } from '../lib/scan'
 import { directorySupported, fetchDirectoryCourse, nearbyFor, searchDirectory, type DirectoryMatch } from '../lib/courseLookup'
@@ -224,6 +225,8 @@ export default function CourseEdit() {
     // The scanned logo goes up after the course exists. If the upload
     // fails the course is still saved, and the logo can be set later.
     const logo = useNewLogo ? newLogo : null
+    // Its hole map, from OpenStreetMap, in the background.
+    if (isNew) void autoFetchCourseMap(saved)
     if (isNew && (logo || brandProposal?.color)) {
       void (async () => {
         const url = logo ? await uploadCourseLogo(logo, saved).catch(() => undefined) : undefined

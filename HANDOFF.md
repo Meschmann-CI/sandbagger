@@ -46,13 +46,13 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
-1. Confirm the course directory works on a real search (see item 10; read `course-lookup` logs if not).
+1. Done: the directory search worked on Matt's phone (2026-10-10).
 2. `Attest` signatures live per phone in localStorage; sharing them needs a DB column.
 3. Course logos in the app: built 2026-10-10 (see Current state). After the push, try it
    on a phone: paste a logo from a course site, and scan a real card.
-4. GPS yardages from OpenStreetMap (golf=hole / golf=green): fetch once when a course is
-   added, store in Supabase, never query Overpass live on the course (it was down on
-   2026-10-10). Fallback: an "I'm on the green" button that pins a green for the group.
+4. GPS and hole maps: built 2026-10-10, committed, not pushed yet. See "Hole maps and GPS"
+   under Decisions. After the push: Matt taps "Get them" under Courses > Ratings (Hole maps
+   card) to pull every course, then tries distances on a real round.
 5. Dropped (Matt, 2026-10-10): the code-only Magic Link templates in
    `supabase/email-templates/` aren't needed; iOS autofills the code from the email.
 6. iOS haptics trick (`buzz()` via a switch input) is untested on a real iPhone.
@@ -163,6 +163,40 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   `bg-paper`, not `bg-card`. Matt found rounded tiles everywhere looked "designed in PPT".
 - Home: the trip in play is a row under More (scene thumbnail, votes or days out, a Vote
   nudge), not a big card; the score you owe sits under Recent rounds.
+- Hole maps and GPS (Matt, 2026-10-10). A drawn map, not satellite (works with no signal,
+  matches the scenes, no tile service). On the Hole view the drawn hole replaces the scene
+  when the map has it, turned tee-at-bottom, with the distance chip on it (middle, then front
+  and back); "Distances" asks for location once and is remembered per phone. Tap the drawing
+  for the full map (`HoleMapSheet`): zoomed from you to the green when you're on the hole,
+  whole hole from the tee otherwise; a target you drag anywhere shows yards to it and yards
+  left, both live; bunker carries and water reach/carry near the line. Front/middle/back of
+  the green only (the daily flag can't be known). "On the Nth tee? Go there" is offered,
+  never automatic (one phone keeps the group's card). A hole OpenStreetMap lacks gets "I'm on
+  the green": the spot is saved in the map's `marked` for everyone, distances only.
+  Data: `src/lib/courseMap.ts` finds the course with Nominatim (outline preferred over a
+  pin; tries the name with and without "golf"), pulls everything in its box from Overpass
+  (three servers, two passes), picks the course's holes by `golf:course:name` / the ref
+  prefix ("Black - 4") / the outline, and refuses holes whose pars disagree with the card
+  (<80% of 6+): that's how Split Rock is kept from getting Pelham Bay's 18. Stored packed
+  (decimetre deltas, about 25KB a course) in `course_maps` (own table, RLS by group; not on
+  `courses`, which every phone reloads on each change), and on the phone per course played.
+  "© OpenStreetMap" shows on every map (ODbL). A course's map is fetched on its own when it's
+  added (Edit card or the Log sheet's directory pull) and the first time a round opens at a
+  course with none (`autoFetchCourseMap`, once per course per phone; a busy server clears
+  the flag so a later round retries). Candidate search: name and town, name, then the club's
+  own words with and without the town ("bethpage golf course" finds the park that holds
+  Blue/Green/Red/Yellow); up to three candidates, skipping any sharing no word with ours.
+  The card check scores pars and hole lengths (line length within 12% or 30 yds of any tee).
+  Dry run of the real code over all 44 courses, 2026-10-10 (nothing saved): mapped Ferry
+  Point, Bethpage Black and Blue (Green/Red/Yellow go the same way), Brownson, Centennial
+  (27), Clearview, Douglaston, Dunwoodie, Dyker, Forest Park, Haig Point, Hendricks (6
+  greens), HHN, Hudson Hills, Kissena, Maple Moor, Marine Park, Middle Bay, Mohansic,
+  Patriot Hills, Pelham Bay (11 greens), Saxon Woods, Silver Lake (17), Sprain Lake, Union
+  Vale, Van Cortlandt (14). No usable map: Split Rock (OSM's 18 are Pelham's), La Tourette
+  (8/12), River Vale (10/18), Putnam (7/18), Somers (9/18), Sea Pines and NYCC and Overpeck
+  and Weequahic (greens, no hole numbers), Eisenhower x3 and Dutcher and Palm Beach (no
+  holes). Harbor Links was cut off by a busy server (9/16 before the search fix). Somers and
+  Putnam are worth a look: the right course may be numbered differently in OSM.
 - `src/data/seed.ts` ships in the public bundle and holds fictional demo data only. Never put
   real trip details (door codes, confirmations) back in it.
 

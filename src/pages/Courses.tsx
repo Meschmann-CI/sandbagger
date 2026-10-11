@@ -7,6 +7,7 @@ import { StarRating } from '../components/Stars'
 import { CourseTile } from '../components/CourseLogo'
 import { Card, EmptyState, HelpTip, Pill, SectionLabel } from '../components/ui'
 import { TeeYardsCatchUp } from '../components/TeeYardsCatchUp'
+import { HoleMapsCatchUp } from '../components/HoleMapsCatchUp'
 import { RoundsCoursesSwitch } from '../components/RoundsCoursesSwitch'
 
 // Every course the group has played, two ways: how it rates, and how it
@@ -299,6 +300,7 @@ export default function Courses() {
           )}
 
           {view === 'ratings' && <TeeYardsCatchUp />}
+          {view === 'ratings' && <HoleMapsCatchUp />}
           {needCard > 0 && view === 'ratings' && (
             <div className="mt-4 px-1 flex items-center gap-2">
               <Pill tone="gold">{needCard}</Pill>

@@ -13,6 +13,7 @@ import { notifyGroup } from '../lib/push'
 import { fmt1, type Round } from '../types'
 import { findCourse, hasPars } from '../lib/courses'
 import { directorySupported, fetchDirectoryCourse, nearbyFor, searchDirectory, type DirectoryMatch } from '../lib/courseLookup'
+import { autoFetchCourseMap } from '../lib/courseMap'
 import TeePicker from '../components/TeePicker'
 import NinesPicker from '../components/NinesPicker'
 import { Avatar, Card, PrimaryButton, SaddamIcon, SECONDARY_BTN } from '../components/ui'
@@ -217,13 +218,15 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
       // never overwrites pars or a stroke index someone typed in.
       const existing = findCourse(data, c.name)
       if (!hasPars(existing)) {
-        saveCourse(
+        const saved = saveCourse(
           c.name,
           c.hasCard ? c.pars : Array(18).fill(null),
           c.hasCard ? c.strokeIndex : undefined,
           c.rating != null && c.slope != null ? { rating: c.rating, slope: c.slope } : undefined,
           { tees: c.tees.length ? c.tees : undefined, yards: c.hasCard ? c.yards : undefined, yardsTee: c.yardsTee ?? undefined, town: c.town ?? undefined },
         )
+        // Its hole map, from OpenStreetMap, while they finish logging.
+        void autoFetchCourseMap(saved)
       }
       pickCourse(c.name)
       setDir({ query: '', state: 'done', results: [] })

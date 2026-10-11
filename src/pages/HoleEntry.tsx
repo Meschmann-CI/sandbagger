@@ -7,6 +7,7 @@ import {
   courseForRound,
   hasPars,
   hasStrokeIndex,
+  ninesFor,
   ninesLabel,
   padded,
   playingHandicap,
@@ -30,6 +31,12 @@ import { betRules } from '../lib/betRules'
 import { Icon, IconTile } from '../components/icons'
 import { courseBrand, inkOn, teeColour } from '../lib/courseBrands'
 import RoundScene from '../components/RoundScene'
+import HoleMap from '../components/HoleMap'
+import HoleMapSheet from '../components/HoleMapSheet'
+import { autoFetchCourseMap, drawable, emptyCourseMap, greenCentre, greenYards, mapHoleFor, markKey, metres, ON_HOLE_METRES, saveCourseMap } from '../lib/courseMap'
+import { useCourseMap } from '../lib/useCourseMap'
+import { ordinal } from '../lib/ratings'
+import { distancesWanted, setDistancesWanted, usePosition } from '../lib/usePosition'
 
 // The live card, in two views.
 //
@@ -130,6 +137,27 @@ export default function HoleEntry() {
   const yards = yardsCard?.yards ?? null
   const strokeDots =
     hasStrokeIndex(course) && players.length > 1 ? strokesOffLow(course, players, round?.tee) : null
+
+  // The hole map and GPS. Distances are this phone's own, and only once
+  // its golfer has turned them on (the location prompt comes from that
+  // tap, once). The map's holes follow the round's nines on a 27.
+  const { map: courseMap, reload: reloadMap } = useCourseMap(course?.id)
+  const pair = round ? ninesFor(course, round) : null
+  const ninePair = pair ? ([pair[0].name, pair[1].name] as [string, string]) : null
+  const mapHoleAt = (i: number) => (courseMap ? mapHoleFor(courseMap, i, ninePair) : undefined)
+  const [gpsOn, setGpsOn] = useState(distancesWanted)
+  const pos = usePosition(gpsOn && !!courseMap)
+  // A course with no map yet gets one tried in the background, once per
+  // phone, the first time a round opens there.
+  const courseId = course?.id
+  useEffect(() => {
+    const c = courseId ? data.courses.find((x) => x.id === courseId) : undefined
+    if (courseMap !== null || !c) return
+    void autoFetchCourseMap(c).then((got) => got && reloadMap())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseMap, courseId])
+  const [mapOpen, setMapOpen] = useState<number | null>(null)
+  const [marking, setMarking] = useState(false)
 
   const liveRound: Round | null = round
     ? { ...round, players: round.players.map((rp) => ({ ...rp, holes: cards[rp.playerId] })) }
@@ -624,11 +652,97 @@ export default function HoleEntry() {
     pars?.[h] != null && { label: 'Par', value: String(pars[h]) },
     index?.[h] != null && { label: 'Index', value: String(index[h]) },
   ].filter((x): x is { label: string; value: string; dot?: string } => !!x)
+  // The hole drawn where the scene was, when the map has it, with the
+  // distance to the green on it. Tap it for the full map.
+  const mapHole = mapHoleAt(h)
+  const onThisHole = !!(mapHole && courseMap && pos.at && metres(pos.at, greenCentre(courseMap, mapHole)) < ON_HOLE_METRES)
+  const gy = onThisHole ? greenYards(courseMap!, mapHole!, pos.at!) : null
+  // A fix worse than about 15 yards either way shows grey, not trusted.
+  const weakFix = pos.accuracy != null && pos.accuracy > 14
+  // Standing on another hole's tee: the card is usually still on the
+  // hole just finished. Offered, never done for you.
+  const onTee = (() => {
+    if (!courseMap || !pos.at) return null
+    for (let i = 0; i < HOLE_COUNT; i++) {
+      const t = mapHoleAt(i)?.line?.[0]
+      if (t && i !== h && metres(pos.at, t) < 25) return i
+    }
+    return null
+  })()
+  // A hole the map hasn't got: standing on its green and tapping saves
+  // that spot for everyone, and distances work here from then on.
+  const markGreenHere = async () => {
+    if (!course || !pos.at) return
+    setMarking(true)
+    try {
+      const base = courseMap ?? emptyCourseMap()
+      await saveCourseMap(course, { ...base, marked: { ...base.marked, [markKey(h, ninePair)]: pos.at } })
+      reloadMap()
+    } finally {
+      setMarking(false)
+    }
+  }
+  const greenButton =
+    courseMap && gpsOn && pos.at && !mapHole ? (
+      <button type="button" onClick={() => void markGreenHere()} disabled={marking} className="rounded-full bg-forest px-3 py-2 text-footnote font-bold text-on-forest active:scale-95 disabled:opacity-60">
+        {marking ? 'Saving…' : 'I’m on the green'}
+      </button>
+    ) : null
+  const distanceChip = !courseMap ? null : !gpsOn ? (
+    <button
+      type="button"
+      onClick={() => {
+        setDistancesWanted(true)
+        setGpsOn(true)
+      }}
+      className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-2 text-footnote font-bold text-ink active:scale-95"
+    >
+      <Icon name="pin" size={15} />
+      Distances
+    </button>
+  ) : pos.error ? (
+    <span className="max-w-[240px] rounded-xl bg-white/95 px-3 py-2 text-caption font-semibold text-flag">{pos.error}</span>
+  ) : !pos.at ? (
+    <span className="rounded-full bg-white/95 px-3 py-2 text-footnote font-semibold text-ink-dim">Finding you…</span>
+  ) : !mapHole ? null : gy ? (
+    <span className={`rounded-xl bg-white/95 px-3 py-1.5 ${weakFix ? 'text-ink-faint' : 'text-ink'}`}>
+      <span className="flex items-baseline gap-1.5">
+        <span className="text-title font-extrabold tabular-nums">{gy.middle}</span>
+        <span className="text-caption font-semibold text-ink-dim">{gy.front == null && gy.back == null ? 'to the green' : 'to middle'}</span>
+      </span>
+      {(gy.front != null || gy.back != null) && (
+        <span className="block text-caption font-semibold tabular-nums text-ink-dim">
+          Front {gy.front ?? '–'} · Back {gy.back ?? '–'}
+        </span>
+      )}
+    </span>
+  ) : (
+    <span className="rounded-full bg-white/95 px-3 py-2 text-footnote font-semibold text-ink-dim">Not on this hole</span>
+  )
+
   const holeView = (
     <div className="-mx-4 -mt-3 flex flex-col" style={{ minHeight: 'calc(100dvh - 290px)' }}>
-      <div className="relative min-h-[132px] flex-1 overflow-hidden">
-        <RoundScene round={round} className="absolute inset-0 h-full w-full" />
-        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/20 to-transparent" />
+      <div className={`relative flex-1 overflow-hidden ${drawable(mapHole) ? 'min-h-[170px]' : 'min-h-[132px]'}`}>
+        {mapHole && courseMap && drawable(mapHole) ? (
+          <>
+            <HoleMap map={courseMap} hole={mapHole} from={pos.at} mode="mini" padTop={52} className="absolute inset-0 h-full w-full" />
+            <button type="button" onClick={() => setMapOpen(h)} aria-label={`Open the map of hole ${h + 1}`} className="absolute inset-0" />
+          </>
+        ) : (
+          <RoundScene round={round} className="absolute inset-0 h-full w-full" />
+        )}
+        {courseMap && (
+          <div className="pointer-events-none absolute bottom-2.5 left-3 flex flex-col items-start gap-1.5 [&>*]:pointer-events-auto">
+            {onTee != null && (
+              <button type="button" onClick={() => goHole(onTee)} className="rounded-full bg-forest px-3 py-1.5 text-footnote font-bold text-on-forest active:scale-95">
+                On the {ordinal(onTee + 1)} tee? Go there
+              </button>
+            )}
+            {greenButton}
+            {distanceChip}
+          </div>
+        )}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/20 to-transparent" />
         <div className="absolute inset-x-4 top-3">{topBar(true)}</div>
       </div>
 
@@ -819,6 +933,17 @@ export default function HoleEntry() {
     // the screen — the first cut had the tab bar drawn over the pad.
     <div className={view === 'hole' ? 'pb-[150px]' : active ? 'pb-72' : ''}>
       <Confetti fire={confetti} originY={0.4} />
+      {mapOpen != null && courseMap && (
+        <HoleMapSheet
+          map={courseMap}
+          holeAt={mapHoleAt}
+          index={mapOpen}
+          onIndex={setMapOpen}
+          par={pars?.[mapOpen]}
+          from={pos.at}
+          onClose={() => setMapOpen(null)}
+        />
+      )}
       {view === 'hole' ? (
         holeView
       ) : (

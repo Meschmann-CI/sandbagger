@@ -243,6 +243,26 @@ alter table rounds add column if not exists nines text[];
 -- without a code change. The file lives in the course-logos bucket
 -- (below); a course without one falls back to src/lib/courseBrands.ts.
 alter table courses add column if not exists brand jsonb;
+
+-- Hole maps, added 2026-10-10: each course's holes as drawn shapes
+-- (greens, fairways, bunkers, tees, water, trees and each hole's line),
+-- pulled once from OpenStreetMap by the app and kept here, so a round
+-- never depends on OpenStreetMap being up. Its own table, not a column
+-- on courses: the app reloads every course on every change, and the
+-- maps are tens of kilobytes each. A phone fetches one when a round at
+-- that course opens and keeps a copy for the back nine.
+create table if not exists course_maps (
+  course_id uuid primary key references courses(id) on delete cascade,
+  group_id uuid not null references groups(id) on delete cascade,
+  map jsonb not null,
+  updated_at timestamptz not null default now()
+);
+create index if not exists course_maps_group_idx on course_maps(group_id);
+alter table course_maps enable row level security;
+drop policy if exists course_maps_all on course_maps;
+create policy course_maps_all on course_maps for all
+  using (group_id = current_group_id())
+  with check (group_id = current_group_id());
 -- Venmo handles, for settling up. Public usernames, nothing linked.
 alter table players add column if not exists venmo text;
 -- Match play joined the bet types. `create table if not exists` never

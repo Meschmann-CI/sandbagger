@@ -29,6 +29,7 @@ import Courses from './pages/Courses'
 import Group from './pages/Group'
 import CourseDetail from './pages/CourseDetail'
 import CourseEdit from './pages/CourseEdit'
+import CourseMap from './pages/CourseMap'
 import SignIn from './pages/SignIn'
 import Setup from './pages/Setup'
 import { Card } from './components/ui'
@@ -60,6 +61,7 @@ function AppRoutes() {
             <Route path="/courses/new" element={<CourseEdit />} />
             <Route path="/courses/:slug" element={<CourseDetail />} />
             <Route path="/courses/:slug/card" element={<CourseEdit />} />
+            <Route path="/courses/:slug/map" element={<CourseMap />} />
             <Route path="/ledger" element={<Navigate to="/h2h" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

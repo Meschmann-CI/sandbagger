@@ -15,6 +15,7 @@ import CourseRatingEditor from '../components/CourseRatingEditor'
 import { StarRating } from '../components/Stars'
 import { Avatar, Card, Pill, SectionLabel } from '../components/ui'
 import { IconTile } from '../components/icons'
+import { useCourseMap } from '../lib/useCourseMap'
 
 // One course: what the group thinks of it (the verdict, then each detail
 // with your score beside the average, then everyone's take with yours
@@ -28,6 +29,7 @@ export default function CourseDetail() {
   const members = useMembers()
   const confirm = useConfirm()
   const [editing, setEditing] = useState(false)
+  const { map: courseMap } = useCourseMap(data.courses.find((c) => c.slug === slug)?.id)
 
   const summary = courseSummaries(data).find((r) => r.slug === slug)
   if (!summary) {
@@ -247,6 +249,23 @@ export default function CourseDetail() {
         </div>
         {par == null ? <Pill tone="gold">Add par</Pill> : <span className="text-footnote font-bold text-green shrink-0">Edit →</span>}
       </Card>
+
+      {/* The drawn holes and GPS distances, once the map is in. */}
+      {course && (
+        <Card onClick={() => navigate(`/courses/${encodeURIComponent(slug)}/map`)} className="p-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-body font-bold text-ink">Hole map</p>
+            <p className="text-footnote text-ink-dim mt-0.5">
+              {courseMap === undefined
+                ? 'Checking…'
+                : courseMap
+                  ? `${courseMap.holes.length} holes drawn, with GPS distances on the card`
+                  : 'Not yet. Get it from OpenStreetMap for drawn holes and GPS distances.'}
+            </p>
+          </div>
+          <span className="text-footnote font-bold text-green shrink-0">{courseMap ? 'See it →' : 'Get it →'}</span>
+        </Card>
+      )}
 
       {/* Every tee box, so "which tees are we playing" has an answer on
           the first one. Men's sets only; the women's ratings are stored
