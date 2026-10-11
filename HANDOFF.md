@@ -23,7 +23,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   the live card, the course page and the course list use it; a course with no entry keeps the
   Sandbagger card. 40 of the 45 prod courses have one; Central, Dutcher, Overpeck, Hendricks
   Field and Weequahic publish no logo, and Eisenhower is colour only.
-  Since 2026-10-10 (committed, not pushed) a brand can also be set in the app, no deploy:
+  Since 2026-10-10 (live, 0f024a5) a brand can also be set in the app, no deploy:
   `courses.brand` jsonb ({logo, color, dark, wide, tall}) wins over the built-in list. Set on
   the course Edit card ("Logo and colour": Choose image, Paste, Colour), or by the scanner
   (`scan-card` v6 returns `brand.logoBox` + `brand.color`; an existing course reviews it in
