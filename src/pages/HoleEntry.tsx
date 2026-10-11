@@ -29,7 +29,7 @@ import { fmt1, type Round } from '../types'
 import { Avatar, Card, HelpTip, PrimaryButton, Segmented } from '../components/ui'
 import { betRules } from '../lib/betRules'
 import { Icon, IconTile } from '../components/icons'
-import { courseBrand, inkOn, teeColour } from '../lib/courseBrands'
+import { bandFill, courseBrand, inkOn, teeColour } from '../lib/courseBrands'
 import RoundScene from '../components/RoundScene'
 import HoleMap from '../components/HoleMap'
 import HoleMapSheet from '../components/HoleMapSheet'
@@ -542,7 +542,7 @@ export default function HoleEntry() {
   const ribbon = teeColour(round.tee) ?? brand?.color
   const ribbonInk = ribbon ? inkOn(ribbon) : '#FFFFFF'
   const pale = ribbonInk !== '#FFFFFF'
-  const bandStyle = ribbon ? { backgroundColor: ribbon, color: ribbonInk } : undefined
+  const bandStyle = ribbon ? { backgroundColor: bandFill(ribbon), color: ribbonInk } : undefined
   const yardsDot = teeColour(yardsCard?.tee)
   // The column the card is on: the box being typed in, else the hole the
   // Hole view was showing.
@@ -961,7 +961,8 @@ export default function HoleEntry() {
 
 
       {/* Where everyone stands, thru whatever they've scored */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
+      {/* A flat strip, not boxes: names side by side with a hairline between. */}
+      <div className="-mx-4 flex divide-x divide-line overflow-x-auto border-y border-line bg-card px-1 py-2">
         {round.players.map((rp) => {
           const p = data.players.find((pl) => pl.id === rp.playerId)
           if (!p) return null
@@ -972,7 +973,7 @@ export default function HoleEntry() {
           const ghost = ghostFor(data, round, rp.playerId)
           const race = ghost ? ghostDiff(card, ghost.card) : null
           return (
-            <div key={rp.playerId} className="flex items-center gap-2 rounded-xl border border-line bg-card px-2.5 py-1.5 shrink-0">
+            <div key={rp.playerId} className="flex shrink-0 items-center gap-2 px-3">
               <Avatar player={p} size={22} />
               <div className="leading-tight">
                 <p className="text-footnote font-bold text-ink">{p.name.split(' ')[0]}</p>

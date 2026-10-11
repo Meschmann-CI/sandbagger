@@ -8,7 +8,7 @@ import { shortDate } from '../lib/stats'
 import { courseForRound, hasPars, hasStrokeIndex, ninesLabel, padded, scoreKind, strokesOffLow, toPar, yardsFor } from '../lib/courses'
 import { Avatar, Card } from './ui'
 import { CourseLogo } from './CourseLogo'
-import { courseBrand, inkOn, teeColour } from '../lib/courseBrands'
+import { bandFill, courseBrand, inkOn, teeColour } from '../lib/courseBrands'
 import { Icon } from './icons'
 import { MarkLegend, SCORE_MARK, StrokeDots } from './scoreMarks'
 
@@ -28,7 +28,7 @@ export default function Scorecard({ round }: { round: Round }) {
   // forest. A white tee gets a hairline so the row doesn't vanish.
   const brand = courseBrand(round.courseName)
   const ribbon = teeColour(round.tee) ?? brand?.color
-  const headStyle = ribbon ? { backgroundColor: ribbon, color: inkOn(ribbon) } : undefined
+  const headStyle = ribbon ? { backgroundColor: bandFill(ribbon), color: inkOn(ribbon) } : undefined
   const pale = !!ribbon && inkOn(ribbon) !== '#FFFFFF'
   const pars = hasPars(course) ? padded(course.pars) : null
   const index = hasStrokeIndex(course) ? padded(course.strokeIndex) : null

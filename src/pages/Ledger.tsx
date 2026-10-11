@@ -527,10 +527,10 @@ function TableRow({ row, place, form: all, play, move, isMe }: { row: LeaderRow;
 
 function RecordCell({ label, value, who, shame = false }: { label: string; value: string; who: string; shame?: boolean }) {
   return (
-    <div className="border-b border-line px-4 py-3 odd:border-r [&:nth-last-child(-n+2)]:border-b-0">
+    <div className="border-b border-line px-4 py-3.5 odd:border-r [&:nth-last-child(-n+2)]:border-b-0">
       <p className="text-caption font-bold text-ink-faint">{label}</p>
-      <p className={`mt-0.5 text-title font-extrabold tabular-nums tracking-tight ${shame ? 'text-flag' : 'text-ink'}`}>{value}</p>
-      <p className="truncate text-caption text-ink-dim">{who}</p>
+      <p className={`mt-1 text-large font-extrabold leading-none tabular-nums ${shame ? 'text-flag' : 'text-ink'}`}>{value}</p>
+      <p className="mt-1 truncate text-caption text-ink-dim">{who}</p>
     </div>
   )
 }

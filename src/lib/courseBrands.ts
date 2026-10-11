@@ -120,6 +120,21 @@ export function inkOn(hex: string): string {
   return lum > 0.4 ? '#1A1A1A' : '#FFFFFF'
 }
 
+/**
+ * The hole band's fill for a tee colour. A white tee's band on a white
+ * card is no band at all, so very light colours are shaded a touch toward
+ * ink: still plainly white tees, but a strip you can see.
+ */
+export function bandFill(hex: string): string {
+  const n = parseInt(hex.replace('#', ''), 16)
+  const rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+  const lum = (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255
+  if (lum < 0.82) return hex
+  const ink = [24, 32, 25]
+  const t = lum > 0.95 ? 0.09 : 0.05
+  return `#${rgb.map((c, i) => Math.round(c + (ink[i] - c) * t).toString(16).padStart(2, '0')).join('')}`
+}
+
 export function courseBrand(courseName: string | undefined): (CourseBrand & { ink: string }) | null {
   if (!courseName) return null
   const slug = courseSlug(courseName)
