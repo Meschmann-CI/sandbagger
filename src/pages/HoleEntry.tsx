@@ -1352,25 +1352,55 @@ export default function HoleEntry() {
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-3">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
-                <button
-                  key={d}
-                  onClick={() => typeDigit(d)}
-                  className={`h-14 border-b border-r border-line text-large font-bold text-ink active:bg-paper ${
-                    pars?.[cur.hole] === d ? 'bg-green-soft/40' : 'bg-card'
-                  }`}
-                >
-                  {d}
-                </button>
-              ))}
-              <button onClick={clearActive} aria-label="Clear" className="h-14 border-r border-line bg-paper text-body font-bold text-ink-dim active:bg-line">
-                ⌫
+            {/* Keys, not a grid of lines: white keys with a gap on paper,
+                each with the faint bottom edge a phone keyboard has, and a
+                light tap of haptics. The par key is tinted and says so, the
+                most-pressed number on any hole. */}
+            <div className="grid grid-cols-3 gap-1.5 bg-paper p-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => {
+                const isPar = pars?.[cur.hole] === d
+                return (
+                  <button
+                    key={d}
+                    onClick={() => {
+                      buzz(6)
+                      typeDigit(d)
+                    }}
+                    className={`relative flex h-[52px] flex-col items-center justify-center rounded-xl text-large font-bold text-ink shadow-[0_1px_0_rgba(24,32,25,0.14)] transition active:scale-[0.96] active:shadow-none ${
+                      isPar ? 'bg-green-soft' : 'bg-card active:bg-line'
+                    }`}
+                  >
+                    <span className="leading-none tabular-nums">{d}</span>
+                    {isPar && <span className="mt-0.5 text-caption font-semibold leading-none text-green-deep">par</span>}
+                  </button>
+                )
+              })}
+              <button
+                onClick={() => {
+                  buzz(6)
+                  clearActive()
+                }}
+                aria-label="Clear"
+                className="flex h-[52px] items-center justify-center rounded-xl bg-ink/[0.07] text-ink-dim transition active:scale-[0.96] active:bg-ink/15"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7z" />
+                  <path d="M12.5 9.5l5 5M17.5 9.5l-5 5" />
+                </svg>
               </button>
-              <button onClick={() => typeDigit(0)} className="h-14 border-r border-line bg-card text-large font-bold text-ink active:bg-paper">
+              <button
+                onClick={() => {
+                  buzz(6)
+                  typeDigit(0)
+                }}
+                className="flex h-[52px] items-center justify-center rounded-xl bg-card text-large font-bold text-ink shadow-[0_1px_0_rgba(24,32,25,0.14)] transition active:scale-[0.96] active:bg-line active:shadow-none"
+              >
                 0
               </button>
-              <button onClick={advance} className="h-14 bg-green text-body font-bold text-white active:bg-green-deep">
+              <button
+                onClick={advance}
+                className="flex h-[52px] items-center justify-center rounded-xl bg-green text-body font-bold text-white shadow-[0_2px_8px_rgba(28,124,74,0.3)] transition active:scale-[0.96] active:bg-green-deep"
+              >
                 {view === 'hole' && isLastGolfer ? (cur.hole === HOLE_COUNT - 1 ? 'Finish' : 'Next hole') : 'Next →'}
               </button>
             </div>
