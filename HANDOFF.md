@@ -69,7 +69,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    Matt has no Mac as of 2026-10-10, so the web redesign comes first and the port waits. If a
    Mac stays out of reach, React Native + Expo (cloud iOS builds) is the fallback.
 
-10. Course rename + directory search (built 2026-10-10, committed, NOT pushed yet).
+10. Course rename + directory search (live 2026-10-10, d0a5b48).
    - Rename on the course Edit card. `rename_course(old_slug, new_name)` in schema.sql
      (applied to prod 2026-10-10, tested in a rolled-back transaction) renames the course row
      and slug, every round's course_name, ratings, everyone's ranking slugs and home courses
