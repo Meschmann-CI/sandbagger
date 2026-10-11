@@ -237,6 +237,12 @@ alter table round_players add column if not exists putts integer[];
 -- the course's first two, which its own 18-hole pars describe).
 alter table courses add column if not exists nines jsonb;
 alter table rounds add column if not exists nines text[];
+-- Course logos, added 2026-10-10: {logo, color, ink, dark, wide, tall}.
+-- Set from the course's Edit card (a chosen or pasted image, or the
+-- logo the scanner found on the card), so a new course gets its look
+-- without a code change. The file lives in the course-logos bucket
+-- (below); a course without one falls back to src/lib/courseBrands.ts.
+alter table courses add column if not exists brand jsonb;
 -- Venmo handles, for settling up. Public usernames, nothing linked.
 alter table players add column if not exists venmo text;
 -- Match play joined the bet types. `create table if not exists` never
@@ -291,6 +297,24 @@ create policy round_photos_insert on storage.objects for insert to authenticated
 drop policy if exists round_photos_delete on storage.objects;
 create policy round_photos_delete on storage.objects for delete to authenticated
   using (bucket_id = 'round-photos' and (storage.foldername(name))[1] = current_group_id()::text);
+
+-- Course logos: same arrangement, <group_id>/<course_id>-<stamp>.png.
+-- A new file name per change, so phones never show a cached old logo.
+insert into storage.buckets (id, name, public)
+values ('course-logos', 'course-logos', true)
+on conflict (id) do nothing;
+
+drop policy if exists course_logos_read on storage.objects;
+create policy course_logos_read on storage.objects for select
+  using (bucket_id = 'course-logos');
+
+drop policy if exists course_logos_insert on storage.objects;
+create policy course_logos_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'course-logos' and (storage.foldername(name))[1] = current_group_id()::text);
+
+drop policy if exists course_logos_delete on storage.objects;
+create policy course_logos_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'course-logos' and (storage.foldername(name))[1] = current_group_id()::text);
 -- Paybacks used to belong to a trip. A bet on a single round needs
 -- settling too, so a payment now hangs off whichever it cleared.
 alter table payments alter column trip_id drop not null;

@@ -23,6 +23,16 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   the live card, the course page and the course list use it; a course with no entry keeps the
   Sandbagger card. 40 of the 45 prod courses have one; Central, Dutcher, Overpeck, Hendricks
   Field and Weequahic publish no logo, and Eisenhower is colour only.
+  Since 2026-10-10 (committed, not pushed) a brand can also be set in the app, no deploy:
+  `courses.brand` jsonb ({logo, color, dark, wide, tall}) wins over the built-in list. Set on
+  the course Edit card ("Logo and colour": Choose image, Paste, Colour), or by the scanner
+  (`scan-card` v6 returns `brand.logoBox` + `brand.color`; an existing course reviews it in
+  that section, a new one shows it in the scan card and takes it on Add).
+  `src/lib/courseLogo.ts` trims, fades a light paper background to transparent, detects white
+  artwork (`dark`) and picks swatches; files go to the public `course-logos` bucket at
+  `<group_id>/<course_id>-<stamp>.png`. The store calls `syncStoredBrands` each render so
+  `courseBrand(name)` stays a plain lookup. Untested on a phone: Paste (iOS shows its own
+  Paste bubble), a real upload, and the scanner's logo box on a real card.
 - "Generic AI" pass (2026-10-10): tracked all-caps eyebrow labels, the time-of-day greeting,
   the sparkline, the four-stat tile row, the left-border quote card, page stat subtitles,
   explainer captions and em dashes in copy all removed.
@@ -38,14 +48,13 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 1. Confirm the course directory works on a real search (see item 10; read `course-lookup` logs if not).
 2. `Attest` signatures live per phone in localStorage; sharing them needs a DB column.
-3. A new course gets a brand only by a code change in `courseBrands.ts`. Next step: a
-   `brand` column on courses, filled by the scorecard scanner (colours + logo crop) or a
-   pasted logo, so nobody has to deploy for it.
+3. Course logos in the app: built 2026-10-10 (see Current state). After the push, try it
+   on a phone: paste a logo from a course site, and scan a real card.
 4. GPS yardages from OpenStreetMap (golf=hole / golf=green): fetch once when a course is
    added, store in Supabase, never query Overpass live on the course (it was down on
    2026-10-10). Fallback: an "I'm on the green" button that pins a green for the group.
-5. Magic Link email templates: Matt pastes the code-only versions from
-   `supabase/email-templates/` into Authentication > Emails > Templates (no MCP tool for that).
+5. Dropped (Matt, 2026-10-10): the code-only Magic Link templates in
+   `supabase/email-templates/` aren't needed; iOS autofills the code from the email.
 6. iOS haptics trick (`buzz()` via a switch input) is untested on a real iPhone.
 
 7. Redesign, rolled back 2026-10-10. The Claude Design pass (canvas
@@ -173,6 +182,10 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 - Pushing: the auto-mode classifier refuses a command chain containing `git push`. Commit,
   then run `git push origin main` alone once Matt asks. Verify with `git ls-remote origin main`
   and by curling the hashed bundle for a new UI string; one of Matt's own pushes did not land.
+- `course.upsert` writes the whole row (`courseRow` sends every column), so anything that
+  rebuilds a Course must start from the existing one. `saveCourse` dropped `nines` until
+  2026-10-10 (any scorecard save on Centennial would have wiped its three nines); it now
+  spreads `existing` first. A new course column needs adding to `courseRow` and the load map.
 - Course brands match on the course slug by regex, first match first, so a facility's
   specific courses (Bethpage Black) sit above the facility (Bethpage). Logos with white
   artwork need `dark: true` or they vanish on white; long wordmarks need `wide: true` or

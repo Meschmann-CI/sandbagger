@@ -24,6 +24,8 @@ export interface ScannedCard {
   tees: CourseTee[]
   /** Anything the reader wasn't sure of, in its own words. */
   notes: string[]
+  /** Where the logo is on the photo (fractions) and the card's main colour, when it has them. */
+  brand?: { logoBox: { x0: number; y0: number; x1: number; y1: number } | null; color: string | null } | null
 }
 
 export interface ScanResult {

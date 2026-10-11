@@ -83,6 +83,29 @@ const RECORD_CARD = {
         items: { type: 'string' },
         description: 'Short notes on anything uncertain: glare over a row, a cut-off hole, two handicap rows and which one was used.',
       },
+      brand: {
+        type: 'object',
+        description: "The card's look, so the app can show the course's own logo and colour.",
+        required: ['logoBox', 'color'],
+        properties: {
+          logoBox: {
+            type: ['object', 'null'],
+            description:
+              "Where the course or club logo sits in the photo, as fractions of the photo's width and height (x0,y0 top-left, x1,y1 bottom-right, 0 to 1). Just the logo mark or wordmark, tight around it, not the whole header or the course name typed beside it. Null if the card prints no logo.",
+            required: ['x0', 'y0', 'x1', 'y1'],
+            properties: {
+              x0: { type: 'number' },
+              y0: { type: 'number' },
+              x1: { type: 'number' },
+              y1: { type: 'number' },
+            },
+          },
+          color: {
+            type: ['string', 'null'],
+            description: "The card's main printed colour (its header band, hole row or logo colour) as #RRGGBB. Null if the card is printed in black only.",
+          },
+        },
+      },
     },
   },
 } as const
@@ -125,6 +148,7 @@ const SYSTEM_CARD = `You transcribe golf scorecards from photos for a small grou
 Read only what is printed on the card. Do not infer or fill in values that are not legible; use null.
 Cards print par, a handicap/stroke-index row, and one yardage row per tee. Stroke index is a ranking: each number 1 to 18 appears once across the 18 holes. If the card has separate men's and women's handicap rows, use the men's for strokeIndex and say so in notes.
 Ignore any handwritten scores; only the printed layout matters.
+Also note where the course's logo is in the photo and the card's main colour, for brand.
 Always respond by calling the record_card tool exactly once.`
 
 const SYSTEM_SCORES = `You read the handwritten scores off a filled-in golf scorecard photo for a small group's scorekeeping app.
@@ -273,6 +297,17 @@ Deno.serve(async (req) => {
   if (new Set(si).size !== si.length) warnings.push('The stroke index repeats a number — one of those holes is wrong.')
   if (tees.length === 0) warnings.push('No tee ratings were readable.')
 
+  // The logo's box, kept only if it's a real box inside the photo.
+  const rawBrand = (raw.brand ?? {}) as Record<string, unknown>
+  const rb = (rawBrand.logoBox ?? null) as Record<string, unknown> | null
+  const frac = (v: unknown) => (num(v) != null ? Math.min(1, Math.max(0, num(v) as number)) : null)
+  const box = rb ? { x0: frac(rb.x0), y0: frac(rb.y0), x1: frac(rb.x1), y1: frac(rb.y1) } : null
+  const logoBox =
+    box && box.x0 != null && box.y0 != null && box.x1 != null && box.y1 != null && box.x1 - box.x0 > 0.02 && box.y1 - box.y0 > 0.02
+      ? box
+      : null
+  const color = typeof rawBrand.color === 'string' && /^#[0-9a-f]{6}$/i.test(rawBrand.color) ? rawBrand.color.toUpperCase() : null
+
   return json({
     card: {
       name: typeof raw.name === 'string' && raw.name.trim() ? raw.name.trim() : null,
@@ -280,6 +315,7 @@ Deno.serve(async (req) => {
       holes,
       tees,
       notes,
+      brand: logoBox || color ? { logoBox, color } : null,
     },
     warnings,
     usage: response.usage,

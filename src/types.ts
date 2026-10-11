@@ -108,6 +108,24 @@ export interface Course {
    */
   nines?: CourseNine[]
   yardsTee?: string
+  /** Its logo and hole-row colour, set in the app. Wins over the built-in list in courseBrands.ts. */
+  brand?: CourseBrand
+}
+
+/** A course's own look: its logo, and the colour its printed card uses for the hole row. */
+export interface CourseBrand {
+  /** A URL (public/logos, the course-logos bucket, or a data URL in local mode), or none for colour only. */
+  logo?: string
+  /** The hole row's background. */
+  color: string
+  /** Text on that background; worked out from `color` when left out. */
+  ink?: string
+  /** A logo drawn tall and narrow gets a taller slot. */
+  tall?: boolean
+  /** White artwork: it sits on `color` instead of on white, or it vanishes. */
+  dark?: boolean
+  /** A long wordmark: unreadable in a square tile, so lists keep the scene. */
+  wide?: boolean
 }
 
 /** One nine of a 27-hole course, as its card prints it. */

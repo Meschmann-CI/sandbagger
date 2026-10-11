@@ -71,6 +71,7 @@ const courseRow = (c: Course) => ({
   yards: c.yards ?? null,
   yards_tee: c.yardsTee ?? null,
   nines: c.nines ?? null,
+  brand: c.brand ?? null,
 })
 
 const courseRatingRow = (r: CourseRating) => ({
@@ -258,6 +259,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           yards: Array.isArray(c.yards) && c.yards.length ? c.yards : undefined,
           yardsTee: c.yards_tee ?? undefined,
           nines: Array.isArray(c.nines) && c.nines.length >= 2 ? c.nines : undefined,
+          brand: c.brand && typeof c.brand.color === 'string' ? c.brand : undefined,
         })),
         courseRatings: (ratingsRes.data ?? []).map(toCourseRating),
         courseRankings: (rankingsRes.data ?? []).map((r: any) => ({

@@ -4,6 +4,8 @@ import { useStore } from '../data/store'
 import { HOLE_COUNT } from '../lib/holes'
 import { cleanCourseName, courseSlug, currentSlug, emptyPars, padded, renameProblem, renameReach } from '../lib/courses'
 import { useHoldUpdates } from '../lib/holdUpdates'
+import { prepareLogo, uploadCourseLogo, type PreparedLogo } from '../lib/courseLogo'
+import CourseBrandEditor, { type BrandProposal } from '../components/CourseBrandEditor'
 import { defaultTee, scanCard, scanSupported, type ScannedCard } from '../lib/scan'
 import { directorySupported, fetchDirectoryCourse, nearbyFor, searchDirectory, type DirectoryMatch } from '../lib/courseLookup'
 import { useGoBack, useNavigate } from '../lib/nav'
@@ -36,7 +38,7 @@ export default function CourseEdit() {
   const slug = isNew ? courseSlug(typedName) : currentSlug(slugParam)
   // The scorecard hangs off the course's own page now.
   const goBack = useGoBack(isNew ? '/courses' : `/courses/${encodeURIComponent(slug)}`)
-  const { data, saveCourse, deleteCourse } = useStore()
+  const { data, saveCourse, deleteCourse, setCourseBrand } = useStore()
   const confirm = useConfirm()
 
   // A course reached from a round it hasn't got a record for yet — or,
@@ -120,6 +122,13 @@ export default function CourseEdit() {
     }
   }
 
+  // The logo the scanner found on the card. An existing course reviews it
+  // in the Logo and colour section; a new one shows it here and takes it
+  // on Add, since there's no course to hang it on until then.
+  const [brandProposal, setBrandProposal] = useState<BrandProposal | null>(null)
+  const [newLogo, setNewLogo] = useState<PreparedLogo | null>(null)
+  const [useNewLogo, setUseNewLogo] = useState(true)
+
   const onPhoto = async (file: File | undefined) => {
     if (!file) return
     setScanning(true)
@@ -127,6 +136,13 @@ export default function CourseEdit() {
     try {
       const { card, warnings } = await scanCard(file)
       applyCard(card, warnings)
+      if (card.brand) {
+        setBrandProposal({ photo: file, box: card.brand.logoBox, color: card.brand.color })
+        setNewLogo(null)
+        if (isNew && card.brand.logoBox) {
+          prepareLogo(file, card.brand.logoBox).then(setNewLogo, () => setNewLogo(null))
+        }
+      }
     } catch (err) {
       setScanError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -191,7 +207,7 @@ export default function CourseEdit() {
     const defName = scanned ? defaultTee(scanned.tees)?.name : undefined
     const yardsTee =
       scanned?.tees.find((t) => t.name === defName && t.holeYards) ?? scanned?.tees.find((t) => t.holeYards)
-    saveCourse(
+    const saved = saveCourse(
       name,
       pars,
       indexIn > 0 ? index : undefined,
@@ -205,6 +221,21 @@ export default function CourseEdit() {
           }
         : undefined,
     )
+    // The scanned logo goes up after the course exists. If the upload
+    // fails the course is still saved, and the logo can be set later.
+    const logo = useNewLogo ? newLogo : null
+    if (isNew && (logo || brandProposal?.color)) {
+      void (async () => {
+        const url = logo ? await uploadCourseLogo(logo, saved).catch(() => undefined) : undefined
+        setCourseBrand(saved.id, {
+          logo: url,
+          color: brandProposal?.color ?? logo?.colours[0] ?? '#1F4D3A',
+          dark: (url && logo?.dark) || undefined,
+          wide: (url && logo?.wide) || undefined,
+          tall: (url && logo?.tall) || undefined,
+        })
+      })()
+    }
     if (isNew) navigate(`/courses/${encodeURIComponent(slug)}`, { replace: true })
     else goBack()
   }
@@ -375,6 +406,18 @@ export default function CourseEdit() {
           <p className="mt-2 text-caption text-ink-faint">
             Tees read: {scanned.tees.map((t) => `${t.name}${t.rating != null ? ` ${t.rating}/${t.slope ?? '?'}` : ''}`).join(' · ')}
           </p>
+        )}
+        {isNew && newLogo && (
+          <label className="mt-2.5 flex items-center gap-3 border-t border-gold/30 pt-2.5">
+            <input type="checkbox" checked={useNewLogo} onChange={(e) => setUseNewLogo(e.target.checked)} className="h-4 w-4 accent-green" />
+            <span
+              className="inline-flex h-10 shrink-0 items-center rounded-lg px-1.5 ring-1 ring-line"
+              style={{ backgroundColor: newLogo.dark ? (brandProposal?.color ?? newLogo.colours[0]) : '#fff' }}
+            >
+              <img src={newLogo.dataUrl} alt="Logo from the card" className="h-full w-auto max-w-40 object-contain" />
+            </span>
+            <span className="text-footnote font-semibold text-ink-dim">Use the logo from the card</span>
+          </label>
         )}
       </Card>
 
@@ -578,6 +621,10 @@ export default function CourseEdit() {
           Scores against par only appear once all eighteen are in. "+4" would be a lie with holes missing.
         </p>
       )}
+
+      {/* Saves on its own, not with the scorecard: a logo is about the
+          course, and it's often fixed long after the card was entered. */}
+      {existing && !isNew && <CourseBrandEditor course={existing} proposal={brandProposal} />}
 
       {/* With rounds, ratings or a ranking pointing at it, the course stays
           on the list whatever happens here, so this only clears the card.

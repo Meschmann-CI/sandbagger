@@ -1,26 +1,29 @@
 import { courseSlug } from './courses'
+import type { Course, CourseBrand } from '../types'
+
+export type { CourseBrand }
 
 // Each course's own look, so a card from Bethpage reads like a card from
 // Bethpage: its logo, and the colour its printed card would use for the
-// hole row. Logos live in public/logos, pulled from each course's own
-// site (private app, four golfers). Matched on the course slug by
-// pattern, because rounds carry the course as free text ("Split Rock",
-// "Split Rock Golf Course") and both should find the same brand.
-// A course with no entry keeps the Sandbagger card.
+// hole row.
+//
+// Two sources. A brand set in the app (the course's Edit card, or the
+// logo the scanner found on a photographed card) lives on the course row
+// and wins. Below it, the built-in list: logos in public/logos, pulled
+// from each course's own site (private app, four golfers), matched on the
+// course slug by pattern, because rounds carry the course as free text
+// ("Split Rock", "Split Rock Golf Course") and both should find the same
+// brand. A course with neither keeps the Bandit card.
 
-export interface CourseBrand {
-  /** Path under public/, or undefined when the course has no usable logo. */
-  logo?: string
-  /** The hole row's background. */
-  color: string
-  /** Text on that background; worked out from `color` when left out. */
-  ink?: string
-  /** A logo drawn tall and narrow gets a taller slot. */
-  tall?: boolean
-  /** White artwork: it sits on `color` instead of on white, or it vanishes. */
-  dark?: boolean
-  /** A long wordmark: unreadable in a square tile, so lists keep the scene. */
-  wide?: boolean
+// The group's stored brands by slug. The store refreshes this whenever
+// the courses change, so courseBrand(name) stays a plain lookup that any
+// screen can call without being handed the data.
+let stored = new Map<string, CourseBrand>()
+let storedFrom: Course[] | null = null
+export function syncStoredBrands(courses: Course[]) {
+  if (courses === storedFrom) return
+  storedFrom = courses
+  stored = new Map(courses.filter((c) => c.brand?.color).map((c) => [c.slug, c.brand!]))
 }
 
 interface Entry extends CourseBrand {
@@ -119,6 +122,14 @@ export function inkOn(hex: string): string {
 
 export function courseBrand(courseName: string | undefined): (CourseBrand & { ink: string }) | null {
   if (!courseName) return null
+  const slug = courseSlug(courseName)
+  const own = stored.get(slug)
+  if (own) return { ...own, ink: own.ink ?? inkOn(own.color) }
+  return builtInBrand(courseName)
+}
+
+/** The built-in list only, ignoring anything set in the app. */
+export function builtInBrand(courseName: string): (CourseBrand & { ink: string }) | null {
   const slug = courseSlug(courseName)
   const hit = BRANDS.find((b) => b.match.test(slug))
   if (!hit) return null

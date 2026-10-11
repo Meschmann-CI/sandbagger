@@ -5,6 +5,7 @@ import {
   type AppData,
   type Bet,
   type Course,
+  type CourseBrand,
   type CourseRating,
   type CourseTee,
   type Expense,
@@ -16,6 +17,7 @@ import {
 } from '../types'
 import { todayISO } from '../lib/dates'
 import { cleanCourseName, courseSlug, noteRename, renameCourseIn } from '../lib/courses'
+import { syncStoredBrands } from '../lib/courseBrands'
 import { onOutboxChange, outboxSnapshot, outboxStatus } from './outbox'
 import type { Backend, Change } from './backend'
 
@@ -45,7 +47,9 @@ interface StoreApi {
     tees?: { rating: number | null; slope: number | null },
     /** What a scanned card knows beyond par: the tee list, yardage, town. Omitted = keep what's stored. */
     extras?: { tees?: CourseTee[]; yards?: (number | null)[]; yardsTee?: string; town?: string },
-  ) => void
+  ) => Course
+  /** A course's logo and colour; null goes back to the built-in list (or the Bandit card). */
+  setCourseBrand: (courseId: string, brand: CourseBrand | null) => void
   deleteCourse: (courseId: string) => void
   /** Renames a course everywhere it's named. Returns the new slug. */
   renameCourse: (oldSlug: string, name: string) => string
@@ -187,6 +191,9 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
       const existing = dataRef.current.courses.find((c) => c.slug === slug)
       const anyIndex = strokeIndex?.some((n) => n != null)
       const course: Course = {
+        // Whatever this editor doesn't know about (a 27-hole course's
+        // nines, its logo) rides along untouched: the row is written whole.
+        ...existing,
         id: existing?.id ?? makeId(),
         groupId: dataRef.current.group.id,
         name: existing?.name ?? name.trim(),
@@ -207,6 +214,13 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         ...d,
         courses: existing ? d.courses.map((c) => (c.id === course.id ? course : c)) : [...d.courses, course],
       }))
+      return course
+    },
+    setCourseBrand(courseId, brand) {
+      const existing = dataRef.current.courses.find((c) => c.id === courseId)
+      if (!existing) return
+      const course: Course = { ...existing, brand: brand ?? undefined }
+      commit({ kind: 'course.upsert', course }, (d) => ({ ...d, courses: d.courses.map((c) => (c.id === courseId ? course : c)) }))
     },
     deleteCourse(courseId) {
       commit({ kind: 'course.delete', id: courseId }, (d) => ({
@@ -381,6 +395,10 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
       window.location.reload()
     },
   }
+
+  // Before the children render, so every courseBrand() call below sees
+  // logos set in the app, including one saved a moment ago.
+  syncStoredBrands(data.courses)
 
   return <StoreContext.Provider value={api}>{children}</StoreContext.Provider>
 }
