@@ -5,7 +5,7 @@ import { hasPars } from '../lib/courses'
 import { byGroupRank, byRating, courseSummaries, fmtStars, moveBy, myRanking, ordinal } from '../lib/ratings'
 import { StarRating } from '../components/Stars'
 import { CourseTile } from '../components/CourseLogo'
-import { Card, chip, EmptyState, HelpTip, Pill, SectionLabel } from '../components/ui'
+import { Card, EmptyState, HelpTip, Pill, SectionLabel } from '../components/ui'
 import { TeeYardsCatchUp } from '../components/TeeYardsCatchUp'
 import { HoleMapsCatchUp } from '../components/HoleMapsCatchUp'
 import { RoundsCoursesSwitch } from '../components/RoundsCoursesSwitch'
@@ -49,18 +49,38 @@ export default function Courses() {
 
   return (
     <div className="rise">
-      <header className="pt-4 pb-3 px-1 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-large font-bold tracking-tight text-ink">Courses</h1>
+      {/* Same shape as Rounds: the view is a small pill in the title row,
+          and adding a course ahead of time is the round + beside it. */}
+      <header className="flex items-center justify-between gap-3 px-1 pb-3 pt-4">
+        <h1 className="text-large font-bold tracking-tight text-ink">Courses</h1>
+        <div className="flex items-center gap-2">
+          {rows.length > 0 && (
+            <label className="relative flex items-center gap-1 rounded-full border border-line-strong bg-card px-3 py-1.5 text-footnote font-bold capitalize text-ink-dim">
+              {view}
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+                <path d="M3 4.5l3 3 3-3" />
+              </svg>
+              <select
+                value={view}
+                onChange={(e) => setView(e.target.value as View)}
+                aria-label="Ratings or rankings"
+                className="absolute inset-0 cursor-pointer appearance-none opacity-0"
+              >
+                <option value="ratings">Ratings</option>
+                <option value="rankings">Rankings</option>
+              </select>
+            </label>
+          )}
+          <button
+            onClick={() => navigate('/courses/new')}
+            aria-label="Add a course"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-green text-white shadow-[0_3px_10px_rgba(28,124,74,0.3)] transition active:scale-90"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+              <path d="M9 3.5v11M3.5 9h11" />
+            </svg>
+          </button>
         </div>
-        {/* Adding ahead of time: the card, stroke index and slope go in
-            before the first tee, and the round finds them by name. */}
-        <button
-          onClick={() => navigate('/courses/new')}
-          className="rounded-xl bg-green px-4 py-2.5 text-footnote font-bold text-white active:scale-95 transition shrink-0 mt-1"
-        >
-          + Add course
-        </button>
       </header>
       <RoundsCoursesSwitch />
 
@@ -68,17 +88,6 @@ export default function Courses() {
         <EmptyState title="No courses yet" sub="Add the course you're about to play, or log a round and it turns up here, ready to be rated." />
       ) : (
         <>
-          <div className="mt-3 flex gap-2">
-            {(['ratings', 'rankings'] as View[]).map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`rounded-full border px-4 py-2 text-footnote font-bold capitalize transition ${chip(view === v)}`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
 
           {view === 'ratings' ? (
             <>

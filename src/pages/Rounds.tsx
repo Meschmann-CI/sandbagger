@@ -4,7 +4,7 @@ import { useLogSheet } from '../components/logSheet'
 import { useStore } from '../data/store'
 import { byDate, roundStandings, shortDate } from '../lib/stats'
 import { fmt1, isSoloRound, pending } from '../types'
-import { AvatarStack, Card, EmptyState, Pill, PrimaryButton, RowBadge } from '../components/ui'
+import { chip, AvatarStack, Card, EmptyState, Pill, PrimaryButton, RowBadge } from '../components/ui'
 import { Icon } from '../components/icons'
 import RoundScene from '../components/RoundScene'
 import { CourseTile } from '../components/CourseLogo'
@@ -48,23 +48,31 @@ export default function Rounds() {
 
   return (
     <div className="rise">
-      <header className="pt-4 pb-3 px-1">
+      {/* One row of controls, not two: the filter is a small pill in the
+          title row (the phone's own picker opens from it). */}
+      <header className="flex items-center justify-between gap-3 px-1 pb-3 pt-4">
         <h1 className="text-large font-bold tracking-tight text-ink">Rounds</h1>
-      </header>
-      <RoundsCoursesSwitch />
-
-      <div className="flex gap-2 mt-3 mb-2">
-        {filters.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`rounded-full px-4 py-2 text-footnote font-bold border transition ${
-              filter === f.key ? 'bg-ink text-white border-ink' : 'bg-card text-ink-dim border-line-strong'
-            }`}
+        <label className={`relative flex items-center gap-1 rounded-full border px-3 py-1.5 text-footnote font-bold ${chip(filter !== 'all')}`}>
+          {filters.find((f) => f.key === filter)?.label}
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+            <path d="M3 4.5l3 3 3-3" />
+          </svg>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as Filter)}
+            aria-label="Which rounds"
+            className="absolute inset-0 cursor-pointer appearance-none opacity-0"
           >
-            {f.label}
-          </button>
-        ))}
+            {filters.map((f) => (
+              <option key={f.key} value={f.key}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </header>
+      <div className="mb-2">
+        <RoundsCoursesSwitch />
       </div>
 
       {rounds.length === 0 && (
