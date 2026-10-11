@@ -94,6 +94,37 @@ export default function HoleEntry() {
   // that fires the confetti for the big ones.
   const [cheer, setCheer] = useState<{ playerId: string; hole: number; label: string; big: boolean; n: number } | null>(null)
   const [confetti, setConfetti] = useState(0)
+
+  // A score typed on another phone, arriving through the live sync: a
+  // short note ("Ravi: 6 on the 7th") and one soft ring on their box, so
+  // four phones feel like one card. Anything this phone typed sits in
+  // `edits` for the session, so its own saves never count as news.
+  const [news, setNews] = useState<{ playerId: string; hole: number; value: number; n: number } | null>(null)
+  const seenCards = useRef<Map<string, (number | null)[]> | null>(null)
+  useEffect(() => {
+    if (!round) return
+    const now = new Map(round.players.map((rp) => [rp.playerId, cardOf(rp)]))
+    const before = seenCards.current
+    seenCards.current = now
+    if (!before) return
+    for (const [playerId, card] of now) {
+      const old = before.get(playerId)
+      if (!old) continue
+      for (let i = 0; i < card.length; i++) {
+        const v = card[i]
+        if (v != null && v !== old[i] && edits[playerId]?.[i] === undefined) {
+          setNews({ playerId, hole: i, value: v, n: Date.now() })
+          return
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [round])
+  useEffect(() => {
+    if (!news) return
+    const t = setTimeout(() => setNews(null), 3500)
+    return () => clearTimeout(t)
+  }, [news])
   useEffect(() => {
     if (!cheer) return
     const t = setTimeout(() => setCheer(null), 1500)
@@ -627,7 +658,8 @@ export default function HoleEntry() {
         type="button"
         onClick={() => select({ playerId, hole: i })}
         aria-label={`${data.players.find((pl) => pl.id === playerId)?.name ?? ''}, hole ${i + 1}${v != null ? `, ${v}` : ', no score'}`}
-        className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${pointed ? 'ring-2 ring-green bg-green-soft/60' : ''}`}
+        key={news?.playerId === playerId && news.hole === i ? `news-${news.n}` : 'box'}
+        className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${pointed ? 'ring-2 ring-green bg-green-soft/60' : ''} ${news?.playerId === playerId && news.hole === i ? 'news-ring' : ''}`}
       >
         {v == null ? (
           !pointed && <span className="h-11 w-11 rounded-lg border-[1.5px] border-dashed border-line-strong" />
@@ -936,6 +968,22 @@ export default function HoleEntry() {
     // the screen — the first cut had the tab bar drawn over the pad.
     <div className={view === 'hole' ? 'pb-[150px]' : active ? 'pb-72' : ''}>
       <Confetti fire={confetti} originY={0.4} />
+      {news &&
+        (() => {
+          const p = data.players.find((pl) => pl.id === news.playerId)
+          if (!p) return null
+          return (
+            <div
+              key={news.n}
+              role="status"
+              className="news-in pointer-events-none fixed left-1/2 z-[55] flex items-center gap-2 whitespace-nowrap rounded-full bg-ink/90 py-1.5 pl-1.5 pr-3.5 text-footnote font-bold text-white shadow-[0_6px_20px_rgba(24,32,25,0.3)] backdrop-blur"
+              style={{ top: 'calc(env(safe-area-inset-top) + 62px)' }}
+            >
+              <Avatar player={p} size={22} />
+              {p.name.split(' ')[0]}: {news.value} on the {ordinal(news.hole + 1)}
+            </div>
+          )
+        })()}
       {mapOpen != null && courseMap && (
         <HoleMapSheet
           map={courseMap}
