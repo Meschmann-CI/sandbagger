@@ -177,7 +177,7 @@ export default function EditRound() {
                         onClick={() => navigate(`/rounds/${round.id}/card`)}
                         className="shrink-0 text-right"
                       >
-                        <span className="block text-headline font-extrabold text-ink tabular-nums">{entry.gross ?? '—'}</span>
+                        <span className="block text-headline font-extrabold text-ink tabular-nums">{entry.gross ?? '–'}</span>
                         <span className="block text-caption font-bold text-green">from card →</span>
                       </button>
                     ) : on ? (
@@ -193,7 +193,7 @@ export default function EditRound() {
                           type="number"
                           inputMode="numeric"
                           value={entry.gross ?? ''}
-                          placeholder="—"
+                          placeholder="–"
                           onChange={(e) => setScore(p.id, e.target.value)}
                           className="w-16 h-10 rounded-lg border border-line-strong bg-card text-center text-headline font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
                         />

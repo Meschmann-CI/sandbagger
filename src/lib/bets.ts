@@ -1,5 +1,5 @@
 import type { Bet, BetResult, Course, Round, RoundPlayer } from '../types'
-import { BACK, FRONT, HOLE_COUNT, cardOf, nineComparable, strokes } from './holes'
+import { BACK, FRONT, HOLE_COUNT, cardOf, strokes } from './holes'
 import { hasSlopeRating, hasStrokeIndex, playingHandicap, strokesByHole, strokesOffLow } from './courses'
 
 // Working out who owes what from the card. Both games pay per unit: the
@@ -361,12 +361,4 @@ export function settleFromCard(bet: Bet, round: Round, course?: Course): BetOutc
   if (bet.type === 'skins') return calcSkins(round, ids, bet.stake, bet.net, course, bet.winnerTakeAll)
   if (bet.type === 'nassau') return calcNassau(round, ids, bet.stake, bet.net, course)
   return calcMatchPlay(round, ids, bet.stake, bet.net, course)
-}
-
-export const nassauReady = (round: Round, playerIds: string[]) => {
-  const entries = playerIds.map((id) => round.players.find((rp) => rp.playerId === id)).filter((rp): rp is RoundPlayer => !!rp)
-  if (entries.length < 2) return false
-  return (['front', 'back'] as const).some((half) =>
-    entries.every((_, i) => i === 0 || nineComparable(entries[0], entries[i], half)),
-  )
 }

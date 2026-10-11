@@ -292,7 +292,7 @@ export default function CourseDetail() {
                       {t.name}
                       {isDefault && <span className="ml-1.5 text-caption font-semibold text-green">default</span>}
                     </span>
-                    <span className="text-right tabular-nums text-ink-dim">{t.yards ?? '—'}</span>
+                    <span className="text-right tabular-nums text-ink-dim">{t.yards ?? '–'}</span>
                     <span className="text-right tabular-nums font-bold text-ink">
                       {t.rating} / {t.slope}
                     </span>

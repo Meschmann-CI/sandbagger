@@ -671,9 +671,6 @@ function writeLocal(courseId: string, map: CourseMap | null) {
   }
 }
 
-/** Size of a map as stored, in kilobytes. For checking. */
-export const packedKb = (map: CourseMap) => Math.round(JSON.stringify(pack(map)).length / 1024)
-
 /** This phone's copy straight away, or null. */
 export const cachedCourseMap = (courseId: string): CourseMap | null => memo.get(courseId) ?? readLocal(courseId)
 
@@ -753,5 +750,3 @@ export async function coursesWithMaps(courseIds: string[]): Promise<Set<string>>
   const { data } = await supabase.from('course_maps').select('course_id')
   return new Set((data ?? []).map((r: { course_id: string }) => r.course_id))
 }
-
-export const OSM_CREDIT = '© OpenStreetMap contributors'

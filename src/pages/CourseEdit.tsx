@@ -430,7 +430,7 @@ export default function CourseEdit() {
           <p className="text-footnote font-bold text-ink">
             {complete ? 'Par' : `${parsIn} of ${HOLE_COUNT} holes`}
           </p>
-          <p className="text-large font-extrabold text-ink tabular-nums">{total || '—'}</p>
+          <p className="text-large font-extrabold text-ink tabular-nums">{total || '–'}</p>
         </div>
         {complete && (
           <p className="text-footnote text-ink-dim mt-1 tabular-nums">

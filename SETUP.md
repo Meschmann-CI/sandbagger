@@ -49,12 +49,10 @@ instead of the app.
 
 ## 5. Sign in and create the group
 
-Before anyone signs in, make both sign-in emails show a code instead of a link (links
-open in Safari, not in the home-screen app). In **Authentication → Emails → Templates**,
-replace the body of **Confirm signup** (first sign-in) and **Magic Link** (every one after)
-with the matching file in `supabase/email-templates/`, and set both subjects to
-*Your Sandbagger code*. The app accepts codes of 6 to 10 digits, whatever **Email OTP
-Length** is set to.
+Sign-in is a code by email. The stock Supabase templates work: iOS autofills the code from
+the message, so the custom code-only templates in `supabase/email-templates/` are
+optional. The app accepts codes of 6 to 10 digits, whatever **Email OTP Length** is set to.
+Magic-link emails from a Gmail sender via Brevo tend to land in Gmail spam; tell new golfers.
 
 1. Enter your email, click **Email me a code**, then enter the code from your inbox.
 2. You'll land on a setup screen. Choose **Start a new group**.
@@ -66,12 +64,13 @@ Length** is set to.
 
 ## 6. Add the other guys
 
-On your **Profile** tab, tap **+ Add golfer** and enter each person's name, email, and
-handicap. When they sign in with that email, the profile you made becomes theirs
-automatically — no invite code needed.
+On the **You** tab open the group page and tap **Add golfer**; enter each person's name,
+email, and handicap. When they sign in with that email, the profile you made becomes
+theirs automatically, no invite code needed.
 
 If someone would rather join themselves, give them the six-character **invite code**
-shown on your Profile tab.
+shown on the group page. Only golfers with a profile in a group can use the scorecard
+scanner or the course directory; a stray Supabase account with no profile gets a 403.
 
 ## 7. Deploy to Netlify
 
@@ -81,7 +80,13 @@ shown on your Profile tab.
 3. Netlify reads `netlify.toml`, so the build settings are already correct.
 4. Before deploying, open **Site configuration → Environment variables** and add the same
    two values from step 4 (`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`).
-5. Deploy. You'll get a URL like `sandbagger.netlify.app` — send that to the group.
+5. Deploy. You'll get a URL like `thesandbagger.netlify.app`; send that to the group.
+6. Edge Function secrets, under **Edge Functions → Secrets** in Supabase:
+   `VAPID_PRIVATE_KEY` (push, pairs with the public key in `src/lib/push.ts`),
+   `ANTHROPIC_API_KEY` (or `sandbag-api-key`) for `scan-card`, and `GOLFCOURSE_API_KEY`
+   for `course-lookup`. Deploy the three functions from `supabase/functions/`.
+7. Storage: create public buckets `round-photos`, `course-logos` and `player-photos`
+   (`schema.sql` does this and sets their policies when re-run).
 
 ## 8. One Supabase setting for the live site
 
@@ -99,9 +104,12 @@ anyone else's phone.
 ## Notes
 
 - **Free tier limits**: Supabase pauses a project after a week with no activity (one
-  click to restore) and sends 3 sign-in emails per hour by default. Fine for four guys;
-  if the email limit bites, connect your own SMTP under Authentication → Emails.
-- **Photos** are stored inline in the database as compressed images. That works, but if
-  the group starts uploading a lot of them, moving to Supabase Storage is the next step.
+  click to restore); `.github/workflows/keepalive.yml` writes a heartbeat row every 6
+  hours so that never happens. The built-in mailer sends 2 sign-in emails per hour and
+  the limit is locked until custom SMTP exists; Brevo SMTP is connected and the limit is
+  30 an hour.
+- **Photos** (round photos, course logos, golfer faces) go to Supabase Storage buckets,
+  compressed on the phone first. Public to read by URL, written only inside the group's
+  own folder.
 - **Local mode still works**: delete or rename `.env.local` and the app goes back to the
   sample data in your browser, which is handy for testing without touching real data.

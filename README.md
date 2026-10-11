@@ -1,4 +1,6 @@
-# Sandbagger
+# Bandit
+
+(Repo, folder and Netlify address still say "sandbagger"; the app is Bandit.)
 
 Golf trips, rivalries, and receipts. A trip HQ, lifetime rivalry ledger, and side-bet
 tracker for a golf friend group.
@@ -62,7 +64,9 @@ Two things only work once deployed:
 - **Photo autofill from a booking link.** `netlify/functions/link-preview.js` fetches the
   page server-side and pulls its Open Graph image. Locally there's no function host, so
   the editor falls back to the photo picker.
-- Course and venue icons load from favicons and work everywhere, deployed or not.
+- Venue icons load from favicons and work everywhere, deployed or not. Course logos come
+  from `public/logos/` (`src/lib/courseBrands.ts`) or a logo set in the app, which lands in
+  the `course-logos` bucket.
 
 ## Key files
 
@@ -71,6 +75,15 @@ Two things only work once deployed:
   make private trips actually private. **Re-run this in the Supabase SQL editor after
   pulling** — it's safe to re-run, and trip voting needs the `toggle_trip_vote`
   function it adds.
+- `supabase/functions/` — the Edge Functions: `notify` (push), `scan-card` (reads a
+  photographed scorecard with Claude), `course-lookup` (GolfCourseAPI directory). Secrets
+  live in the Supabase dashboard, never in the repo.
+- Storage buckets `round-photos`, `course-logos` and `player-photos`: public to read by
+  URL, written and listed only inside the group's own folder.
+- `.github/workflows/keepalive.yml` — writes one heartbeat row every 6 hours so the free
+  Supabase project is never paused for inactivity.
+- `src/lib/useNewVersion.ts` — notices a new deploy and reloads on resume when nothing is
+  mid-edit.
 - `src/lib/courses.ts` — par and stroke index, and how a round's free-text
   course name finds them
 - `src/data/outbox.ts` — the queue that holds writes until there's signal

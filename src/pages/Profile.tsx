@@ -329,7 +329,7 @@ export default function Profile() {
               {([3, 4, 5] as const).map((par) => (
                 <div key={par} className="text-center">
                   <p className="text-title font-extrabold text-ink tabular-nums">
-                    {game.avgByPar[par] != null ? game.avgByPar[par]!.toFixed(2) : '—'}
+                    {game.avgByPar[par] != null ? game.avgByPar[par]!.toFixed(2) : '–'}
                   </p>
                   <p className="text-footnote font-semibold text-ink-dim mt-0.5">on par {par}s</p>
                 </div>

@@ -727,7 +727,7 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
                         type="number"
                         inputMode="numeric"
                         value={val ?? ''}
-                        placeholder="—"
+                        placeholder="–"
                         onChange={(e) => {
                           const n = parseInt(e.target.value, 10)
                           setScores((sc) => {

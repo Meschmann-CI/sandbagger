@@ -4,8 +4,6 @@ export const HOLE_COUNT = 18
 export const FRONT = [0, 9] as const
 export const BACK = [9, 18] as const
 
-export const emptyCard = (): (number | null)[] => Array(HOLE_COUNT).fill(null)
-
 /** Pads or trims a stored card to 18 so indexing is always safe. */
 export function cardOf(rp: RoundPlayer): (number | null)[] {
   const card = rp.holes ?? []

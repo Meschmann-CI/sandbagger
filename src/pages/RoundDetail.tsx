@@ -503,7 +503,7 @@ export default function RoundDetail() {
                       inputMode="numeric"
                       value={draftScore}
                       onChange={(e) => setDraftScore(e.target.value)}
-                      placeholder="—"
+                      placeholder="–"
                       autoFocus
                       className="w-16 h-10 rounded-lg border border-line-strong bg-card text-center text-headline font-extrabold text-ink tabular-nums focus:border-green focus:outline-none"
                     />

@@ -52,10 +52,6 @@ export const myRanking = (data: AppData, playerId = data.currentUserId): string[
 export const ratingFor = (data: AppData, slug: string, playerId = data.currentUserId): CourseRating | undefined =>
   data.courseRatings.find((r) => r.courseSlug === slug && r.playerId === playerId)
 
-/** Has this golfer played the course, on any logged round. */
-export const hasPlayed = (data: AppData, slug: string, playerId = data.currentUserId) =>
-  data.rounds.some((r) => courseSlug(r.courseName) === slug && r.players.some((rp) => rp.playerId === playerId))
-
 const mean = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null)
 
 /**

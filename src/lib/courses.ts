@@ -1,5 +1,5 @@
-import type { AppData, Course, CourseNine, Round, RoundPlayer } from '../types'
-import { HOLE_COUNT, cardOf } from './holes'
+import type { AppData, Course, CourseNine, Round } from '../types'
+import { HOLE_COUNT } from './holes'
 
 // Par lives on the course, not the round, so filling it in once reaches
 // backwards through every round ever played there.
@@ -179,18 +179,6 @@ export function hasStrokeIndex(course: Course | undefined): course is Course {
 /** Course par, or null until every hole has one. */
 export const coursePar = (course?: Course): number | null =>
   hasPars(course) ? padded(course.pars).reduce<number>((sum, p) => sum + (p ?? 0), 0) : null
-
-/** Par over a slice of the card, for the front and back nines. */
-export const parBetween = (course: Course, from: number, to: number) =>
-  padded(course.pars)
-    .slice(from, to)
-    .reduce<number>((sum, p) => sum + (p ?? 0), 0)
-
-/** Par for the holes this golfer actually has a score on. */
-export function parForEnteredHoles(course: Course, rp: RoundPlayer): number {
-  const card = cardOf(rp)
-  return padded(course.pars).reduce<number>((sum, par, i) => sum + (card[i] != null ? (par ?? 0) : 0), 0)
-}
 
 /** "+4", "E", "−2". A true minus sign, to match the rest of the app. */
 export const toPar = (n: number) => (n === 0 ? 'E' : n > 0 ? `+${n}` : `−${Math.abs(n)}`)

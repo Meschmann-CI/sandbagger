@@ -59,8 +59,30 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   (`resumeMaps` in Shell); it holds app updates while running. Matt reported the old version
   stopping when he changed screens.
 
+- Audit (2026-10-11, branch `audit-fixes` off main, not pushed): `AUDIT-2026-10-11.md` is
+  the full report. Fixed on the branch: the app no longer reboots on every resume and
+  hourly token refresh (App.tsx boots on the user id, not the session object); the trip
+  page no longer crashes on an unscored round; an `ErrorBoundary` under Shell's Outlet
+  catches a page throw (keyed by route); `sw.js` v4 only caches `/assets/`, `/logos/`,
+  `/splash/` and static files, so the 10-minute version probe no longer fills Cache
+  Storage, and a non-OK navigation never becomes the offline shell; `scan-card` v7 and
+  `course-lookup` v5 (both deployed) require a player row via `claim_my_player`, not just
+  a Supabase account, and scan-card returns a CORS-clean 502 when the Anthropic call
+  fails. Cleanup: dead files and exports removed, PuttsRow on `text-caption`, empty-value
+  glyph is `–` everywhere, README/SETUP brought up to date, eight merged branches and
+  `flat-preview` deleted. `faces` was left alone on purpose (Matt undecided).
+  Still to apply in prod: `supabase/apply-2026-10-11.sql` (storage listing policies
+  scoped to the group, anon revokes); the MCP migration was blocked here, paste it into
+  the SQL editor. When `faces` merges, its `player_photos_read` policy in schema.sql needs
+  the same `to authenticated` + folder scope.
+
 ## Next actions
 
+0. Audit follow-ups (2026-10-11): paste `supabase/apply-2026-10-11.sql` into the SQL
+   editor; merge `audit-fixes` to main and push with `faces` (or without it); then the
+   "Worth fixing soon" list in `AUDIT-2026-10-11.md`, first the outbox dropping a queued
+   score after an expired token, bets charging a removed golfer, and the fractional cents
+   in winner-take-all skins.
 1. Done: the directory search worked on Matt's phone (2026-10-10).
 2. `Attest` signatures live per phone in localStorage; sharing them needs a DB column.
 3. Course logos in the app: built 2026-10-10 (see Current state). After the push, try it
@@ -217,6 +239,12 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Traps
 
+- auth-js fires `SIGNED_IN` with a new session object on every hidden -> visible
+  transition and `TOKEN_REFRESHED` every hour. Never key an effect on the session object;
+  key on `session.user.id` (App.tsx). Keying on the object rebooted the app on every
+  resume until 2026-10-11.
+- The service worker caches any same-origin GET it is told to. A probe with a unique
+  query string (`?check=<ts>`) must be excluded or it adds a cache entry per call.
 - Supabase's built-in mailer caps at 2 emails/hour and the rate-limit field is locked until
   custom SMTP exists. Brevo SMTP is configured and the limit raised to 30/h. Magic links from a
   Gmail sender via Brevo land in Gmail spam; tell new golfers. "Check your email" never proves

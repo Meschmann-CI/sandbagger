@@ -51,16 +51,6 @@ export function lightFor(key: string): Light {
   return LIGHTS[hash(key) % LIGHTS.length]
 }
 
-/** Lights for a list, in order: each key's own, nudged along when it would match its neighbour. */
-export function lightsFor(keys: string[]): Light[] {
-  const out: Light[] = []
-  for (const key of keys) {
-    let l = lightFor(key)
-    if (out.length && out[out.length - 1] === l) l = LIGHTS[(LIGHTS.indexOf(l) + 1) % LIGHTS.length]
-    out.push(l)
-  }
-  return out
-}
 
 interface Palette {
   sky: string[]

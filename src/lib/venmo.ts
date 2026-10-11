@@ -21,8 +21,6 @@ export function normalizeVenmo(raw: string): string {
     .slice(0, 30)
 }
 
-export const venmoProfile = (handle: string) => `https://venmo.com/u/${encodeURIComponent(handle)}`
-
 export type VenmoAction = 'pay' | 'charge'
 
 /**
