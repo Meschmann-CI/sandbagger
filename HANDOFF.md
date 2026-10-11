@@ -44,7 +44,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   `rounds` (empty for anon). Check with `select * from keepalive_heartbeat`. The old weekly
   read-only ping is the pattern that drew a pause warning on Process Mapper.
 
-- Design polish (2026-10-11, branch `polish`, not merged or pushed yet): explainer captions
+- Design polish (2026-10-11, merged to main and pushed): explainer captions
   trimmed; forest kept for the big moments (season race, You header, Saddam, Log button),
   picked chips are ink via `chip()` and view switches are the iOS `Segmented` in
   `components/ui.tsx`; podium 2nd/3rd sand; Round detail actions are a row of round buttons
