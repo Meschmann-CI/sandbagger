@@ -6,7 +6,7 @@ import { useNewVersion } from '../lib/useNewVersion'
 import { updatesHeld } from '../lib/holdUpdates'
 import { Avatar } from './ui'
 import { CompactTitleBar, useNavRecorder } from './Nav'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
 import { announceRouted } from '../lib/viewTransition'
 import { unlockAudio } from '../lib/sound'
 import LogRound from '../pages/LogRound'
@@ -25,39 +25,54 @@ import PullToRefresh from './PullToRefresh'
 
 const stroke = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' } as const
 
-const tabs = [
+// Each tab icon has two states, the iOS way: an outline when it's not
+// where you are, a filled shape when it is.
+const tabs: { to: string; label: string; icon: ((on: boolean) => ReactNode) | null }[] = [
   {
     to: '/',
     label: 'Home',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
-        <path d="M3 11.5 L12 4 L21 11.5" />
-        <path d="M5.5 10 V20 H18.5 V10" />
-        <path d="M10 20 V14.5 H14 V20" />
-      </svg>
-    ),
+    icon: (on) =>
+      on ? (
+        <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
+          <path d="M3 11.5 L12 4 L21 11.5 V20 H14 V14.5 H10 V20 H3 Z" fill="currentColor" strokeWidth={1.6} />
+        </svg>
+      ) : (
+        <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
+          <path d="M3 11.5 L12 4 L21 11.5" />
+          <path d="M5.5 10 V20 H18.5 V10" />
+          <path d="M10 20 V14.5 H14 V20" />
+        </svg>
+      ),
   },
   {
     to: '/rounds',
     label: 'Rounds',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
+    icon: (on) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" {...stroke} strokeWidth={on ? 2.2 : 1.9}>
         <path d="M8 3 V16" />
         <path d="M8 3 L15.5 5.75 L8 8.5" fill="currentColor" stroke="none" />
-        <circle cx="8" cy="19" r="2.4" />
+        <circle cx="8" cy="19" r="2.4" fill={on ? 'currentColor' : 'none'} />
       </svg>
     ),
   },
   {
     to: '/h2h',
     label: 'Standings',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
-        <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
-        <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4" />
-        <path d="M12 13v4M9 20.5h6M10 17h4v3.5h-4z" />
-      </svg>
-    ),
+    icon: (on) =>
+      on ? (
+        <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
+          <path d="M8 4h8v5a4 4 0 0 1-8 0z" fill="currentColor" />
+          <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4" strokeWidth={2.1} />
+          <path d="M12 13v4M9 20.5h6" strokeWidth={2.1} />
+          <path d="M10 17h4v3.5h-4z" fill="currentColor" />
+        </svg>
+      ) : (
+        <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
+          <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
+          <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4" />
+          <path d="M12 13v4M9 20.5h6M10 17h4v3.5h-4z" />
+        </svg>
+      ),
   },
   {
     to: '/profile',
@@ -133,7 +148,7 @@ export default function Shell() {
         current === t.to ? 'text-green' : 'text-ink-faint hover:text-ink-dim'
       }`}
     >
-      {t.icon ?? (
+      {t.icon?.(current === t.to) ?? (
         <span className={`rounded-full ${current === '/profile' ? 'ring-2 ring-green ring-offset-1' : ''}`}>
           <Avatar player={me} size={22} />
         </span>
