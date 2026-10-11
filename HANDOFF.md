@@ -50,7 +50,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 2. `Attest` signatures live per phone in localStorage; sharing them needs a DB column.
 3. Course logos in the app: built 2026-10-10 (see Current state). After the push, try it
    on a phone: paste a logo from a course site, and scan a real card.
-4. GPS and hole maps: built 2026-10-10, committed, not pushed yet. See "Hole maps and GPS"
+4. GPS and hole maps: live 2026-10-10 (0a5a19c). See "Hole maps and GPS"
    under Decisions. After the push: Matt taps "Get them" under Courses > Ratings (Hole maps
    card) to pull every course, then tries distances on a real round.
 5. Dropped (Matt, 2026-10-10): the code-only Magic Link templates in
