@@ -633,20 +633,27 @@ begin
 end;
 $$;
 
-revoke execute on function rename_course(text, text) from anon;
-
 -- Security linter follow-ups. jsonb_without takes no table names, but a
 -- role can still swap its search_path; pin it like the other helpers.
--- The SECURITY DEFINER helpers all key off auth.uid(), so an anonymous
--- call returns null or raises — harmless, but there's no reason to leave
--- them reachable without a session. keepalive (below) stays open on
--- purpose: the GitHub Action pings it every six hours with the anon key.
+-- The SECURITY DEFINER actions all key off auth.uid(), so an anonymous
+-- call returns null or raises; harmless, but there's no reason to leave
+-- them reachable without a session. Supabase grants execute on every
+-- function to `public`, which `anon` inherits, so the revoke has to name
+-- `public` too (revoking from `anon` alone changes nothing; found
+-- 2026-10-11). current_group_id / current_player_id stay callable by
+-- anyone: the RLS policies call them as whoever is querying, and the
+-- keep-alive Action reads `rounds` with the anon key (it gets no rows,
+-- but a permission error there would fail the job). keepalive (below)
+-- stays open on purpose: the Action pings it every six hours.
 alter function jsonb_without(jsonb, jsonb) set search_path = public;
-revoke execute on function current_player_id() from anon;
-revoke execute on function current_group_id() from anon;
-revoke execute on function claim_my_player() from anon;
-revoke execute on function create_group_with_owner(text, text, text, text, numeric, text) from anon;
-revoke execute on function join_group_by_code(text, text, text, numeric) from anon;
+revoke execute on function rename_course(text, text) from public, anon;
+revoke execute on function claim_my_player() from public, anon;
+revoke execute on function create_group_with_owner(text, text, text, text, numeric, text) from public, anon;
+revoke execute on function join_group_by_code(text, text, text, numeric) from public, anon;
+grant execute on function rename_course(text, text) to authenticated, service_role;
+grant execute on function claim_my_player() to authenticated, service_role;
+grant execute on function create_group_with_owner(text, text, text, text, numeric, text) to authenticated, service_role;
+grant execute on function join_group_by_code(text, text, text, numeric) to authenticated, service_role;
 
 -- ============================================================
 -- Row Level Security
