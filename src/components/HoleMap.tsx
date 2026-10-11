@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { greenCentre, hazardsInPlay, metres, ON_HOLE_METRES, projector, teeOf, yards, type CourseMap, type FeatureKind, type LngLat, type MapHole } from '../lib/courseMap'
+import { windOnHole, type Wind } from '../lib/liveWind'
 
 // One hole, drawn from above in the colours of the course scenes, turned
 // so you always play up the screen: tee at the bottom, green at the top.
@@ -27,10 +28,12 @@ interface Props {
   onTarget?: (p: LngLat) => void
   /** Pixels at the top the hole should stay clear of. */
   padTop?: number
+  /** The wind right now, for the arrow. */
+  wind?: Wind | null
   className?: string
 }
 
-export default function HoleMap({ map, hole, from, mode, target, onTarget, padTop = 0, className = '' }: Props) {
+export default function HoleMap({ map, hole, from, mode, target, onTarget, padTop = 0, wind, className = '' }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
   useEffect(() => {
@@ -193,6 +196,28 @@ export default function HoleMap({ map, hole, from, mode, target, onTarget, padTo
           )}
         </svg>
       )}
+      {wind && wind.mph >= 3 && (() => {
+        // "Up the hole" on screen is the frame's up vector; as a compass bearing:
+        const bearing = ((Math.atan2(frame.ux, frame.uy) * 180) / Math.PI + 360) % 360
+        const { arrowDeg, words } = windOnHole(wind, bearing)
+        return (
+          <span
+            className="pointer-events-none absolute right-3 flex items-center gap-1.5 rounded-xl bg-white/95 px-2.5 py-1.5 shadow-sm"
+            style={{ top: mode === 'mini' ? padTop + 4 : 12 }}
+            aria-label={`Wind ${wind.mph} miles an hour, ${words}`}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" style={{ transform: `rotate(${arrowDeg}deg)` }} aria-hidden>
+              <path d="M9 2 L13.5 9 H10.3 V16 H7.7 V9 H4.5 Z" fill="#2f6fa3" />
+            </svg>
+            <span className="leading-tight">
+              <span className="block text-footnote font-extrabold tabular-nums text-ink">
+                {wind.mph} mph{wind.gustMph >= wind.mph + 6 ? <span className="font-semibold text-ink-dim"> · gusts {wind.gustMph}</span> : null}
+              </span>
+              <span className="block text-caption font-semibold text-ink-dim">{words}</span>
+            </span>
+          </span>
+        )
+      })()}
       <span className="pointer-events-none absolute bottom-1 right-1.5 text-caption text-ink/50">© OpenStreetMap</span>
     </div>
   )

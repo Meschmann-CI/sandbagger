@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { drawable, greenCentre, greenYards, metres, ON_HOLE_METRES, teeOf, type CourseMap, type LngLat, type MapHole } from '../lib/courseMap'
 import HoleMap from './HoleMap'
+import type { Wind } from '../lib/liveWind'
 import { Icon } from './icons'
 
 // The hole full screen: drag the target anywhere for the distance to it
@@ -27,12 +28,14 @@ interface Props {
   onIndex: (i: number) => void
   par?: number | null
   from?: LngLat | null
+  /** The wind right now, for the arrow. */
+  wind?: Wind | null
   /** Shown over the map, fixed to the screen. Off: laid out in the page (the course map page). */
   overlay?: boolean
   onClose?: () => void
 }
 
-export default function HoleMapSheet({ map, holeAt, index, onIndex, par, from, overlay = true, onClose }: Props) {
+export default function HoleMapSheet({ map, holeAt, index, onIndex, par, from, wind, overlay = true, onClose }: Props) {
   const hole = holeAt(index)
   const centre = hole ? greenCentre(map, hole) : null
   const here = from && centre && metres(from, centre) < ON_HOLE_METRES ? from : null
@@ -75,7 +78,7 @@ export default function HoleMapSheet({ map, holeAt, index, onIndex, par, from, o
       </div>
 
       {hole && drawable(hole) ? (
-        <HoleMap map={map} hole={hole} from={here} mode="full" target={target} onTarget={setTarget} className="min-h-0 flex-1" />
+        <HoleMap map={map} hole={hole} from={here} mode="full" target={target} onTarget={setTarget} wind={wind} className="min-h-0 flex-1" />
       ) : (
         <div className="flex flex-1 items-center justify-center px-8 text-center text-footnote text-ink-dim">
           {hole ? 'Only the green is marked for this hole, so there’s nothing to draw. The distance to it still shows on the card.' : 'This hole isn’t on the map yet.'}

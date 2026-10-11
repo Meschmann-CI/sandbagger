@@ -35,6 +35,8 @@ import HoleMap from '../components/HoleMap'
 import HoleMapSheet from '../components/HoleMapSheet'
 import { autoFetchCourseMap, drawable, emptyCourseMap, greenCentre, greenYards, mapHoleFor, markKey, metres, ON_HOLE_METRES, saveCourseMap } from '../lib/courseMap'
 import { useCourseMap } from '../lib/useCourseMap'
+import { useLiveWind } from '../lib/liveWind'
+import { todayISO } from '../lib/dates'
 import { ordinal } from '../lib/ratings'
 import { distancesWanted, setDistancesWanted, usePosition } from '../lib/usePosition'
 
@@ -147,6 +149,9 @@ export default function HoleEntry() {
   const mapHoleAt = (i: number) => (courseMap ? mapHoleFor(courseMap, i, ninePair) : undefined)
   const [gpsOn, setGpsOn] = useState(distancesWanted)
   const pos = usePosition(gpsOn && !!courseMap)
+  // The wind right now, on a round being played today at a mapped course.
+  const live = !!round && round.date === todayISO()
+  const wind = useLiveWind(live && courseMap?.holes[0] ? courseMap.holes[0].centre : null)
   // A course with no map yet gets one tried in the background, once per
   // phone, the first time a round opens there.
   const courseId = course?.id
@@ -723,7 +728,7 @@ export default function HoleEntry() {
       <div className={`relative flex-1 overflow-hidden ${drawable(mapHole) ? 'min-h-[170px]' : 'min-h-[132px]'}`}>
         {mapHole && courseMap && drawable(mapHole) ? (
           <>
-            <HoleMap map={courseMap} hole={mapHole} from={pos.at} mode="mini" padTop={52} className="absolute inset-0 h-full w-full" />
+            <HoleMap map={courseMap} hole={mapHole} from={pos.at} mode="mini" padTop={52} wind={wind} className="absolute inset-0 h-full w-full" />
             <button type="button" onClick={() => setMapOpen(h)} aria-label={`Open the map of hole ${h + 1}`} className="absolute inset-0" />
           </>
         ) : (
@@ -939,6 +944,7 @@ export default function HoleEntry() {
           onIndex={setMapOpen}
           par={pars?.[mapOpen]}
           from={pos.at}
+          wind={wind}
           onClose={() => setMapOpen(null)}
         />
       )}
