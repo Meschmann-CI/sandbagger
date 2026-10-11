@@ -129,10 +129,6 @@ export default function SettleUp({ owed, note, url, onMarkPaid, squareLabel }: P
           )
         })}
       </div>
-      <p className="text-caption text-ink-faint mt-3">
-        Venmo opens with the amount and note already filled in. You still send it yourself, and "Mark paid" is what clears
-        it here.
-      </p>
     </>
   )
 }

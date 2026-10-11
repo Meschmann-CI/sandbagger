@@ -1325,9 +1325,6 @@ export default function HoleEntry() {
               Back to hole {h + 1}
             </PrimaryButton>
           </div>
-          <p className="text-caption text-ink-faint px-1 mt-2">
-            Saves as you go. Pocket the phone whenever.
-          </p>
         </>
       )}
         </>

@@ -235,7 +235,7 @@ export default function Profile() {
               You've played {roundsAtIndex} rounds at {fmt1(me.handicap)}
             </p>
             <p className="text-footnote text-ink-dim mt-1">
-              If GHIN has moved your index since then, update it here so net scores and bets stay honest.
+              Has GHIN moved it?
             </p>
             <div className="flex gap-4 mt-2.5">
               <button
@@ -391,8 +391,7 @@ export default function Profile() {
       ) : (
         <Card className="mt-3 p-4">
           <p className="text-footnote text-ink-dim">
-            <span className="font-bold text-ink">Want the real breakdown?</span> Score rounds hole by hole and fill in
-            course pars, and this turns into your par-3/4/5 averages and birdie-to-blowup rates.
+            Score a few rounds hole by hole and your par 3, 4 and 5 averages show up here.
           </p>
         </Card>
       )}

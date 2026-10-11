@@ -238,14 +238,14 @@ export default function CourseDetail() {
               Any two make a round, picked when it's logged. The par and index here are {course.nines[0].name} then {course.nines[1].name}.
             </p>
           )}
-          <p className="text-footnote text-ink-dim mt-0.5">
-            {par == null
-              ? 'Eighteen taps off the card, and every round here shows scores against par.'
-              : [
-                  hasStrokeIndex(course) ? 'stroke index in' : 'no stroke index',
-                  hasSlopeRating(course) ? `${course.rating}/${course.slope}` : 'no rating/slope',
-                ].join(' · ')}
-          </p>
+          {par != null && (
+            <p className="text-footnote text-ink-dim mt-0.5">
+              {[
+                hasStrokeIndex(course) ? 'stroke index in' : 'no stroke index',
+                hasSlopeRating(course) ? `${course.rating}/${course.slope}` : 'no rating/slope',
+              ].join(' · ')}
+            </p>
+          )}
         </div>
         {par == null ? <Pill tone="gold">Add par</Pill> : <span className="text-footnote font-bold text-green shrink-0">Edit →</span>}
       </Card>
