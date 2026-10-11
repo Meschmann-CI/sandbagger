@@ -302,13 +302,17 @@ alter table scan_usage enable row level security;
 -- Public-read bucket (a friend group's golf photos, at unguessable
 -- paths), written and deleted only by members of the group whose id
 -- is the first folder of the path: <group_id>/<round_id>/<photo_id>.jpg
+-- Downloads by URL don't go through these policies on a public bucket;
+-- the select policy only governs listing, so it is members-only and
+-- scoped to their own folder (an open select let anyone holding the
+-- anon key list every path and defeat "unguessable").
 insert into storage.buckets (id, name, public)
 values ('round-photos', 'round-photos', true)
 on conflict (id) do nothing;
 
 drop policy if exists round_photos_read on storage.objects;
-create policy round_photos_read on storage.objects for select
-  using (bucket_id = 'round-photos');
+create policy round_photos_read on storage.objects for select to authenticated
+  using (bucket_id = 'round-photos' and (storage.foldername(name))[1] = current_group_id()::text);
 
 drop policy if exists round_photos_insert on storage.objects;
 create policy round_photos_insert on storage.objects for insert to authenticated
@@ -325,8 +329,8 @@ values ('course-logos', 'course-logos', true)
 on conflict (id) do nothing;
 
 drop policy if exists course_logos_read on storage.objects;
-create policy course_logos_read on storage.objects for select
-  using (bucket_id = 'course-logos');
+create policy course_logos_read on storage.objects for select to authenticated
+  using (bucket_id = 'course-logos' and (storage.foldername(name))[1] = current_group_id()::text);
 
 drop policy if exists course_logos_insert on storage.objects;
 create policy course_logos_insert on storage.objects for insert to authenticated

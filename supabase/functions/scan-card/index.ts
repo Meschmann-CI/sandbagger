@@ -188,6 +188,10 @@ Deno.serve(async (req) => {
   })
   const { data: auth } = await asCaller.auth.getUser()
   if (!auth?.user) return reply('Sign in first', { status: 401 })
+  // ...and a member of a group. Anyone can mint a Supabase account for
+  // any email; only a golfer with a player row gets to spend the key.
+  const { data: callerPlayerId } = await asCaller.rpc('claim_my_player')
+  if (!callerPlayerId) return reply('Join a group first', { status: 403 })
 
   let body: { data?: string; mediaType?: string; mode?: string }
   try {
@@ -213,22 +217,30 @@ Deno.serve(async (req) => {
   await admin.from('scan_usage').upsert({ user_id: auth.user.id, day: today, count: used + 1 }, { onConflict: 'user_id,day' })
 
   const tool = mode === 'scores' ? RECORD_SCORES : RECORD_CARD
-  const response = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 6000,
-    system: mode === 'scores' ? SYSTEM_SCORES : SYSTEM_CARD,
-    tools: [tool],
-    tool_choice: { type: 'auto', disable_parallel_tool_use: true },
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data } },
-          { type: 'text', text: mode === 'scores' ? 'Read the handwritten scores with record_scores.' : 'Transcribe this scorecard with record_card.' },
-        ],
-      },
-    ],
-  })
+  let response: Anthropic.Message
+  try {
+    response = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 6000,
+      system: mode === 'scores' ? SYSTEM_SCORES : SYSTEM_CARD,
+      tools: [tool],
+      tool_choice: { type: 'auto', disable_parallel_tool_use: true },
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data } },
+            { type: 'text', text: mode === 'scores' ? 'Read the handwritten scores with record_scores.' : 'Transcribe this scorecard with record_card.' },
+          ],
+        },
+      ],
+    })
+  } catch (err) {
+    // An API failure used to be a bare 500 with no CORS headers, which the
+    // phone showed as "Failed to send a request to the Edge Function".
+    const message = err instanceof Error ? err.message : String(err)
+    return json({ error: `The reader is down right now (${message.slice(0, 120)}). Try again in a minute.` }, 502)
+  }
 
   const call = response.content.find((b) => b.type === 'tool_use' && b.name === tool.name)
   if (!call || call.type !== 'tool_use') {

@@ -121,6 +121,10 @@ Deno.serve(async (req) => {
   })
   const { data: auth } = await asCaller.auth.getUser()
   if (!auth?.user) return reply('Sign in first', { status: 401 })
+  // ...and a member of a group. Anyone can mint a Supabase account for
+  // any email; only a golfer with a player row gets to spend the quota.
+  const { data: callerPlayerId } = await asCaller.rpc('claim_my_player')
+  if (!callerPlayerId) return reply('Join a group first', { status: 403 })
 
   const key = Deno.env.get('GOLFCOURSE_API_KEY')
   if (!key) return reply('The course directory is not set up yet (no GOLFCOURSE_API_KEY secret).', { status: 503 })

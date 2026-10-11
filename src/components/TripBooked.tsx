@@ -216,17 +216,22 @@ export default function TripBooked({ trip }: { trip: Trip }) {
           <div className="space-y-3">
             {rounds.map((r) => {
               const standings = roundStandings(r)
-              const winner = data.players.find((p) => p.id === standings[0].playerId)!
+              // Nobody has a score yet (round started, no totals): no winner to show.
+              const winner = standings[0] ? data.players.find((p) => p.id === standings[0].playerId) : undefined
               return (
                 <Card key={r.id} onClick={() => navigate(`/rounds/${r.id}`)} className="p-4 flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-bold text-body text-ink truncate">{r.courseName}</p>
                     <p className="text-footnote text-ink-faint mt-0.5 tabular-nums">{shortDate(r.date)}</p>
                   </div>
-                  <p className="text-footnote text-ink-dim shrink-0">
-                    <span className="font-bold text-ink">{winner.name}</span> · net{' '}
-                    <span className="font-bold tabular-nums">{fmt1(standings[0].netScore)}</span>
-                  </p>
+                  {winner ? (
+                    <p className="text-footnote text-ink-dim shrink-0">
+                      <span className="font-bold text-ink">{winner.name}</span> · net{' '}
+                      <span className="font-bold tabular-nums">{fmt1(standings[0].netScore)}</span>
+                    </p>
+                  ) : (
+                    <p className="text-footnote text-ink-faint shrink-0">No scores yet</p>
+                  )}
                 </Card>
               )
             })}

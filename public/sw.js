@@ -7,13 +7,18 @@
 //
 // Bump VERSION to retire every old cache on the next activate. Needed
 // whenever a static file changes name or contents.
-const VERSION = 'v3'
+const VERSION = 'v4'
 const SHELL = `sandbagger-shell-${VERSION}`
 const ASSETS = `sandbagger-assets-${VERSION}`
 
 // Manrope, so the app looks like itself offline rather than falling back
 // to the system font.
 const FONT_HOSTS = ['https://fonts.googleapis.com', 'https://fonts.gstatic.com']
+
+// Same-origin files worth keeping offline: built assets, logos, splash
+// screens, icons and the song. Everything else is fetched live.
+const STATIC_PREFIXES = ['/assets/', '/logos/', '/splash/']
+const STATIC_FILES = /\.(png|svg|ico|m4a|woff2?)$/
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -69,8 +74,12 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const copy = response.clone()
-          event.waitUntil(caches.open(SHELL).then((cache) => cache.put('/', copy)))
+          // Only a good page becomes the offline shell; a Netlify 404 or
+          // 5xx must not replace it.
+          if (response.ok) {
+            const copy = response.clone()
+            event.waitUntil(caches.open(SHELL).then((cache) => cache.put('/', copy)))
+          }
           return response
         })
         .catch(async () => (await caches.match('/')) ?? (await caches.match('/index.html'))),
@@ -78,8 +87,19 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // Fonts: cache-first in the shell cache.
+  if (!sameOrigin) {
+    event.respondWith(cacheFirst(event, SHELL))
+    return
+  }
+
   // Vite fingerprints built assets, so a cache hit is always the right file.
-  event.respondWith(cacheFirst(event, sameOrigin ? ASSETS : SHELL))
+  // Only static files go in the cache. Anything else (the version probe
+  // `/index.html?check=...`, the manifest, sw.js itself) goes to the network;
+  // caching the probe once added an entry every ten minutes, forever.
+  if (STATIC_PREFIXES.some((p) => url.pathname.startsWith(p)) || STATIC_FILES.test(url.pathname)) {
+    event.respondWith(cacheFirst(event, ASSETS))
+  }
 })
 
 // ---------- Push ----------

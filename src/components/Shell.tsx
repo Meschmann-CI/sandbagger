@@ -16,6 +16,7 @@ import { streakStates } from '../lib/delight'
 import { StreakContext } from './streakContext'
 import SaddamHandover from './SaddamHandover'
 import PullToRefresh from './PullToRefresh'
+import ErrorBoundary from './ErrorBoundary'
 
 // The tab order is the app's opinion about what matters most often.
 // Logging rounds and checking who's winning happen every weekend, so
@@ -201,7 +202,9 @@ export default function Shell() {
           </div>
         )}
         <main className="flex-1 px-4 pb-32 pt-3">
-          <Outlet />
+          <ErrorBoundary key={pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </main>
 
         <CompactTitleBar />

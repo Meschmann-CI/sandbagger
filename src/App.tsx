@@ -145,14 +145,19 @@ function CloudApp() {
     }
   }, [client])
 
+  // Boot on who is signed in, not on the session object. auth-js hands out a
+  // fresh session object on every hidden -> visible transition and every
+  // hourly token refresh; keying on it rebooted the whole app (splash, store
+  // unmounted, every query rerun) each time the phone woke.
+  const userId = session === undefined ? undefined : (session?.user.id ?? null)
   useEffect(() => {
-    if (session === undefined) return
-    if (session === null) {
+    if (userId === undefined) return
+    if (userId === null) {
       setState({ phase: 'signedOut' })
       return
     }
     void boot()
-  }, [session, boot])
+  }, [userId, boot])
 
   if (session === undefined || state.phase === 'booting') return <Splash message="Loading your group…" />
   if (state.phase === 'signedOut') return <SignIn />
