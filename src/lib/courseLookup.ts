@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
-import type { CourseTee } from '../types'
+import type { AppData, CourseTee } from '../types'
+import { courseSlug } from './courses'
 
 // The course directory (GolfCourseAPI), through our `course-lookup`
 // Edge Function, which holds the key. The free plan is 35 requests a day
@@ -48,12 +49,62 @@ async function invoke<T>(body: Record<string, unknown>): Promise<T> {
 
 const memo = new Map<string, unknown>()
 
-export async function searchDirectory(q: string): Promise<DirectoryMatch[]> {
-  const key = `q:${q.trim().toLowerCase()}`
-  if (memo.has(key)) return memo.get(key) as DirectoryMatch[]
-  const { results } = await invoke<{ results: DirectoryMatch[] }>({ q: q.trim() })
-  memo.set(key, results)
+export interface DirectorySearch {
+  results: DirectoryMatch[]
+  /** Set when the full name found nothing and this one word was searched instead. */
+  broadened?: string
+}
+
+/**
+ * Where "nearby" is, for putting the right Centennial first: the course's
+ * own town when it has one, and the states the group plays in, most
+ * played first.
+ */
+export interface Nearby {
+  town?: string | null
+  states: string[]
+}
+
+const stateOf = (town?: string | null) => {
+  const parts = (town ?? '').split(',')
+  return parts.length > 1 ? parts[parts.length - 1].trim().toUpperCase() : ''
+}
+
+export function nearbyFor(data: AppData, town?: string | null): Nearby {
+  const weight = new Map<string, number>()
+  for (const c of data.courses) {
+    const st = stateOf(c.town)
+    if (!st) continue
+    const played = data.rounds.filter((r) => courseSlug(r.courseName) === c.slug).length
+    weight.set(st, (weight.get(st) ?? 0) + 1 + played)
+  }
+  return { town, states: [...weight.entries()].sort((a, b) => b[1] - a[1]).map(([st]) => st) }
+}
+
+/** Same town first, then the group's states in order, then everywhere else, each in the directory's order. */
+export function rankNearby(results: DirectoryMatch[], near?: Nearby): DirectoryMatch[] {
+  if (!near) return results
+  const home = near.town ? `${city(near.town)}|${stateOf(near.town)}` : null
+  const states = [...new Set([stateOf(near.town), ...near.states].filter(Boolean))]
+  const rank = (r: DirectoryMatch) => {
+    if (home && `${city(r.town)}|${stateOf(r.town)}` === home) return 0
+    const i = states.indexOf(stateOf(r.town))
+    return i < 0 ? states.length + 1 : i + 1
+  }
   return results
+    .map((r, i) => ({ r, i, k: rank(r) }))
+    .sort((a, b) => a.k - b.k || a.i - b.i)
+    .map((x) => x.r)
+}
+
+export async function searchDirectory(q: string, near?: Nearby): Promise<DirectorySearch> {
+  const key = `q:${q.trim().toLowerCase()}`
+  let found = memo.get(key) as DirectorySearch | undefined
+  if (!found) {
+    found = await invoke<DirectorySearch>({ q: q.trim() })
+    memo.set(key, found)
+  }
+  return { ...found, results: rankNearby(found.results, near) }
 }
 
 export async function fetchDirectoryCourse(id: string): Promise<DirectoryCourse> {

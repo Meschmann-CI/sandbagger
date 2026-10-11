@@ -2,9 +2,10 @@ import { useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { HOLE_COUNT } from '../lib/holes'
-import { courseSlug, emptyPars, padded } from '../lib/courses'
+import { cleanCourseName, courseSlug, currentSlug, emptyPars, padded, renameProblem, renameReach } from '../lib/courses'
+import { useHoldUpdates } from '../lib/holdUpdates'
 import { defaultTee, scanCard, scanSupported, type ScannedCard } from '../lib/scan'
-import { directorySupported, fetchDirectoryCourse, searchDirectory, type DirectoryMatch } from '../lib/courseLookup'
+import { directorySupported, fetchDirectoryCourse, nearbyFor, searchDirectory, type DirectoryMatch } from '../lib/courseLookup'
 import { useGoBack, useNavigate } from '../lib/nav'
 import { BackButton } from '../components/Nav'
 import { Card, PrimaryButton, SectionLabel } from '../components/ui'
@@ -31,7 +32,8 @@ export default function CourseEdit() {
   // first tee. The name is typed here and the slug follows from it.
   const isNew = !slugParam
   const [typedName, setTypedName] = useState('')
-  const slug = isNew ? courseSlug(typedName) : slugParam
+  const [renaming, setRenaming] = useState(false)
+  const slug = isNew ? courseSlug(typedName) : currentSlug(slugParam)
   // The scorecard hangs off the course's own page now.
   const goBack = useGoBack(isNew ? '/courses' : `/courses/${encodeURIComponent(slug)}`)
   const { data, saveCourse, deleteCourse } = useStore()
@@ -86,13 +88,14 @@ export default function CourseEdit() {
   // The course directory (GolfCourseAPI): one search and one fetch, on a
   // tap, since the whole group shares 35 lookups a day.
   const [dirQuery, setDirQuery] = useState('')
-  const [dirState, setDirState] = useState<{ busy?: string; error?: string; results?: DirectoryMatch[] }>({})
+  const [dirState, setDirState] = useState<{ busy?: string; error?: string; results?: DirectoryMatch[]; asked?: string; broadened?: string }>({})
   const findInDirectory = async () => {
     const q = (dirQuery || typedName || name).trim()
     if (q.length < 3) return
     setDirState({ busy: 'search' })
     try {
-      setDirState({ results: await searchDirectory(q) })
+      const found = await searchDirectory(q, nearbyFor(data, existing?.town))
+      setDirState({ results: found.results, asked: q, broadened: found.broadened })
     } catch (err) {
       setDirState({ error: (err as Error).message })
     }
@@ -233,7 +236,23 @@ export default function CourseEdit() {
           </>
         ) : (
           <>
-            <h1 className="text-large font-bold tracking-tight text-ink leading-tight">{name}</h1>
+            {renaming ? (
+              <RenameCourse
+                slug={slug}
+                name={name}
+                onDone={(newSlug) => {
+                  setRenaming(false)
+                  if (newSlug && newSlug !== slug) navigate(`/courses/${encodeURIComponent(newSlug)}/card`, { replace: true })
+                }}
+              />
+            ) : (
+              <div className="flex items-start gap-3">
+                <h1 className="min-w-0 flex-1 text-large font-bold tracking-tight text-ink leading-tight">{name}</h1>
+                <button onClick={() => setRenaming(true)} className="shrink-0 pt-1.5 text-footnote font-bold text-green">
+                  Rename
+                </button>
+              </div>
+            )}
             <p className="text-footnote text-ink-dim mt-1">
               Straight off the scorecard. Every round here, past and future, picks it up.
             </p>
@@ -272,6 +291,11 @@ export default function CourseEdit() {
           {dirState.results && (
             <div className="mt-2.5 overflow-hidden rounded-xl bg-card ring-1 ring-line divide-y divide-line">
               {dirState.results.length === 0 && <p className="px-3 py-2.5 text-footnote text-ink-dim">Nothing by that name. Try fewer words, or fill the card in below.</p>}
+              {dirState.broadened && dirState.results.length > 0 && (
+                <p className="px-3 py-2.5 text-footnote text-ink-dim">
+                  Nothing for “{dirState.asked}”, so here's every {dirState.broadened}.
+                </p>
+              )}
               {dirState.results.map((m) => (
                 <button
                   key={m.id}
@@ -592,6 +616,76 @@ export default function CourseEdit() {
         </div>
       )}
       <div className="h-4" />
+    </div>
+  )
+}
+
+// The name as the group wants it, changed everywhere at once: the card,
+// every round played here, the ratings and everyone's list.
+function RenameCourse({ slug, name, onDone }: { slug: string; name: string; onDone: (newSlug?: string) => void }) {
+  useHoldUpdates()
+  const { data, renameCourse } = useStore()
+  const confirm = useConfirm()
+  const [value, setValue] = useState(name)
+  const clean = cleanCourseName(value)
+  const unchanged = clean === name
+  const problem = unchanged ? null : renameProblem(data, slug, value)
+
+  const save = async () => {
+    if (unchanged || problem) return
+    const { rounds, ratings, rankings } = renameReach(data, slug)
+    const parts = [
+      rounds && `${rounds} round${rounds === 1 ? '' : 's'}`,
+      ratings && `${ratings} rating${ratings === 1 ? '' : 's'}`,
+      rankings && `${rankings} golfer${rankings === 1 ? "'s" : "s'"} rankings`,
+    ].filter(Boolean)
+    // Gathering rounds typed under another name is a merge the rounds
+    // can't be pulled back out of, so say so when that's what it is.
+    const joins = courseSlug(clean) !== slug && data.rounds.some((r) => courseSlug(r.courseName) === courseSlug(clean))
+    const ok = await confirm({
+      title: `Rename it ${clean}?`,
+      body: [
+        parts.length ? `It changes on ${parts.join(', ')} too.` : 'Nothing else uses the old name.',
+        joins ? `Rounds already logged as ${clean} join this course.` : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
+      confirmLabel: 'Rename',
+    })
+    if (ok) onDone(renameCourse(slug, clean))
+  }
+
+  return (
+    <div>
+      <input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          // preventDefault, or the same Enter lands on the confirm's
+          // focused button and accepts it unseen.
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            void save()
+          }
+          if (e.key === 'Escape') onDone()
+        }}
+        autoFocus
+        aria-label="New course name"
+        className="w-full rounded-xl border border-line-strong bg-card px-3.5 py-3 text-headline font-bold text-ink focus:border-green focus:outline-none"
+      />
+      {problem && <p className="mt-1.5 text-footnote font-semibold text-flag">{problem}</p>}
+      <div className="mt-2 flex gap-2">
+        <button
+          onClick={() => void save()}
+          disabled={unchanged || !!problem}
+          className="rounded-xl bg-green px-4 py-2.5 text-footnote font-bold text-white disabled:opacity-40 active:scale-95 transition"
+        >
+          Rename
+        </button>
+        <button onClick={() => onDone()} className="px-3 text-footnote font-bold text-ink-faint">
+          Cancel
+        </button>
+      </div>
     </div>
   )
 }

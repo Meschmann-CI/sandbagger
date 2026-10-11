@@ -14,6 +14,79 @@ export const courseSlug = (name: string) => name.trim().toLowerCase().replace(/\
 export const findCourse = (data: AppData, courseName: string): Course | undefined =>
   data.courses.find((c) => c.slug === courseSlug(courseName))
 
+// Course pages are addressed by slug, so a rename leaves the screens
+// behind it in history pointing at a name that's gone. Remembered for
+// the session so Back still lands on the course.
+const renamed = new Map<string, string>()
+export const noteRename = (from: string, to: string) => {
+  if (from === to) return
+  renamed.delete(to) // renamed back: the old name is live again
+  renamed.set(from, to)
+}
+export function currentSlug(slug: string): string {
+  let s = slug
+  for (let i = 0; i < 10 && renamed.has(s); i++) s = renamed.get(s)!
+  return s
+}
+
+/** A typed course name tidied the way a rename stores it. */
+export const cleanCourseName = (name: string) => name.trim().replace(/\s+/g, ' ')
+
+/**
+ * Why a course can't take this name, or null when it can. Another card
+ * under the new name is a merge, which the rename won't do blind.
+ */
+export function renameProblem(data: AppData, oldSlug: string, newName: string): string | null {
+  const clean = cleanCourseName(newName)
+  if (clean.length < 2) return 'A course name needs at least two letters.'
+  const other = data.courses.find((c) => c.slug === courseSlug(clean))
+  const mine = data.courses.find((c) => c.slug === oldSlug)
+  return other && other !== mine ? `You already have a course called ${other.name}.` : null
+}
+
+/** What a rename touches, for the confirm: rounds, ratings and lists. */
+export function renameReach(data: AppData, oldSlug: string) {
+  return {
+    rounds: data.rounds.filter((r) => courseSlug(r.courseName) === oldSlug).length,
+    ratings: data.courseRatings.filter((r) => r.courseSlug === oldSlug).length,
+    rankings: data.courseRankings.filter((r) => r.slugs.includes(oldSlug)).length,
+  }
+}
+
+/**
+ * The app's copy of rename_course in schema.sql, so the screen changes at
+ * once while the database does it for real: the course row, every round
+ * played there, each rating, everyone's list and any home course. A
+ * golfer who rated both names keeps the newer rating; a list holding
+ * both keeps the higher spot.
+ */
+export function renameCourseIn(data: AppData, oldSlug: string, newName: string): AppData {
+  const clean = cleanCourseName(newName)
+  const slug = courseSlug(clean)
+  const merging = slug !== oldSlug
+  const newer = new Map<string, string>()
+  if (merging) {
+    for (const r of data.courseRatings) {
+      if (r.courseSlug !== oldSlug && r.courseSlug !== slug) continue
+      const seen = data.courseRatings.find((o) => o.playerId === r.playerId && o !== r && (o.courseSlug === oldSlug || o.courseSlug === slug))
+      // Ties go to the one already under the new name, as in the SQL.
+      if (seen && (seen.date > r.date || (seen.date === r.date && seen.courseSlug === slug))) newer.set(r.id, seen.id)
+    }
+  }
+  return {
+    ...data,
+    courses: data.courses.map((c) => (c.slug === oldSlug ? { ...c, name: clean, slug } : c)),
+    rounds: data.rounds.map((r) => (courseSlug(r.courseName) === oldSlug ? { ...r, courseName: clean } : r)),
+    courseRatings: data.courseRatings
+      .filter((r) => !newer.has(r.id))
+      .map((r) => (r.courseSlug === oldSlug ? { ...r, courseSlug: slug, courseName: clean } : r)),
+    courseRankings: data.courseRankings.map((k) =>
+      k.slugs.includes(oldSlug) ? { ...k, slugs: [...new Set(k.slugs.map((s) => (s === oldSlug ? slug : s)))] } : k,
+    ),
+    players: data.players.map((p) => (p.homeCourse && courseSlug(p.homeCourse) === oldSlug ? { ...p, homeCourse: clean } : p)),
+  }
+}
+
 // ---------- 27-hole courses ----------
 // A course with three nines plays any two, in either order, and each
 // pairing is its own 18: its own pars in order, its own stroke index and

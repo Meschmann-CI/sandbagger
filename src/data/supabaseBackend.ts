@@ -368,6 +368,13 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         case 'course.delete':
           await removeRow('courses', change.id, 'Deleting course')
           return
+        case 'course.rename':
+          // In the database, since it rewrites other golfers' ratings and lists.
+          guard(
+            (await client.rpc('rename_course', { old_slug: change.oldSlug, new_name: change.name })).error,
+            'Renaming course',
+          )
+          return
         case 'courseRating.upsert':
           guard(
             (

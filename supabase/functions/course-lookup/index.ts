@@ -1,8 +1,12 @@
 // Looks a course up in GolfCourseAPI (golfcourseapi.com).
 //
 // Two calls, each one request against the API:
-//   { q: "bethpage" }  → up to eight matches: id, name, town, and whether
-//                        the directory has a scorecard for it
+//   { q: "bethpage" }  → up to 25 matches: id, name, town, and whether
+//                        the directory has a scorecard for it. When the
+//                        full name finds nothing, one more request on its
+//                        distinctive word ("Centennial Golf Club" →
+//                        "centennial"), flagged as `broadened`. The app
+//                        sorts nearby courses to the top; this doesn't.
 //   { id: "49wvt3sr" } → the course in the shape the app stores: pars,
 //                        stroke index, yardage, every tee's rating, slope
 //                        and hole-by-hole yards, and the town (which also
@@ -84,6 +88,18 @@ function town(l?: ApiLocation) {
   return [l.city, l.country].filter(Boolean).join(', ')
 }
 
+const MAX_RESULTS = 25
+
+// The word in a course's name that tells it apart: the first one of four
+// letters or more that isn't golf vocabulary. Null when the query is that
+// one word already, since searching it again would find nothing new.
+const GENERIC = new Set(['the', 'golf', 'club', 'clubs', 'course', 'courses', 'country', 'links', 'state', 'park', 'resort', 'national', 'municipal', 'muni', 'public', 'and', 'at', 'of'])
+function keyWord(q: string): string | null {
+  const words = q.toLowerCase().replace(/&/g, ' ').replace(/[^a-z0-9' ]/g, ' ').split(/\s+/).filter(Boolean)
+  const word = words.find((w) => w.length >= 4 && !GENERIC.has(w))
+  return word && words.length > 1 ? word : null
+}
+
 const count = (v: ApiTee[] | number | undefined) => (Array.isArray(v) ? v.length : typeof v === 'number' ? v : 0)
 const pad = <T,>(xs: T[]) => Array.from({ length: HOLES }, (_, i) => xs[i] ?? null)
 
@@ -120,14 +136,22 @@ Deno.serve(async (req) => {
     if (typeof body.q === 'string') {
       const q = body.q.trim()
       if (q.length < 3) return reply('Type at least three letters', { status: 400 })
-      const data = (await api(`/search?search_query=${encodeURIComponent(q)}`, key)) as { courses?: ApiCourse[] }
-      const results = (data.courses ?? []).slice(0, 8).map((c) => ({
+      const search = async (term: string) =>
+        ((await api(`/search?search_query=${encodeURIComponent(term)}`, key)) as { courses?: ApiCourse[] }).courses ?? []
+      let found = await search(q)
+      let broadened: string | undefined
+      const word = found.length ? null : keyWord(q)
+      if (word) {
+        found = await search(word)
+        broadened = word
+      }
+      const results = found.slice(0, MAX_RESULTS).map((c) => ({
         id: String(c.id),
         name: displayName(c),
         town: town(c.location),
         hasCard: count(c.tees?.male) + count(c.tees?.female) > 0,
       }))
-      return json({ results })
+      return json({ results, broadened })
     }
 
     if (body.id != null) {

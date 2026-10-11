@@ -55,7 +55,7 @@ export function TeeYardsCatchUp() {
       const c = batch[i]
       setRunning({ at: i + 1, of: batch.length })
       try {
-        const match = pickMatch(c.name, c.town, await searchDirectory(c.name))
+        const match = pickMatch(c.name, c.town, (await searchDirectory(c.name)).results)
         if (!match) {
           unclear.push(c.name)
           skip(c.slug)

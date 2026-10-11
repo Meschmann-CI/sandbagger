@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useMembers, useStore } from '../data/store'
-import { courseSlug, coursePar, hasSlopeRating, hasStrokeIndex, parsEntered } from '../lib/courses'
+import { courseSlug, coursePar, currentSlug, hasSlopeRating, hasStrokeIndex, parsEntered } from '../lib/courses'
 import { HOLE_COUNT } from '../lib/holes'
 import { RATING_ASPECTS, courseSummaries, fmtStars, ordinal } from '../lib/ratings'
 import { roundStandings, shortDate } from '../lib/stats'
@@ -21,7 +21,7 @@ import { IconTile } from '../components/icons'
 // first), and the reference data (scorecard, tees, rounds) underneath.
 
 export default function CourseDetail() {
-  const { slug = '' } = useParams()
+  const slug = currentSlug(useParams().slug ?? '')
   const navigate = useNavigate()
   const goBack = useGoBack('/courses')
   const { data, deleteCourseRating } = useStore()

@@ -491,6 +491,102 @@ begin
 end;
 $$;
 
+-- Renaming a course, added 2026-10-10.
+--
+-- A course's name is spread across the database as text: the course row
+-- (name and slug), every round's course_name, each rating's slug and
+-- name, every golfer's ranking list and anyone's home course. A rename
+-- from the app changes all of them in one transaction, so no round is
+-- left pointing at a name with no card. Matching uses the app's
+-- courseSlug (trimmed, lowercased, runs of spaces made one).
+--
+-- security definer because ratings and rankings are owner-only writes,
+-- and a rename has to move everyone's. It stays inside the caller's
+-- group. Renaming onto a name the group already has a card for is
+-- refused (that's a merge, and two cards can't be merged blind); onto a
+-- name that only rounds use, it gathers them under this course.
+
+create or replace function slug_of(name text)
+returns text
+language sql
+immutable
+set search_path = public
+as $$
+  select lower(regexp_replace(regexp_replace(name, '^\s+|\s+$', '', 'g'), '\s+', ' ', 'g'))
+$$;
+
+create or replace function rename_course(old_slug text, new_name text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  gid uuid := current_group_id();
+  clean text := regexp_replace(regexp_replace(coalesce(new_name, ''), '^\s+|\s+$', '', 'g'), '\s+', ' ', 'g');
+  new_slug text := slug_of(clean);
+  old_row uuid;
+  new_row uuid;
+begin
+  if gid is null then
+    raise exception 'Sign in first';
+  end if;
+  if length(clean) < 2 then
+    raise exception 'A course name needs at least two letters';
+  end if;
+
+  select id into old_row from courses where group_id = gid and slug = old_slug;
+  select id into new_row from courses where group_id = gid and slug = new_slug;
+  if new_row is not null and new_row is distinct from old_row then
+    raise exception 'You already have a course called %', clean;
+  end if;
+
+  if old_row is not null then
+    update courses set name = clean, slug = new_slug where id = old_row;
+  end if;
+
+  update rounds set course_name = clean
+   where group_id = gid and slug_of(course_name) = old_slug;
+
+  -- A golfer who rated both names keeps the more recent rating.
+  delete from course_ratings o
+   where o.group_id = gid and o.course_slug = old_slug and new_slug <> old_slug
+     and exists (
+       select 1 from course_ratings n
+        where n.group_id = gid and n.course_slug = new_slug and n.player_id = o.player_id
+          and n.rated_on >= o.rated_on
+     );
+  delete from course_ratings n
+   where n.group_id = gid and n.course_slug = new_slug and new_slug <> old_slug
+     and exists (
+       select 1 from course_ratings o
+        where o.group_id = gid and o.course_slug = old_slug and o.player_id = n.player_id
+     );
+  update course_ratings set course_slug = new_slug, course_name = clean
+   where group_id = gid and course_slug = old_slug;
+
+  -- Same spot in everyone's list; a list holding both names keeps the higher.
+  update course_rankings r
+     set slugs = (
+           select coalesce(array_agg(s order by first_at), '{}')
+             from (
+               select s, min(i) as first_at
+                 from unnest(array_replace(r.slugs, old_slug, new_slug)) with ordinality as x(s, i)
+                group by s
+             ) d
+         ),
+         updated_at = now()
+   where r.group_id = gid and old_slug = any(r.slugs);
+
+  update players set home_course = clean
+   where group_id = gid and home_course is not null and slug_of(home_course) = old_slug;
+
+  return new_slug;
+end;
+$$;
+
+revoke execute on function rename_course(text, text) from anon;
+
 -- Security linter follow-ups. jsonb_without takes no table names, but a
 -- role can still swap its search_path; pin it like the other helpers.
 -- The SECURITY DEFINER helpers all key off auth.uid(), so an anonymous

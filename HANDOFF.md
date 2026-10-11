@@ -1,4 +1,4 @@
-# Sandbagger: handoff
+# Bandit (repo and folder still "sandbagger"): handoff
 
 Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 `../golf-app-handoff.md.txt` is the original brief. Personal app for Matt's golf group
@@ -36,7 +36,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
-1. Confirm the course directory works on a real search (read `course-lookup` logs if not).
+1. Confirm the course directory works on a real search (see item 10; read `course-lookup` logs if not).
 2. `Attest` signatures live per phone in localStorage; sharing them needs a DB column.
 3. A new course gets a brand only by a code change in `courseBrands.ts`. Next step: a
    `brand` column on courses, filled by the scorecard scanner (colours + logo crop) or a
@@ -69,13 +69,20 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    Matt has no Mac as of 2026-10-10, so the web redesign comes first and the port waits. If a
    Mac stays out of reach, React Native + Expo (cloud iOS builds) is the fallback.
 
-10. Next session (Matt, 2026-10-10): a Rename on the course Edit card, backed by a
-   security-definer RPC that renames the course and its slug, every round's course_name,
-   the ratings and everyone's ranking slugs in one transaction (done by hand for Centennial
-   Golf Club on 2026-10-10). And the directory search: pass the course's town so nearby
-   matches come first, return more than 8, and retry on the distinctive word alone when the
-   full name finds nothing ("Centennial" in Carmel, NY was missed). The word-by-word matcher,
-   Delete this course and the ratings tiebreak went live 2026-10-10 (0aff473).
+10. Course rename + directory search (built 2026-10-10, committed, NOT pushed yet).
+   - Rename on the course Edit card. `rename_course(old_slug, new_name)` in schema.sql
+     (applied to prod 2026-10-10, tested in a rolled-back transaction) renames the course row
+     and slug, every round's course_name, ratings, everyone's ranking slugs and home courses
+     in one transaction. Onto a name with its own card: refused. Onto a name only rounds use:
+     those rounds join this course (the confirm says so). The app mirrors it in
+     `renameCourseIn` (`src/lib/courses.ts`); `currentSlug` keeps Back working onto pages
+     addressed by the old slug.
+   - Search: `course-lookup` v4 (deployed 2026-10-10) returns up to 25 and, when the full
+     name finds nothing, searches its distinctive word once more (one extra request, flagged
+     `broadened`). The app sorts results: same town as the course first, then the states
+     the group plays in, most played first (`rankNearby` in `src/lib/courseLookup.ts`).
+   - Still to do: one real search on a phone after the push (try "Centennial Golf Club").
+     If it misses, read the `course-lookup` logs.
 
 ## Decisions not to reopen
 

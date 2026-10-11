@@ -8,6 +8,9 @@ export type Change =
   | { kind: 'round.delete'; id: string }
   | { kind: 'course.upsert'; course: Course }
   | { kind: 'course.delete'; id: string }
+  // Renames the course and every round, rating and list that names it,
+  // in one transaction on the server (rename_course in schema.sql).
+  | { kind: 'course.rename'; oldSlug: string; name: string }
   | { kind: 'courseRating.upsert'; rating: CourseRating }
   | { kind: 'courseRating.delete'; id: string }
   // One row per golfer, rewritten whole: a ranking is edited as a unit

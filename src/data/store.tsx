@@ -15,7 +15,7 @@ import {
   type Trip,
 } from '../types'
 import { todayISO } from '../lib/dates'
-import { courseSlug } from '../lib/courses'
+import { cleanCourseName, courseSlug, noteRename, renameCourseIn } from '../lib/courses'
 import { onOutboxChange, outboxSnapshot, outboxStatus } from './outbox'
 import type { Backend, Change } from './backend'
 
@@ -47,6 +47,8 @@ interface StoreApi {
     extras?: { tees?: CourseTee[]; yards?: (number | null)[]; yardsTee?: string; town?: string },
   ) => void
   deleteCourse: (courseId: string) => void
+  /** Renames a course everywhere it's named. Returns the new slug. */
+  renameCourse: (oldSlug: string, name: string) => string
   /** My rating of a course, by name. One per golfer per course; rating again replaces it. */
   rateCourse: (input: {
     courseName: string
@@ -211,6 +213,12 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         ...d,
         courses: d.courses.filter((c) => c.id !== courseId),
       }))
+    },
+    renameCourse(oldSlug, name) {
+      const clean = cleanCourseName(name)
+      commit({ kind: 'course.rename', oldSlug, name: clean }, (d) => renameCourseIn(d, oldSlug, clean))
+      noteRename(oldSlug, courseSlug(clean))
+      return courseSlug(clean)
     },
     // Keyed on the slug like the scorecard is, so the rating attaches to
     // the course however the round happened to spell it.

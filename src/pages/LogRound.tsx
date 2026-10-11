@@ -12,7 +12,7 @@ import { GROSS_CEILING, GROSS_FLOOR, grossWarning } from '../lib/scores'
 import { notifyGroup } from '../lib/push'
 import { fmt1, type Round } from '../types'
 import { findCourse, hasPars } from '../lib/courses'
-import { directorySupported, fetchDirectoryCourse, searchDirectory, type DirectoryMatch } from '../lib/courseLookup'
+import { directorySupported, fetchDirectoryCourse, nearbyFor, searchDirectory, type DirectoryMatch } from '../lib/courseLookup'
 import TeePicker from '../components/TeePicker'
 import NinesPicker from '../components/NinesPicker'
 import { Avatar, Card, PrimaryButton, SaddamIcon, SECONDARY_BTN } from '../components/ui'
@@ -195,6 +195,7 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
     query: string
     state: 'searching' | 'done' | 'error'
     results: DirectoryMatch[]
+    broadened?: string
     error?: string
     loadingId?: string
   }>({ query: '', state: 'done', results: [] })
@@ -202,8 +203,8 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
     const asked = q
     setDir({ query: asked, state: 'searching', results: [] })
     try {
-      const results = await searchDirectory(asked)
-      setDir((d) => (d.query === asked ? { query: asked, state: 'done', results } : d))
+      const { results, broadened } = await searchDirectory(asked, nearbyFor(data))
+      setDir((d) => (d.query === asked ? { query: asked, state: 'done', results, broadened } : d))
     } catch (err) {
       setDir((d) => (d.query === asked ? { query: asked, state: 'error', results: [], error: (err as Error).message } : d))
     }
@@ -356,7 +357,13 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
                         ) : dir.results.length === 0 ? (
                           <p className="px-3 py-3 text-footnote text-ink-dim">Nothing in the directory by that name. Add it yourself above.</p>
                         ) : (
-                          dir.results.map((m) => (
+                          <>
+                          {dir.broadened && (
+                            <p className="px-3 py-2.5 text-footnote text-ink-dim">
+                              Nothing for “{query.trim()}”, so here's every {dir.broadened}.
+                            </p>
+                          )}
+                          {dir.results.map((m) => (
                             <button
                               key={m.id}
                               type="button"
@@ -374,7 +381,8 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
                                 </span>
                               </span>
                             </button>
-                          ))
+                          ))}
+                          </>
                         )}
                       </>
                     )}
