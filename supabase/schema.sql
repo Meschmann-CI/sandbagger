@@ -58,6 +58,8 @@ create index if not exists trips_group_idx on trips(group_id);
 -- A trip's own cover photo (URL in the round-photos bucket, under
 -- <group_id>/trips/<trip_id>/), added 2026-10-12. Null: the painted scene.
 alter table trips add column if not exists cover text;
+-- The stories from a past trip ([{id, playerId, text, at}]), added 2026-10-12.
+alter table trips add column if not exists stories jsonb;
 
 -- Par and stroke index, off the physical scorecard, entered once per
 -- course. Rounds keep recording the course as free text and are matched
