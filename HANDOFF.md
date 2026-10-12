@@ -165,10 +165,13 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   address would break installed home screens and the sign-in links.
 
 - Light theme only, Manrope, "Scorecard Clean". Dark mode and stylized fonts were rejected.
-- Tabs (Matt, 2026-10-12, replacing 2026-10-10): Home, Rounds, Log (raised centre), Trips, You.
-  Standings (`/h2h`) leaves the tab bar: it opens from Home's season card and a row under You.
-  The iPhone app has it already (bandit-swift e650868); this web app still shows the old
-  Standings tab and needs the same swap (one Netlify build). Courses sit beside rounds under
+- Tabs (Matt, 2026-10-12, replacing 2026-10-10): Home, Rounds, Log (centre), Trips, You, on a
+  floating pill (translucent white, soft shadow, a light green pill behind the current tab, Log a
+  small forest circle in the middle). Matt picked it from three looks (flat, floating with Log
+  beside, this); his 2026-10-10 walk-back was the round-everything restyle, not the bar, so only
+  the bar is rounded and pages keep their flat sections. Standings (`/h2h`) leaves the tab bar:
+  it opens from Home's season card and a row under You. The iPhone app has both; this web app
+  still shows the old flat bar with Standings and needs the same change (one Netlify build). Courses sit beside rounds under
   the Rounds tab (a Rounds | Courses switch at the top of both pages, replace-navigation).
   Whether the bar stays flat or floats is open again (Matt: the 2026-10-10 walk-back was about
   the round-everything restyle); a mockup of three looks is with him.
