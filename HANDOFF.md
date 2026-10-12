@@ -96,6 +96,13 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-1. Native iPhone push (2026-10-11, for ../bandit-swift): `supabase/apply-2026-10-11-apns.sql`
+   (the `apns_tokens` table, also in schema.sql) is NOT applied to prod yet, and the APNs
+   half of `functions/notify` is NOT deployed. Both are inert until the Apple Developer
+   Program ($99/yr) gives an APNs key: then paste the SQL, set the secrets APNS_KEY (the
+   .p8 file), APNS_KEY_ID, APNS_TEAM_ID, APNS_BUNDLE_ID=com.eschmann.bandit, and deploy
+   `notify`. Without the secrets the function sends web push exactly as before. The
+   function edit was not type-checked (no Deno on the Mac); check it on deploy.
 0. Audit follow-ups (2026-10-11): all done except the three faces-only items
    (sticky Avatar failure, EXIF orientation, EditGolfer deleting the old photo before the
    row lands), which wait on the `faces` decision. The hygiene list at the bottom of

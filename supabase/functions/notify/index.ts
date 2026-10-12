@@ -11,9 +11,18 @@
 // whose public half is in src/lib/push.ts. It used to be pasted straight
 // into this file; a private key in source is a private key in every
 // clone of the repo.
+//
+// The native iPhone app (bandit-swift) files APNs device tokens in
+// `apns_tokens` instead, and those go straight to Apple. That half stays
+// off until four more secrets are set, all from the Apple Developer
+// account (Certificates, Identifiers & Profiles → Keys, with Apple Push
+// Notifications enabled): APNS_KEY (the whole .p8 file), APNS_KEY_ID,
+// APNS_TEAM_ID, and APNS_BUNDLE_ID (com.eschmann.bandit). Without them,
+// web push carries on exactly as before.
 
 import webpush from 'npm:web-push@3.6.7'
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { importPKCS8, SignJWT } from 'npm:jose@5.9.6'
 
 // VAPID identifies this app to Apple's and Google's push services.
 const VAPID_PUBLIC = 'BO8kfsPTCDy14HUTMeCacvLk_pmdSUWxqAIXG0sQJySuymKCO465tFlcl2egpzDH-pJHgFAKM62P8NwiacRk15E'
@@ -96,5 +105,85 @@ Deno.serve(async (req) => {
   )
   if (dead.length > 0) await admin.from('push_subscriptions').delete().in('id', dead)
 
-  return json({ sent, pruned: dead.length })
+  // The native app's phones, straight to Apple.
+  const apns = await sendApns(admin, ids, { title, body, url })
+
+  return json({ sent: sent + apns.sent, pruned: dead.length + apns.pruned })
 })
+
+// ---------- APNs, for the native iPhone app ----------
+
+const APNS_KEY = Deno.env.get('APNS_KEY')
+const APNS_KEY_ID = Deno.env.get('APNS_KEY_ID')
+const APNS_TEAM_ID = Deno.env.get('APNS_TEAM_ID')
+const APNS_BUNDLE_ID = Deno.env.get('APNS_BUNDLE_ID')
+const apnsReady = !!(APNS_KEY && APNS_KEY_ID && APNS_TEAM_ID && APNS_BUNDLE_ID)
+
+// Apple wants a fresh-ish provider token: no older than an hour, and not
+// minted more than once every twenty minutes. One per warm instance, kept
+// for 40 minutes, sits inside both.
+let providerToken: { jwt: string; at: number } | null = null
+async function apnsJwt(): Promise<string> {
+  if (providerToken && Date.now() - providerToken.at < 40 * 60_000) return providerToken.jwt
+  const key = await importPKCS8(APNS_KEY!, 'ES256')
+  const jwt = await new SignJWT({})
+    .setProtectedHeader({ alg: 'ES256', kid: APNS_KEY_ID! })
+    .setIssuer(APNS_TEAM_ID!)
+    .setIssuedAt()
+    .sign(key)
+  providerToken = { jwt, at: Date.now() }
+  return jwt
+}
+
+async function sendApns(
+  admin: ReturnType<typeof createClient>,
+  playerIds: string[],
+  msg: { title: string; body: string; url: string },
+): Promise<{ sent: number; pruned: number }> {
+  if (!apnsReady || playerIds.length === 0) return { sent: 0, pruned: 0 }
+  // A missing table (the SQL not pasted yet) reads as nobody to send to.
+  const { data: tokens, error } = await admin.from('apns_tokens').select('id, token, environment').in('player_id', playerIds)
+  if (error || !tokens?.length) return { sent: 0, pruned: 0 }
+
+  let jwt: string
+  try {
+    jwt = await apnsJwt()
+  } catch {
+    return { sent: 0, pruned: 0 }
+  }
+  const payload = JSON.stringify({
+    aps: { alert: { title: msg.title, ...(msg.body ? { body: msg.body } : {}) }, sound: 'default' },
+    url: msg.url,
+  })
+  let sent = 0
+  const dead: string[] = []
+  await Promise.all(
+    tokens.map(async (t: { id: string; token: string; environment: string }) => {
+      const host = t.environment === 'sandbox' ? 'api.sandbox.push.apple.com' : 'api.push.apple.com'
+      try {
+        const res = await fetch(`https://${host}/3/device/${t.token}`, {
+          method: 'POST',
+          headers: {
+            authorization: `bearer ${jwt}`,
+            'apns-topic': APNS_BUNDLE_ID!,
+            'apns-push-type': 'alert',
+            'apns-priority': '10',
+          },
+          body: payload,
+        })
+        if (res.ok) {
+          sent++
+        } else {
+          // 410: the app was deleted. 400 BadDeviceToken: a token from the
+          // other environment or never valid. Either way it will never work.
+          const reason = ((await res.json().catch(() => ({}))) as { reason?: string }).reason
+          if (res.status === 410 || reason === 'BadDeviceToken' || reason === 'Unregistered') dead.push(t.id)
+        }
+      } catch {
+        // Apple unreachable this time; try again on the next message.
+      }
+    }),
+  )
+  if (dead.length > 0) await admin.from('apns_tokens').delete().in('id', dead)
+  return { sent, pruned: dead.length }
+}

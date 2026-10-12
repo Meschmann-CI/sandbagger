@@ -200,6 +200,19 @@ create table if not exists push_subscriptions (
 
 create index if not exists push_subs_player_idx on push_subscriptions(player_id);
 
+-- One row per iPhone running the native app (bandit-swift) with
+-- notifications on: its APNs device token. 'sandbox' for development
+-- builds, 'production' for TestFlight and the App Store.
+create table if not exists apns_tokens (
+  id uuid primary key default gen_random_uuid(),
+  player_id uuid not null references players(id) on delete cascade,
+  token text not null unique,
+  environment text not null default 'production' check (environment in ('sandbox', 'production')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists apns_tokens_player_idx on apns_tokens(player_id);
+
 -- Pinged every six hours by .github/workflows/keepalive.yml so the
 -- free-tier project never pauses for inactivity. Each ping is a real
 -- write: a bare weekly read was the old version, and on Process Mapper a
@@ -671,11 +684,18 @@ alter table bets enable row level security;
 alter table expenses enable row level security;
 alter table payments enable row level security;
 alter table push_subscriptions enable row level security;
+alter table apns_tokens enable row level security;
 
 -- push subscriptions: yours and only yours. The Edge Function reads
 -- everyone's with the service role, which bypasses this.
 drop policy if exists push_subs_own on push_subscriptions;
 create policy push_subs_own on push_subscriptions for all
+  using (player_id = current_player_id())
+  with check (player_id = current_player_id());
+
+-- iPhone tokens: the same, yours and only yours.
+drop policy if exists apns_tokens_own on apns_tokens;
+create policy apns_tokens_own on apns_tokens for all
   using (player_id = current_player_id())
   with check (player_id = current_player_id());
 
