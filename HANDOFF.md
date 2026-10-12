@@ -165,9 +165,13 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   address would break installed home screens and the sign-in links.
 
 - Light theme only, Manrope, "Scorecard Clean". Dark mode and stylized fonts were rejected.
-- Tabs (Matt, 2026-10-10): Home, Rounds, Log (raised centre), Standings (`/h2h`), You. Courses
-  sit beside rounds under the Rounds tab (a Rounds | Courses switch at the top of both pages,
-  replace-navigation); Trips have a section on Home and live under You, never a tab.
+- Tabs (Matt, 2026-10-12, replacing 2026-10-10): Home, Rounds, Log (raised centre), Trips, You.
+  Standings (`/h2h`) leaves the tab bar: it opens from Home's season card and a row under You.
+  The iPhone app has it already (bandit-swift e650868); this web app still shows the old
+  Standings tab and needs the same swap (one Netlify build). Courses sit beside rounds under
+  the Rounds tab (a Rounds | Courses switch at the top of both pages, replace-navigation).
+  Whether the bar stays flat or floats is open again (Matt: the 2026-10-10 walk-back was about
+  the round-everything restyle); a mockup of three looks is with him.
 - Standings is the whole argument: 2026 / All-time chips scope everything; the Saddam as a
   band; the table with last-5 form squares, movement since the latest group round and run
   notes (counted in scope); money bars; your rivalries (grid behind Every matchup); records
