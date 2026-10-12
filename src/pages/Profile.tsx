@@ -11,7 +11,7 @@ import { todayISO } from '../lib/dates'
 import CourseScene from '../components/CourseScene'
 import RoundScene from '../components/RoundScene'
 import { disablePush, enablePush, pushEnabled, pushSupported } from '../lib/push'
-import { canSeeTrip, fmt1, isSoloRound, round1 } from '../types'
+import { fmt1, isSoloRound, round1 } from '../types'
 import { supabase } from '../lib/supabase'
 import EditGolfer from '../components/EditGolfer'
 import { Avatar, AvatarStack, Card, Meta, PrimaryButton, RowButton, SaddamBadge, SaddamIcon, SectionLabel } from '../components/ui'
@@ -35,7 +35,6 @@ export default function Profile() {
   const navigate = useNavigate()
   const { open: openLog } = useLogSheet()
   const me = data.players.find((p) => p.id === data.currentUserId)!
-  const myTrips = data.trips.filter((t) => canSeeTrip(t, me.id)).length
   const stats = playerStats(data, me.id)
   const game = holeStats(data, me.id)
   const putting = puttStats(data, me.id)
@@ -446,15 +445,13 @@ export default function Profile() {
       )}
       <SoundToggle />
 
-      {/* Trips have no tab; this and the row on Home are the way in. */}
-      <SectionLabel>Trips</SectionLabel>
-      <Card onClick={() => navigate('/trips')} className="p-4 flex items-center gap-3.5">
-        <IconTile name="suitcase" tone="sand" size={38} />
+      {/* Standings has no tab; this and Home's season card are the way in. */}
+      <SectionLabel>Standings</SectionLabel>
+      <Card onClick={() => navigate('/h2h')} className="p-4 flex items-center gap-3.5">
+        <IconTile name="trophy" tone="gold" size={38} />
         <div className="min-w-0 flex-1">
-          <p className="text-body font-bold text-ink">Your trips</p>
-          <p className="text-footnote text-ink-dim mt-0.5">
-            {myTrips === 0 ? 'None yet. Plan the first one.' : `${myTrips} trip${myTrips === 1 ? '' : 's'} · plans, costs, the archive`}
-          </p>
+          <p className="text-body font-bold text-ink">Standings</p>
+          <p className="text-footnote text-ink-dim mt-0.5">The season race, head to head, form</p>
         </div>
         <Icon name="chevronRight" size={18} className="text-ink-faint" />
       </Card>

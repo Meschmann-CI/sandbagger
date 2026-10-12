@@ -23,3 +23,24 @@ export const daysAgoISO = (n: number) => {
   d.setDate(d.getDate() - n)
   return toISODate(d)
 }
+
+const dayNumber = (iso: string) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 86_400_000
+
+/** Whole days from one yyyy-mm-dd to another, by the calendar (DST can't shave one off). */
+export const daysBetween = (from: string, to: string) => Math.round(dayNumber(to) - dayNumber(from))
+
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** "Nov 4" from "2026-11-04". */
+export const shortDay = (iso: string) => `${MONTHS_SHORT[+iso.slice(5, 7) - 1]} ${+iso.slice(8, 10)}`
+
+/** "Wed" for "2026-11-04". */
+export const weekdayShort = (iso: string) =>
+  ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10))).getUTCDay()]
+
+/** "Nov 4 – 7", or "Oct 30 – Nov 2" across a month. */
+export function tripDateRange(start?: string, end?: string): string | undefined {
+  if (!start) return undefined
+  if (!end || end === start) return shortDay(start)
+  return `${shortDay(start)} – ${start.slice(0, 7) === end.slice(0, 7) ? +end.slice(8, 10) : shortDay(end)}`
+}

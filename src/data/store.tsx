@@ -16,6 +16,7 @@ import {
   type Trip,
 } from '../types'
 import { todayISO } from '../lib/dates'
+import { shrinkPhoto, uploadTripPhoto } from '../lib/photos'
 import { cleanCourseName, courseSlug, noteRename, renameCourseIn } from '../lib/courses'
 import { syncStoredBrands } from '../lib/courseBrands'
 import { onOutboxChange, outboxSnapshot, outboxStatus } from './outbox'
@@ -70,6 +71,14 @@ interface StoreApi {
   updateTrip: (trip: Trip) => void
   deleteTrip: (tripId: string) => void
   voteTripOption: (tripId: string, optionId: string) => void
+  /**
+   * Sets (or with null clears) a trip's cover, or one destination's photo
+   * with an optionId. Uploads first, then re-reads the trip so a change
+   * made meanwhile isn't lost. Resolves to an error to show, or null.
+   */
+  setTripPhoto: (tripId: string, file: File | null, optionId?: string) => Promise<string | null>
+  addTripStory: (tripId: string, text: string) => void
+  removeTripStory: (tripId: string, storyId: string) => void
   addPlayer: (input: { name: string; handicap: number; homeCourse?: string; email?: string; guest?: boolean }) => Player
   updatePlayer: (player: Player) => void
   removePlayer: (playerId: string) => void
@@ -313,6 +322,39 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         ...d,
         trips: d.trips.map((t) => (t.id === tripId ? { ...t, options } : t)),
       }))
+    },
+    async setTripPhoto(tripId, file, optionId) {
+      const trip = dataRef.current.trips.find((t) => t.id === tripId)
+      if (!trip) return null
+      let url: string | undefined
+      if (file) {
+        try {
+          url = await uploadTripPhoto(await shrinkPhoto(file), trip, makeId())
+        } catch (err) {
+          return err instanceof Error ? err.message : String(err)
+        }
+      }
+      const fresh = dataRef.current.trips.find((t) => t.id === tripId)
+      if (!fresh) return null
+      const next: Trip = optionId
+        ? { ...fresh, options: fresh.options.map((o) => (o.id === optionId ? { ...o, photo: url } : o)) }
+        : { ...fresh, cover: url }
+      commit({ kind: 'trip.upsert', trip: next }, (d) => ({ ...d, trips: d.trips.map((t) => (t.id === tripId ? next : t)) }))
+      return null
+    },
+    addTripStory(tripId, text) {
+      const trip = dataRef.current.trips.find((t) => t.id === tripId)
+      const clean = text.trim().slice(0, 280)
+      if (!trip || !clean) return
+      const story = { id: makeId(), playerId: dataRef.current.currentUserId, text: clean, at: new Date().toISOString() }
+      const next: Trip = { ...trip, stories: [...(trip.stories ?? []), story] }
+      commit({ kind: 'trip.upsert', trip: next }, (d) => ({ ...d, trips: d.trips.map((t) => (t.id === tripId ? next : t)) }))
+    },
+    removeTripStory(tripId, storyId) {
+      const trip = dataRef.current.trips.find((t) => t.id === tripId)
+      if (!trip) return
+      const next: Trip = { ...trip, stories: (trip.stories ?? []).filter((s) => s.id !== storyId) }
+      commit({ kind: 'trip.upsert', trip: next }, (d) => ({ ...d, trips: d.trips.map((t) => (t.id === tripId ? next : t)) }))
     },
     deleteTrip(tripId) {
       commit({ kind: 'trip.delete', id: tripId }, (d) => ({

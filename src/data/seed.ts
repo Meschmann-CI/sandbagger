@@ -191,11 +191,31 @@ export const seedData: AppData = {
           note: 'Check out first, clubs in the car.',
         },
       ],
+      stories: [
+        { id: 's-1', playerId: 'p-danny', text: "Kim's 4-putt on 17. From six feet.", at: '2025-10-12T21:10:00.000Z' },
+        { id: 's-2', playerId: 'p-ravi', text: 'Alex called the rental house “rustic” for three days straight.', at: '2025-10-13T09:00:00.000Z' },
+      ],
+    },
+
+    {
+      id: 't-bandon26', groupId: 'g-1', name: 'Bandon Dunes 2026', status: 'booked',
+      location: 'Bandon, OR', startDate: '2026-11-04', endDate: '2026-11-07',
+      note: 'Walking only. Bring rain gear.',
+      attendeeIds: ['p-alex', 'p-ravi', 'p-danny', 'p-kim'], createdById: 'p-ravi',
+      options: [],
+      itinerary: [
+        { id: 'b-fly', date: '2026-11-04', endDate: '2026-11-07', time: '9:05 AM', kind: 'flight', title: 'Flights into North Bend', note: "Kim's points for two of the four seats." },
+        { id: 'b-lodge', date: '2026-11-04', endDate: '2026-11-07', time: '3:00 PM check-in', kind: 'lodging', title: 'The Lodge, four rooms', confirmation: 'BD-4471', cost: 1840 },
+        { id: 'b-g1', date: '2026-11-04', time: '3:10 PM', kind: 'tee', title: 'Bandon Trails' },
+        { id: 'b-g2', date: '2026-11-05', time: '8:40 AM', kind: 'tee', title: 'Pacific Dunes', note: 'Then 36 if the weather holds.' },
+        { id: 'b-d1', date: '2026-11-05', time: '7:00 PM', kind: 'meal', title: "Dinner at McKee's Pub" },
+        { id: 'b-g3', date: '2026-11-06', time: '9:30 AM', kind: 'tee', title: 'Old Macdonald' },
+      ],
     },
 
     {
       id: 't-spring27', groupId: 'g-1', name: 'Spring Trip 2027', status: 'planning',
-      note: "Danny's out this one — his kid's travel season.",
+      note: "Danny's out this one, his kid's travel season.",
       attendeeIds: ['p-alex', 'p-ravi', 'p-kim'], createdById: 'p-alex',
       options: [
         {
@@ -262,6 +282,10 @@ export const seedData: AppData = {
     {
       id: 'e-car', tripId: 't-sandhills', description: 'Rental car', amount: 340,
       category: 'travel', paidById: 'p-ravi', sharedByIds: ['p-alex', 'p-ravi', 'p-danny', 'p-kim'], date: '2025-10-09',
+    },
+    {
+      id: 'e-lodge26', tripId: 't-bandon26', description: 'The Lodge, deposit', amount: 1840,
+      category: 'lodging', paidById: 'p-alex', sharedByIds: ['p-alex', 'p-ravi', 'p-danny', 'p-kim'], date: '2026-09-20',
     },
     {
       id: 'e-groc', tripId: 't-sandhills', description: 'Groceries and beer run', amount: 180,

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { ItineraryItem, Player, Review } from '../types'
 import { faviconFor, hostOf } from '../lib/links'
 import { shortDate } from '../lib/stats'
+import { money } from '../lib/money'
 import { KIND_META } from './ItineraryEditor'
 import { Icon } from './icons'
 import { StarPicker, StarRating } from './Stars'
@@ -87,7 +88,7 @@ export default function ItineraryCard({ item, players, currentUserId, editable, 
                 <span className="text-caption font-bold text-ink-dim tabular-nums">{avg.toFixed(1)}</span>
               </span>
             )}
-            {item.cost != null && <span className="text-caption font-bold text-ink-dim tabular-nums">${item.cost}</span>}
+            {item.cost != null && <span className="text-caption font-bold text-ink-dim tabular-nums">{money(item.cost)}</span>}
           </div>
         </button>
 

@@ -18,12 +18,13 @@ import SaddamHandover from './SaddamHandover'
 import PullToRefresh from './PullToRefresh'
 import ErrorBoundary from './ErrorBoundary'
 
-// The tab order is the app's opinion about what matters most often.
-// Logging rounds and checking who's winning happen every weekend, so
-// Standings has a tab; courses are looked at now and then, so they sit
-// beside rounds under the Rounds tab. A trip happens twice a year, so
-// Trips has no tab: it has a section on Home and lives under You. The
-// middle of the bar goes to the thing done most, logging a round.
+// The tab order is the app's opinion about what matters most often:
+// Home, Rounds, Log (centre), Trips, You, on a floating pill (Matt,
+// 2026-10-12, picked from flat, floating with Log beside, and this).
+// Only the bar is rounded; pages keep their flat sections. Standings has
+// no tab: it's one tap from Home's season card and a row under You. On a
+// trip, the trip is where the group lives. Courses sit beside rounds
+// under the Rounds tab.
 
 const stroke = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round', strokeLinejoin: 'round' } as const
 
@@ -58,23 +59,17 @@ const tabs: { to: string; label: string; icon: ((on: boolean) => ReactNode) | nu
     ),
   },
   {
-    to: '/h2h',
-    label: 'Standings',
-    icon: (on) =>
-      on ? (
-        <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
-          <path d="M8 4h8v5a4 4 0 0 1-8 0z" fill="currentColor" />
-          <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4" strokeWidth={2.1} />
-          <path d="M12 13v4M9 20.5h6" strokeWidth={2.1} />
-          <path d="M10 17h4v3.5h-4z" fill="currentColor" />
-        </svg>
-      ) : (
-        <svg width="22" height="22" viewBox="0 0 24 24" {...stroke}>
-          <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
-          <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4" />
-          <path d="M12 13v4M9 20.5h6M10 17h4v3.5h-4z" />
-        </svg>
-      ),
+    to: '/trips',
+    label: 'Trips',
+    icon: (on) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" {...stroke} strokeWidth={1.6}>
+        <path
+          transform="rotate(90 12 12)"
+          d="M12 2.8c.9 0 1.5.8 1.5 1.8v4.6l7.5 4.3v2l-7.5-2.2v4.4l2.2 1.6v1.6L12 20l-3.7.9v-1.6l2.2-1.6v-4.4L3 15.5v-2l7.5-4.3V4.6c0-1 .6-1.8 1.5-1.8z"
+          fill={on ? 'currentColor' : 'none'}
+        />
+      </svg>
+    ),
   },
   {
     to: '/profile',
@@ -83,10 +78,10 @@ const tabs: { to: string; label: string; icon: ((on: boolean) => ReactNode) | nu
   },
 ]
 
-// Which tab a screen belongs to, for the highlight. Trips hang off Home.
+// Which tab a screen belongs to, for the highlight. Standings hangs off Home.
 function tabFor(pathname: string) {
   if (pathname.startsWith('/rounds') || pathname.startsWith('/courses')) return '/rounds'
-  if (pathname.startsWith('/h2h') || pathname.startsWith('/saddam')) return '/h2h'
+  if (pathname.startsWith('/trips')) return '/trips'
   if (pathname.startsWith('/profile') || pathname.startsWith('/group') || pathname.startsWith('/trophies')) return '/profile'
   return '/'
 }
@@ -148,15 +143,17 @@ export default function Shell() {
     <NavLink
       key={t.to}
       to={t.to}
-      className={`flex flex-col items-center gap-1 py-2.5 text-caption font-bold transition-colors ${
-        current === t.to ? 'text-green' : 'text-ink-faint hover:text-ink-dim'
+      className={`mx-0.5 flex flex-col items-center gap-0.5 rounded-[20px] py-1.5 text-caption font-bold transition-colors ${
+        current === t.to ? 'bg-green/12 text-green' : 'text-ink-faint hover:text-ink-dim'
       }`}
     >
-      {t.icon?.(current === t.to) ?? (
-        <span className={`rounded-full ${current === '/profile' ? 'ring-2 ring-green ring-offset-1' : ''}`}>
-          <Avatar player={me} size={22} />
-        </span>
-      )}
+      <span className="flex h-[30px] items-center">
+        {t.icon?.(current === t.to) ?? (
+          <span className={`rounded-full ${current === '/profile' ? 'ring-2 ring-green ring-offset-1' : ''}`}>
+            <Avatar player={me} size={24} />
+          </span>
+        )}
+      </span>
       {t.label}
     </NavLink>
   )
@@ -209,29 +206,29 @@ export default function Shell() {
 
         <CompactTitleBar />
 
-        <nav className="fixed bottom-0 inset-x-0 z-40 [view-transition-name:tabbar]">
-          <div className="mx-auto max-w-md border-t border-line bg-card/95 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]">
-            <div className="grid grid-cols-5">
-              {tabs.slice(0, 2).map((t) => tabLink(t))}
-              {/* The middle of the bar: logging a round, raised above the rest. */}
-              <button
-                type="button"
-                onClick={openLog}
-                aria-label="Log a round"
-                aria-haspopup="dialog"
-                className={`flex flex-col items-center gap-1 pb-2.5 text-caption font-bold ${
-                  logOpen ? 'text-green' : 'text-ink-faint'
-                }`}
-              >
-                <span className="-mt-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-forest text-on-forest shadow-[0_6px_16px_rgba(28,70,50,0.35)] ring-4 ring-card transition-transform active:scale-90">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+        {/* A pill floating over the page. The shadow and blur sit on the
+            pill alone; the strip around it lets taps through to the page. */}
+        <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(calc(env(safe-area-inset-bottom)+4px),12px)] [view-transition-name:tabbar]">
+          <div className="pointer-events-auto mx-auto grid h-[62px] max-w-[424px] grid-cols-5 items-center rounded-full border border-white/80 bg-card/70 px-1.5 shadow-[0_6px_20px_rgba(0,0,0,0.12)] backdrop-blur-xl backdrop-saturate-150">
+            {tabs.slice(0, 2).map((t) => tabLink(t))}
+            {/* The middle of the bar: logging a round. */}
+            <button
+              type="button"
+              onClick={openLog}
+              aria-label="Log a round"
+              aria-haspopup="dialog"
+              className={`flex flex-col items-center gap-0.5 py-1.5 text-caption font-bold ${logOpen ? 'text-green' : 'text-ink-faint'}`}
+            >
+              <span className="flex h-[30px] items-center">
+                <span className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-forest text-on-forest shadow-[0_2px_8px_rgba(28,70,50,0.3)] transition-transform active:scale-90">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
                     <path d="M12 5 V19 M5 12 H19" />
                   </svg>
                 </span>
-                Log
-              </button>
-              {tabs.slice(2).map((t) => tabLink(t))}
-            </div>
+              </span>
+              Log
+            </button>
+            {tabs.slice(2).map((t) => tabLink(t))}
           </div>
         </nav>
       </div>

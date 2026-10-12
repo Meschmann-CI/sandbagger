@@ -39,6 +39,8 @@ function toTrip(row: any): Trip {
     chosenOptionId: row.chosen_option_id ?? undefined,
     options: row.options ?? [],
     itinerary: row.itinerary ?? [],
+    cover: row.cover || undefined,
+    stories: row.stories ?? undefined,
   }
 }
 
@@ -56,6 +58,8 @@ const tripRow = (t: Trip) => ({
   chosen_option_id: t.chosenOptionId ?? null,
   options: t.options,
   itinerary: t.itinerary,
+  cover: t.cover ?? null,
+  stories: t.stories ?? null,
 })
 
 const courseRow = (c: Course) => ({

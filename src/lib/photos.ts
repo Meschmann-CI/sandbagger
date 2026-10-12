@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Round, RoundPhoto } from '../types'
+import type { Round, RoundPhoto, Trip } from '../types'
 
 // Photos on a round.
 //
@@ -74,4 +74,17 @@ export async function removeRoundPhotoFile(photo: RoundPhoto): Promise<void> {
   if (!supabase || !photo.path) return
   const { error } = await supabase.storage.from(BUCKET).remove([photo.path])
   if (error) throw new Error(`Couldn’t delete the photo: ${error.message}`)
+}
+
+/**
+ * A trip's cover or a destination's photo: the same bucket as round
+ * photos, under <group>/trips/<trip>/, which its policies already allow.
+ * Returns the URL to store on the trip. Local mode keeps it inline.
+ */
+export async function uploadTripPhoto(blob: Blob, trip: Trip, id: string): Promise<string> {
+  if (!supabase) return blobToDataUrl(blob)
+  const path = `${trip.groupId}/trips/${trip.id}/${id}.jpg`
+  const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: true })
+  if (error) throw new Error(`Couldn’t upload the photo: ${error.message}`)
+  return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl
 }

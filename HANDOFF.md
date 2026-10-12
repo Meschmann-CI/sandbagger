@@ -170,11 +170,23 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   small forest circle in the middle). Matt picked it from three looks (flat, floating with Log
   beside, this); his 2026-10-10 walk-back was the round-everything restyle, not the bar, so only
   the bar is rounded and pages keep their flat sections. Standings (`/h2h`) leaves the tab bar:
-  it opens from Home's season card and a row under You. The iPhone app has both; this web app
-  still shows the old flat bar with Standings and needs the same change (one Netlify build). Courses sit beside rounds under
-  the Rounds tab (a Rounds | Courses switch at the top of both pages, replace-navigation).
-  Whether the bar stays flat or floats is open again (Matt: the 2026-10-10 walk-back was about
-  the round-everything restyle); a mockup of three looks is with him.
+  it opens from Home's season card and a row under You. Both apps have it (web: `Shell.tsx`,
+  2026-10-12). Courses sit beside rounds under the Rounds tab (a Rounds | Courses switch at the
+  top of both pages, replace-navigation).
+- Trips (Matt, 2026-10-12, both apps). The Trips tab has no painted scenes ("they start to feel
+  repetitive and lose their appeal"): each booked trip still ahead is a forest ticket stub
+  (countdown, where, when, first tee, rounds, a dashed tear, who's going, what's sorted),
+  "Voting now" shows the race (a bar per destination by share of the people going, who hasn't
+  voted), the archive is a timeline (year, town, rounds, total, champ). Scenes stay on each
+  trip's own page. A trip can have its own cover photo (`trips.cover`) and each destination a
+  photo (`options[].photo`), in the round-photos bucket under `<group>/trips/<trip>/`; locking
+  in copies the winner's photo to the cover if there's none. Planning: "The vote" with the race
+  per destination, the leader's pros and cons in two columns, the rest folded. Booked, before
+  the end date: readiness strip (done or not; per-person flights aren't stored), where we're
+  staying with the listing photo, getting there, schedule, leaderboard, costs, rounds. After it:
+  champion card, photo mosaic and viewer, "The stories" (`trips.stories` jsonb; the note leads
+  as the organizer's line; you can take back your own), rated items, costs and settle up, final
+  standings, rounds, schedule, travel and housing. Both columns applied to prod 2026-10-12.
 - Standings is the whole argument: 2026 / All-time chips scope everything; the Saddam as a
   band; the table with last-5 form squares, movement since the latest group round and run
   notes (counted in scope); money bars; your rivalries (grid behind Every matchup); records

@@ -22,8 +22,8 @@ import { CountUp } from '../components/Delight'
 // as a race, with the Saddam's face on whoever holds it so the trophy is
 // on the first screen every time. Money is one line until you ask for the
 // list. A score you owe sits with the recent rounds, not above the season.
-// Trips have no tab, so they have a section of their own at the bottom:
-// the one that's close or being argued about first, then the rest ahead.
+// Trips have a tab, and a section here too at the bottom: the one that's
+// close or being argued about first, then the rest ahead.
 
 const DAY = 86_400_000
 const fromISO = (iso: string) => {
@@ -302,9 +302,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* Trips have no tab, so this is their front door: the one that's
-          close or being argued about first, then anything else booked
-          ahead. With nothing on the go, one row to start the next. */}
+      {/* The trip that's close or being argued about first, then anything
+          else booked ahead. With nothing on the go, one row to start the next. */}
       <SectionLabel
         action={
           <Link to="/trips" className="text-footnote font-bold text-green">

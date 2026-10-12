@@ -276,6 +276,17 @@ export interface TripOption {
   pros: string[]
   cons: string[]
   votes: string[] // playerIds; one vote per player per trip
+  // A photo of the place someone picked: its URL in the round-photos
+  // bucket (a data URL on the demo). Rides inside the trip's options.
+  photo?: string
+}
+
+// A line from a past trip someone wants kept: the 4-putt, the bar tab.
+export interface TripStory {
+  id: string
+  playerId: string
+  text: string
+  at: string // ISO instant
 }
 
 export type TripStatus = 'planning' | 'booked'
@@ -296,6 +307,10 @@ export interface Trip {
   options: TripOption[]
   chosenOptionId?: string
   itinerary: ItineraryItem[]
+  // The trip's own photo (URL in the round-photos bucket, under
+  // <group>/trips/<trip>/). None: the painted scene.
+  cover?: string
+  stories?: TripStory[]
 }
 
 export const canSeeTrip = (trip: Trip, playerId: string) =>
