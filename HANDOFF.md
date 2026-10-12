@@ -166,7 +166,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 - Light theme only, Manrope, "Scorecard Clean". Dark mode and stylized fonts were rejected.
 - Tabs (Matt, 2026-10-12, replacing 2026-10-10): Home, Rounds, Log (centre), Trips, You, on a
-  floating pill (translucent white, soft shadow, a light green pill behind the current tab, Log a
+  floating pill (white at 92% over a blur, after Matt found 70% too see-through; soft shadow, a light green pill behind the current tab, Log a
   small forest circle in the middle). Matt picked it from three looks (flat, floating with Log
   beside, this); his 2026-10-10 walk-back was the round-everything restyle, not the bar, so only
   the bar is rounded and pages keep their flat sections. Standings (`/h2h`) leaves the tab bar:

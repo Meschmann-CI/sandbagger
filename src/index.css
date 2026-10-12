@@ -94,6 +94,23 @@ input[type="number"]::-webkit-inner-spin-button {
   margin: 0;
 }
 
+/* iOS Safari gives a date field a minimum width of its own, wider than
+   half a phone, so two side by side ran into each other (Matt, trip
+   dates, 2026-10-12). Without the native look it takes its box's width,
+   and the date keeps to the left like every other field's text. Tapping
+   still opens the iOS date wheel. */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 2.75rem;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 @keyframes rise {
   from {
     opacity: 0;

@@ -209,7 +209,7 @@ export default function Shell() {
         {/* A pill floating over the page. The shadow and blur sit on the
             pill alone; the strip around it lets taps through to the page. */}
         <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(calc(env(safe-area-inset-bottom)+4px),12px)] [view-transition-name:tabbar]">
-          <div className="pointer-events-auto mx-auto grid h-[62px] max-w-[424px] grid-cols-5 items-center rounded-full border border-white/80 bg-card/70 px-1.5 shadow-[0_6px_20px_rgba(0,0,0,0.12)] backdrop-blur-xl backdrop-saturate-150">
+          <div className="pointer-events-auto mx-auto grid h-[62px] max-w-[424px] grid-cols-5 items-center rounded-full border border-white/80 bg-card/[0.92] px-1.5 shadow-[0_6px_20px_rgba(0,0,0,0.12)] backdrop-blur-xl backdrop-saturate-150">
             {tabs.slice(0, 2).map((t) => tabLink(t))}
             {/* The middle of the bar: logging a round. */}
             <button
