@@ -113,7 +113,9 @@ Deno.serve(async (req) => {
 
 // ---------- APNs, for the native iPhone app ----------
 
-const APNS_KEY = Deno.env.get('APNS_KEY')
+// A key pasted into the dashboard can arrive with its line breaks as
+// literal \n; PEM parsing ignores real whitespace but not those.
+const APNS_KEY = Deno.env.get('APNS_KEY')?.replaceAll('\\n', '\n').trim()
 const APNS_KEY_ID = Deno.env.get('APNS_KEY_ID')
 const APNS_TEAM_ID = Deno.env.get('APNS_TEAM_ID')
 const APNS_BUNDLE_ID = Deno.env.get('APNS_BUNDLE_ID')
