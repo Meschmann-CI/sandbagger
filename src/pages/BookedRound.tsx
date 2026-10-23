@@ -10,7 +10,7 @@ import { teeTimeInput, teeTimeLabel } from '../lib/bookings'
 import { notifyGroup } from '../lib/push'
 import { money } from '../lib/money'
 import { useHoldUpdates } from '../lib/holdUpdates'
-import BetEditor from '../components/BetEditor'
+import { AddGames } from '../components/AddGames'
 import TeePicker from '../components/TeePicker'
 import CourseScene, { roundLight } from '../components/CourseScene'
 import { useRoundWeather } from '../lib/weather'
@@ -31,7 +31,7 @@ const FIELD = 'w-full rounded-xl border border-line-strong bg-card px-4 py-3 tex
 export default function BookedRound({ round }: { round: Round }) {
   const navigate = useNavigate()
   const goBack = useGoBack('/rounds')
-  const { data, deleteRound, addBet, deleteBet } = useStore()
+  const { data, deleteRound, deleteBet } = useStore()
   const confirm = useConfirm()
   const weather = useRoundWeather(data, round)
   const [editing, setEditing] = useState(false)
@@ -166,18 +166,7 @@ export default function BookedRound({ round }: { round: Round }) {
       >
         Money games
       </SectionLabel>
-      {addingBet && (
-        <div className="mb-3">
-          <BetEditor
-            round={round}
-            onSave={(bet) => {
-              addBet(bet)
-              setAddingBet(false)
-            }}
-            onCancel={() => setAddingBet(false)}
-          />
-        </div>
-      )}
+      {addingBet && <AddGames round={round} onDone={() => setAddingBet(false)} />}
       {bets.length === 0 && !addingBet ? (
         <p className="px-1 text-footnote text-ink-faint">Set up the bets now and they're ready on the day.</p>
       ) : (

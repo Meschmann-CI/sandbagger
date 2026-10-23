@@ -158,7 +158,7 @@ create table if not exists round_players (
 create table if not exists bets (
   id uuid primary key default gen_random_uuid(),
   round_id uuid not null references rounds(id) on delete cascade,
-  type text not null check (type in ('nassau', 'skins', 'match', 'custom')),
+  type text not null check (type in ('nassau', 'skins', 'match', 'wolf', 'vegas', 'rabbit', 'snake', 'sixes', 'stableford', 'bbb', 'junk', 'hammer', 'custom')),
   name text not null,
   stake numeric(10,2) not null default 0,
   results jsonb not null default '[]'::jsonb,
@@ -287,7 +287,12 @@ alter table players add column if not exists venmo text;
 -- Match play joined the bet types. `create table if not exists` never
 -- touches an existing table, so the check has to be widened by hand.
 alter table bets drop constraint if exists bets_type_check;
-alter table bets add constraint bets_type_check check (type in ('nassau', 'skins', 'match', 'custom'));
+alter table bets add constraint bets_type_check check (type in ('nassau', 'skins', 'match', 'wolf', 'vegas', 'rabbit', 'snake', 'sixes', 'stableford', 'bbb', 'junk', 'hammer', 'custom'));
+-- The new games (2026-10-23): how the game is set up, by type. Match-play
+-- Nassau {format, autoPress, presses}, wolf {order, picks}, Vegas {teams,
+-- birdieFlip}, sixes {order}, bbb {picks}, junk {kinds, claims}, hammer
+-- {teams, limit, holes}; null on every other bet.
+alter table bets add column if not exists game jsonb;
 -- Live bets: placed on the first tee, settled by the card as it fills in.
 alter table bets add column if not exists manual boolean not null default false;
 alter table bets add column if not exists net boolean;

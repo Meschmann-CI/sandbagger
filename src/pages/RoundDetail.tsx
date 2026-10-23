@@ -3,15 +3,18 @@ import { Link, useParams } from 'react-router-dom'
 import { useGoBack, useNavigate } from '../lib/nav'
 import { BackButton } from '../components/Nav'
 import { useStore } from '../data/store'
-import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, saddamCounts, type ScoredRoundPlayer } from '../types'
+import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, saddamCounts, type BetType, type ScoredRoundPlayer } from '../types'
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
 import { anyCards, cardComplete, holesEntered } from '../lib/holes'
 import { settleFromCard } from '../lib/bets'
+import { betStatus } from '../lib/betText'
 import { courseForRound, coursePar, courseSlug, ninesLabel, toPar } from '../lib/courses'
 import { todayISO } from '../lib/dates'
 import { grossWarning } from '../lib/scores'
 import { money } from '../lib/money'
-import BetEditor from '../components/BetEditor'
+import { AddGames } from '../components/AddGames'
+import { GameCardSheet } from '../components/GameCardSheet'
+import { gameCard } from '../lib/gameCards'
 import CourseRatingEditor from '../components/CourseRatingEditor'
 import { courseSummaries, fmtStars } from '../lib/ratings'
 import Scorecard from '../components/Scorecard'
@@ -20,7 +23,7 @@ import SettleUp from '../components/SettleUp'
 import { roundBetSettlements } from '../lib/settlements'
 import { useConfirm } from '../components/Confirm'
 import { Avatar, Card, HelpTip, MoneyBadge, Pill, PrimaryButton, SaddamIcon, SECONDARY_BTN, SectionLabel } from '../components/ui'
-import { betRules } from '../lib/betRules'
+import { rulesFor } from '../lib/betRules'
 import { sandbaggers } from '../lib/delight'
 import { SandbagStamp } from '../components/Delight'
 import { Icon, type IconName } from '../components/icons'
@@ -50,11 +53,12 @@ function PlayedRound() {
   const { id } = useParams()
   const navigate = useNavigate()
   const goBack = useGoBack('/rounds')
-  const { data, updateRound, addBet, deleteBet, addPayment, deletePayment } = useStore()
+  const { data, updateRound, deleteBet, addPayment, deletePayment } = useStore()
   const confirm = useConfirm()
   const [entering, setEntering] = useState<string | null>(null)
   const [draftScore, setDraftScore] = useState('')
   const [addingBet, setAddingBet] = useState(false)
+  const [readingCard, setReadingCard] = useState<BetType | null>(null)
   const [rating, setRating] = useState(false)
   const [editingBets, setEditingBets] = useState(false)
   const openPhotos = useRef<(() => void) | null>(null)
@@ -593,18 +597,8 @@ function PlayedRound() {
         </SectionLabel>
       )}
 
-      {addingBet && (
-        <div className="mb-3">
-          <BetEditor
-            round={round}
-            onSave={(bet) => {
-              addBet(bet)
-              setAddingBet(false)
-            }}
-            onCancel={() => setAddingBet(false)}
-          />
-        </div>
-      )}
+      {addingBet && <AddGames round={round} onDone={() => setAddingBet(false)} />}
+      {readingCard && <GameCardSheet type={readingCard} onClose={() => setReadingCard(null)} />}
 
       {/* What the bets add up to between people, and how to make it stop
           being true. Money won on a round is a permanent record; this is
@@ -655,19 +649,24 @@ function PlayedRound() {
               // The card's verdict as it stands — "2 up thru 14", "3
               // holes judged" — for bets that settle from the card.
               const live = settleFromCard(bet, round, course)
-              const status = live?.detail
-                .map((line) => {
-                  const [text, playerId] = line.split('|')
-                  const who = playerId ? data.players.find((p) => p.id === playerId)?.name : null
-                  return who ? `${who} ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text
-                })
-                .join(' · ')
+              const status = live && betStatus(live.detail, (id) => data.players.find((p) => p.id === id)?.name)
               return (
               <Card key={bet.id} className="p-4">
                 <div className="flex items-baseline justify-between gap-2">
                   <p className="font-bold text-body text-ink min-w-0 truncate">{bet.name}</p>
                   <div className="flex items-center gap-3 shrink-0">
-                    <HelpTip {...betRules(bet.type, { net: bet.net, winnerTakeAll: bet.winnerTakeAll })} />
+                    {gameCard(bet.type) ? (
+                      <button
+                        type="button"
+                        onClick={() => setReadingCard(bet.type)}
+                        aria-label={`How ${bet.name} works`}
+                        className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-line-strong bg-card text-caption font-extrabold leading-none text-ink-faint"
+                      >
+                        ?
+                      </button>
+                    ) : (
+                      <HelpTip {...rulesFor(bet)} />
+                    )}
                     <p className="text-caption text-ink-faint tabular-nums">{money(bet.stake)} stake</p>
                     {editingBets && (
                     <button
