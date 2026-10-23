@@ -1,10 +1,22 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../data/store'
-import type { Bet, BetResult, BetType, Round } from '../types'
+import type { Bet, BetResult, BetType, NassauPlay, Round, VegasPlay, WolfPlay } from '../types'
 import { hasScore } from '../types'
-import { calcCustom, calcMatchPlay, calcNassau, calcSkins } from '../lib/bets'
+import {
+  BLIND_WOLF,
+  LONE_WOLF,
+  calcCustom,
+  calcMatchPlay,
+  calcNassau,
+  calcNassauMatch,
+  calcSkins,
+  calcVegas,
+  calcWolf,
+  wolfOn,
+} from '../lib/bets'
 import { betRules } from '../lib/betRules'
-import { anyCards } from '../lib/holes'
+import { betDetailLines } from '../lib/betText'
+import { HOLE_COUNT, anyCards, cardOf } from '../lib/holes'
 import { courseForRound, hasStrokeIndex } from '../lib/courses'
 import { money } from '../lib/money'
 import { Avatar, Card, HelpTip, PrimaryButton } from '../components/ui'
@@ -14,6 +26,8 @@ const TYPES: { key: BetType; label: string; blurb: string }[] = [
   { key: 'skins', label: 'Skins', blurb: 'Low score wins the hole. Ties carry over and stack until someone takes them.' },
   { key: 'nassau', label: 'Nassau', blurb: 'Three bets: front nine, back nine, and the eighteen.' },
   { key: 'match', label: 'Match', blurb: 'One on one, hole by hole. Most holes up takes the stake.' },
+  { key: 'wolf', label: 'Wolf', blurb: 'Four golfers. The wolf picks a partner after the drives, or goes it alone for double.' },
+  { key: 'vegas', label: 'Vegas', blurb: 'Two against two. Each team’s scores make a number, low digit first; the difference is points.' },
   { key: 'custom', label: 'Custom', blurb: 'Closest to the pin, longest drive, whatever you made up on the tee.' },
 ]
 
@@ -36,18 +50,59 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
   // holds the most at the end.
   const [winnerTakeAll, setWinnerTakeAll] = useState(false)
   const [customWinner, setCustomWinner] = useState<string | null>(null)
+  // Nassau between two can be played as matches, and only then pressed.
+  const [nassauMatch, setNassauMatch] = useState(false)
+  const [autoPress, setAutoPress] = useState(2)
+  // Wolf: the tee order (whoever's in, in the order picked unless moved)
+  // and, for holes already played, the wolf's calls.
+  const [orderPicked, setOrderPicked] = useState<string[]>([])
+  const [picks, setPicks] = useState<(string | null)[]>(Array(HOLE_COUNT).fill(null))
+  // Vegas: who partners the first golfer in; the other two are the other team.
+  const [partner, setPartner] = useState<string | null>(null)
+  const [birdieFlip, setBirdieFlip] = useState(true)
   const [manual, setManual] = useState<Record<string, string>>({})
   const [manualMode, setManualMode] = useState(false)
 
   const stakeNum = Number(stake) || 0
   const cardsExist = anyCards(round)
 
+  const order = [...orderPicked.filter((id) => inIds.includes(id)), ...inIds.filter((id) => !orderPicked.includes(id))]
+  const nassauPlay: NassauPlay | undefined = nassauMatch ? { format: 'match', ...(autoPress ? { autoPress } : {}) } : undefined
+  const wolfPlay: WolfPlay = { order, picks }
+  const first = inIds[0]
+  const vegasPlay: VegasPlay | undefined =
+    partner && first && partner !== first && inIds.includes(partner)
+      ? { teams: [[first, partner], inIds.filter((id) => id !== first && id !== partner)], birdieFlip }
+      : undefined
+
   const outcome = useMemo(() => {
     if (type === 'skins') return calcSkins(round, inIds, stakeNum, useNet, course, winnerTakeAll)
-    if (type === 'nassau') return calcNassau(round, inIds, stakeNum, useNet, course)
+    if (type === 'nassau')
+      return nassauPlay
+        ? calcNassauMatch(round, inIds, stakeNum, useNet, course, nassauPlay)
+        : calcNassau(round, inIds, stakeNum, useNet, course)
     if (type === 'match') return calcMatchPlay(round, inIds, stakeNum, useNet, course)
+    if (type === 'wolf') return calcWolf(round, inIds, stakeNum, useNet, course, wolfPlay)
+    if (type === 'vegas') return calcVegas(round, inIds, stakeNum, useNet, course, vegasPlay)
     return calcCustom(inIds, customWinner, stakeNum)
-  }, [type, round, inIds, stakeNum, useNet, winnerTakeAll, customWinner, course])
+    // The play objects are rebuilt every render from the state below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, round, inIds, stakeNum, useNet, winnerTakeAll, customWinner, course, nassauMatch, autoPress, orderPicked, picks, partner, birdieFlip])
+
+  // Vegas is played for small change a point; the other games for a few
+  // dollars a unit. Switching swaps the default, never a typed stake.
+  const pickType = (next: BetType) => {
+    if (next === 'vegas' && stake === '5') setStake('0.25')
+    if (next !== 'vegas' && type === 'vegas' && stake === '0.25') setStake('5')
+    setType(next)
+    setManualMode(false)
+  }
+
+  // Holes the wolf calls can be put in for here: any hole with a score
+  // on it already. Holes still to play get their calls on the live card.
+  const scoredHoles = Array.from({ length: HOLE_COUNT }, (_, h) => h).filter((h) =>
+    round.players.some((rp) => inIds.includes(rp.playerId) && cardOf(rp)[h] != null),
+  )
 
   // Typing amounts is a deliberate choice now, not a fallback the editor
   // forces. An undecided card bet is saveable as it stands — it goes on
@@ -69,6 +124,9 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
     // A match is strictly one on one; three players in a "match" is a
     // different game (and it has a name: skins).
     (type !== 'match' || inIds.length === 2) &&
+    (type !== 'nassau' || !nassauMatch || inIds.length === 2) &&
+    (type !== 'wolf' || inIds.length === 4) &&
+    (type !== 'vegas' || (inIds.length === 4 && !!vegasPlay)) &&
     stakeNum >= 0 &&
     (showManual
       ? balanced && manualResults.some((r) => r.amount !== 0)
@@ -87,11 +145,11 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
   return (
     <div className="rounded-2xl border border-green/30 bg-card p-4 space-y-3.5">
       {/* Game */}
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-3 gap-1.5">
         {TYPES.map((t) => (
           <button
             key={t.key}
-            onClick={() => { setType(t.key); setManualMode(false) }}
+            onClick={() => pickType(t.key)}
             className={`rounded-lg py-2 text-footnote font-bold border transition ${
               type === t.key ? 'bg-green text-white border-green' : 'border-line-strong text-ink-dim'
             }`}
@@ -102,7 +160,14 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
       </div>
       <div className="flex items-start justify-between gap-2">
         <p className="text-footnote text-ink-dim">{TYPES.find((t) => t.key === type)!.blurb}</p>
-        <HelpTip {...betRules(type, { net: type === 'custom' ? undefined : useNet, winnerTakeAll })} />
+        <HelpTip
+          {...betRules(type, {
+            net: type === 'custom' ? undefined : useNet,
+            winnerTakeAll,
+            nassau: nassauPlay ?? (nassauMatch ? { format: 'match' } : undefined),
+            vegas: { teams: [[], []], birdieFlip },
+          })}
+        />
       </div>
 
       <div className="grid grid-cols-[1fr_auto] gap-2.5">
@@ -133,7 +198,13 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
               : `${money(stakeNum)} per skin, from each of the others. A carried hole pays its whole stack. No separate kitty.`
             : type === 'match'
               ? `${money(stakeNum)} on the match. Winner takes it; all square and nobody pays.`
-              : `${money(stakeNum)} on each of the three, paid by everyone else to whoever wins it.`}
+              : type === 'wolf'
+                ? `${money(stakeNum)} a hole between partners, ${money(stakeNum * 2)} with each of the three when the wolf goes lone, ${money(stakeNum * 3)} blind.`
+                : type === 'vegas'
+                  ? `${money(stakeNum)} a point, from each golfer on the losing team to one on the winning team.`
+                  : nassauMatch
+                    ? `${money(stakeNum)} on each of the three matches, and on every press.`
+                    : `${money(stakeNum)} on each of the three, paid by everyone else to whoever wins it.`}
         </p>
       )}
 
@@ -157,6 +228,53 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Nassau: everyone on totals, or two golfers on matches with presses */}
+      {type === 'nassau' && (
+        <div>
+          <label className={label}>Played as</label>
+          <div className="flex gap-2">
+            {[
+              { v: false, l: 'Lowest total' },
+              { v: true, l: 'Match play' },
+            ].map((o) => (
+              <button
+                key={o.l}
+                onClick={() => setNassauMatch(o.v)}
+                className={`flex-1 rounded-lg py-2 text-footnote font-bold border transition ${
+                  nassauMatch === o.v ? 'bg-ink text-white border-ink' : 'border-line-strong text-ink-dim'
+                }`}
+              >
+                {o.l}
+              </button>
+            ))}
+          </div>
+          {nassauMatch && (
+            <>
+              <label className={`${label} mt-3`}>Presses</label>
+              <div className="flex gap-2">
+                {[
+                  { v: 2, l: 'Auto at 2 down' },
+                  { v: 0, l: 'By hand only' },
+                ].map((o) => (
+                  <button
+                    key={o.l}
+                    onClick={() => setAutoPress(o.v)}
+                    className={`flex-1 rounded-lg py-2 text-footnote font-bold border transition ${
+                      autoPress === o.v ? 'bg-ink text-white border-ink' : 'border-line-strong text-ink-dim'
+                    }`}
+                  >
+                    {o.l}
+                  </button>
+                ))}
+              </div>
+              <p className="text-caption text-ink-faint mt-1.5">
+                Two golfers. Press by hand from the live card any time; a press runs to the end of its nine.
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -186,6 +304,115 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
         </div>
       </div>
 
+      {/* Wolf: the tee order, and the calls on holes already played */}
+      {type === 'wolf' && inIds.length === 4 && (
+        <div>
+          <label className={label}>Tee order</label>
+          <div className="space-y-1.5">
+            {order.map((id, i) => (
+              <div key={id} className="flex items-center gap-2.5">
+                <span className="w-5 text-footnote font-bold text-ink-faint tabular-nums">{i + 1}</span>
+                {(() => {
+                  const p = data.players.find((pl) => pl.id === id)
+                  return p ? <Avatar player={p} size={22} /> : null
+                })()}
+                <span className="flex-1 text-footnote font-bold text-ink">{nameFor(id)}</span>
+                {i > 0 && (
+                  <button
+                    onClick={() => setOrderPicked(order.map((x, k) => (k === i - 1 ? id : k === i ? order[i - 1] : x)))}
+                    className="text-caption font-bold text-green"
+                    aria-label={`Move ${nameFor(id)} up`}
+                  >
+                    Move up
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-caption text-ink-faint mt-1.5">
+            The wolf goes in this order, a hole each. The calls go in on the live card as you play.
+          </p>
+          {scoredHoles.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              <label className={label}>The calls so far</label>
+              {scoredHoles.map((h) => {
+                const wolf = wolfOn(order, h)
+                return (
+                  <div key={h} className="flex items-center gap-2">
+                    <span className="w-6 text-footnote font-bold text-ink-faint tabular-nums">{h + 1}</span>
+                    <span className="w-24 truncate text-footnote text-ink-dim">{nameFor(wolf).split(' ')[0]}</span>
+                    <select
+                      value={picks[h] ?? ''}
+                      onChange={(e) => setPicks((all) => all.map((x, k) => (k === h ? e.target.value || null : x)))}
+                      aria-label={`Wolf's call on hole ${h + 1}`}
+                      className="flex-1 rounded-lg border border-line-strong bg-card px-2 py-1.5 text-footnote font-bold text-ink"
+                    >
+                      <option value="">No call yet</option>
+                      {order
+                        .filter((id) => id !== wolf)
+                        .map((id) => (
+                          <option key={id} value={id}>
+                            With {nameFor(id)}
+                          </option>
+                        ))}
+                      <option value={LONE_WOLF}>Lone wolf</option>
+                      <option value={BLIND_WOLF}>Blind wolf</option>
+                    </select>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Vegas: two teams of two */}
+      {type === 'vegas' && inIds.length === 4 && first && (
+        <div>
+          <label className={label}>{nameFor(first).split(' ')[0]} plays with</label>
+          <div className="flex flex-wrap gap-2">
+            {inIds
+              .filter((id) => id !== first)
+              .map((id) => {
+                const p = data.players.find((pl) => pl.id === id)
+                if (!p) return null
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setPartner(id)}
+                    className={`flex items-center gap-1.5 rounded-full border pl-1 pr-3 py-1 text-footnote font-bold transition ${
+                      partner === id ? 'bg-green text-white border-green' : 'border-line-strong text-ink-dim'
+                    }`}
+                  >
+                    <Avatar player={p} size={22} />
+                    {p.name}
+                  </button>
+                )
+              })}
+          </div>
+          <label className={`${label} mt-3`}>Birdie flip</label>
+          <div className="flex gap-2">
+            {[
+              { v: true, l: 'On' },
+              { v: false, l: 'Off' },
+            ].map((o) => (
+              <button
+                key={o.l}
+                onClick={() => setBirdieFlip(o.v)}
+                className={`flex-1 rounded-lg py-2 text-footnote font-bold border transition ${
+                  birdieFlip === o.v ? 'bg-ink text-white border-ink' : 'border-line-strong text-ink-dim'
+                }`}
+              >
+                {o.l}
+              </button>
+            ))}
+          </div>
+          <p className="text-caption text-ink-faint mt-1.5">
+            A birdie turns the other team’s number round, high digit first.
+          </p>
+        </div>
+      )}
+
       {/* Gross/net, for the games where handicaps come into it */}
       {type !== 'custom' && (
         <div>
@@ -207,14 +434,14 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
             ))}
           </div>
           <p className="text-caption text-ink-faint mt-1.5">
-            {type === 'match'
+            {type === 'match' || (type === 'nassau' && nassauMatch)
               ? hasStrokeIndex(course)
                 ? 'Net gives the difference in handicaps as strokes on the hardest holes, off this course’s stroke index.'
                 : 'Net needs this course’s stroke index, since which holes get a stroke decides who wins them. Add it from the Courses page, or play it gross.'
-              : type === 'skins'
+              : type === 'skins' || type === 'wolf' || type === 'vegas'
                 ? hasStrokeIndex(course)
                   ? 'Net gives strokes off the low handicap: the best player plays scratch, everyone else gets their difference on the hardest holes.'
-                  : 'Net skins need this course’s stroke index, since which holes get a stroke decides who wins them. Add it from the Courses page, or play them gross.'
+                  : 'Net needs this course’s stroke index, since which holes get a stroke decides who wins them. Add it from the Courses page, or play it gross.'
                 : hasStrokeIndex(course)
                   ? 'Net gives strokes hole by hole off this course’s stroke index.'
                   : 'Net takes off the full handicap over eighteen and half of it on each nine. Add this course’s stroke index for the real hole-by-hole allocation.'}
@@ -258,14 +485,11 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
               </button>
             )}
           </div>
-          {outcome.detail.map((line, i) => {
-            const [text, playerId] = line.split('|')
-            return (
-              <p key={i} className="text-footnote text-ink-dim">
-                {playerId ? `${text.replace(/^won$/, 'won')}: ${nameFor(playerId)}` : text}
-              </p>
-            )
-          })}
+          {betDetailLines(outcome.detail, (id) => data.players.find((p) => p.id === id)?.name).map((line, i) => (
+            <p key={i} className="text-footnote text-ink-dim">
+              {line}
+            </p>
+          ))}
           <div className="mt-2.5 pt-2.5 border-t border-line space-y-1.5">
             {results
               .slice()
@@ -349,6 +573,10 @@ export default function BetEditor({ round, onSave, onCancel }: { round: Round; o
               manual: showManual || undefined,
               net: type === 'custom' || showManual ? undefined : useNet,
               winnerTakeAll: type === 'skins' && winnerTakeAll ? true : undefined,
+              // How the game is set up, for the card to settle it by.
+              nassau: type === 'nassau' && !showManual ? nassauPlay : undefined,
+              wolf: type === 'wolf' && !showManual ? wolfPlay : undefined,
+              vegas: type === 'vegas' && !showManual ? vegasPlay : undefined,
             })
           }
           disabled={!canSave}

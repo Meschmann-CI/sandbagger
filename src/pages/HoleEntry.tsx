@@ -17,7 +17,8 @@ import {
   toPar,
   yardsFor,
 } from '../lib/courses'
-import { settleFromCard } from '../lib/bets'
+import { BLIND_WOLF, LONE_WOLF, nth, settleFromCard, wolfOn, wolfOrder } from '../lib/bets'
+import { betStatus } from '../lib/betText'
 import { Confetti, buzz } from '../components/Delight'
 import { MarkLegend, SCORE_MARK, StrokeDots } from '../components/scoreMarks'
 import { PuttsRow } from '../components/PuttsRow'
@@ -25,9 +26,9 @@ import { fmtDiff, ghostDiff, ghostFor, ghostOptions } from '../lib/ghost'
 import { scanScores, scanSupported, type ScannedScoreRow } from '../lib/scan'
 import { roundStandings, shortDate } from '../lib/stats'
 import { notifyGroup } from '../lib/push'
-import { fmt1, type Round } from '../types'
+import { fmt1, type Bet, type Round } from '../types'
 import { Avatar, Card, HelpTip, PrimaryButton, Segmented } from '../components/ui'
-import { betRules } from '../lib/betRules'
+import { rulesFor } from '../lib/betRules'
 import { Icon, IconTile } from '../components/icons'
 import { bandFill, courseBrand, inkOn, teeColour } from '../lib/courseBrands'
 import RoundScene from '../components/RoundScene'
@@ -581,14 +582,87 @@ export default function HoleEntry() {
         </Card>
       )
 
-  const betLine = (detail: string[]) =>
-    detail
-      .map((line) => {
-        const [text, playerId] = line.split('|')
-        const who = playerId ? data.players.find((p) => p.id === playerId)?.name : null
-        return who ? `${who} ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text
-      })
-      .join(' · ')
+  const betLine = (detail: string[]) => betStatus(detail, (id) => data.players.find((p) => p.id === id)?.name)
+  const firstName = (id: string) => data.players.find((p) => p.id === id)?.name.split(' ')[0] ?? '?'
+
+  // The calls a game needs on this hole, put in as you play: the wolf's
+  // partner, and a press on a match-play Nassau. Each is saved on the bet
+  // straight away, with the money worked out again off the card as it is.
+  const roundBets = data.bets.filter((b) => b.roundId === round.id && !b.manual && b.net !== undefined)
+  const wolfBets = roundBets.filter((b) => b.type === 'wolf' && b.results.length === 4)
+  const pressBets = roundBets.filter((b) => b.type === 'nassau' && b.nassau?.format === 'match')
+  const saveCall = (bet: Bet) => {
+    const outcome = liveRound ? settleFromCard(bet, liveRound, course) : null
+    updateBet(outcome ? { ...bet, results: outcome.results } : bet)
+  }
+  const setWolfCall = (bet: Bet, hole: number, call: string | null) => {
+    const order = wolfOrder(bet.results.map((r) => r.playerId), bet.wolf)
+    const picks = Array.from({ length: HOLE_COUNT }, (_, i) => (i === hole ? call : (bet.wolf?.picks?.[i] ?? null)))
+    saveCall({ ...bet, wolf: { order, picks } })
+  }
+  const togglePress = (bet: Bet, hole: number) => {
+    const presses = bet.nassau?.presses ?? []
+    const pressed = presses.some((p) => p.hole === hole)
+    const byId = bet.results.some((r) => r.playerId === me) ? me : undefined
+    saveCall({
+      ...bet,
+      nassau: {
+        format: 'match',
+        ...(bet.nassau?.autoPress ? { autoPress: bet.nassau.autoPress } : {}),
+        presses: pressed ? presses.filter((p) => p.hole !== hole) : [...presses, { hole, ...(byId ? { byId } : {}) }],
+      },
+    })
+  }
+  const chip = (on: boolean) =>
+    `rounded-full border px-3 py-1.5 text-footnote font-bold transition active:scale-95 ${
+      on ? 'border-ink bg-ink text-white' : 'border-line-strong bg-card text-ink-dim'
+    }`
+  const gameCalls = (wolfBets.length > 0 || pressBets.length > 0) && (
+    <Card className="p-3.5 space-y-3">
+      {wolfBets.map((bet) => {
+        const order = wolfOrder(bet.results.map((r) => r.playerId), bet.wolf)
+        const wolf = wolfOn(order, h)
+        const call = bet.wolf?.picks?.[h] ?? null
+        const pick = (value: string) => setWolfCall(bet, h, call === value ? null : value)
+        return (
+          <div key={bet.id}>
+            <p className="text-footnote text-ink">
+              <span className="font-bold">{bet.name}:</span> {wolf === me ? 'You are' : `${firstName(wolf)} is`} the wolf on the {nth(h + 1)}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label={`Wolf's call on hole ${h + 1}`}>
+              {order
+                .filter((id) => id !== wolf)
+                .map((id) => (
+                  <button key={id} type="button" onClick={() => pick(id)} aria-pressed={call === id} className={chip(call === id)}>
+                    {firstName(id)}
+                  </button>
+                ))}
+              <button type="button" onClick={() => pick(LONE_WOLF)} aria-pressed={call === LONE_WOLF} className={chip(call === LONE_WOLF)}>
+                Lone
+              </button>
+              <button type="button" onClick={() => pick(BLIND_WOLF)} aria-pressed={call === BLIND_WOLF} className={chip(call === BLIND_WOLF)}>
+                Blind
+              </button>
+            </div>
+          </div>
+        )
+      })}
+      {pressBets.map((bet) => {
+        const pressed = bet.nassau?.presses?.some((p) => p.hole === h) ?? false
+        return (
+          <div key={bet.id} className="flex items-center justify-between gap-3">
+            <p className="min-w-0 text-footnote text-ink">
+              <span className="font-bold">{bet.name}:</span>{' '}
+              {pressed ? `pressed from the ${nth(h + 1)}` : `a new bet from the ${nth(h + 1)} to the end of the nine`}
+            </p>
+            <button type="button" onClick={() => togglePress(bet, h)} aria-pressed={pressed} className={`shrink-0 ${chip(pressed)}`}>
+              {pressed ? 'Undo' : 'Press'}
+            </button>
+          </div>
+        )
+      })}
+    </Card>
+  )
 
   const totalEntered = round.players.reduce((n, rp) => n + (cards[rp.playerId]?.filter((x) => x != null).length ?? 0), 0)
   const totalYards = yards ? yards.reduce<number>((s, y) => s + (y ?? 0), 0) : null
@@ -973,6 +1047,7 @@ export default function HoleEntry() {
 
       <div className="space-y-3 px-4 pt-3">
         {totalEntered === 0 && handicapLine}
+        {gameCalls}
         {liveBets.length > 0 && (
           <Card className="p-3.5 bg-gold-soft/40 border-gold/30 space-y-1">
             {liveBets.slice(0, 2).map(({ bet, outcome }) => (
@@ -1194,15 +1269,9 @@ export default function HoleEntry() {
             <div key={bet.id} className="flex items-start justify-between gap-2">
               <p className="text-footnote text-ink">
                 <span className="font-bold">{bet.name}:</span>{' '}
-                {outcome.detail
-                  .map((line) => {
-                    const [text, playerId] = line.split('|')
-                    const who = playerId ? data.players.find((p) => p.id === playerId)?.name : null
-                    return who ? `${who} ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text
-                  })
-                  .join(' · ')}
+                {betLine(outcome.detail)}
               </p>
-              <HelpTip {...betRules(bet.type, { net: bet.net, winnerTakeAll: bet.winnerTakeAll })} />
+              <HelpTip {...rulesFor(bet)} />
             </div>
           ))}
         </Card>

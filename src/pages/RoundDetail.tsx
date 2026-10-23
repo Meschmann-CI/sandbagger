@@ -7,6 +7,7 @@ import { canSeeTrip, fmt1, hasScore, isSoloRound, net, pending, round1, saddamCo
 import { prettyDate, roundStandings, saddamState } from '../lib/stats'
 import { anyCards, cardComplete, holesEntered } from '../lib/holes'
 import { settleFromCard } from '../lib/bets'
+import { betStatus } from '../lib/betText'
 import { courseForRound, coursePar, courseSlug, ninesLabel, toPar } from '../lib/courses'
 import { todayISO } from '../lib/dates'
 import { grossWarning } from '../lib/scores'
@@ -20,7 +21,7 @@ import SettleUp from '../components/SettleUp'
 import { roundBetSettlements } from '../lib/settlements'
 import { useConfirm } from '../components/Confirm'
 import { Avatar, Card, HelpTip, MoneyBadge, Pill, PrimaryButton, SaddamIcon, SECONDARY_BTN, SectionLabel } from '../components/ui'
-import { betRules } from '../lib/betRules'
+import { rulesFor } from '../lib/betRules'
 import { sandbaggers } from '../lib/delight'
 import { SandbagStamp } from '../components/Delight'
 import { Icon, type IconName } from '../components/icons'
@@ -655,19 +656,13 @@ function PlayedRound() {
               // The card's verdict as it stands — "2 up thru 14", "3
               // holes judged" — for bets that settle from the card.
               const live = settleFromCard(bet, round, course)
-              const status = live?.detail
-                .map((line) => {
-                  const [text, playerId] = line.split('|')
-                  const who = playerId ? data.players.find((p) => p.id === playerId)?.name : null
-                  return who ? `${who} ${text.charAt(0).toLowerCase()}${text.slice(1)}` : text
-                })
-                .join(' · ')
+              const status = live && betStatus(live.detail, (id) => data.players.find((p) => p.id === id)?.name)
               return (
               <Card key={bet.id} className="p-4">
                 <div className="flex items-baseline justify-between gap-2">
                   <p className="font-bold text-body text-ink min-w-0 truncate">{bet.name}</p>
                   <div className="flex items-center gap-3 shrink-0">
-                    <HelpTip {...betRules(bet.type, { net: bet.net, winnerTakeAll: bet.winnerTakeAll })} />
+                    <HelpTip {...rulesFor(bet)} />
                     <p className="text-caption text-ink-faint tabular-nums">{money(bet.stake)} stake</p>
                     {editingBets && (
                     <button

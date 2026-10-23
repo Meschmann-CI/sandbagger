@@ -362,7 +362,45 @@ export interface Payment {
 
 // ---------- Bets ----------
 
-export type BetType = 'nassau' | 'skins' | 'match' | 'custom'
+export type BetType = 'nassau' | 'skins' | 'match' | 'wolf' | 'vegas' | 'custom'
+
+/**
+ * A press: a new bet at the same stake from `hole` (0-based) to the end of
+ * that nine. Pressed by hand on the live card; automatic presses aren't
+ * stored, they're worked out from the card each time.
+ */
+export interface Press {
+  hole: number
+  byId?: string
+}
+
+/**
+ * Nassau played as three matches between two golfers (holes won) rather
+ * than lowest total among everyone. Only this format takes presses.
+ */
+export interface NassauPlay {
+  format: 'match'
+  /** Press automatically when a golfer goes this many down in a bet on a nine. Unset or 0: off. */
+  autoPress?: number
+  presses?: Press[]
+}
+
+/** A wolf's call on a hole: the partner's player id, 'lone', or 'blind'. */
+export type WolfPick = string
+
+export interface WolfPlay {
+  /** The four golfers in tee order. The wolf on hole h is order[h % 4]. */
+  order: string[]
+  /** One per hole, null until the wolf has called it. */
+  picks: (WolfPick | null)[]
+}
+
+export interface VegasPlay {
+  /** Two against two. */
+  teams: [string[], string[]]
+  /** A birdie flips the other team's number, high digit first. */
+  birdieFlip?: boolean
+}
 
 export interface BetResult {
   playerId: string
@@ -390,6 +428,14 @@ export interface Bet {
    * per skin as they're won. A tie for most splits the pot.
    */
   winnerTakeAll?: boolean
+  /**
+   * How a game is set up, by type, all kept in the one `game` column:
+   * match-play Nassau and its presses, the wolf's order and calls, the
+   * Vegas teams. Absent on stroke-play Nassau and the other games.
+   */
+  nassau?: NassauPlay
+  wolf?: WolfPlay
+  vegas?: VegasPlay
 }
 
 export interface AppData {

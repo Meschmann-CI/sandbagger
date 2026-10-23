@@ -160,7 +160,13 @@ const betRow = (b: Bet) => ({
   manual: b.manual ?? false,
   net: b.net ?? null,
   winner_take_all: b.winnerTakeAll ?? false,
+  // The game's setup (match-play Nassau, wolf, Vegas). Left out of the
+  // row until a bet has one, so saves keep working on a database that
+  // hasn't had apply-2026-10-23-more-bets.sql yet.
+  ...(betGame(b) ? { game: betGame(b) } : {}),
 })
+
+const betGame = (b: Bet) => (b.type === 'nassau' ? b.nassau : b.type === 'wolf' ? b.wolf : b.type === 'vegas' ? b.vegas : undefined)
 
 export class NoPlayerError extends Error {
   email: string | null
@@ -326,6 +332,9 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           manual: b.manual || undefined,
           net: b.net ?? undefined,
           winnerTakeAll: b.winner_take_all || undefined,
+          nassau: b.type === 'nassau' && b.game?.format === 'match' ? b.game : undefined,
+          wolf: b.type === 'wolf' && Array.isArray(b.game?.order) ? { order: b.game.order, picks: Array.isArray(b.game.picks) ? b.game.picks : [] } : undefined,
+          vegas: b.type === 'vegas' && Array.isArray(b.game?.teams) ? b.game : undefined,
         })),
         expenses: (expensesRes.data ?? []).map((e: any) => ({
           id: e.id,

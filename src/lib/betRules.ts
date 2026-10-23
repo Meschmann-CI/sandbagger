@@ -1,4 +1,4 @@
-import type { BetType } from '../types'
+import type { Bet, BetType, NassauPlay, VegasPlay } from '../types'
 
 // House rules, in the app, where the argument happens. Every line here
 // describes what the code actually does — if one of these stops being
@@ -14,9 +14,9 @@ export interface BetRules {
 
 export function betRules(
   type: BetType,
-  opts: { net?: boolean; winnerTakeAll?: boolean } = {},
+  opts: { net?: boolean; winnerTakeAll?: boolean; nassau?: NassauPlay; vegas?: VegasPlay } = {},
 ): BetRules {
-  const { net, winnerTakeAll } = opts
+  const { net, winnerTakeAll, nassau, vegas } = opts
 
   // Handicaps come up in three of the four games and read the same way
   // in all of them, bar who the strokes are measured against.
@@ -40,6 +40,23 @@ export function betRules(
         ],
       }
     case 'nassau':
+      if (nassau?.format === 'match') {
+        const auto = nassau.autoPress && nassau.autoPress > 0 ? nassau.autoPress : 0
+        return {
+          title: 'Nassau, match play',
+          lines: [
+            'Three matches between two golfers at the same stake: the front nine, the back nine, and the full eighteen.',
+            'Each is match play: win a hole to go one up, tie it and it is halved. Most holes up takes that match; all square and nobody pays on it.',
+            'A match closes early when the lead is bigger than the holes left in it, "3&2" on a nine.',
+            'A press is a new bet at the same stake from that hole to the end of the nine. Press from the live card whenever you like.',
+            auto
+              ? `Presses are automatic at ${auto} down: whenever a golfer goes ${auto} down in any bet on a nine, the nine or a press, a new press starts on the next hole. Each bet sets off one press.`
+              : 'No automatic presses on this one. They only happen when somebody calls one.',
+            'Presses run on the nines only, never on the eighteen.',
+            strokes('the difference between the two course handicaps'),
+          ],
+        }
+      }
       return {
         title: 'Nassau',
         lines: [
@@ -60,6 +77,33 @@ export function betRules(
           strokes('the difference between the two course handicaps'),
         ],
       }
+    case 'wolf':
+      return {
+        title: 'Wolf',
+        lines: [
+          'Four golfers. The wolf rotates in tee order, one hole each, so the first two in the order are wolf again on the 17th and 18th.',
+          'After the drives the wolf picks a partner, and it is two against two, best ball. Each golfer on the winning side takes the stake from one on the losing side.',
+          'Or the wolf goes lone: one against three, best ball against the wolf, for double the stake with each of the other three.',
+          'Blind wolf is going lone before anybody has hit, for triple the stake with each of the other three.',
+          'A tied hole pushes and nothing moves. A hole waits until the wolf’s call is in.',
+          strokes('the low course handicap'),
+        ],
+      }
+    case 'vegas':
+      return {
+        title: 'Vegas',
+        lines: [
+          'Two against two. On each hole a team puts its two scores side by side, low first: a 4 and a 5 make 45, a 4 and a 10 make 410.',
+          'The lower number wins the difference in points. The stake is per point, so keep it small.',
+          'Each golfer on the losing team pays the points times the stake to one on the winning team, settled on the total at the end.',
+          vegas?.birdieFlip === false
+            ? 'No birdie flip on this one.'
+            : 'Birdie flip: a team that makes a birdie turns the other team’s number round, high first, so 45 becomes 54. Birdies on both teams cancel out.',
+          net === false
+            ? 'Gross: raw scores, nobody gets a stroke.'
+            : 'Net: strokes come off the low course handicap, hardest holes first, and birdies count net. The gold dots on the scorecard show who gets one where.',
+        ],
+      }
     default:
       return {
         title: 'Custom bet',
@@ -71,3 +115,7 @@ export function betRules(
       }
   }
 }
+
+/** The rules sheet for a saved bet, read off its own settings. */
+export const rulesFor = (bet: Bet) =>
+  betRules(bet.type, { net: bet.net, winnerTakeAll: bet.winnerTakeAll, nassau: bet.nassau, vegas: bet.vegas })

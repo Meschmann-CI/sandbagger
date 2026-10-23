@@ -1,6 +1,6 @@
-import type { Bet, BetResult, Course, Round, RoundPlayer } from '../types'
+import type { Bet, BetResult, Course, NassauPlay, Round, RoundPlayer, VegasPlay, WolfPlay } from '../types'
 import { BACK, FRONT, HOLE_COUNT, cardOf, strokes } from './holes'
-import { hasSlopeRating, hasStrokeIndex, playingHandicap, strokesByHole, strokesOffLow } from './courses'
+import { hasSlopeRating, hasStrokeIndex, padded, playingHandicap, strokesByHole, strokesOffLow } from './courses'
 
 // Working out who owes what from the card. Both games pay per unit: the
 // winner of a unit collects the stake from every other player in the bet,
@@ -362,6 +362,374 @@ export function calcCustom(playerIds: string[], winnerId: string | null, stake: 
   return { results: toResults(totals), detail: ['Winner takes the stake from each of the others.'], computable: true }
 }
 
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+
+/** 1st, 2nd, 3rd, 11th. */
+export function nth(n: number): string {
+  const tens = n % 100
+  if (tens >= 11 && tens <= 13) return `${n}th`
+  return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`
+}
+
+/** "the 9th", "the 9th and 11th", "the 9th, 10th and 11th" (0-based holes in). */
+function holeList(holes: number[]): string {
+  const names = holes.map((h) => nth(h + 1))
+  return `the ${names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`}`
+}
+
+const capitalised = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+/**
+ * Nassau as it's played between two: three matches at the same stake,
+ * the front nine, the back nine and the eighteen, each won by holes up,
+ * not by total strokes. Net gives the difference in course handicaps as
+ * strokes on the hardest holes, same as a straight match.
+ *
+ * Presses are new bets at the same stake from a hole to the end of its
+ * nine. A press made by hand is stored on the bet; an automatic one
+ * isn't, it's worked out here every time: whenever a golfer goes
+ * `autoPress` down in any bet on a nine (the nine itself or a press), a
+ * new press starts on the next hole. Each bet sets one off, once. A
+ * press already made by hand on that hole counts as it.
+ */
+export function calcNassauMatch(
+  round: Round,
+  playerIds: string[],
+  stake: number,
+  useNet: boolean,
+  course?: Course,
+  play?: NassauPlay,
+): BetOutcome {
+  const entries = playerIds
+    .map((id) => round.players.find((rp) => rp.playerId === id))
+    .filter((rp): rp is RoundPlayer => !!rp)
+  if (playerIds.length !== 2 || entries.length !== 2) {
+    return emptyOutcome(playerIds, 'Match-play Nassau is one on one. Pick exactly two golfers from this round.')
+  }
+  const [a, b] = entries
+  const ranked = hasStrokeIndex(course) ? course : null
+  if (useNet && !ranked) {
+    return emptyOutcome(
+      playerIds,
+      "Net match play needs this course's stroke index. Add it from the Courses page, or play the match gross.",
+    )
+  }
+
+  // Strokes for the weaker player, hardest holes first.
+  let strokesA = Array<number>(HOLE_COUNT).fill(0)
+  let strokesB = Array<number>(HOLE_COUNT).fill(0)
+  let diff = 0 // positive = A gets strokes
+  if (useNet && ranked) {
+    diff = playingHandicap(ranked, a.handicapSnapshot, round.tee) - playingHandicap(ranked, b.handicapSnapshot, round.tee)
+    if (diff > 0) strokesA = strokesByHole(ranked, diff)
+    else if (diff < 0) strokesB = strokesByHole(ranked, -diff)
+  }
+
+  // Each hole as A sees it: 1 won, -1 lost, 0 halved. Judged in order,
+  // and only as far as both cards go.
+  const cardA = cardOf(a)
+  const cardB = cardOf(b)
+  const holes: number[] = []
+  for (let h = 0; h < HOLE_COUNT; h++) {
+    if (cardA[h] == null || cardB[h] == null) break
+    const netA = cardA[h]! - strokesA[h]
+    const netB = cardB[h]! - strokesB[h]
+    holes.push(netA < netB ? 1 : netB < netA ? -1 : 0)
+  }
+  const thru = holes.length
+  if (thru === 0) return emptyOutcome(playerIds, 'No hole has a score for both golfers yet.')
+
+  interface Leg {
+    label: string
+    from: number
+    to: number
+  }
+  const autoPress = play?.autoPress && play.autoPress > 0 ? play.autoPress : 0
+  const manual = (play?.presses ?? [])
+    .map((p) => p.hole)
+    .filter((h) => Number.isInteger(h) && h >= 0 && h < HOLE_COUNT)
+    .sort((x, y) => x - y)
+  const pressLeg = (h: number, to: number): Leg => ({ label: `the press from the ${nth(h + 1)}`, from: h, to })
+
+  // Each nine with its presses, in the order they started.
+  const nines: Leg[][] = [
+    { label: 'the front', from: FRONT[0], to: FRONT[1] },
+    { label: 'the back', from: BACK[0], to: BACK[1] },
+  ].map((nine) => {
+    const legs: Leg[] = [nine, ...manual.filter((h) => h >= nine.from && h < nine.to).map((h) => pressLeg(h, nine.to))]
+    if (!autoPress) return legs
+    const pressed = new Set<Leg>()
+    for (let h = nine.from; h < Math.min(nine.to, thru); h++) {
+      for (const leg of [...legs]) {
+        if (leg.from > h || pressed.has(leg)) continue
+        let up = 0
+        for (let k = leg.from; k <= h; k++) up += holes[k]
+        if (Math.abs(up) < autoPress) continue
+        pressed.add(leg)
+        // A press can't start past the nine, and one made by hand on that
+        // hole already answers it.
+        if (h + 1 >= nine.to || legs.some((l) => l !== nine && l.from === h + 1)) continue
+        legs.push(pressLeg(h + 1, nine.to))
+      }
+    }
+    return legs.sort((x, y) => (x === nine ? -1 : y === nine ? 1 : x.from - y.from))
+  })
+  const legs = [...nines[0], ...nines[1], { label: 'the eighteen', from: 0, to: HOLE_COUNT }]
+
+  const totals = zeroed(idsOf(entries))
+  const detail: string[] = []
+  if (useNet && ranked) {
+    const given = Math.abs(Math.round(diff))
+    const receiverId = diff > 0 ? a.playerId : b.playerId
+    if (given > 0) detail.push(`Gets ${plural(given, 'stroke')}, hardest holes first|${receiverId}`)
+  }
+
+  let open = 0
+  for (const leg of legs) {
+    // Walk the leg's holes until the card runs out or the lead is bigger
+    // than the holes left, which closes it ("3&2").
+    let up = 0
+    let played = 0
+    let closedWithLeft: number | null = null
+    for (let h = leg.from; h < Math.min(leg.to, thru); h++) {
+      up += holes[h]
+      played++
+      const left = leg.to - h - 1
+      if (Math.abs(up) > left) {
+        closedWithLeft = left
+        break
+      }
+    }
+    if (played === 0) {
+      open++
+      // The back nine before the turn says nothing; a press does.
+      if (leg.label.startsWith('the press')) detail.push(`${capitalised(leg.label)} is on.`)
+      continue
+    }
+    const remaining = leg.to - leg.from - played
+    const leaderId = up > 0 ? a.playerId : b.playerId
+    const loserId = up > 0 ? b.playerId : a.playerId
+    if (closedWithLeft != null || remaining === 0) {
+      if (up === 0) {
+        detail.push(`${capitalised(leg.label)} halved.`)
+        continue
+      }
+      pay(totals, leaderId, [loserId], stake)
+      const margin = closedWithLeft != null && closedWithLeft > 0 ? `${Math.abs(up)}&${closedWithLeft}` : `${Math.abs(up)} up`
+      detail.push(`Takes ${leg.label} ${margin}|${leaderId}`)
+      continue
+    }
+    open++
+    const last = leg.from + played
+    if (up === 0) detail.push(`${capitalised(leg.label)} all square thru ${last}.`)
+    else detail.push(`${Math.abs(up)} up on ${leg.label} thru ${last}${Math.abs(up) === remaining ? ', dormie' : ''}|${leaderId}`)
+  }
+
+  return { results: toResults(totals), detail, computable: open === 0 }
+}
+
+/** The wolf's calls besides a partner. */
+export const LONE_WOLF = 'lone'
+export const BLIND_WOLF = 'blind'
+
+/** The tee order a wolf bet plays in: the one saved, if it still names these four, else as listed. */
+export function wolfOrder(ids: string[], play?: WolfPlay): string[] {
+  const order = play?.order ?? []
+  return order.length === ids.length && ids.every((id) => order.includes(id)) ? order : ids
+}
+
+/** Whose turn it is to be the wolf on a hole (0-based). */
+export const wolfOn = (order: string[], hole: number) => order[hole % order.length]
+
+/**
+ * Wolf, for four. The wolf rotates in tee order, one hole each, so the
+ * first two in the order get a fifth turn on the 17th and 18th. After
+ * the drives the wolf calls a partner, and it's two against two, best
+ * ball: each winner takes the stake from one loser. Or the wolf goes
+ * lone, one against three for double the stake with each of them, or
+ * calls blind wolf before anyone has hit, for triple. A tied hole
+ * pushes and nothing moves.
+ *
+ * Net gives strokes off the low handicap, hole by hole, which needs the
+ * stroke index (the same as skins). A hole with no call on it can't be
+ * judged, so it waits until the call is put in.
+ */
+export function calcWolf(
+  round: Round,
+  playerIds: string[],
+  stake: number,
+  useNet: boolean,
+  course?: Course,
+  play?: WolfPlay,
+): BetOutcome {
+  const entries = playerIds
+    .map((id) => round.players.find((rp) => rp.playerId === id))
+    .filter((rp): rp is RoundPlayer => !!rp)
+  if (playerIds.length !== 4 || entries.length !== 4) {
+    return emptyOutcome(playerIds, 'Wolf is for four. Pick exactly four golfers from this round.')
+  }
+  const ranked = hasStrokeIndex(course) ? course : null
+  if (useNet && !ranked) {
+    return emptyOutcome(playerIds, "Net wolf needs this course's stroke index. Add it from the Courses page, or play it gross.")
+  }
+  const given: Record<string, number[]> = useNet && ranked ? strokesOffLow(ranked, entries, round.tee) : {}
+
+  const ids = idsOf(entries)
+  const order = wolfOrder(ids, play)
+  const totals = zeroed(ids)
+  const calls: string[] = []
+  const waiting: number[] = []
+  let played = 0
+  let halved = 0
+
+  for (let h = 0; h < HOLE_COUNT; h++) {
+    const scores = new Map<string, number>()
+    for (const rp of entries) {
+      const raw = cardOf(rp)[h]
+      if (raw != null) scores.set(rp.playerId, raw - (given[rp.playerId]?.[h] ?? 0))
+    }
+    // Everyone needs a score on the hole to judge it.
+    if (scores.size < entries.length) continue
+    const wolf = wolfOn(order, h)
+    const pick = play?.picks?.[h] ?? null
+    const alone = pick === LONE_WOLF || pick === BLIND_WOLF
+    if (!pick || (!alone && (pick === wolf || !ids.includes(pick)))) {
+      waiting.push(h)
+      continue
+    }
+    played++
+    const wolfSide = alone ? [wolf] : [wolf, pick]
+    const others = ids.filter((id) => !wolfSide.includes(id))
+    const low = (side: string[]) => Math.min(...side.map((id) => scores.get(id)!))
+    const wolfLow = low(wolfSide)
+    const othersLow = low(others)
+    if (wolfLow === othersLow) {
+      halved++
+      continue
+    }
+    const wolfWon = wolfLow < othersLow
+    if (alone) {
+      const unit = stake * (pick === BLIND_WOLF ? 3 : 2)
+      if (wolfWon) pay(totals, wolf, others, unit)
+      else for (const id of others) pay(totals, id, [wolf], unit)
+      calls.push(`${pick === BLIND_WOLF ? 'Went blind' : 'Went lone'} on the ${nth(h + 1)} and ${wolfWon ? 'won' : 'lost'}|${wolf}`)
+    } else {
+      const winners = wolfWon ? wolfSide : others
+      const losers = wolfWon ? others : wolfSide
+      winners.forEach((id, i) => pay(totals, id, [losers[i]], stake))
+    }
+  }
+
+  if (played === 0) {
+    return emptyOutcome(
+      playerIds,
+      waiting.length ? `No wolf call on ${holeList(waiting)} yet.` : 'No hole has a score for everyone in the bet yet.',
+    )
+  }
+  const detail = [`${plural(played, 'hole')} played.`]
+  if (useNet && ranked) detail.push('Strokes off the low handicap, hardest holes first.')
+  detail.push(...calls)
+  if (halved > 0) detail.push(`${plural(halved, 'hole')} halved.`)
+  if (waiting.length) detail.push(`No call yet on ${holeList(waiting)}.`)
+  return { results: toResults(totals), detail, computable: true }
+}
+
+/**
+ * A team's Vegas number: the two scores side by side, low first, so a 4
+ * and a 5 make 45 and a 4 and a 10 make 410. Flipped puts the high one
+ * first (54). A net score below nothing counts as nothing.
+ */
+export function vegasNumber(scores: number[], flipped: boolean): number {
+  const [lo, hi] = scores.map((s) => Math.max(0, s)).sort((x, y) => x - y)
+  return Number(flipped ? `${hi}${lo}` : `${lo}${hi}`)
+}
+
+/** Two teams that split these four golfers two and two, or null. */
+function vegasTeams(ids: string[], play?: VegasPlay): [string[], string[]] | null {
+  const teams = play?.teams
+  if (!teams || teams.length !== 2 || teams[0].length !== 2 || teams[1].length !== 2) return null
+  const all = [...teams[0], ...teams[1]]
+  return new Set(all).size === 4 && all.every((id) => ids.includes(id)) ? teams : null
+}
+
+/**
+ * Vegas: two against two. On each hole a team puts its two scores side
+ * by side, low first, and the lower number wins the difference in
+ * points. The stake is per point and each golfer on the losing team pays
+ * it to one on the winning team, so it's settled on the total at the
+ * end. With the birdie flip, a team that makes a birdie (and the other
+ * doesn't) turns the other team's number round, high first.
+ *
+ * Net gives strokes off the low handicap and judges birdies net, which
+ * needs the stroke index.
+ */
+export function calcVegas(
+  round: Round,
+  playerIds: string[],
+  stake: number,
+  useNet: boolean,
+  course?: Course,
+  play?: VegasPlay,
+): BetOutcome {
+  const entries = playerIds
+    .map((id) => round.players.find((rp) => rp.playerId === id))
+    .filter((rp): rp is RoundPlayer => !!rp)
+  if (playerIds.length !== 4 || entries.length !== 4) {
+    return emptyOutcome(playerIds, 'Vegas is two against two. Pick exactly four golfers from this round.')
+  }
+  const ids = idsOf(entries)
+  const teams = vegasTeams(ids, play)
+  if (!teams) return emptyOutcome(playerIds, 'Pick the two teams.')
+  const ranked = hasStrokeIndex(course) ? course : null
+  if (useNet && !ranked) {
+    return emptyOutcome(playerIds, "Net Vegas needs this course's stroke index. Add it from the Courses page, or play it gross.")
+  }
+  const given: Record<string, number[]> = useNet && ranked ? strokesOffLow(ranked, entries, round.tee) : {}
+  const pars = padded(course?.pars)
+
+  let played = 0
+  let flips = 0
+  let points = 0 // positive = the first team is ahead
+  for (let h = 0; h < HOLE_COUNT; h++) {
+    const score = (id: string) => {
+      const raw = cardOf(entries.find((rp) => rp.playerId === id)!)[h]
+      return raw == null ? null : raw - (given[id]?.[h] ?? 0)
+    }
+    const first = teams[0].map(score)
+    const second = teams[1].map(score)
+    if ([...first, ...second].some((s) => s == null)) continue
+    played++
+    const par = pars[h]
+    const birdie = (team: (number | null)[]) => par != null && team.some((s) => (s as number) <= par - 1)
+    let flipFirst = false
+    let flipSecond = false
+    if (play?.birdieFlip && par != null) {
+      if (birdie(first) && !birdie(second)) flipSecond = true
+      else if (birdie(second) && !birdie(first)) flipFirst = true
+    }
+    if (flipFirst || flipSecond) flips++
+    points += vegasNumber(second as number[], flipSecond) - vegasNumber(first as number[], flipFirst)
+  }
+
+  if (played === 0) return emptyOutcome(playerIds, 'No hole has a score for everyone in the bet yet.')
+
+  // Settled once on the total, in whole cents: every point is the stake
+  // from each golfer on the losing team to one on the winning team.
+  const totals = zeroed(ids)
+  const [winners, losers] = points > 0 ? teams : [teams[1], teams[0]]
+  const each = (Math.round(stake * 100) * Math.abs(points)) / 100
+  if (points !== 0) {
+    for (const id of winners) totals.set(id, (totals.get(id) ?? 0) + each)
+    for (const id of losers) totals.set(id, (totals.get(id) ?? 0) - each)
+  }
+
+  const detail = [`${plural(played, 'hole')} played.`]
+  if (useNet && ranked) detail.push('Strokes off the low handicap, hardest holes first.')
+  detail.push(points === 0 ? 'Level on points.' : `Up ${plural(Math.abs(points), 'point')}|${winners.join('+')}`)
+  if (flips > 0) detail.push(`${plural(flips, 'birdie flip')}.`)
+  return { results: toResults(totals), detail, computable: true }
+}
+
 /**
  * Settles a saved bet from the round's cards, or returns null for bets
  * the card can't speak for: custom bets, hand-typed amounts, and bets
@@ -374,7 +742,21 @@ export function calcCustom(playerIds: string[], winnerId: string | null, stake: 
 export function settleFromCard(bet: Bet, round: Round, course?: Course): BetOutcome | null {
   if (bet.type === 'custom' || bet.manual || bet.net === undefined) return null
   const ids = bet.results.map((r) => r.playerId)
-  if (bet.type === 'skins') return calcSkins(round, ids, bet.stake, bet.net, course, bet.winnerTakeAll)
-  if (bet.type === 'nassau') return calcNassau(round, ids, bet.stake, bet.net, course)
-  return calcMatchPlay(round, ids, bet.stake, bet.net, course)
+  switch (bet.type) {
+    case 'skins':
+      return calcSkins(round, ids, bet.stake, bet.net, course, bet.winnerTakeAll)
+    case 'nassau':
+      return bet.nassau?.format === 'match'
+        ? calcNassauMatch(round, ids, bet.stake, bet.net, course, bet.nassau)
+        : calcNassau(round, ids, bet.stake, bet.net, course)
+    case 'match':
+      return calcMatchPlay(round, ids, bet.stake, bet.net, course)
+    case 'wolf':
+      return calcWolf(round, ids, bet.stake, bet.net, course, bet.wolf)
+    case 'vegas':
+      return calcVegas(round, ids, bet.stake, bet.net, course, bet.vegas)
+    default:
+      // A game this version doesn't know: its stored results stand.
+      return null
+  }
 }
