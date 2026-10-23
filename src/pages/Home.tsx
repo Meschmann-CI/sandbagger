@@ -7,6 +7,7 @@ import { useStore } from '../data/store'
 import { byDate, leaderboard, playerStats, roundStandings, saddamState, shortDate, timeToMinutes, type LeaderRow } from '../lib/stats'
 import { daysAgoISO, shortDay, todayISO, weekdayName } from '../lib/dates'
 import { bookedRounds } from '../lib/bookings'
+import { liveLines, toParLabel } from '../lib/spectate'
 import { myOutstanding } from '../lib/settlements'
 import { anyCards, cardComplete, cardOf, holesEntered } from '../lib/holes'
 import { money } from '../lib/money'
@@ -76,8 +77,22 @@ export default function Home() {
     if (!inProgress) return null
     const rp = inProgress.players.find((p) => p.playerId === me.id)
     if (!rp) {
-      const thru = Math.max(...inProgress.players.map((p) => holesEntered(p)))
-      return { big: `Thru ${thru}`, line: 'The group is out there without you.', next: null, thru }
+      // Someone else's round: who leads, by gross, and a way to watch it.
+      const lines = liveLines(data, inProgress).filter((l) => l.thru > 0)
+      const first = (id: string) => data.players.find((p) => p.id === id)?.name.split(' ')[0] ?? '?'
+      const thru = Math.max(0, ...inProgress.players.map((p) => holesEntered(p)))
+      if (!lines.length) return { big: 'On the tee', line: `${inProgress.players.map((p) => first(p.playerId)).join(', ')}`, next: null, thru, watch: true }
+      const [lead, ...rest] = lines
+      const tied = rest.filter((l) => toParLabel(l) === toParLabel(lead) && lead.toPar != null)
+      return {
+        big: tied.length ? toParLabel(lead) : `${first(lead.playerId)} ${toParLabel(lead)}`,
+        line: tied.length
+          ? `${[lead, ...tied].map((l) => first(l.playerId)).join(' and ')} level thru ${lead.thru}`
+          : `leads thru ${lead.thru}${rest.length ? ` · ${rest.map((l) => `${first(l.playerId)} ${toParLabel(l)}`).join(', ')}` : ''}`,
+        next: null,
+        thru,
+        watch: true,
+      }
     }
     const card = cardOf(rp)
     const thru = card.filter((h) => h != null).length
@@ -489,6 +504,8 @@ interface Live {
   next: number | null
   /** Holes played, for the progress line. */
   thru: number
+  /** Someone else's round: the button watches it rather than opening the card. */
+  watch?: boolean
 }
 
 // The yellow of the flag on the pin: only for Live, here.
@@ -571,7 +588,7 @@ function LiveStrip({ round, live }: { round: Round; live: Live }) {
   return (
     <button
       type="button"
-      onClick={() => navigate(`/rounds/${round.id}/card`)}
+      onClick={() => navigate(live.watch ? `/rounds/${round.id}/watch` : `/rounds/${round.id}/card`)}
       className="press relative block w-full overflow-hidden rounded-2xl bg-[#141816] text-left text-white shadow-[0_6px_18px_rgba(20,24,22,0.25)]"
     >
       <span className="flex items-center gap-3 py-3 pr-3 pl-4">
@@ -589,7 +606,7 @@ function LiveStrip({ round, live }: { round: Round; live: Live }) {
           </span>
         </span>
         <span className="flex h-10 shrink-0 items-center gap-1 rounded-xl bg-white pr-2.5 pl-3.5 text-footnote font-bold text-ink">
-          {live.next ? `Hole ${live.next}` : 'Card'}
+          {live.watch ? 'Watch' : live.next ? `Hole ${live.next}` : 'Card'}
           <Icon name="chevronRight" size={16} />
         </span>
       </span>

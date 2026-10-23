@@ -20,6 +20,21 @@ export interface Player {
   // records — the leaderboard, head-to-head, and the Saddam are for
   // members only.
   guest?: boolean
+  /** Rounds this golfer is watching but doesn't want pushes from (spectator mode). */
+  mutedRounds?: string[]
+  /** No chirps on this golfer's phone while they play. */
+  chirpsOff?: boolean
+}
+
+/** A reaction from someone watching, at a golfer in the round (Matt, 2026-10-23). */
+export interface Chirp {
+  id: string
+  roundId: string
+  fromId: string
+  toId: string
+  text: string
+  /** ISO instant. */
+  at: string
 }
 
 // Handing the Saddam over by hand. The trophy predates the app and can
@@ -503,6 +518,8 @@ export interface AppData {
   rounds: Round[]
   /** Rounds booked ahead, kept out of `rounds` so nothing counts them as played. */
   bookings?: Round[]
+  /** Reactions on live rounds, from the people watching. */
+  chirps?: Chirp[]
   trips: Trip[]
   bets: Bet[]
   expenses: Expense[]

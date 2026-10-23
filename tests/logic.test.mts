@@ -34,6 +34,7 @@ const { ghostOptions } = await import('../src/lib/ghost.ts')
 const { badgesFor } = await import('../src/lib/badges.ts')
 const { roundPatch, applyScorePatch, CLEARED } = await import('../src/lib/scorePatch.ts')
 const { roundBetSettlements } = await import('../src/lib/settlements.ts')
+const { liveLines, cardSlice, leadStory, atTheTurn, spectatorNews } = await import('../src/lib/spectate.ts')
 const { trophiesFrom, trophyPushTitle, trophyWhy } = await import('../src/lib/trophyMoments.ts')
 const { isBooked, sortBookings, findRound, bookedRounds, teeTimeLabel, teeTimeInput } = await import('../src/lib/bookings.ts')
 
@@ -508,6 +509,29 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('hammer: the read-out', out.detail, ['18 holes played.', 'Took the 1st at ×4|a', 'Took the 2nd when the hammer was declined|a', 'Took the 3rd at ×8|b', '15 holes halved.'])
   const four = round('hammer4', '2026-06-01', [rp('a', fours()), rp('b', fours()), rp('c', fours()), rp('d', fours())])
   check('hammer: four need sides', calcHammer(four, ['a', 'b', 'c', 'd'], 1, false).detail, ['Pick the two sides.'])
+}
+
+// 13. Spectator mode: the lead by gross, the slice, the turn, and who hears.
+{
+  const card = (...h: (number | null)[]) => [...h, ...Array(18 - h.length).fill(null)]
+  const r = (holes: (number | null)[][], date = '2026-10-24') =>
+    round('live', date, holes.map((h, k) => ({ playerId: ['barry', 'pat', 'nader'][k], handicapSnapshot: 10, gross: null, holes: h })))
+  // Barry leads after 1, Pat ties on 2 (Barry keeps it), Pat goes ahead on 3.
+  const story = leadStory(r([card(4, 5, 5), card(5, 4, 4), card(6, 6, 6)]))
+  check('leadStory: a tie keeps the leader, going ahead takes it', [story.leaderId, story.changes], ['pat', [{ hole: 2, leaderId: 'pat', fromId: 'barry' }]])
+  // Pat has hole 4 in, Barry doesn't yet: hole 4 doesn't count.
+  check('leadStory: only holes everyone has', leadStory(r([card(4, 5, 5), card(5, 4, 4, 2), card(6, 6, 6)])).changes.length, 1)
+  check('cardSlice: the last three anyone has', cardSlice(r([card(4, 5, 5, 4), card(5, 4)])), [1, 2, 3])
+  check('liveLines: by gross, leader first', liveLines(data({}), r([card(5, 5), card(4, 4), card(6)])).map((l) => [l.playerId, l.thru]), [['pat', 2], ['barry', 2], ['nader', 1]])
+  const nine = (v: number) => Array(9).fill(v)
+  check('atTheTurn', [atTheTurn(r([card(...nine(4)), card(...nine(5).slice(0, 8))])), atTheTurn(r([card(...nine(4)), card(...nine(5))]))], [false, true])
+  // Who hears: members not in the round, not muted, on the day.
+  const d = data({ players: ['barry', 'pat', 'nader', 'matt', 'kim'].map((id) => ({ id, name: id, initials: id.slice(0, 2), handicap: 10, color: '#000', mutedRounds: id === 'kim' ? ['live'] : undefined })), group: { id: G, name: 'g', inviteCode: 'x', adminId: 'matt', memberIds: ['barry', 'pat', 'nader', 'matt', 'kim'] } })
+  const before = r([card(4, 5), card(5, 4), card(6, 6)])
+  const after = r([card(4, 5, 5), card(5, 4, 4), card(6, 6, 6)])
+  const news = spectatorNews(d, before, after, '2026-10-24')
+  check('spectatorNews: a lead change, to Matt only', news.map((n) => [n.title, n.toPlayerIds]), [['Lead change at Test Links', ['matt']]])
+  check('spectatorNews: not on another day', spectatorNews(d, before, { ...after, date: '2026-10-20' }, '2026-10-24').length, 0)
 }
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)

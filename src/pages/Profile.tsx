@@ -465,6 +465,7 @@ export default function Profile() {
         <Card className="p-4 text-footnote text-ink-dim">Notifications switch on once the app is online.</Card>
       )}
       <SoundToggle />
+      <ChirpsToggle />
 
       {/* Standings has no tab; this and Home's season card are the way in. */}
       <SectionLabel>Standings</SectionLabel>
@@ -614,6 +615,32 @@ function IndexLine({ points }: { points: number[] }) {
       />
       <circle cx={last[0]} cy={last[1]} r="3.4" fill="var(--color-cream)" />
     </svg>
+  )
+}
+
+/** Chirps from people watching your rounds: on unless you turn them off (Matt, 2026-10-23). */
+function ChirpsToggle() {
+  const { data, updatePlayer } = useStore()
+  const me = data.players.find((p) => p.id === data.currentUserId)
+  if (!me) return null
+  const on = !me.chirpsOff
+  return (
+    <Card className="mt-3 flex items-center gap-3 p-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-body font-bold text-ink">Chirps while I play</p>
+        <p className="text-footnote text-ink-dim">Reactions from whoever's watching your round, as a push.</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label="Chirps while I play"
+        onClick={() => updatePlayer({ ...me, chirpsOff: on })}
+        className={`h-7 w-12 shrink-0 rounded-full p-1 transition ${on ? 'bg-green' : 'bg-line-strong'}`}
+      >
+        <span className={`block h-5 w-5 rounded-full bg-white shadow transition-transform ${on ? 'translate-x-5' : ''}`} />
+      </button>
+    </Card>
   )
 }
 

@@ -4,6 +4,7 @@ import {
   round1,
   type AppData,
   type Bet,
+  type Chirp,
   type Course,
   type CourseBrand,
   type CourseRating,
@@ -19,6 +20,7 @@ import { todayISO } from '../lib/dates'
 import { findRound, sortBookings } from '../lib/bookings'
 import { roundPatch } from '../lib/scorePatch'
 import { tripNews } from '../lib/tripNews'
+import { spectatorNews } from '../lib/spectate'
 import { roundIsFinal, shortCourse, trophiesFrom, trophyPushTitle, trophyWhy, type EarnedTrophy } from '../lib/trophyMoments'
 import { notifyGroup } from '../lib/push'
 import { shrinkPhoto, uploadTripPhoto } from '../lib/photos'
@@ -55,6 +57,10 @@ interface StoreApi {
   /** Trophies this phone's golfer just earned, for the moment over the screen. */
   trophyMoment: TrophyMoment | null
   dismissTrophyMoment: () => void
+  /** A reaction at a golfer in a live round; they get a push unless they've turned chirps off. */
+  addChirp: (roundId: string, toId: string, text: string) => void
+  /** Stop (or start again) the turn and lead-change pushes for a round I'm watching. */
+  setRoundMuted: (roundId: string, muted: boolean) => void
   deleteRound: (roundId: string) => void
   /** Creates the course record on first use, keyed on the normalised name. */
   saveCourse: (
@@ -242,6 +248,7 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         bookings: d.bookings?.map((r) => (r.id === round.id ? round : r)),
       }))
       announceTrophies(before, round)
+      for (const news of spectatorNews(dataRef.current, before, round, todayISO())) notifyGroup(news)
     },
     deleteRound(roundId) {
       commit({ kind: 'round.delete', id: roundId }, (d) => ({
@@ -472,6 +479,24 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     },
     deleteExpense(expenseId) {
       commit({ kind: 'expense.delete', id: expenseId }, (d) => ({ ...d, expenses: d.expenses.filter((e) => e.id !== expenseId) }))
+    },
+    addChirp(roundId, toId, text) {
+      const d = dataRef.current
+      const clean = text.trim().slice(0, 140)
+      if (!clean) return
+      const chirp: Chirp = { id: makeId(), roundId, fromId: d.currentUserId, toId, text: clean, at: new Date().toISOString() }
+      commit({ kind: 'chirp.add', chirp }, (cur) => ({ ...cur, chirps: [...(cur.chirps ?? []), chirp] }))
+      const target = d.players.find((p) => p.id === toId)
+      const me = d.players.find((p) => p.id === d.currentUserId)
+      if (target && !target.chirpsOff) {
+        notifyGroup({ toPlayerIds: [toId], title: `${me?.name.split(' ')[0] ?? 'Someone'} from the couch`, body: clean, url: `/rounds/${roundId}` })
+      }
+    },
+    setRoundMuted(roundId, muted) {
+      const me = dataRef.current.players.find((p) => p.id === dataRef.current.currentUserId)
+      if (!me) return
+      const rest = (me.mutedRounds ?? []).filter((id) => id !== roundId)
+      api.updatePlayer({ ...me, mutedRounds: muted ? [...rest, roundId] : rest })
     },
     addPayment(payment) {
       const full: Payment = { ...payment, id: makeId() }

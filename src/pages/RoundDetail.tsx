@@ -233,6 +233,20 @@ function PlayedRound() {
     <div className="rise">
       <header className="pt-4 pb-2 px-1">
         <BackButton fallback="/rounds" onBack={goBack} />
+        {/* Someone else's round, being played today: watch it live. */}
+        {round.date === todayISO() &&
+          anyCards(round) &&
+          round.players.some((rp) => !cardComplete(rp)) &&
+          !round.players.some((rp) => rp.playerId === data.currentUserId) && (
+            <Link
+              to={`/rounds/${round.id}/watch`}
+              className="mt-2 flex items-center gap-2 rounded-xl bg-[#141816] px-4 py-2.5 text-footnote font-bold text-white"
+            >
+              <span className="h-[7px] w-[7px] rounded-full bg-[#F6C744]" />
+              Live now
+              <span className="ml-auto text-[#F6C744]">Watch</span>
+            </Link>
+          )}
         {/* The round as a picture: its first photo, or its course painted
             with the day's actual weather. The thumbnail you tapped grows
             into this. */}

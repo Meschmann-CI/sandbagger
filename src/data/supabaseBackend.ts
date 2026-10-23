@@ -21,6 +21,8 @@ function toPlayer(row: any): Player {
     email: row.email ?? undefined,
     venmo: row.venmo ?? undefined,
     guest: row.is_guest || undefined,
+    mutedRounds: row.muted_rounds?.length ? row.muted_rounds : undefined,
+    chirpsOff: row.chirps_off ?? undefined,
   }
 }
 
@@ -253,6 +255,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         betsRes,
         expensesRes,
         paymentsRes,
+        chirpsRes,
       ] = await Promise.all([
         client.from('groups').select('*').eq('id', groupId).single(),
         client.from('players').select('*').eq('group_id', groupId).order('created_at'),
@@ -265,6 +268,8 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         client.from('bets').select('*'),
         client.from('expenses').select('*'),
         client.from('payments').select('*'),
+        // The last two days only: chirps are for the round being watched.
+        client.from('chirps').select('*').gte('created_at', new Date(Date.now() - 2 * 86_400_000).toISOString()).order('created_at'),
       ])
 
       guard(groupRes.error, 'Loading group')
@@ -375,6 +380,18 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           amount: num(p.amount),
           date: p.paid_on ?? undefined,
         })),
+        // Not guarded: before supabase/apply-2026-10-23-spectate.sql there is
+        // no chirps table, and that mustn't stop the app loading.
+        chirps: chirpsRes.error
+          ? []
+          : (chirpsRes.data ?? []).map((c: any) => ({
+              id: c.id,
+              roundId: c.round_id,
+              fromId: c.from_player,
+              toId: c.to_player,
+              text: c.text,
+              at: c.created_at,
+            })),
       }
     },
 
@@ -559,6 +576,9 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
                 email: p.email ?? null,
                 venmo: p.venmo ?? null,
                 is_guest: p.guest ?? false,
+                // Written only when set, so a save works before the spectator columns exist.
+                ...(p.mutedRounds ? { muted_rounds: p.mutedRounds } : {}),
+                ...(p.chirpsOff != null ? { chirps_off: p.chirpsOff } : {}),
               })
             ).error,
             'Saving golfer',
@@ -578,6 +598,14 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         case 'payment.upsert':
           guard((await client.from('payments').upsert(paymentRow(change.payment))).error, 'Saving payback')
           return
+        case 'chirp.add': {
+          const c = change.chirp
+          guard(
+            (await client.from('chirps').insert({ id: c.id, round_id: c.roundId, from_player: c.fromId, to_player: c.toId, text: c.text })).error,
+            'Sending chirp',
+          )
+          return
+        }
         case 'payment.delete':
           await removeRow('payments', change.id, 'Deleting payback')
           return

@@ -16,6 +16,7 @@ import RoundDetail from './pages/RoundDetail'
 import { LogRedirect } from './components/Shell'
 import EditRound from './pages/EditRound'
 import HoleEntry from './pages/HoleEntry'
+import WatchRound from './pages/WatchRound'
 import Ledger from './pages/Ledger'
 import RivalryDetail from './pages/RivalryDetail'
 import Trips from './pages/Trips'
@@ -46,6 +47,7 @@ function AppRoutes() {
             <Route path="/rounds/:id" element={<RoundDetail />} />
             <Route path="/rounds/:id/edit" element={<EditRound />} />
             <Route path="/rounds/:id/card" element={<HoleEntry />} />
+            <Route path="/rounds/:id/watch" element={<WatchRound />} />
             <Route path="/log" element={<LogRedirect />} />
             <Route path="/h2h" element={<Ledger />} />
             <Route path="/h2h/:aId/:bId" element={<RivalryDetail />} />
