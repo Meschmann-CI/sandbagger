@@ -115,6 +115,9 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    bet as Custom (shows its stored money, safe), but would settle a match-play Nassau as
    lowest-total each time its live card saves. Rules as built are in `src/lib/betRules.ts`;
    the roadmap is `ROADMAP.md` in the bandit repo.
+-5. Spectator mode (2026-10-23) wants `supabase/apply-2026-10-23-spectate.sql` pasted (chirps
+   table, `players.muted_rounds`, `players.chirps_off`). Without it everything else works;
+   chirps fail to send and the mute and chirps-off switches don't stick.
 -4. Green fees (2026-10-22) need `supabase/apply-2026-10-22-green-fee.sql` pasted (one jsonb
    column on rounds) before the apps that know about it are pushed: every round save writes it.
 -3. Score merging (2026-10-22) wants `supabase/apply-2026-10-22-merge-scores.sql` pasted
@@ -274,6 +277,14 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   copy, so a phone back from no signal blanked holes the others had entered, and could
   drop photos added meanwhile. New rounds still go out whole (`round.upsert`). Putts have
   three states: never said (null), said no (empty), tracking (18 entries).
+- Spectator mode (2026-10-23, Matt picked option A, gross, and chirps): `src/lib/spectate.ts`,
+  `pages/WatchRound.tsx` at `/rounds/:id/watch`. Home's live strip for a round you're not in
+  says who leads by gross and its button reads Watch. The watch page: the card cut to the
+  last three holes anyone has scored, score to par and thru, the money, the moments, chirps
+  (Holy... 🙌, 😬 Yikes, 😱 Wow, Custom) at one golfer as a push, and a per-round switch for
+  the pushes. Pushes to members not in the round: at the turn (everyone has 9 in) and when the
+  lead changes outright, replayed over holes everyone has in so it can't flicker while the
+  group types; the final keeps its own push. No lock-screen leaderboard (Matt: not needed).
 - Trophy moments (2026-10-22, Matt picked option A with one push per golfer): the save that
   puts a round's last score in works out each golfer's new trophies (`trophiesFrom`: counts
   with the round versus without it; `src/lib/trophyMoments.ts`). This phone's golfer gets the
