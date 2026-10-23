@@ -362,7 +362,20 @@ export interface Payment {
 
 // ---------- Bets ----------
 
-export type BetType = 'nassau' | 'skins' | 'match' | 'wolf' | 'vegas' | 'custom'
+export type BetType =
+  | 'nassau'
+  | 'skins'
+  | 'match'
+  | 'wolf'
+  | 'vegas'
+  | 'rabbit'
+  | 'snake'
+  | 'sixes'
+  | 'stableford'
+  | 'bbb'
+  | 'junk'
+  | 'hammer'
+  | 'custom'
 
 /**
  * A press: a new bet at the same stake from `hole` (0-based) to the end of
@@ -393,6 +406,45 @@ export interface WolfPlay {
   order: string[]
   /** One per hole, null until the wolf has called it. */
   picks: (WolfPick | null)[]
+}
+
+/** Sixes: the four in tee order. Partners rotate every six holes off it. */
+export interface SixesPlay {
+  order: string[]
+}
+
+/** Bingo Bango Bongo: per hole, who won [bingo, bango, bongo]. */
+export interface BbbPlay {
+  picks: ([string | null, string | null, string | null] | null)[]
+}
+
+export type JunkKind = 'greenie' | 'sandie' | 'barkie' | 'chippie' | 'birdie'
+
+/** Junk: which feats count, and the feats claimed. Birdies come off the card. */
+export interface JunkPlay {
+  kinds: JunkKind[]
+  claims: { hole: number; playerId: string; kind: JunkKind }[]
+}
+
+/**
+ * One hole of Hammer. `doubles` counts accepted hammers; `by` is the side
+ * that threw the last one (it may not throw the next); `pending` is a
+ * hammer thrown and not yet answered; `conceded` is the side that
+ * declined one, which loses the hole at its value before that hammer.
+ */
+export interface HammerHole {
+  doubles: number
+  by?: 0 | 1
+  pending?: 0 | 1
+  conceded?: 0 | 1
+}
+
+export interface HammerPlay {
+  /** One against one, or two against two. */
+  teams: [string[], string[]]
+  /** Most doublings a hole may take: 3 is eight times the stake. */
+  limit: number
+  holes: (HammerHole | null)[]
 }
 
 export interface VegasPlay {
@@ -436,6 +488,10 @@ export interface Bet {
   nassau?: NassauPlay
   wolf?: WolfPlay
   vegas?: VegasPlay
+  sixes?: SixesPlay
+  bbb?: BbbPlay
+  junk?: JunkPlay
+  hammer?: HammerPlay
 }
 
 export interface AppData {

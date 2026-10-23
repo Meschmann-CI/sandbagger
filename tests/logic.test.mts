@@ -26,8 +26,9 @@ export async function resolve(specifier, context, next) {
 }`),
 )
 
-const { calcMatchPlay, calcNassau, calcNassauMatch, calcSkins, calcVegas, calcWolf, settleFromCard, vegasNumber, nth } = await import('../src/lib/bets.ts')
+const { calcMatchPlay, calcNassau, calcNassauMatch, calcSkins, calcVegas, calcWolf, settleFromCard, vegasNumber, nth, calcRabbit, calcSnake, calcSixes, calcStableford, stablefordPoints, calcBbb, calcJunk, calcHammer } = await import('../src/lib/bets.ts')
 const { betStatus } = await import('../src/lib/betText.ts')
+const { cardOf } = await import('../src/lib/holes.ts')
 const { courseForRound, teeFor } = await import('../src/lib/courses.ts')
 const { ghostOptions } = await import('../src/lib/ghost.ts')
 const { badgesFor } = await import('../src/lib/badges.ts')
@@ -403,6 +404,110 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   const names: Record<string, string> = { a: 'Al', b: 'Bo', c: 'Cy', d: 'Di' }
   check('bet lines: a team reads as both names', betStatus(out.detail, (id) => names[id]), '3 holes played. · Al & Bo up 6 points · 2 birdie flips.')
   check('ordinals', [1, 2, 3, 4, 11, 12, 13, 21, 22].map(nth), ['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd'])
+}
+
+// 15. Rabbit, $1, three golfers. a wins the 1st and catches it; b and c
+//     tie the 2nd (nothing moves); b wins the 3rd outright and sets it
+//     loose; c wins the 5th and catches it, and holds it at the turn. a
+//     wins the 10th and it runs loose to the end.
+{
+  const r = round('rabbit', '2026-06-01', [rp('a', fours([0, 3], [9, 3])), rp('b', fours([1, 3], [2, 3])), rp('c', fours([1, 3], [4, 3]))])
+  const out = calcRabbit(r, ['a', 'b', 'c'], 1, false)
+  check('rabbit: the front paid to whoever held it at the turn', ['a', 'b', 'c'].map((id) => amount(out.results, id)), [-1, -1, 2])
+  check('rabbit: the story', out.detail, ['Took the front|c', 'Nobody held it at the 18th.'])
+  const five = (c: number[]) => c.map((x, i) => (i < 5 ? x : null))
+  const live = calcRabbit(round('rabbit1', '2026-06-01', r.players.map((p) => ({ ...p, holes: five(cardOf(p)) }))), ['a', 'b', 'c'], 1, false)
+  check('rabbit live: who holds it', [live.detail, amount(live.results, 'c')], [['Holds the rabbit since the 5th|c'], 0])
+  // Loose at the turn, so the front rides; b catches it on the 13th and keeps it.
+  const r2 = round('rabbit2', '2026-06-01', [rp('a', fours([0, 3])), rp('b', fours([1, 3], [12, 3])), rp('c', fours())])
+  const out2 = calcRabbit(r2, ['a', 'b', 'c'], 1, false)
+  check('rabbit: a riding front pays at the 18th', [['a', 'b', 'c'].map((id) => amount(out2.results, id)), out2.detail], [[-2, 4, -2], ['Nobody held it at the turn. The front rides to the 18th.', 'Took the back and the front|b']])
+}
+
+// 16. Snake, $1. a three-putts the 1st; on the 5th b three-putts and c
+//     four-putts, so c takes it (more putts); a three-putts the 11th and
+//     holds it. Four three-putts in the pot, paid by a to each of the others.
+{
+  const putts = (bad: [number, number][]) => {
+    const p = Array<number>(18).fill(2)
+    for (const [h, n] of bad) p[h] = n
+    return p
+  }
+  const r = round('snake', '2026-06-01', [
+    { ...rp('a', fours()), putts: putts([[0, 3], [10, 3]]) },
+    { ...rp('b', fours()), putts: putts([[4, 3]]) },
+    { ...rp('c', fours()), putts: putts([[4, 4]]) },
+  ])
+  const out = calcSnake(r, ['a', 'b', 'c'], 1)
+  check('snake: the last to three-putt pays the pot to each', ['a', 'b', 'c'].map((id) => amount(out.results, id)), [-8, 4, 4])
+  check('snake: the read-out', out.detail, ['Holds the snake since the 11th|a', '4 three-putts in the pot.'])
+  const tie = calcSnake(round('snake2', '2026-06-01', [{ ...rp('f', fours([0, 5])), putts: putts([[0, 3]]) }, { ...rp('g', fours([0, 6])), putts: putts([[0, 3]]) }]), ['f', 'g'], 1)
+  check('snake: level putts, the higher score takes it', tie.detail[0], 'Holds the snake since the 1st|g')
+  const none = calcSnake(round('snake3', '2026-06-01', [{ ...rp('f', fours()), putts: putts([]) }, rp('e', fours())]), ['f', 'e'], 1)
+  check('snake: nothing yet, and who is not keeping putts', none.detail, ['No three-putts yet.', "Isn't keeping putts|e"])
+}
+
+// 17. Sixes, $1, order a b c d. a & b take holes 1-6 2&1 (a wins the 1st
+//     and 2nd); b & d take 7-12 1 up (d wins the 7th); 13-18 halved.
+{
+  const r = round('sixes', '2026-06-01', [rp('a', fours([0, 3], [1, 3])), rp('b', fours()), rp('c', fours()), rp('d', fours([6, 3]))])
+  const out = calcSixes(r, ['a', 'b', 'c', 'd'], 1, false, undefined, { order: ['a', 'b', 'c', 'd'] })
+  check('sixes: three matches, read out', out.detail, ['Take holes 1 to 6 2&1|a+b', 'Take holes 7 to 12 1 up|b+d', 'Holes 13 to 18 halved.'])
+  check('sixes: each winner from one loser', ['a', 'b', 'c', 'd'].map((id) => amount(out.results, id)), [0, 2, -2, 0])
+  check('sixes: four only', calcSixes(r, ['a', 'b', 'c'], 1, false).computable, false)
+}
+
+// 18. Stableford, $1, par 4s, gross. a: a birdie, a double and pars (35);
+//     b: all pars (36). One point apart.
+{
+  const pars4: Course = { id: 's', groupId: G, name: 'S', slug: 's', pars: Array(18).fill(4) }
+  const r = round('stab', '2026-06-01', [rp('a', fours([0, 3], [1, 6])), rp('b', fours())])
+  const out = calcStableford(r, ['a', 'b'], 1, false, pars4)
+  check('stableford: settled on the point gap', [amount(out.results, 'a'), amount(out.results, 'b')], [-1, 1])
+  check('stableford: the read-out', out.detail, ['18 holes counted.', '36 points|b', '35 points|a'])
+  check('stableford: the points scale', [stablefordPoints(1, 4), stablefordPoints(2, 4), stablefordPoints(3, 4), stablefordPoints(5, 4), stablefordPoints(7, 4)], [5, 4, 3, 1, 0])
+  check('stableford: needs pars', calcStableford(r, ['a', 'b'], 1, false).detail[0], "Stableford needs this course's pars. Add them from the Courses page.")
+}
+
+// 19. Bingo Bango Bongo, $1: a 2, b 1, c 2 points, settled pair by pair.
+{
+  const r = round('bbb', '2026-06-01', [rp('a', fours()), rp('b', fours()), rp('c', fours())])
+  const out = calcBbb(r, ['a', 'b', 'c'], 1, { picks: [['a', 'a', 'b'], ['c', null, 'c'], null] })
+  check('bbb: pair by pair', ['a', 'b', 'c'].map((id) => amount(out.results, id)), [1, -2, 1])
+  check('bbb: the read-out', out.detail, ['2 holes scored.', '2 points|a', '2 points|c', '1 point|b'])
+}
+
+// 20. Junk, $1, par 4s, chippies not counted. a: a sandie (claimed twice,
+//     counts once) and a birdie off the card; b: a greenie; c's chippie
+//     doesn't count.
+{
+  const pars4: Course = { id: 'j', groupId: G, name: 'J', slug: 'j', pars: Array(18).fill(4) }
+  const r = round('junk', '2026-06-01', [rp('a', fours([0, 3])), rp('b', fours()), rp('c', fours())])
+  const play = {
+    kinds: ['greenie', 'sandie', 'barkie', 'birdie'] as ('greenie' | 'sandie' | 'barkie' | 'birdie')[],
+    claims: [
+      { hole: 3, playerId: 'a', kind: 'sandie' as const },
+      { hole: 3, playerId: 'a', kind: 'sandie' as const },
+      { hole: 2, playerId: 'b', kind: 'greenie' as const },
+      { hole: 5, playerId: 'c', kind: 'chippie' as const },
+    ],
+  }
+  const out = calcJunk(r, ['a', 'b', 'c'], 1, pars4, play)
+  check('junk: each point from each of the others', ['a', 'b', 'c'].map((id) => amount(out.results, id)), [3, 0, -3])
+  check('junk: the read-out', out.detail, ['2 points: 1 sandie, 1 birdie|a', '1 point: 1 greenie|b'])
+}
+
+// 21. Hammer, $1, one on one, limit 3. 1st: hammered twice, a wins at x4.
+//     2nd: b declines a hammer at x2, so a takes it at x2. 3rd: five
+//     doublings asked, capped at three, b wins at x8. The rest halved.
+{
+  const r = round('hammer', '2026-06-01', [rp('a', fours([0, 3])), rp('b', fours([2, 3]))])
+  const play = { teams: [['a'], ['b']] as [string[], string[]], limit: 3, holes: [{ doubles: 2, by: 0 as const }, { doubles: 1, by: 0 as const, conceded: 1 as const }, { doubles: 5 }] }
+  const out = calcHammer(r, ['a', 'b'], 1, false, undefined, play)
+  check('hammer: doubled, declined and capped', [amount(out.results, 'a'), amount(out.results, 'b')], [-2, 2])
+  check('hammer: the read-out', out.detail, ['18 holes played.', 'Took the 1st at ×4|a', 'Took the 2nd when the hammer was declined|a', 'Took the 3rd at ×8|b', '15 holes halved.'])
+  const four = round('hammer4', '2026-06-01', [rp('a', fours()), rp('b', fours()), rp('c', fours()), rp('d', fours())])
+  check('hammer: four need sides', calcHammer(four, ['a', 'b', 'c', 'd'], 1, false).detail, ['Pick the two sides.'])
 }
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)

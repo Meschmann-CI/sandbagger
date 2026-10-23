@@ -166,7 +166,29 @@ const betRow = (b: Bet) => ({
   ...(betGame(b) ? { game: betGame(b) } : {}),
 })
 
-const betGame = (b: Bet) => (b.type === 'nassau' ? b.nassau : b.type === 'wolf' ? b.wolf : b.type === 'vegas' ? b.vegas : undefined)
+// Which of a bet's fields holds its game setup, by type.
+const GAME_FIELD = { nassau: 'nassau', wolf: 'wolf', vegas: 'vegas', sixes: 'sixes', bbb: 'bbb', junk: 'junk', hammer: 'hammer' } as const
+const betGame = (b: Bet) => {
+  const field = GAME_FIELD[b.type as keyof typeof GAME_FIELD]
+  return field ? b[field] : undefined
+}
+// A stored setup only comes back when it has the shape its game needs, so
+// a half-written one leaves the bet on its stored results.
+const gameFromRow = (type: string, g: any): Partial<Bet> => {
+  if (!g || typeof g !== 'object') return {}
+  if (type === 'nassau') return g.format === 'match' ? { nassau: g } : {}
+  if (type === 'wolf') return Array.isArray(g.order) ? { wolf: { order: g.order, picks: Array.isArray(g.picks) ? g.picks : [] } } : {}
+  if (type === 'vegas') return Array.isArray(g.teams) ? { vegas: g } : {}
+  if (type === 'sixes') return Array.isArray(g.order) ? { sixes: { order: g.order } } : {}
+  if (type === 'bbb') return { bbb: { picks: Array.isArray(g.picks) ? g.picks : [] } }
+  if (type === 'junk') return { junk: { kinds: Array.isArray(g.kinds) ? g.kinds : [], claims: Array.isArray(g.claims) ? g.claims : [] } }
+  if (type === 'hammer') {
+    return Array.isArray(g.teams)
+      ? { hammer: { teams: g.teams, limit: typeof g.limit === 'number' ? g.limit : 3, holes: Array.isArray(g.holes) ? g.holes : [] } }
+      : {}
+  }
+  return {}
+}
 
 export class NoPlayerError extends Error {
   email: string | null
@@ -332,9 +354,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           manual: b.manual || undefined,
           net: b.net ?? undefined,
           winnerTakeAll: b.winner_take_all || undefined,
-          nassau: b.type === 'nassau' && b.game?.format === 'match' ? b.game : undefined,
-          wolf: b.type === 'wolf' && Array.isArray(b.game?.order) ? { order: b.game.order, picks: Array.isArray(b.game.picks) ? b.game.picks : [] } : undefined,
-          vegas: b.type === 'vegas' && Array.isArray(b.game?.teams) ? b.game : undefined,
+          ...gameFromRow(b.type, b.game),
         })),
         expenses: (expensesRes.data ?? []).map((e: any) => ({
           id: e.id,

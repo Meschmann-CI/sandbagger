@@ -1,4 +1,5 @@
 import type { Bet, BetType, NassauPlay, VegasPlay } from '../types'
+import { gameCard } from './gameCards'
 
 // House rules, in the app, where the argument happens. Every line here
 // describes what the code actually does — if one of these stops being
@@ -104,6 +105,17 @@ export function betRules(
             : 'Net: strokes come off the low course handicap, hardest holes first, and birdies count net. The gold dots on the scorecard show who gets one where.',
         ],
       }
+    case 'rabbit':
+    case 'snake':
+    case 'sixes':
+    case 'stableford':
+    case 'bbb':
+    case 'junk':
+    case 'hammer': {
+      // The newer games explain themselves on their rules cards.
+      const card = gameCard(type)!
+      return { title: card.title, lines: card.rules.map((rule) => rule.replaceAll('**', '')) }
+    }
     default:
       return {
         title: 'Custom bet',

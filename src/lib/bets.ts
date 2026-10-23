@@ -1,6 +1,6 @@
-import type { Bet, BetResult, Course, NassauPlay, Round, RoundPlayer, VegasPlay, WolfPlay } from '../types'
-import { BACK, FRONT, HOLE_COUNT, cardOf, strokes } from './holes'
-import { hasSlopeRating, hasStrokeIndex, padded, playingHandicap, strokesByHole, strokesOffLow } from './courses'
+import type { BbbPlay, Bet, BetResult, Course, HammerPlay, JunkKind, JunkPlay, NassauPlay, Round, RoundPlayer, SixesPlay, VegasPlay, WolfPlay } from '../types'
+import { BACK, FRONT, HOLE_COUNT, cardOf, hasCard, hasPutts, puttsOf, strokes } from './holes'
+import { hasPars, hasSlopeRating, hasStrokeIndex, padded, playingHandicap, strokesByHole, strokesOffLow } from './courses'
 
 // Working out who owes what from the card. Both games pay per unit: the
 // winner of a unit collects the stake from every other player in the bet,
@@ -532,11 +532,14 @@ export function calcNassauMatch(
 export const LONE_WOLF = 'lone'
 export const BLIND_WOLF = 'blind'
 
-/** The tee order a wolf bet plays in: the one saved, if it still names these four, else as listed. */
-export function wolfOrder(ids: string[], play?: WolfPlay): string[] {
-  const order = play?.order ?? []
+/** A saved tee order, if it still names exactly these golfers, else the golfers as listed. */
+export function teeOrder(ids: string[], saved?: string[]): string[] {
+  const order = saved ?? []
   return order.length === ids.length && ids.every((id) => order.includes(id)) ? order : ids
 }
+
+/** The tee order a wolf bet plays in: the one saved, if it still names these four, else as listed. */
+export const wolfOrder = (ids: string[], play?: WolfPlay): string[] => teeOrder(ids, play?.order)
 
 /** Whose turn it is to be the wolf on a hole (0-based). */
 export const wolfOn = (order: string[], hole: number) => order[hole % order.length]
@@ -730,6 +733,436 @@ export function calcVegas(
   return { results: toResults(totals), detail, computable: true }
 }
 
+// ---------- The parlor games ----------
+
+const entriesFor = (round: Round, playerIds: string[]) =>
+  playerIds.map((id) => round.players.find((rp) => rp.playerId === id)).filter((rp): rp is RoundPlayer => !!rp)
+
+/**
+ * Points games settle pair by pair: every point one golfer finishes
+ * ahead of another is worth the stake from him. In whole cents, so the
+ * lot nets to exactly zero.
+ */
+function settlePoints(ids: string[], points: Map<string, number>, stake: number): Map<string, number> {
+  const n = ids.length
+  const sum = ids.reduce((t, id) => t + (points.get(id) ?? 0), 0)
+  const cents = Math.round(stake * 100)
+  return new Map(ids.map((id) => [id, (cents * (n * (points.get(id) ?? 0) - sum)) / 100]))
+}
+
+/** Golfers by points, most first, ties in the order they were listed. */
+function pointLines(ids: string[], points: Map<string, number>): string[] {
+  return ids
+    .map((id, i) => ({ id, i, p: points.get(id) ?? 0 }))
+    .sort((a, b) => b.p - a.p || a.i - b.i)
+    .map(({ id, p }) => `${plural(p, 'point')}|${id}`)
+}
+
+/**
+ * Rabbit. The first golfer to win a hole outright catches the rabbit. A
+ * tie changes nothing. Another outright winner sets it loose, and the
+ * next outright winner after that catches it. Whoever holds it after the
+ * 9th takes the stake from each of the others, and again after the 18th;
+ * nobody holding it at the turn and the front's stake rides to the 18th.
+ *
+ * Holes are read in order, as far as everyone's card goes, since who
+ * holds it depends on what came before. Net gives strokes off the low
+ * handicap, which needs the stroke index.
+ */
+export function calcRabbit(round: Round, playerIds: string[], stake: number, useNet: boolean, course?: Course): BetOutcome {
+  const entries = entriesFor(round, playerIds)
+  if (entries.length < 2) return emptyOutcome(playerIds, 'Needs at least two golfers.')
+  const ranked = hasStrokeIndex(course) ? course : null
+  if (useNet && !ranked) {
+    return emptyOutcome(playerIds, "Net rabbit needs this course's stroke index. Add it from the Courses page, or play it gross.")
+  }
+  const given: Record<string, number[]> = useNet && ranked ? strokesOffLow(ranked, entries, round.tee) : {}
+  const ids = idsOf(entries)
+  const totals = zeroed(ids)
+  const detail: string[] = []
+  let holder: string | null = null
+  let since = -1
+  let thru = 0
+  let riding = 0
+
+  for (let h = 0; h < HOLE_COUNT; h++) {
+    const scores: { id: string; score: number }[] = []
+    for (const rp of entries) {
+      const raw = cardOf(rp)[h]
+      if (raw == null) break
+      scores.push({ id: rp.playerId, score: raw - (given[rp.playerId]?.[h] ?? 0) })
+    }
+    if (scores.length < entries.length) break
+    thru = h + 1
+    const best = Math.min(...scores.map((x) => x.score))
+    const winners = scores.filter((x) => x.score === best)
+    if (winners.length === 1) {
+      const w = winners[0].id
+      if (holder == null) {
+        holder = w
+        since = h
+      } else if (holder !== w) {
+        holder = null
+        since = h
+      }
+    }
+    if (h === FRONT[1] - 1) {
+      if (holder) {
+        const h0 = holder
+        pay(totals, h0, ids.filter((id) => id !== h0), stake)
+        detail.push(`Took the front|${h0}`)
+      } else {
+        riding = 1
+        detail.push('Nobody held it at the turn. The front rides to the 18th.')
+      }
+    }
+    if (h === HOLE_COUNT - 1) {
+      if (holder) {
+        const h0 = holder
+        pay(totals, h0, ids.filter((id) => id !== h0), stake * (1 + riding))
+        detail.push(riding ? `Took the back and the front|${h0}` : `Took the back|${h0}`)
+      } else {
+        detail.push(riding ? 'Nobody held it at the 18th either. The money stays put.' : 'Nobody held it at the 18th.')
+      }
+    }
+  }
+
+  if (thru === 0) return emptyOutcome(playerIds, 'No hole has a score for everyone in the bet yet.')
+  if (thru < HOLE_COUNT) {
+    detail.push(
+      holder
+        ? `Holds the rabbit since the ${nth(since + 1)}|${holder}`
+        : since >= 0
+          ? `The rabbit is loose since the ${nth(since + 1)}.`
+          : 'Nobody has caught the rabbit yet.',
+    )
+  }
+  return { results: toResults(totals), detail, computable: true }
+}
+
+/**
+ * Snake. Every three-putt (or worse) passes the snake to whoever made it
+ * and adds the stake to the pot. Whoever holds it at the end pays the pot
+ * to each of the others; until then the money shows who would pay as it
+ * stands. Two three-putts on one green: more putts takes the snake, then
+ * the higher score on the hole, then whoever is listed first.
+ */
+export function calcSnake(round: Round, playerIds: string[], stake: number): BetOutcome {
+  const entries = entriesFor(round, playerIds)
+  if (entries.length < 2) return emptyOutcome(playerIds, 'Needs at least two golfers.')
+  const ids = idsOf(entries)
+  let holder: string | null = null
+  let since = -1
+  let count = 0
+  for (let h = 0; h < HOLE_COUNT; h++) {
+    const three = entries
+      .map((rp, i) => ({ rp, i, putts: puttsOf(rp)[h], score: cardOf(rp)[h] ?? 0 }))
+      .filter((x) => x.putts != null && x.putts >= 3)
+    if (!three.length) continue
+    count += three.length
+    three.sort((a, b) => b.putts! - a.putts! || b.score - a.score || a.i - b.i)
+    holder = three[0].rp.playerId
+    since = h
+  }
+  const missing = entries.filter((rp) => hasCard(rp) && !hasPutts(rp)).map((rp) => `Isn't keeping putts|${rp.playerId}`)
+  if (!holder) return { results: toResults(zeroed(ids)), detail: ['No three-putts yet.', ...missing], computable: false }
+  const totals = zeroed(ids)
+  const h0 = holder
+  for (const id of ids) if (id !== h0) pay(totals, id, [h0], stake * count)
+  return {
+    results: toResults(totals),
+    detail: [`Holds the snake since the ${nth(since + 1)}|${h0}`, `${plural(count, 'three-putt')} in the pot.`, ...missing],
+    computable: true,
+  }
+}
+
+/** Sixes: who partners whom on each six holes, off the tee order. */
+export function sixesLegs(order: string[]): { from: number; to: number; sides: [string[], string[]] }[] {
+  const [a, b, c, d] = order
+  return [
+    { from: 0, to: 6, sides: [[a, b], [c, d]] },
+    { from: 6, to: 12, sides: [[a, c], [b, d]] },
+    { from: 12, to: 18, sides: [[a, d], [b, c]] },
+  ]
+}
+
+/**
+ * Sixes, for four. Two against two, best ball, and partners change every
+ * six holes so everyone partners everyone once. Each six is a match of
+ * its own at the stake: most holes won takes it, each winner from one
+ * loser, and it closes early once the lead is more than the holes left.
+ */
+export function calcSixes(
+  round: Round,
+  playerIds: string[],
+  stake: number,
+  useNet: boolean,
+  course?: Course,
+  play?: SixesPlay,
+): BetOutcome {
+  const entries = entriesFor(round, playerIds)
+  if (playerIds.length !== 4 || entries.length !== 4) {
+    return emptyOutcome(playerIds, 'Sixes is for four. Pick exactly four golfers from this round.')
+  }
+  const ranked = hasStrokeIndex(course) ? course : null
+  if (useNet && !ranked) {
+    return emptyOutcome(playerIds, "Net sixes needs this course's stroke index. Add it from the Courses page, or play it gross.")
+  }
+  const given: Record<string, number[]> = useNet && ranked ? strokesOffLow(ranked, entries, round.tee) : {}
+  const ids = idsOf(entries)
+  const score = (id: string, h: number) => {
+    const raw = cardOf(entries.find((rp) => rp.playerId === id)!)[h]
+    return raw == null ? null : raw - (given[id]?.[h] ?? 0)
+  }
+  const totals = zeroed(ids)
+  const detail: string[] = []
+  let open = 0
+  let any = false
+  for (const leg of sixesLegs(teeOrder(ids, play?.order))) {
+    const label = `holes ${leg.from + 1} to ${leg.to}`
+    let up = 0 // positive = the first side leads
+    let played = 0
+    let closedWithLeft: number | null = null
+    for (let h = leg.from; h < leg.to; h++) {
+      const a = leg.sides[0].map((id) => score(id, h))
+      const b = leg.sides[1].map((id) => score(id, h))
+      if ([...a, ...b].some((x) => x == null)) break
+      const lowA = Math.min(...(a as number[]))
+      const lowB = Math.min(...(b as number[]))
+      up += lowA < lowB ? 1 : lowB < lowA ? -1 : 0
+      played++
+      const left = leg.to - h - 1
+      if (Math.abs(up) > left) {
+        closedWithLeft = left
+        break
+      }
+    }
+    if (played === 0) {
+      open++
+      continue
+    }
+    any = true
+    const remaining = leg.to - leg.from - played
+    const win = up > 0 ? leg.sides[0] : leg.sides[1]
+    const lose = up > 0 ? leg.sides[1] : leg.sides[0]
+    if (closedWithLeft != null || remaining === 0) {
+      if (up === 0) {
+        detail.push(`${capitalised(label)} halved.`)
+        continue
+      }
+      win.forEach((id, k) => pay(totals, id, [lose[k]], stake))
+      const margin = closedWithLeft != null && closedWithLeft > 0 ? `${Math.abs(up)}&${closedWithLeft}` : `${Math.abs(up)} up`
+      detail.push(`Take ${label} ${margin}|${win.join('+')}`)
+      continue
+    }
+    open++
+    const last = leg.from + played
+    if (up === 0) detail.push(`${capitalised(label)} all square thru ${last}.`)
+    else detail.push(`${Math.abs(up)} up in ${label} thru ${last}|${win.join('+')}`)
+  }
+  if (!any) return emptyOutcome(playerIds, 'No hole has a score for everyone in the bet yet.')
+  return { results: toResults(totals), detail, computable: open === 0 }
+}
+
+/** Stableford points for a hole: two for a par, one more per stroke better, one less per stroke worse, none below nought, five at most. */
+export const stablefordPoints = (score: number, par: number) => Math.max(0, Math.min(5, 2 + par - score))
+
+/**
+ * Stableford. Points against par on every hole everyone has played,
+ * after each golfer's full course handicap strokes when net. Settled pair
+ * by pair: each point one finishes ahead of another is the stake.
+ */
+export function calcStableford(round: Round, playerIds: string[], stake: number, useNet: boolean, course?: Course): BetOutcome {
+  const entries = entriesFor(round, playerIds)
+  if (entries.length < 2) return emptyOutcome(playerIds, 'Needs at least two golfers.')
+  if (!hasPars(course)) return emptyOutcome(playerIds, "Stableford needs this course's pars. Add them from the Courses page.")
+  const ranked = hasStrokeIndex(course) ? course : null
+  if (useNet && !ranked) {
+    return emptyOutcome(playerIds, "Net Stableford needs this course's stroke index. Add it from the Courses page, or play it gross.")
+  }
+  const pars = padded(course.pars)
+  const allocation = new Map<string, number[]>()
+  for (const rp of entries) {
+    allocation.set(
+      rp.playerId,
+      useNet && ranked ? strokesByHole(ranked, playingHandicap(ranked, rp.handicapSnapshot, round.tee)) : Array<number>(HOLE_COUNT).fill(0),
+    )
+  }
+  const ids = idsOf(entries)
+  const points = new Map(ids.map((id) => [id, 0]))
+  let holes = 0
+  for (let h = 0; h < HOLE_COUNT; h++) {
+    if (entries.some((rp) => cardOf(rp)[h] == null)) continue
+    holes++
+    for (const rp of entries) {
+      const net = cardOf(rp)[h]! - allocation.get(rp.playerId)![h]
+      points.set(rp.playerId, points.get(rp.playerId)! + stablefordPoints(net, pars[h]!))
+    }
+  }
+  if (holes === 0) return emptyOutcome(playerIds, 'No hole has a score for everyone in the bet yet.')
+  const detail = [`${plural(holes, 'hole')} counted.`, ...pointLines(ids, points)]
+  if (useNet) detail.push('Strokes off each golfer’s full course handicap, hardest holes first.')
+  return { results: toResults(settlePoints(ids, points, stake)), detail, computable: true }
+}
+
+/** Bingo Bango Bongo: a point each for first on the green, closest once all are on, first in. */
+export const BBB_SLOTS = ['Bingo', 'Bango', 'Bongo'] as const
+
+export function calcBbb(round: Round, playerIds: string[], stake: number, play?: BbbPlay): BetOutcome {
+  const entries = entriesFor(round, playerIds)
+  if (entries.length < 2) return emptyOutcome(playerIds, 'Needs at least two golfers.')
+  const ids = idsOf(entries)
+  const points = new Map(ids.map((id) => [id, 0]))
+  let holes = 0
+  for (let h = 0; h < HOLE_COUNT; h++) {
+    const pick = play?.picks?.[h]
+    if (!pick) continue
+    let scored = false
+    for (const id of pick) {
+      if (id && points.has(id)) {
+        points.set(id, points.get(id)! + 1)
+        scored = true
+      }
+    }
+    if (scored) holes++
+  }
+  if (holes === 0) return emptyOutcome(playerIds, 'No points tapped in yet.')
+  return {
+    results: toResults(settlePoints(ids, points, stake)),
+    detail: [`${plural(holes, 'hole')} scored.`, ...pointLines(ids, points)],
+    computable: true,
+  }
+}
+
+export const JUNK_KINDS: JunkKind[] = ['greenie', 'sandie', 'barkie', 'chippie', 'birdie']
+
+/**
+ * Junk. Each feat is a point worth the stake from each of the others.
+ * Greenies, sandies, barkies and chippies are claimed on the live card;
+ * birdies (gross, one under par or better) come off the card when the
+ * group counts them.
+ */
+export function calcJunk(round: Round, playerIds: string[], stake: number, course?: Course, play?: JunkPlay): BetOutcome {
+  const entries = entriesFor(round, playerIds)
+  if (entries.length < 2) return emptyOutcome(playerIds, 'Needs at least two golfers.')
+  const ids = idsOf(entries)
+  const kinds = play?.kinds ?? JUNK_KINDS
+  const counts = new Map(ids.map((id) => [id, new Map<JunkKind, number>()]))
+  const add = (id: string, kind: JunkKind) => counts.get(id)!.set(kind, (counts.get(id)!.get(kind) ?? 0) + 1)
+  const seen = new Set<string>()
+  for (const c of play?.claims ?? []) {
+    const key = `${c.hole}|${c.playerId}|${c.kind}`
+    if (seen.has(key) || c.kind === 'birdie' || !kinds.includes(c.kind) || !counts.has(c.playerId) || c.hole < 0 || c.hole >= HOLE_COUNT) continue
+    seen.add(key)
+    add(c.playerId, c.kind)
+  }
+  if (kinds.includes('birdie') && hasPars(course)) {
+    const pars = padded(course.pars)
+    for (const rp of entries) {
+      cardOf(rp).forEach((raw, h) => {
+        if (raw != null && raw <= pars[h]! - 1) add(rp.playerId, 'birdie')
+      })
+    }
+  }
+  const total = (id: string) => [...counts.get(id)!.values()].reduce((t, n) => t + n, 0)
+  if (ids.every((id) => total(id) === 0)) return { results: toResults(zeroed(ids)), detail: ['No junk yet.'], computable: false }
+  const totals = zeroed(ids)
+  for (const id of ids) {
+    const n = total(id)
+    if (n > 0) pay(totals, id, ids.filter((x) => x !== id), stake * n)
+  }
+  const detail = ids
+    .map((id, i) => ({ id, i, n: total(id) }))
+    .filter((x) => x.n > 0)
+    .sort((a, b) => b.n - a.n || a.i - b.i)
+    .map(({ id, n }) => {
+      const parts = JUNK_KINDS.filter((k) => counts.get(id)!.get(k)).map((k) => plural(counts.get(id)!.get(k)!, k))
+      return `${plural(n, 'point')}: ${parts.join(', ')}|${id}`
+    })
+  return { results: toResults(totals), detail, computable: true }
+}
+
+/** The two sides of a hammer bet, if they split these golfers evenly one or two apiece. */
+export function hammerTeams(ids: string[], play?: HammerPlay): [string[], string[]] | null {
+  const teams = play?.teams
+  if (teams && teams.length === 2 && teams[0].length === teams[1].length && (teams[0].length === 1 || teams[0].length === 2)) {
+    const all = [...teams[0], ...teams[1]]
+    if (all.length === ids.length && new Set(all).size === all.length && all.every((id) => ids.includes(id))) return teams
+  }
+  return ids.length === 2 ? [[ids[0]], [ids[1]]] : null
+}
+
+export const HAMMER_LIMIT = 3
+
+/**
+ * Hammer. Each hole starts at the stake. A hammer doubles it; the side
+ * hammered either accepts and plays on at double, or declines and loses
+ * the hole at its value before that hammer. A halved hole pays nothing.
+ * Best ball for two against two; each winner takes the hole's value from
+ * one loser. No hole doubles more than the limit set on the first tee.
+ */
+export function calcHammer(
+  round: Round,
+  playerIds: string[],
+  stake: number,
+  useNet: boolean,
+  course?: Course,
+  play?: HammerPlay,
+): BetOutcome {
+  const entries = entriesFor(round, playerIds)
+  if (!(entries.length === 2 || entries.length === 4) || entries.length !== playerIds.length) {
+    return emptyOutcome(playerIds, 'Hammer is one against one, or two against two.')
+  }
+  const ids = idsOf(entries)
+  const teams = hammerTeams(ids, play)
+  if (!teams) return emptyOutcome(playerIds, 'Pick the two sides.')
+  const ranked = hasStrokeIndex(course) ? course : null
+  if (useNet && !ranked) {
+    return emptyOutcome(playerIds, "Net hammer needs this course's stroke index. Add it from the Courses page, or play it gross.")
+  }
+  const given: Record<string, number[]> = useNet && ranked ? strokesOffLow(ranked, entries, round.tee) : {}
+  const score = (id: string, h: number) => {
+    const raw = cardOf(entries.find((rp) => rp.playerId === id)!)[h]
+    return raw == null ? null : raw - (given[id]?.[h] ?? 0)
+  }
+  const limit = play?.limit ?? HAMMER_LIMIT
+  const totals = zeroed(ids)
+  const notes: string[] = []
+  let played = 0
+  let halved = 0
+  for (let h = 0; h < HOLE_COUNT; h++) {
+    const hole = play?.holes?.[h] ?? null
+    const doubles = Math.min(hole?.doubles ?? 0, limit)
+    let winner: 0 | 1
+    if (hole?.conceded === 0 || hole?.conceded === 1) {
+      winner = hole.conceded === 0 ? 1 : 0
+    } else {
+      const a = teams[0].map((id) => score(id, h))
+      const b = teams[1].map((id) => score(id, h))
+      if ([...a, ...b].some((x) => x == null)) continue
+      const lowA = Math.min(...(a as number[]))
+      const lowB = Math.min(...(b as number[]))
+      if (lowA === lowB) {
+        played++
+        halved++
+        continue
+      }
+      winner = lowA < lowB ? 0 : 1
+    }
+    played++
+    const win = teams[winner]
+    const lose = teams[winner === 0 ? 1 : 0]
+    const value = stake * 2 ** doubles
+    win.forEach((id, k) => pay(totals, id, [lose[k]], value))
+    if (hole?.conceded === 0 || hole?.conceded === 1) notes.push(`Took the ${nth(h + 1)} when the hammer was declined|${win.join('+')}`)
+    else if (doubles > 0) notes.push(`Took the ${nth(h + 1)} at ×${2 ** doubles}|${win.join('+')}`)
+  }
+  if (played === 0) return emptyOutcome(playerIds, 'No hole has a score for everyone in the bet yet.')
+  const detail = [`${plural(played, 'hole')} played.`, ...notes]
+  if (halved > 0) detail.push(`${plural(halved, 'hole')} halved.`)
+  return { results: toResults(totals), detail, computable: true }
+}
+
 /**
  * Settles a saved bet from the round's cards, or returns null for bets
  * the card can't speak for: custom bets, hand-typed amounts, and bets
@@ -755,6 +1188,20 @@ export function settleFromCard(bet: Bet, round: Round, course?: Course): BetOutc
       return calcWolf(round, ids, bet.stake, bet.net, course, bet.wolf)
     case 'vegas':
       return calcVegas(round, ids, bet.stake, bet.net, course, bet.vegas)
+    case 'rabbit':
+      return calcRabbit(round, ids, bet.stake, bet.net, course)
+    case 'snake':
+      return calcSnake(round, ids, bet.stake)
+    case 'sixes':
+      return calcSixes(round, ids, bet.stake, bet.net, course, bet.sixes)
+    case 'stableford':
+      return calcStableford(round, ids, bet.stake, bet.net, course)
+    case 'bbb':
+      return calcBbb(round, ids, bet.stake, bet.bbb)
+    case 'junk':
+      return calcJunk(round, ids, bet.stake, course, bet.junk)
+    case 'hammer':
+      return calcHammer(round, ids, bet.stake, bet.net, course, bet.hammer)
     default:
       // A game this version doesn't know: its stored results stand.
       return null

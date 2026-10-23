@@ -17,7 +17,7 @@ import {
   toPar,
   yardsFor,
 } from '../lib/courses'
-import { BLIND_WOLF, LONE_WOLF, nth, settleFromCard, wolfOn, wolfOrder } from '../lib/bets'
+import { BBB_SLOTS, BLIND_WOLF, HAMMER_LIMIT, JUNK_KINDS, LONE_WOLF, hammerTeams, nth, settleFromCard, wolfOn, wolfOrder } from '../lib/bets'
 import { betStatus } from '../lib/betText'
 import { Confetti, buzz } from '../components/Delight'
 import { MarkLegend, SCORE_MARK, StrokeDots } from '../components/scoreMarks'
@@ -26,7 +26,7 @@ import { fmtDiff, ghostDiff, ghostFor, ghostOptions } from '../lib/ghost'
 import { scanScores, scanSupported, type ScannedScoreRow } from '../lib/scan'
 import { roundStandings, shortDate } from '../lib/stats'
 import { notifyGroup } from '../lib/push'
-import { fmt1, type Bet, type Round } from '../types'
+import { fmt1, type Bet, type HammerHole, type JunkKind, type Round } from '../types'
 import { Avatar, Card, HelpTip, PrimaryButton, Segmented } from '../components/ui'
 import { rulesFor } from '../lib/betRules'
 import { Icon, IconTile } from '../components/icons'
@@ -164,9 +164,16 @@ export default function HoleEntry() {
       return [rp.playerId, merged]
     }),
   )
+  // Everyone in a snake keeps putts, since the snake is counted off them,
+  // unless somebody has switched theirs off by hand.
+  const snakeIds = new Set(
+    data.bets.filter((b) => b.roundId === round?.id && b.type === 'snake' && !b.manual).flatMap((b) => b.results.map((r) => r.playerId)),
+  )
   const tracking = (playerId: string) => {
     const rp = players.find((x) => x.playerId === playerId)
-    return trackEdits[playerId] ?? (rp ? tracksPutts(rp, data.currentUserId) : false)
+    if (trackEdits[playerId] !== undefined) return trackEdits[playerId]
+    if (!rp) return false
+    return rp.putts === undefined && snakeIds.has(playerId) ? true : tracksPutts(rp, data.currentUserId)
   }
   const puttCards: Record<string, (number | null)[]> = Object.fromEntries(
     players.map((rp) => {
@@ -591,6 +598,9 @@ export default function HoleEntry() {
   const roundBets = data.bets.filter((b) => b.roundId === round.id && !b.manual && b.net !== undefined)
   const wolfBets = roundBets.filter((b) => b.type === 'wolf' && b.results.length === 4)
   const pressBets = roundBets.filter((b) => b.type === 'nassau' && b.nassau?.format === 'match')
+  const bbbBets = roundBets.filter((b) => b.type === 'bbb')
+  const junkBets = roundBets.filter((b) => b.type === 'junk' && (b.junk?.kinds ?? JUNK_KINDS).some((k) => k !== 'birdie'))
+  const hammerBets = roundBets.filter((b) => b.type === 'hammer' && hammerTeams(b.results.map((r) => r.playerId), b.hammer))
   const saveCall = (bet: Bet) => {
     const outcome = liveRound ? settleFromCard(bet, liveRound, course) : null
     updateBet(outcome ? { ...bet, results: outcome.results } : bet)
@@ -613,11 +623,38 @@ export default function HoleEntry() {
       },
     })
   }
+  const setBbb = (bet: Bet, hole: number, slot: number, id: string) => {
+    const picks = Array.from({ length: HOLE_COUNT }, (_, i) => bet.bbb?.picks?.[i] ?? null)
+    const was = picks[hole] ?? [null, null, null]
+    const now = was.map((x, k) => (k === slot ? (x === id ? null : id) : x)) as [string | null, string | null, string | null]
+    picks[hole] = now.some((x) => x) ? now : null
+    saveCall({ ...bet, bbb: { picks } })
+  }
+  const toggleJunk = (bet: Bet, hole: number, playerId: string, kind: JunkKind) => {
+    const claims = bet.junk?.claims ?? []
+    const has = claims.some((c) => c.hole === hole && c.playerId === playerId && c.kind === kind)
+    saveCall({
+      ...bet,
+      junk: {
+        kinds: bet.junk?.kinds ?? JUNK_KINDS,
+        claims: has
+          ? claims.filter((c) => !(c.hole === hole && c.playerId === playerId && c.kind === kind))
+          : [...claims, { hole, playerId, kind }],
+      },
+    })
+  }
+  const setHammer = (bet: Bet, hole: number, next: HammerHole | null) => {
+    const ids = bet.results.map((r) => r.playerId)
+    const teams = hammerTeams(ids, bet.hammer)!
+    const holes = Array.from({ length: HOLE_COUNT }, (_, i) => (i === hole ? next : (bet.hammer?.holes?.[i] ?? null)))
+    saveCall({ ...bet, hammer: { teams, limit: bet.hammer?.limit ?? HAMMER_LIMIT, holes } })
+  }
+  const sideName = (side: string[]) => side.map(firstName).join(' & ')
   const chip = (on: boolean) =>
     `rounded-full border px-3 py-1.5 text-footnote font-bold transition active:scale-95 ${
       on ? 'border-ink bg-ink text-white' : 'border-line-strong bg-card text-ink-dim'
     }`
-  const gameCalls = (wolfBets.length > 0 || pressBets.length > 0) && (
+  const gameCalls = (wolfBets.length > 0 || pressBets.length > 0 || bbbBets.length > 0 || junkBets.length > 0 || hammerBets.length > 0) && (
     <Card className="p-3.5 space-y-3">
       {wolfBets.map((bet) => {
         const order = wolfOrder(bet.results.map((r) => r.playerId), bet.wolf)
@@ -658,6 +695,130 @@ export default function HoleEntry() {
             <button type="button" onClick={() => togglePress(bet, h)} aria-pressed={pressed} className={`shrink-0 ${chip(pressed)}`}>
               {pressed ? 'Undo' : 'Press'}
             </button>
+          </div>
+        )
+      })}
+      {bbbBets.map((bet) => {
+        const ids = bet.results.map((r) => r.playerId)
+        const pick = bet.bbb?.picks?.[h] ?? null
+        return (
+          <div key={bet.id} className="space-y-2">
+            <p className="text-footnote text-ink">
+              <span className="font-bold">{bet.name}:</span> first on, closest once all are on, first in
+            </p>
+            {BBB_SLOTS.map((slot, k) => (
+              <div key={slot} className="flex items-center gap-2" role="group" aria-label={`${slot} on hole ${h + 1}`}>
+                <span className="w-14 shrink-0 text-caption font-bold text-ink-dim">{slot}</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {ids.map((id) => (
+                    <button key={id} type="button" onClick={() => setBbb(bet, h, k, id)} aria-pressed={pick?.[k] === id} className={chip(pick?.[k] === id)}>
+                      {firstName(id)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      })}
+      {junkBets.map((bet) => {
+        const ids = bet.results.map((r) => r.playerId)
+        const kinds = (bet.junk?.kinds ?? JUNK_KINDS).filter((k) => k !== 'birdie')
+        const claimed = (id: string, kind: JunkKind) =>
+          bet.junk?.claims?.some((c) => c.hole === h && c.playerId === id && c.kind === kind) ?? false
+        return (
+          <div key={bet.id} className="space-y-2">
+            <p className="text-footnote text-ink">
+              <span className="font-bold">{bet.name}:</span> any junk on the {nth(h + 1)}?
+            </p>
+            {kinds.map((kind) => (
+              <div key={kind} className="flex items-center gap-2" role="group" aria-label={`${kind}s on hole ${h + 1}`}>
+                <span className="w-14 shrink-0 text-caption font-bold capitalize text-ink-dim">{kind}</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {ids.map((id) => (
+                    <button key={id} type="button" onClick={() => toggleJunk(bet, h, id, kind)} aria-pressed={claimed(id, kind)} className={chip(claimed(id, kind))}>
+                      {firstName(id)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      })}
+      {hammerBets.map((bet) => {
+        const teams = hammerTeams(bet.results.map((r) => r.playerId), bet.hammer)!
+        const limit = bet.hammer?.limit ?? HAMMER_LIMIT
+        const hole: HammerHole = bet.hammer?.holes?.[h] ?? { doubles: 0 }
+        const worth = `×${2 ** Math.min(hole.doubles, limit)}`
+        const sides = [0, 1] as const
+        if (hole.conceded != null) {
+          const winner = hole.conceded === 0 ? 1 : 0
+          return (
+            <div key={bet.id} className="flex items-center justify-between gap-3">
+              <p className="min-w-0 text-footnote text-ink">
+                <span className="font-bold">{bet.name}:</span> {sideName(teams[hole.conceded])} turned the hammer down. {sideName(teams[winner])} {teams[winner].length > 1 ? 'take' : 'takes'} the {nth(h + 1)}.
+              </p>
+              <button
+                type="button"
+                onClick={() => setHammer(bet, h, { doubles: hole.doubles + 1, by: winner, pending: hole.conceded })}
+                className={`shrink-0 ${chip(false)}`}
+              >
+                Undo
+              </button>
+            </div>
+          )
+        }
+        if (hole.pending != null) {
+          const answering = hole.pending
+          return (
+            <div key={bet.id}>
+              <p className="text-footnote text-ink">
+                <span className="font-bold">{bet.name}:</span> {sideName(teams[answering === 0 ? 1 : 0])} brought the hammer down. The {nth(h + 1)} is at {worth} if {sideName(teams[answering])} {teams[answering].length > 1 ? 'take' : 'takes'} it on.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button type="button" onClick={() => setHammer(bet, h, { doubles: hole.doubles, by: hole.by })} className={chip(false)}>
+                  Accept
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHammer(bet, h, { doubles: hole.doubles - 1, by: hole.by, conceded: answering })}
+                  className={chip(false)}
+                >
+                  Turn it down
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHammer(bet, h, hole.doubles > 1 ? { doubles: hole.doubles - 1, by: hole.by === 0 ? 1 : 0 } : null)}
+                  className="px-2 text-footnote font-bold text-ink-faint"
+                >
+                  Undo
+                </button>
+              </div>
+            </div>
+          )
+        }
+        const can = sides.filter((s) => hole.doubles < limit && hole.by !== s)
+        return (
+          <div key={bet.id}>
+            <p className="text-footnote text-ink">
+              <span className="font-bold">{bet.name}:</span> the {nth(h + 1)} is at {worth}
+              {hole.doubles >= limit ? ', as high as it goes' : ''}
+            </p>
+            {can.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {can.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setHammer(bet, h, { doubles: hole.doubles + 1, by: s, pending: s === 0 ? 1 : 0 })}
+                    className={chip(false)}
+                  >
+                    {sideName(teams[s])} {teams[s].length > 1 ? 'hammer' : 'hammers'}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )
       })}
