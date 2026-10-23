@@ -96,6 +96,16 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-5. Wolf, Vegas and match-play Nassau with presses (2026-10-23, branch
+   `claude/beautiful-cannon-0e5jvg`, both repos). Paste
+   `supabase/apply-2026-10-23-more-bets.sql` before merging: it allows the two new bet types
+   and adds the `bets.game` jsonb column the new games save their setup in. Bets that
+   already exist save as before either way (the column is only written when a bet has a
+   setup). Then upload a TestFlight build with the same games and have everyone update
+   before the first Wolf or match-play Nassau: an older iPhone build reads a Wolf or Vegas
+   bet as Custom (shows its stored money, safe), but would settle a match-play Nassau as
+   lowest-total each time its live card saves. Rules as built are in `src/lib/betRules.ts`;
+   the roadmap is `ROADMAP.md` in the bandit repo.
 -4. Green fees (2026-10-22) need `supabase/apply-2026-10-22-green-fee.sql` pasted (one jsonb
    column on rounds) before the apps that know about it are pushed: every round save writes it.
 -3. Score merging (2026-10-22) wants `supabase/apply-2026-10-22-merge-scores.sql` pasted
