@@ -96,9 +96,18 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-6. The games menu, rules cards and seven more games (2026-10-23, same branch, both repos):
+   Rabbit, Snake, Sixes, Stableford, Bingo Bango Bongo, Junk and Hammer. "Add bet" opens
+   "Pick the games" (`src/components/GamesMenu.tsx`), each game's parlor rules card is
+   `GameCardSheet.tsx`, and the cards' words and drawings are generated into
+   `src/lib/gameCards.ts` from the approved design files (regenerate, don't hand-edit).
+   Verified in Chromium: menu, spin, cards, setup of five games in a row, and the live
+   card's Bingo Bango Bongo, Junk and Hammer taps settling to the cent. The same
+   `apply-2026-10-23-more-bets.sql` covers these types too. The deployed web app and older
+   iPhone builds show a new game's bet with its stored money and don't recompute it.
 -5. Wolf, Vegas and match-play Nassau with presses (2026-10-23, branch
    `claude/beautiful-cannon-0e5jvg`, both repos). Paste
-   `supabase/apply-2026-10-23-more-bets.sql` before merging: it allows the two new bet types
+   `supabase/apply-2026-10-23-more-bets.sql` before merging: it allows the new bet types
    and adds the `bets.game` jsonb column the new games save their setup in. Bets that
    already exist save as before either way (the column is only written when a bet has a
    setup). Then upload a TestFlight build with the same games and have everyone update
