@@ -1,4 +1,7 @@
 import type { AppData } from '../types'
+import { toISODate } from '../lib/dates'
+
+const daysAheadISO = (n: number) => toISODate(new Date(Date.now() + n * 86_400_000))
 
 // Fictional demo data. It's what local mode shows and what the optional
 // "load sample data" checkbox copies into a brand new group, so it ships
@@ -147,6 +150,37 @@ export const seedData: AppData = {
     },
   ],
 
+  // Two tee times booked ahead, dated from today so they stay ahead: one
+  // Alex booked, one Ravi booked with only two spots.
+  bookings: [
+    {
+      id: 'r-book1',
+      groupId: 'g-1',
+      date: daysAheadISO(3),
+      courseName: 'Rancho Park',
+      tee: 'White',
+      teeTime: '7:40 AM',
+      bookedById: 'p-ravi',
+      players: [
+        { playerId: 'p-ravi', gross: null, handicapSnapshot: 14.8 },
+        { playerId: 'p-alex', gross: null, handicapSnapshot: 11.2 },
+      ],
+    },
+    {
+      id: 'r-book2',
+      groupId: 'g-1',
+      date: daysAheadISO(10),
+      courseName: 'Cobbs Creek',
+      tee: 'Blue',
+      teeTime: '8:10 AM',
+      bookedById: 'p-alex',
+      players: [
+        { playerId: 'p-alex', gross: null, handicapSnapshot: 11.2 },
+        { playerId: 'p-danny', gross: null, handicapSnapshot: 17.5 },
+        { playerId: 'p-kim', gross: null, handicapSnapshot: 21.0 },
+      ],
+    },
+  ],
   trips: [
     {
       id: 't-sandhills', groupId: 'g-1', name: 'Sandhills 2025', status: 'booked',

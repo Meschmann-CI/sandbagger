@@ -16,6 +16,7 @@ import {
   type Trip,
 } from '../types'
 import { todayISO } from '../lib/dates'
+import { sortBookings } from '../lib/bookings'
 import { shrinkPhoto, uploadTripPhoto } from '../lib/photos'
 import { cleanCourseName, courseSlug, noteRename, renameCourseIn } from '../lib/courses'
 import { syncStoredBrands } from '../lib/courseBrands'
@@ -111,7 +112,7 @@ function initialsFor(name: string, existing: Player[]): string {
 }
 
 export function StoreProvider({ backend, initial, children }: { backend: Backend; initial: AppData; children: ReactNode }) {
-  const [data, setData] = useState<AppData>(initial)
+  const [data, setData] = useState<AppData>(() => sortBookings(initial))
   const [syncError, setSyncError] = useState<string | null>(null)
   const dataRef = useRef(data)
   dataRef.current = data
@@ -125,7 +126,8 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
   // then pushes it. A failed write surfaces rather than silently vanishing.
   const commit = useCallback(
     (change: Change, update: (current: AppData) => AppData) => {
-      const next = update(dataRef.current)
+      // Booked rounds keep out of `rounds` until their first score (src/lib/bookings.ts).
+      const next = sortBookings(update(dataRef.current))
       dataRef.current = next
       setData(next)
       backend.apply(change, next).catch((err: unknown) => {
@@ -145,7 +147,8 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
       timer = setTimeout(() => {
         backend
           .load()
-          .then((fresh) => {
+          .then((loaded) => {
+            const fresh = sortBookings(loaded)
             dataRef.current = fresh
             setData(fresh)
           })
@@ -170,7 +173,7 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     newId: makeId,
 
     async refresh() {
-      const fresh = await backend.load()
+      const fresh = sortBookings(await backend.load())
       dataRef.current = fresh
       setData(fresh)
     },
@@ -181,12 +184,17 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
       return full
     },
     updateRound(round) {
-      commit({ kind: 'round.upsert', round }, (d) => ({ ...d, rounds: d.rounds.map((r) => (r.id === round.id ? round : r)) }))
+      commit({ kind: 'round.upsert', round }, (d) => ({
+        ...d,
+        rounds: d.rounds.map((r) => (r.id === round.id ? round : r)),
+        bookings: d.bookings?.map((r) => (r.id === round.id ? round : r)),
+      }))
     },
     deleteRound(roundId) {
       commit({ kind: 'round.delete', id: roundId }, (d) => ({
         ...d,
         rounds: d.rounds.filter((r) => r.id !== roundId),
+        bookings: d.bookings?.filter((r) => r.id !== roundId),
         bets: d.bets.filter((b) => b.roundId !== roundId),
         // The paybacks settled those bets, so they go with them.
         payments: d.payments.filter((p) => p.roundId !== roundId),

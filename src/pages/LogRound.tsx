@@ -3,13 +3,14 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from '../lib/nav'
 import { useMembers, useStore } from '../data/store'
 import { courseSuggestions, shortDate } from '../lib/stats'
-import { daysAgoISO, todayISO } from '../lib/dates'
+import { daysAgoISO, shortDay, todayISO, weekdayName } from '../lib/dates'
 import { courseSlug } from '../lib/courses'
 import CourseScene from '../components/CourseScene'
 import { Icon } from '../components/icons'
 import { ghostOptions } from '../lib/ghost'
 import { GROSS_CEILING, GROSS_FLOOR, grossWarning } from '../lib/scores'
 import { notifyGroup } from '../lib/push'
+import { teeTimeLabel } from '../lib/bookings'
 import { fmt1, type Round } from '../types'
 import { findCourse, hasPars } from '../lib/courses'
 import { directorySupported, fetchDirectoryCourse, nearbyFor, searchDirectory, type DirectoryMatch } from '../lib/courseLookup'
@@ -78,6 +79,10 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
   // Off by default: putting the trophy up is a declaration, not a side
   // effect of logging scores.
   const [saddamOn, setSaddamOn] = useState(false)
+  // A day ahead books the round instead (Matt, 2026-10-22): a tee time,
+  // no scores, and the golfers on it hear.
+  const [teeTime, setTeeTime] = useState('08:00')
+  const booking = date > todayISO()
 
   const guests = data.players.filter((p) => p.guest)
 
@@ -158,6 +163,34 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
     // hole-by-hole card instead of a round page full of blanks.
     onClose()
     navigate(anyScored ? `/rounds/${round.id}` : `/rounds/${round.id}/card`)
+  }
+
+  const book = () => {
+    const time = teeTimeLabel(teeTime)
+    const round = addRound({
+      date,
+      courseName: courseName.trim(),
+      tee: tee.trim() || undefined,
+      nines: findCourse(data, courseName)?.nines ? nines : undefined,
+      tripId: tripId || undefined,
+      saddamOnTheLine: playerIds.length >= 2 ? saddamOn : false,
+      teeTime: time,
+      bookedById: data.currentUserId,
+      players: playerIds.map((pid) => ({
+        playerId: pid,
+        gross: null,
+        handicapSnapshot: data.players.find((p) => p.id === pid)!.handicap,
+      })),
+    })
+    const me = data.players.find((p) => p.id === data.currentUserId)
+    notifyGroup({
+      toPlayerIds: playerIds.filter((id) => id !== data.currentUserId),
+      title: `${me?.name.split(' ')[0] ?? 'Someone'} booked ${courseName.trim()}`,
+      body: `${weekdayName(date)} ${shortDay(date)}, ${time}. You're on it.`,
+      url: `/rounds/${round.id}`,
+    })
+    onClose()
+    navigate(`/rounds/${round.id}`)
   }
 
   // A sheet: Escape closes it, and the page underneath stops scrolling.
@@ -257,7 +290,7 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
                 ‹ Back
               </button>
             ) : (
-              <h2 className="text-title font-bold tracking-tight text-ink">Log a round</h2>
+              <h2 className="text-title font-bold tracking-tight text-ink">{booking ? 'Book a round' : 'Log a round'}</h2>
             )}
             {step === 2 && <h2 className="text-headline font-bold text-ink">Scores</h2>}
             <button onClick={onClose} className="px-1 text-footnote font-bold text-ink-faint">
@@ -483,11 +516,23 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
                   <input
                     type="date"
                     value={date}
-                    max={todayISO()}
                     onChange={(e) => e.target.value && setDate(e.target.value)}
-                    aria-label="Date played"
+                    aria-label="Date"
                     className="mt-2.5 w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink focus:border-green focus:outline-none"
                   />
+                )}
+                {booking && (
+                  <>
+                    <p className="mt-2 px-1 text-caption text-ink-faint">A day ahead books it. On the day it opens straight into the card.</p>
+                    <span className={`${label} mt-4`}>Tee time</span>
+                    <input
+                      type="time"
+                      value={teeTime}
+                      onChange={(e) => e.target.value && setTeeTime(e.target.value)}
+                      aria-label="Tee time"
+                      className="w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink focus:border-green focus:outline-none"
+                    />
+                  </>
                 )}
               </div>
 
@@ -515,7 +560,7 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
               {/* Who: faces to tap. Guests are on the round and in the bets,
                   off the lifetime records, and stick around for next time. */}
               <div>
-                <span className={label}>Who played</span>
+                <span className={label}>{booking ? "Who's playing" : 'Who played'}</span>
                 <div className="flex flex-wrap gap-x-3 gap-y-3 px-1">
                   {everyone.map((p) => {
                     const on = playerIds.includes(p.id)
@@ -769,7 +814,11 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
 
         {/* Footer, pinned to the bottom of the sheet */}
         <div className="shrink-0 border-t border-line bg-paper px-4 pt-3 pb-[max(env(safe-area-inset-bottom),0.9rem)]">
-          {step === 0 ? (
+          {step === 0 && booking ? (
+            <PrimaryButton onClick={book} disabled={!courseName.trim() || playerIds.length === 0} className="w-full !py-3.5">
+              Book it
+            </PrimaryButton>
+          ) : step === 0 ? (
             <div className="grid gap-2">
               <PrimaryButton onClick={() => save()} disabled={!courseName.trim() || playerIds.length === 0} className="w-full !py-3.5">
                 Start scoring

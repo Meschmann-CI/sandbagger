@@ -25,16 +25,27 @@ import { sandbaggers } from '../lib/delight'
 import { SandbagStamp } from '../components/Delight'
 import { Icon, type IconName } from '../components/icons'
 import { courseBrand } from '../lib/courseBrands'
-import CourseScene, { lightFor } from '../components/CourseScene'
+import CourseScene, { roundLight } from '../components/CourseScene'
 import { useRoundWeather } from '../lib/weather'
 import { AttestSheet, readAttestation, type Attestation } from '../components/Attest'
 import { Confetti } from '../components/Delight'
 import { drawShareCard, shareCard } from '../lib/shareCard'
 import { play } from '../lib/sound'
+import { findRound, isBooked } from '../lib/bookings'
+import BookedRound from './BookedRound'
 
 const shortDateLabel = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
+// A round booked ahead has its own page until its first score
+// (src/pages/BookedRound.tsx); then it's a round like any other.
 export default function RoundDetail() {
+  const { id } = useParams()
+  const { data } = useStore()
+  const round = findRound(data, id)
+  return round && isBooked(round) ? <BookedRound round={round} /> : <PlayedRound />
+}
+
+function PlayedRound() {
   const { id } = useParams()
   const navigate = useNavigate()
   const goBack = useGoBack('/rounds')
@@ -46,7 +57,7 @@ export default function RoundDetail() {
   const [rating, setRating] = useState(false)
   const [editingBets, setEditingBets] = useState(false)
   const openPhotos = useRef<(() => void) | null>(null)
-  const round = data.rounds.find((r) => r.id === id)
+  const round = findRound(data, id)
   const weather = useRoundWeather(data, round)
   const [attestation, setAttestation] = useState<Attestation | null>(() => (id ? readAttestation(id, data.currentUserId) : null))
   const [attesting, setAttesting] = useState(false)
@@ -225,7 +236,7 @@ export default function RoundDetail() {
             {round.photos?.[0] ? (
               <img src={round.photos[0].url} alt="" className="h-full w-full object-cover" />
             ) : (
-              <CourseScene course={round.courseName} light={lightFor(round.id)} weather={weather} className="h-full w-full" />
+              <CourseScene course={round.courseName} light={roundLight(round)} weather={weather} className="h-full w-full" />
             )}
           </div>
           <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/60" />

@@ -1,7 +1,7 @@
 import { useStore } from '../data/store'
 import type { Round } from '../types'
 import { useRoundWeather } from '../lib/weather'
-import CourseScene, { lightFor } from './CourseScene'
+import CourseScene, { roundLight } from './CourseScene'
 
 /**
  * A round's picture when it has no photo: its course, in the round's own
@@ -12,5 +12,5 @@ import CourseScene, { lightFor } from './CourseScene'
 export default function RoundScene({ round, className = 'h-full w-full' }: { round: Round; className?: string }) {
   const { data } = useStore()
   const weather = useRoundWeather(data, round)
-  return <CourseScene course={round.courseName} light={lightFor(round.id)} weather={weather} className={className} />
+  return <CourseScene course={round.courseName} light={roundLight(round)} weather={weather} className={className} />
 }

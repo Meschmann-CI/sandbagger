@@ -10,6 +10,7 @@ import TeePicker from '../components/TeePicker'
 import NinesPicker from '../components/NinesPicker'
 import { Avatar, Card, GhostButton, PrimaryButton, SaddamIcon } from '../components/ui'
 import { useConfirm } from '../components/Confirm'
+import { findRound } from '../lib/bookings'
 
 // Everything about a logged round on one screen. Scores can be cleared
 // back to blank, which puts the round back on that golfer's to-do list.
@@ -19,7 +20,7 @@ export default function EditRound() {
   const { data, updateRound, deleteRound } = useStore()
   const confirm = useConfirm()
   const members = useMembers()
-  const round = data.rounds.find((r) => r.id === id)
+  const round = findRound(data, id)
 
   const [courseName, setCourseName] = useState(round?.courseName ?? '')
   const [date, setDate] = useState(round?.date ?? '')

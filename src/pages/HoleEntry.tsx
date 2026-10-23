@@ -39,6 +39,7 @@ import { useLiveWind } from '../lib/liveWind'
 import { todayISO } from '../lib/dates'
 import { ordinal } from '../lib/ratings'
 import { distancesWanted, setDistancesWanted, usePosition } from '../lib/usePosition'
+import { findRound } from '../lib/bookings'
 
 // The live card, in two views.
 //
@@ -66,7 +67,7 @@ export default function HoleEntry() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data, updateRound, updateBet } = useStore()
-  const round = data.rounds.find((r) => r.id === id)
+  const round = findRound(data, id)
 
   // Only the cells this session actually typed, keyed player → hole.
   // Everything on screen is the live round with these laid over the top,

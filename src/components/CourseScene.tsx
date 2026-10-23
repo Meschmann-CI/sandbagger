@@ -1,5 +1,6 @@
 import { useId, type CSSProperties, type ReactNode } from 'react'
 import type { DayWeather } from '../lib/weather'
+import { timeToMinutes } from '../lib/stats'
 
 // Little painted landscapes that stand in for a photo: a round with no
 // pictures, a course, a trip.
@@ -49,6 +50,13 @@ export function landscapeFor(course: string): Landscape {
 /** A round's light, from its id. */
 export function lightFor(key: string): Light {
   return LIGHTS[hash(key) % LIGHTS.length]
+}
+
+/** A round's light: from its tee time when it has one (booked ahead), else picked by its id. */
+export function roundLight(round: { id: string; teeTime?: string }): Light {
+  const mins = timeToMinutes(round.teeTime)
+  if (mins > 24 * 60) return lightFor(round.id)
+  return mins < 10 * 60 ? 'morning' : mins < 15 * 60 ? 'midday' : mins < 18 * 60 ? 'golden' : 'twilight'
 }
 
 

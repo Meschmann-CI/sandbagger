@@ -122,6 +122,10 @@ const roundRow = (r: Round) => ({
   ghosts: r.ghosts ?? null,
   photos: r.photos ?? null,
   nines: r.nines ?? null,
+  // Written only when set, so a plain round saves the same with or
+  // without the booked-rounds columns (supabase/apply-2026-10-22-booked-rounds.sql).
+  ...(r.teeTime ? { tee_time: r.teeTime } : {}),
+  ...(r.bookedById ? { booked_by: r.bookedById } : {}),
 })
 
 const expenseRow = (e: Expense) => ({
@@ -306,6 +310,8 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           ghosts: Array.isArray(r.ghosts) && r.ghosts.length ? r.ghosts : undefined,
           photos: Array.isArray(r.photos) && r.photos.length ? r.photos : undefined,
           nines: Array.isArray(r.nines) && r.nines.length === 2 ? (r.nines as [string, string]) : undefined,
+          teeTime: r.tee_time ?? undefined,
+          bookedById: r.booked_by ?? undefined,
           players: scoresByRound.get(r.id) ?? [],
         })),
         bets: (betsRes.data ?? []).map((b: any) => ({

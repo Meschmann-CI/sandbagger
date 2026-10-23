@@ -30,6 +30,7 @@ const { calcMatchPlay, calcNassau, calcSkins } = await import('../src/lib/bets.t
 const { courseForRound, teeFor } = await import('../src/lib/courses.ts')
 const { ghostOptions } = await import('../src/lib/ghost.ts')
 const { badgesFor } = await import('../src/lib/badges.ts')
+const { isBooked, sortBookings, findRound, bookedRounds, teeTimeLabel, teeTimeInput } = await import('../src/lib/bookings.ts')
 
 let failures = 0
 function check(label: string, actual: unknown, expected: unknown) {
@@ -216,6 +217,24 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('badgesFor: Broke 100 is not in the 2026 year', in2026?.earned, false)
   const triple2026 = badgesFor(d, 'me', '2026-10-11', '2026').find((b) => b.key === 'triple')
   check('badgesFor: the 108 counts in 2026', [triple2026?.earned, triple2026?.roundId], [true, 'this'])
+}
+
+// 9. Rounds booked ahead stay out of the played rounds until a score lands.
+{
+  const booked = (id: string, date: string, teeTime: string) => round(id, date, [rp('me', Array(18).fill(null))], { teeTime, bookedById: 'me' })
+  const played = round('played', '2026-10-01', [rp('me', fours())])
+  check('isBooked: tee time and no scores', isBooked(booked('b', '2026-11-01', '8:10 AM')), true)
+  check('isBooked: no tee time is a round waiting on scores', isBooked(round('w', '2026-11-01', [rp('me', Array(18).fill(null))])), false)
+  const d = sortBookings(data({ rounds: [played, booked('b', '2026-11-01', '8:10 AM')] }))
+  check('sortBookings: the booking leaves rounds', [d.rounds.map((r) => r.id), d.bookings?.map((r) => r.id)], [['played'], ['b']])
+  check('findRound: finds a booking', findRound(d, 'b')?.id, 'b')
+  const started = { ...d, bookings: d.bookings!.map((r) => ({ ...r, players: [rp('me', [4, ...Array(17).fill(null)])] })) }
+  const moved = sortBookings(started)
+  check('sortBookings: the first hole moves it across', [moved.rounds.map((r) => r.id).sort(), moved.bookings], [['b', 'played'], []])
+  const order = bookedRounds(data({ bookings: [booked('c', '2026-11-02', '7:00 AM'), booked('b', '2026-11-01', '1:30 PM'), booked('a', '2026-11-01', '8:10 AM')] }))
+  check('bookedRounds: soonest first, by tee time on the day', order.map((r) => r.id), ['a', 'b', 'c'])
+  check('teeTimeLabel', [teeTimeLabel('08:10'), teeTimeLabel('13:05'), teeTimeLabel('00:30'), teeTimeLabel('12:00')], ['8:10 AM', '1:05 PM', '12:30 AM', '12:00 PM'])
+  check('teeTimeInput', [teeTimeInput('8:10 AM'), teeTimeInput('1:05 PM'), teeTimeInput(undefined)], ['08:10', '13:05', '08:00'])
 }
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)

@@ -4,8 +4,9 @@ import { Link } from 'react-router-dom'
 import { useNavigate } from '../lib/nav'
 import { useLogSheet } from '../components/logSheet'
 import { useStore } from '../data/store'
-import { byDate, leaderboard, playerStats, roundStandings, saddamState, shortDate, type LeaderRow } from '../lib/stats'
-import { daysAgoISO, todayISO } from '../lib/dates'
+import { byDate, leaderboard, playerStats, roundStandings, saddamState, shortDate, timeToMinutes, type LeaderRow } from '../lib/stats'
+import { daysAgoISO, shortDay, todayISO, weekdayName } from '../lib/dates'
+import { bookedRounds } from '../lib/bookings'
 import { myOutstanding } from '../lib/settlements'
 import { anyCards, cardComplete, cardOf, holesEntered } from '../lib/holes'
 import { money } from '../lib/money'
@@ -127,11 +128,29 @@ export default function Home() {
   const planningTrip = planning[0]
   const tripsAhead = [...new Set([soonTrip, planningTrip, ...upcoming, ...planning].filter((t): t is Trip => !!t))].slice(0, 3)
 
+  // Rounds booked ahead that I'm on (or booked): the next one, plus any
+  // whose day went by without a score, asking whether it happened.
+  const myBookings = bookedRounds(data).filter((r) => r.bookedById === me.id || r.players.some((p) => p.playerId === me.id))
+  const nextBooking = myBookings.find((r) => r.date >= TODAY)
+  const overdue = myBookings.filter((r) => r.date < TODAY)
+  const bookingSoon =
+    nextBooking && daysBetween(TODAY, nextBooking.date) <= 7 && (!soonTrip || nextBooking.date <= soonTrip.startDate!) ? nextBooking : undefined
+  const bookingRows = [...overdue, ...(nextBooking ? [nextBooking] : [])]
+
   // One line under the group's name, only when a trip is close.
   // The Saddam used to be the fallback here too, which said the same
   // thing as the strip under the hero. It now lives as one small mark
   // on the standings, and gets its full due on the Standings page.
-  const subline = soonTrip
+  const subline = bookingSoon
+    ? (() => {
+        const n = daysBetween(TODAY, bookingSoon.date)
+        return n === 0
+          ? `${bookingSoon.courseName} today, ${bookingSoon.teeTime}.`
+          : n === 1
+            ? `${bookingSoon.courseName} tomorrow.`
+            : `${bookingSoon.courseName} on ${weekdayName(bookingSoon.date)}.`
+      })()
+    : soonTrip
     ? (() => {
         const n = daysBetween(TODAY, soonTrip.startDate!)
         return n === 0 ? `${soonTrip.name} starts today.` : `${soonTrip.name} in ${plural(n, 'day')}.`
@@ -163,6 +182,17 @@ export default function Home() {
         <div className="mt-4">
           <LiveStrip round={inProgress} live={live} />
         </div>
+      )}
+
+      {/* Up next: a round booked ahead, and any whose day went by unscored. */}
+      {bookingRows.length > 0 && (
+        <Card className="mt-4 overflow-hidden">
+          <div className="divide-y divide-line">
+            {bookingRows.map((r) => (
+              <BookedRow key={r.id} round={r} today={TODAY} />
+            ))}
+          </div>
+        </Card>
       )}
 
       {/* Money and a course to rate: rows on the page under the race. */}
@@ -462,6 +492,71 @@ const LIVE_YELLOW = '#F6C744'
  * the line along the bottom that fills as you play the eighteen. One tap
  * goes back to the next hole, and it disappears with the round.
  */
+/**
+ * A round booked ahead, as one row: a calendar page, where and when, and
+ * who's in. On the day it gets a Start the card button; once the day has
+ * gone by it asks whether it happened.
+ */
+function BookedRow({ round, today }: { round: Round; today: string }) {
+  const { data } = useStore()
+  const navigate = useNavigate()
+  const days = daysBetween(today, round.date)
+  const isToday = days === 0
+  const gone = days < 0
+  const people = round.players.map((rp) => data.players.find((p) => p.id === rp.playerId))
+  const teeOff = () => {
+    const now = new Date()
+    const mins = timeToMinutes(round.teeTime) - (now.getHours() * 60 + now.getMinutes())
+    if (timeToMinutes(round.teeTime) > 24 * 60 || mins <= 0) return 'Today'
+    return mins < 90 ? `Tee off in ${mins} min` : `Today, tee off at ${round.teeTime}`
+  }
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <RowButton onClick={() => navigate(`/rounds/${round.id}`)} className="flex min-w-0 flex-1 items-center gap-3">
+        <CalendarPage iso={round.date} today={isToday} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-body font-bold text-ink">
+            {gone ? `Did ${round.courseName} happen?` : `${round.courseName} · ${round.teeTime}`}
+          </p>
+          <p className="truncate text-footnote text-ink-faint">
+            {gone
+              ? `${shortDay(round.date)} · add the scores or take it off`
+              : isToday
+                ? teeOff()
+                : days === 1
+                  ? 'Tomorrow'
+                  : `${weekdayName(round.date)} · in ${days} days`}
+          </p>
+        </div>
+      </RowButton>
+      {isToday ? (
+        <button
+          type="button"
+          onClick={() => navigate(`/rounds/${round.id}/card`)}
+          className="shrink-0 rounded-[10px] bg-green px-3 py-2 text-footnote font-extrabold text-white active:scale-95 transition"
+        >
+          Start the card
+        </button>
+      ) : gone ? (
+        <Icon name="chevronRight" size={16} className="shrink-0 text-ink-faint" />
+      ) : (
+        <AvatarStack players={people} size={22} max={4} />
+      )}
+    </div>
+  )
+}
+
+/** A little calendar page: the month on a red strip, the day under it. */
+export function CalendarPage({ iso, today = false }: { iso: string; today?: boolean }) {
+  const month = new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { month: 'short' })
+  return (
+    <div className="w-10 shrink-0 overflow-hidden rounded-lg bg-card text-center ring-1 ring-line">
+      <div className="bg-flag py-[1.5px] text-[8.5px] font-extrabold uppercase leading-tight text-white">{today ? 'Today' : month}</div>
+      <div className="py-0.5 text-headline font-extrabold tabular-nums text-ink">{+iso.slice(8, 10)}</div>
+    </div>
+  )
+}
+
 function LiveStrip({ round, live }: { round: Round; live: Live }) {
   const navigate = useNavigate()
   return (

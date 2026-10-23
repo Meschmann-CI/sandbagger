@@ -96,6 +96,11 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-2. Booked rounds (2026-10-22) need `supabase/apply-2026-10-22-booked-rounds.sql` pasted
+   before the push: two columns on rounds, `tee_time` and `booked_by`. Rounds without a
+   tee time save as before either way (the columns are only written when set), but a
+   booking can't save until they exist.
+
 -1. Native iPhone push: live on the server side since 2026-10-13. Matt pasted the
    `apns_tokens` SQL (verified: table, RLS, one policy) and set APNS_KEY, APNS_KEY_ID
    (88XKTYV55K), APNS_TEAM_ID (Z689MA24A3) and APNS_BUNDLE_ID (com.eschmann.bandit);
@@ -220,10 +225,23 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   forest (1d "Clubhouse"): edge to edge, square bottom, Home's title in cream on the forest
   above a hairline, the season race's other bars as cream outlines with only yours solid.
   On the web the band starts below the clock strip; the iPhone app runs it up behind a
-  white clock (`StatusBarTint`). Trophies are flat brass (legend, brag) and nickel (every
-  other shelf), no gradients, dimples, sheen or shadow (1b); shapes and glyphs unchanged.
+  white clock (`StatusBarTint`). Trophies are flat (1b): no gradients, dimples, sheen or
+  shadow, shapes and glyphs unchanged, each shelf keeping its own colour (`FLAT` in
+  `Medal.tsx`; an all-nickel first pass read as grey and Matt sent it back).
   The topo contour thumbnails, cream tags, ruled tables and calmer motion from the same
   mockup were NOT taken.
+- Rounds booked ahead, 2026-10-22 (Matt: "a better way to schedule an upcoming round"):
+  the Log sheet with a future date becomes "Book a round" with a tee time and "Book it".
+  A booking is a round with `teeTime` set and no scores (`src/lib/bookings.ts`); the store
+  keeps it in `AppData.bookings`, out of `rounds`, so stats, streaks, trophies, "you owe a
+  score" and the rating prompt never count it, and it moves across on the first score.
+  Home shows an "Up next" row (and names it in the header line inside a week); Rounds has
+  an Upcoming section; the round page is `BookedRound.tsx` until the first score. Only
+  whoever booked it (`booked_by`, not `created_by`, which every save overwrites) changes
+  who's in, the day, time or tees, or cancels it: Matt's rule, since a tee time may only
+  have two spots. On the day it opens into the live card; after the day it asks "Did it
+  happen?" (add scores, or delete). Scenes take their light from the tee time. Reminders
+  were left out on purpose ("skip the reminder for now").
 - The Saddam is minimal everywhere except Standings: one small badge beside the holder on Home.
 - Do not add more forest/green surfaces; reach for scenes, sky, sand, cream. Recent-round tiles
   stay small (124px).

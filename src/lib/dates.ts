@@ -38,6 +38,10 @@ export const shortDay = (iso: string) => `${MONTHS_SHORT[+iso.slice(5, 7) - 1]} 
 export const weekdayShort = (iso: string) =>
   ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10))).getUTCDay()]
 
+/** "Saturday" for "2026-11-01". */
+export const weekdayName = (iso: string) =>
+  ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10))).getUTCDay()]
+
 /** "Nov 4 – 7", or "Oct 30 – Nov 2" across a month. */
 export function tripDateRange(start?: string, end?: string): string | undefined {
   if (!start) return undefined

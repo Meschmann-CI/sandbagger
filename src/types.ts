@@ -214,6 +214,14 @@ export interface Round {
   ghosts?: Ghost[]
   /** Pictures from the day. Cloud: URLs into the round-photos bucket. Local: data URLs. */
   photos?: RoundPhoto[]
+  /**
+   * Booked ahead: the tee time, "8:10 AM". A round with a tee time and no
+   * scores is a booking (src/lib/bookings.ts) and sits in
+   * `AppData.bookings` until its first score.
+   */
+  teeTime?: string
+  /** Who booked it, and so who says who's in. Not `created_by`, which every save overwrites. */
+  bookedById?: string
 }
 
 export interface RoundPhoto {
@@ -383,6 +391,8 @@ export interface AppData {
   courseRatings: CourseRating[]
   courseRankings: CourseRanking[]
   rounds: Round[]
+  /** Rounds booked ahead, kept out of `rounds` so nothing counts them as played. */
+  bookings?: Round[]
   trips: Trip[]
   bets: Bet[]
   expenses: Expense[]

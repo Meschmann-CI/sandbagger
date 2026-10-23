@@ -3,7 +3,9 @@ import { useNavigate } from '../lib/nav'
 import { useLogSheet } from '../components/logSheet'
 import { useStore } from '../data/store'
 import { byDate, roundStandings, shortDate } from '../lib/stats'
-import { fmt1, isSoloRound, pending } from '../types'
+import { bookedRounds } from '../lib/bookings'
+import { shortDay, todayISO, weekdayShort } from '../lib/dates'
+import { fmt1, isSoloRound, pending, type Round } from '../types'
 import { chip, AvatarStack, Card, EmptyState, Pill, PrimaryButton, RowBadge } from '../components/ui'
 import { Icon } from '../components/icons'
 import RoundScene from '../components/RoundScene'
@@ -26,11 +28,12 @@ export default function Rounds() {
   const [filter, setFilter] = useState<Filter>('all')
 
   const all = byDate(data.rounds).reverse()
-  const rounds = all.filter((r) =>
-    filter === 'mine' ? r.players.some((p) => p.playerId === data.currentUserId) : filter === 'group' ? !isSoloRound(r) : true,
-  )
-
-
+  const shown = (r: Round) =>
+    filter === 'mine' ? r.players.some((p) => p.playerId === data.currentUserId) : filter === 'group' ? !isSoloRound(r) : true
+  const rounds = all.filter(shown)
+  // Booked ahead, soonest first, above the played rounds.
+  const booked = bookedRounds(data).filter(shown)
+  const today = todayISO()
 
   const filters: { key: Filter; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -67,7 +70,39 @@ export default function Rounds() {
         <RoundsCoursesSwitch />
       </div>
 
-      {rounds.length === 0 && (
+      {booked.length > 0 && (
+        <>
+          <p className="mb-2 mt-3 px-1 text-footnote font-bold text-ink-dim">Upcoming</p>
+          <Card className="overflow-hidden">
+            <div className="divide-y divide-line">
+              {booked.map((r) => {
+                const gone = r.date < today
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => navigate(`/rounds/${r.id}`)}
+                    className="flex w-full items-center gap-3.5 p-3.5 text-left active:bg-paper"
+                  >
+                    <div className="h-[60px] w-[60px] shrink-0 overflow-hidden rounded-xl bg-paper">
+                      {squareLogo(r.courseName) ? <CourseTile name={r.courseName} className="h-full w-full rounded-xl" /> : <RoundScene round={r} />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-body font-bold text-ink">{r.courseName}</p>
+                      <p className="mt-1 truncate text-footnote tabular-nums text-ink-dim">
+                        {weekdayShort(r.date)} {shortDay(r.date)} · {r.teeTime} · {r.players.length} going
+                      </p>
+                    </div>
+                    <Pill tone={gone ? 'gold' : 'sky'}>{gone ? 'Did it happen?' : 'Booked'}</Pill>
+                  </button>
+                )
+              })}
+            </div>
+          </Card>
+        </>
+      )}
+
+      {rounds.length === 0 && booked.length === 0 && (
         <EmptyState
           title={filter === 'mine' ? 'Nothing logged yet' : 'No rounds here'}
           sub="Solo grinds count too."

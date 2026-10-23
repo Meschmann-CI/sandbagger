@@ -303,6 +303,12 @@ alter table rounds add column if not exists ghosts jsonb;
 -- files live in the round-photos storage bucket (below); the round only
 -- carries URLs, so loading rounds stays light.
 alter table rounds add column if not exists photos jsonb;
+-- Rounds booked ahead (2026-10-22): the tee time as written, "8:10 AM",
+-- and who booked it. A round with a tee time and no scores is a booking.
+-- booked_by, not created_by, says who decides who's in: every save of a
+-- round overwrites created_by with whoever saved it.
+alter table rounds add column if not exists tee_time text;
+alter table rounds add column if not exists booked_by uuid references players(id) on delete set null;
 
 -- How many scorecard scans each account has run today, so the scan-card
 -- function can stop at a sane number. Written only by the function
