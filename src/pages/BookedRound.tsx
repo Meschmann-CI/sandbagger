@@ -17,6 +17,7 @@ import { useRoundWeather } from '../lib/weather'
 import { useConfirm } from '../components/Confirm'
 import { Avatar, Card, PrimaryButton, SECONDARY_BTN, SectionLabel } from '../components/ui'
 import { Icon } from '../components/icons'
+import { BookedSettleUp, GreenFeeSection } from '../components/GreenFees'
 
 // A round booked ahead (Matt, 2026-10-22): who's in, the tee time and tees,
 // and bets set up early. Only whoever booked it changes who's in, the day
@@ -150,6 +151,9 @@ export default function BookedRound({ round }: { round: Round }) {
           {booker.name.split(' ')[0]} booked it, so {booker.name.split(' ')[0]} says who's in.
         </p>
       )}
+
+      <GreenFeeSection round={round} />
+      <BookedSettleUp round={round} />
 
       <SectionLabel
         action={

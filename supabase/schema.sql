@@ -309,6 +309,9 @@ alter table rounds add column if not exists photos jsonb;
 -- round overwrites created_by with whoever saved it.
 alter table rounds add column if not exists tee_time text;
 alter table rounds add column if not exists booked_by uuid references players(id) on delete set null;
+-- Green fees one golfer covered, {payerId, amount} a head (2026-10-22).
+-- Everyone else on the round owes them; null means paid at the course.
+alter table rounds add column if not exists green_fee jsonb;
 
 -- How many scorecard scans each account has run today, so the scan-card
 -- function can stop at a sane number. Written only by the function

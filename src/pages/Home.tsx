@@ -434,9 +434,14 @@ function SeasonRace({
         <div className="mt-5 flex items-end gap-2" role="img" aria-label={`Group wins: ${board.map((r) => `${r.player.name} ${r.wins}`).join(', ')}`}>
           {board.slice(0, 6).map((r) => {
             const mine = r.player.id === meId
+            // Every bar filled, cream for first and lighter down the order,
+            // ties sharing a shade; yours outlined in the flag's yellow
+            // (Matt, 2026-10-22).
+            const place = new Set(board.map((x) => x.wins).filter((w) => w > r.wins)).size
+            const shade = [1, 0.68, 0.42, 0.24, 0.16, 0.12][Math.min(place, 5)]
             return (
               <div key={r.player.id} className="flex min-w-0 flex-1 flex-col items-center gap-2">
-                <span className="relative">
+                <span className={`relative rounded-full ${mine ? 'ring-[1.5px] ring-cream ring-offset-2 ring-offset-forest' : ''}`}>
                   <Avatar player={r.player} size={34} />
                   {r.player.id === holderId && (
                     <span className="absolute -top-2 -right-4 rounded-md ring-2 ring-forest">
@@ -446,13 +451,17 @@ function SeasonRace({
                 </span>
                 <span
                   className={`flex w-full items-start justify-center rounded-t-[3px] pt-1.5 text-headline font-extrabold tabular-nums ${
-                    mine ? 'bg-cream text-forest' : 'border border-b-0 border-on-forest/45 text-on-forest'
+                    shade >= 0.4 ? 'text-forest' : 'text-on-forest'
                   }`}
-                  style={{ height: 34 + Math.round((r.wins / top) * 62) }}
+                  style={{
+                    height: 34 + Math.round((r.wins / top) * 62),
+                    backgroundColor: `rgb(239 227 200 / ${shade})`,
+                    boxShadow: mine ? `inset 0 0 0 2.5px ${LIVE_YELLOW}` : undefined,
+                  }}
                 >
                   {r.wins}
                 </span>
-                <span className={`max-w-full truncate text-footnote font-bold ${mine ? 'text-on-forest' : 'text-on-forest/70'}`}>
+                <span className={`max-w-full truncate text-footnote ${mine ? 'font-extrabold text-on-forest' : 'font-bold text-on-forest/70'}`}>
                   {mine ? 'You' : first(r.player.name)}
                 </span>
               </div>

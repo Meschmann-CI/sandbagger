@@ -96,6 +96,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-4. Green fees (2026-10-22) need `supabase/apply-2026-10-22-green-fee.sql` pasted (one jsonb
+   column on rounds) before the apps that know about it are pushed: every round save writes it.
 -3. Score merging (2026-10-22) wants `supabase/apply-2026-10-22-merge-scores.sql` pasted
    (the `merge_round_scores` function). Until then saves fall back to writing only the
    golfers a save touched, which is already safer than before but not hole by hole.
@@ -253,6 +255,22 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   copy, so a phone back from no signal blanked holes the others had entered, and could
   drop photos added meanwhile. New rounds still go out whole (`round.upsert`). Putts have
   three states: never said (null), said no (empty), tracking (18 entries).
+- Trophy moments (2026-10-22, Matt picked option A with one push per golfer): the save that
+  puts a round's last score in works out each golfer's new trophies (`trophiesFrom`: counts
+  with the round versus without it; `src/lib/trophyMoments.ts`). This phone's golfer gets the
+  "Trophy unlocked" sheet (`TrophyMoment.tsx`, firsts first, swipe through, confetti); the
+  group gets ONE push per golfer: "Barry earned Broke 90 and 3 other trophies at Split Rock".
+  Not one per trophy. The Saddam keeps its own handover.
+- Standings bars (2026-10-22, Matt picked "shaded, you outlined" in flag yellow): every bar
+  filled cream, lighter down the order (1, .68, .42, .24...; ties share a shade), yours with a
+  2.5pt inset border in the pin flag's yellow (#F6C744, `LIVE_YELLOW`), a cream ring on your
+  face and a heavier name. This supersedes the "only your bar solid" look from the 1d header.
+- Green fees (2026-10-22, flow as mocked): `round.greenFee = {payerId, amount}` a head. On a
+  booked round only the booker sets it; on a played round it's a one-line "Covered everyone's
+  green fees?" link until someone does. Everyone else on the round owes the payer, inside
+  `roundBetSettlements`, so fees and bets net to one Venmo per person; `myOutstanding` counts
+  booked rounds too, so Home's money line shows fees before the round. Settle up appears on a
+  booked round as soon as a fee is set.
 - Trips push like rounds (2026-10-22): everyone on a trip hears when it's booked (from the
   start or after the vote) and anyone added later (`src/lib/tripNews.ts`, called from the
   store). The iPhone Log sheet matches typed names against every course the group has and

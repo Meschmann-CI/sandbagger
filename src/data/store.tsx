@@ -19,6 +19,7 @@ import { todayISO } from '../lib/dates'
 import { findRound, sortBookings } from '../lib/bookings'
 import { roundPatch } from '../lib/scorePatch'
 import { tripNews } from '../lib/tripNews'
+import { roundIsFinal, shortCourse, trophiesFrom, trophyPushTitle, trophyWhy, type EarnedTrophy } from '../lib/trophyMoments'
 import { notifyGroup } from '../lib/push'
 import { shrinkPhoto, uploadTripPhoto } from '../lib/photos'
 import { cleanCourseName, courseSlug, noteRename, renameCourseIn } from '../lib/courses'
@@ -33,6 +34,14 @@ import type { Backend, Change } from './backend'
 // Assigned in order as golfers join, so avatars stay distinguishable.
 export const AVATAR_COLORS = ['#1c7c4a', '#2f6fa8', '#b8702f', '#7a5195', '#0f7c8a', '#a8443a', '#5c7a1e', '#8a5b2b']
 
+/** Trophies one round earned this phone's golfer. */
+export interface TrophyMoment {
+  id: string
+  roundId: string
+  course: string
+  trophies: EarnedTrophy[]
+}
+
 interface StoreApi {
   data: AppData
   cloud: boolean
@@ -43,6 +52,9 @@ interface StoreApi {
   refresh: () => Promise<void>
   addRound: (round: Omit<Round, 'id' | 'groupId'>) => Round
   updateRound: (round: Round) => void
+  /** Trophies this phone's golfer just earned, for the moment over the screen. */
+  trophyMoment: TrophyMoment | null
+  dismissTrophyMoment: () => void
   deleteRound: (roundId: string) => void
   /** Creates the course record on first use, keyed on the normalised name. */
   saveCourse: (
@@ -166,6 +178,31 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     }
   }, [backend])
 
+  // The save that put a round's last score in: each golfer's new trophies
+  // go to the group as one push (Matt, 2026-10-22), and this phone's
+  // golfer sees theirs pop up.
+  const [trophyMoment, setTrophyMoment] = useState<TrophyMoment | null>(null)
+  const announceTrophies = (before: Round | undefined, after: Round) => {
+    if (!roundIsFinal(after) || (before && roundIsFinal(before))) return
+    const d = dataRef.current
+    const today = todayISO()
+    for (const rp of after.players) {
+      const p = d.players.find((x) => x.id === rp.playerId)
+      if (!p || p.guest) continue
+      const won = trophiesFrom(d, after.id, p.id, today)
+      if (!won.length) continue
+      const course = shortCourse(after.courseName)
+      if (p.id === d.currentUserId) setTrophyMoment({ id: makeId(), roundId: after.id, course, trophies: won })
+      const others = won.slice(1).map((t) => t.badge.label)
+      notifyGroup({
+        toPlayerIds: d.group.memberIds.filter((id) => id !== d.currentUserId),
+        title: trophyPushTitle(p.name.split(' ')[0], course, won),
+        body: others.length >= 2 ? `${others.join(', ')}.` : trophyWhy(won[0]),
+        url: `/rounds/${after.id}`,
+      })
+    }
+  }
+
   // Everyone on a trip hears when it's booked, and anyone added later.
   const announceTrip = (before: Trip | undefined, after: Trip) => {
     const d = dataRef.current
@@ -175,6 +212,8 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
 
   const api: StoreApi = {
     data,
+    trophyMoment,
+    dismissTrophyMoment: () => setTrophyMoment(null),
     cloud: backend.cloud,
     // A write the server actually refused matters more than one that
     // simply hasn't gone out yet.
@@ -191,15 +230,18 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     addRound(round) {
       const full: Round = { ...round, id: makeId(), groupId: data.group.id }
       commit({ kind: 'round.upsert', round: full }, (d) => ({ ...d, rounds: [...d.rounds, full] }))
+      announceTrophies(undefined, full)
       return full
     },
     updateRound(round) {
-      const patch = roundPatch(findRound(dataRef.current, round.id), round)
+      const before = findRound(dataRef.current, round.id)
+      const patch = roundPatch(before, round)
       commit(patch ? { kind: 'round.patch', patch } : { kind: 'round.upsert', round }, (d) => ({
         ...d,
         rounds: d.rounds.map((r) => (r.id === round.id ? round : r)),
         bookings: d.bookings?.map((r) => (r.id === round.id ? round : r)),
       }))
+      announceTrophies(before, round)
     },
     deleteRound(roundId) {
       commit({ kind: 'round.delete', id: roundId }, (d) => ({

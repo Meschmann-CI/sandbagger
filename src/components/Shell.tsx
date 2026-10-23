@@ -15,6 +15,7 @@ import { LogSheetContext, useLogSheet } from './logSheet'
 import { streakStates } from '../lib/delight'
 import { StreakContext } from './streakContext'
 import SaddamHandover from './SaddamHandover'
+import TrophyMoment from './TrophyMoment'
 import PullToRefresh from './PullToRefresh'
 import ErrorBoundary from './ErrorBoundary'
 
@@ -164,6 +165,7 @@ export default function Shell() {
       <div className="mx-auto max-w-md min-h-dvh flex flex-col relative">
         <PullToRefresh />
         <SaddamHandover />
+        <TrophyMoment />
         {/* Queued writes are fine, not broken — the app is doing what it
             should on a course with no signal. Say so calmly. */}
         {newVersion && (

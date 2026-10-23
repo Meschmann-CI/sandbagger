@@ -7,15 +7,25 @@ import { settleUp, tripBalances, type Settlement } from './money'
 // round or the trip it came from.
 
 /**
- * The bets on one round, netted down and reduced by anything already
- * paid back. Positive net = owed money, matching a trip's balances.
+ * The bets on one round, and any green fees one golfer covered, netted
+ * down and reduced by anything already paid back. Positive net = owed
+ * money, matching a trip's balances.
  */
 export function roundBetSettlements(data: AppData, round: Round): Settlement[] {
   const bets = data.bets.filter((b) => b.roundId === round.id)
-  if (bets.length === 0) return []
+  const fee = round.greenFee && round.greenFee.amount > 0 ? round.greenFee : undefined
+  if (bets.length === 0 && !fee) return []
   const net = new Map<string, number>()
   const shift = (id: string, by: number) => net.set(id, (net.get(id) ?? 0) + by)
   for (const bet of bets) for (const result of bet.results) shift(result.playerId, result.amount)
+  // Green fees one golfer paid for everyone: each of the others owes them a head.
+  if (fee) {
+    for (const rp of round.players) {
+      if (rp.playerId === fee.payerId) continue
+      shift(rp.playerId, -fee.amount)
+      shift(fee.payerId, fee.amount)
+    }
+  }
   for (const p of data.payments) {
     if (p.roundId !== round.id) continue
     shift(p.fromId, p.amount)
@@ -46,7 +56,8 @@ export interface OutstandingDebt extends Settlement {
  */
 export function myOutstanding(data: AppData, playerId: string): OutstandingDebt[] {
   const out: OutstandingDebt[] = []
-  for (const round of data.rounds) {
+  // Booked rounds too: green fees are owed before the round is played.
+  for (const round of [...data.rounds, ...(data.bookings ?? [])]) {
     for (const s of roundBetSettlements(data, round)) {
       if (s.fromId !== playerId && s.toId !== playerId) continue
       out.push({ ...s, label: round.courseName, href: `/rounds/${round.id}` })

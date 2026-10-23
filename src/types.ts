@@ -222,6 +222,14 @@ export interface Round {
   teeTime?: string
   /** Who booked it, and so who says who's in. Not `created_by`, which every save overwrites. */
   bookedById?: string
+  /** Green fees one golfer paid for the tee time, a head. Unset: paid at the course. */
+  greenFee?: GreenFee
+}
+
+/** Everyone else on the round owes the payer `amount` (Matt, 2026-10-22). */
+export interface GreenFee {
+  payerId: string
+  amount: number
 }
 
 export interface RoundPhoto {

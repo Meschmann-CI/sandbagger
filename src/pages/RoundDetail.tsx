@@ -32,6 +32,7 @@ import { Confetti } from '../components/Delight'
 import { drawShareCard, shareCard } from '../lib/shareCard'
 import { play } from '../lib/sound'
 import { findRound, isBooked } from '../lib/bookings'
+import { GreenFeeSection } from '../components/GreenFees'
 import BookedRound from './BookedRound'
 
 const shortDateLabel = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -571,6 +572,8 @@ function PlayedRound() {
         <RoundPhotos round={round} openerRef={openPhotos} />
       </div>
 
+      <GreenFeeSection round={round} />
+
       {(bets.length > 0 || addingBet) && (
         <SectionLabel
           action={
@@ -606,9 +609,15 @@ function PlayedRound() {
       {/* What the bets add up to between people, and how to make it stop
           being true. Money won on a round is a permanent record; this is
           about whether it's actually changed hands. */}
-      {bets.length > 0 && (
-        <Card className={`mb-3 p-4 ${betsOwed.length === 0 ? 'bg-green-soft/50 border-green/25' : 'bg-gold-soft/40 border-gold/30'}`}>
+      {(bets.length > 0 || round.greenFee || roundPaybacks.length > 0) && (
+        <Card className={`mb-3 p-4 ${!bets.length ? 'mt-3 ' : ''}${betsOwed.length === 0 ? 'bg-green-soft/50 border-green/25' : 'bg-gold-soft/40 border-gold/30'}`}>
           <p className="text-footnote font-bold text-ink mb-2.5">Settle up</p>
+          {round.greenFee && round.greenFee.amount > 0 && (
+            <p className="-mt-1.5 mb-2.5 text-caption text-ink-faint">
+              Includes green fees: {money(round.greenFee.amount)} a head to{' '}
+              {round.greenFee.payerId === data.currentUserId ? 'you' : data.players.find((p) => p.id === round.greenFee!.payerId)?.name.split(' ')[0]}.
+            </p>
+          )}
           <SettleUp
             url={`/rounds/${round.id}`}
             owed={betsOwed}

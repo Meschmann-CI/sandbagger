@@ -31,6 +31,8 @@ const { courseForRound, teeFor } = await import('../src/lib/courses.ts')
 const { ghostOptions } = await import('../src/lib/ghost.ts')
 const { badgesFor } = await import('../src/lib/badges.ts')
 const { roundPatch, applyScorePatch, CLEARED } = await import('../src/lib/scorePatch.ts')
+const { roundBetSettlements } = await import('../src/lib/settlements.ts')
+const { trophiesFrom, trophyPushTitle, trophyWhy } = await import('../src/lib/trophyMoments.ts')
 const { isBooked, sortBookings, findRound, bookedRounds, teeTimeLabel, teeTimeInput } = await import('../src/lib/bookings.ts')
 
 let failures = 0
@@ -273,6 +275,33 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('merge: putts said no', applyScorePatch(base.players[0], { playerId: 'pat', handicapSnapshot: 12, puttsMode: 'off' }).putts, [])
   const removed = roundPatch(base, { ...base, players: [base.players[0]], notes: 'rain' })!
   check('roundPatch: removed golfers and round fields', [removed.removed, removed.roundChanged, removed.scores], [['matt'], true, []])
+}
+
+// 11. Green fees one golfer covered: the others owe them a head.
+{
+  const r = round('fees', '2026-10-24', [rp('matt', fours()), rp('pat', fours()), rp('barry', fours())], { greenFee: { payerId: 'matt', amount: 85 } })
+  const owed = (d: AppData) => roundBetSettlements(d, r).map((s) => [s.fromId, s.toId, s.amount]).sort()
+  check('green fees: each of the others owes the payer', owed(data({ rounds: [r] })), [['barry', 'matt', 85], ['pat', 'matt', 85]])
+  const paid = data({ rounds: [r], payments: [{ id: 'pay', roundId: 'fees', fromId: 'pat', toId: 'matt', amount: 85, date: '2026-10-24' }] })
+  check('green fees: a payback clears it', owed(paid), [['barry', 'matt', 85]])
+  const bet: Bet = { id: 'b', roundId: 'fees', type: 'custom', name: 'Skins', stake: 5, results: [{ playerId: 'barry', amount: -12 }, { playerId: 'matt', amount: 12 }] }
+  check('green fees: net with the bets, one Venmo each', owed(data({ rounds: [r], bets: [bet] })), [['barry', 'matt', 97], ['pat', 'matt', 85]])
+}
+
+// 12. Trophies one round earned, and the one push per golfer.
+{
+  const old = round('t-old', '2026-05-01', [{ playerId: 'kim', handicapSnapshot: 21, gross: 97 }])
+  const fresh = round('t-new', '2026-10-24', [{ playerId: 'kim', handicapSnapshot: 21, gross: 89 }])
+  const won = trophiesFrom(data({ rounds: [old, fresh] }), 't-new', 'kim', '2026-10-24')
+  check('trophiesFrom: Broke 90 is a first', won.find((t) => t.badge.key === 'break90')?.first, true)
+  check('trophiesFrom: Broke 100 is a repeat, if it shows', won.find((t) => t.badge.key === 'break100')?.first ?? false, false)
+  check('trophiesFrom: firsts lead', won.findIndex((t) => !t.first) === -1 || won.slice(won.findIndex((t) => !t.first)).every((t) => !t.first), true)
+  const b = won.find((t) => t.badge.key === 'break90')!
+  const s = { badge: { ...b.badge, key: 'snowman', label: 'Snowman', how: 'Make an 8 on any hole.', count: 3 }, first: false }
+  check('push: one', trophyPushTitle('Barry', 'Split Rock', [b]), 'Barry earned Broke 90 at Split Rock')
+  check('push: two', trophyPushTitle('Barry', 'Split Rock', [b, s]), 'Barry earned Broke 90 and Snowman at Split Rock')
+  check('push: four', trophyPushTitle('Barry', 'Split Rock', [b, s, s, s]), 'Barry earned Broke 90 and 3 other trophies at Split Rock')
+  check('why: a repeat', trophyWhy(s), "Make an 8 on any hole. That's 3.")
 }
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)
