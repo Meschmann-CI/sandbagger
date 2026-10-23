@@ -96,6 +96,9 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-3. Score merging (2026-10-22) wants `supabase/apply-2026-10-22-merge-scores.sql` pasted
+   (the `merge_round_scores` function). Until then saves fall back to writing only the
+   golfers a save touched, which is already safer than before but not hole by hole.
 -2. Booked rounds (2026-10-22) need `supabase/apply-2026-10-22-booked-rounds.sql` pasted
    before the push: two columns on rounds, `tee_time` and `booked_by`. Rounds without a
    tee time save as before either way (the columns are only written when set), but a
@@ -242,6 +245,18 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   have two spots. On the day it opens into the live card; after the day it asks "Did it
   happen?" (add scores, or delete). Scenes take their light from the tee time. Reminders
   were left out on purpose ("skip the reminder for now").
+- Saving a round that already exists sends only what changed (2026-10-22, after Matt asked
+  whether three phones scoring one round fill each other in). `round.patch` carries the
+  changed holes, putts, totals and golfers (`src/lib/scorePatch.ts`); `merge_round_scores`
+  lays them onto the stored card hole by hole, and a full card always sets the total.
+  Before, every save rewrote every golfer's whole card and the round row from that phone's
+  copy, so a phone back from no signal blanked holes the others had entered, and could
+  drop photos added meanwhile. New rounds still go out whole (`round.upsert`). Putts have
+  three states: never said (null), said no (empty), tracking (18 entries).
+- Trips push like rounds (2026-10-22): everyone on a trip hears when it's booked (from the
+  start or after the vote) and anyone added later (`src/lib/tripNews.ts`, called from the
+  store). The iPhone Log sheet matches typed names against every course the group has and
+  offers the course directory under them (Matt typed "Bally" and got a new course).
 - The Saddam is minimal everywhere except Standings: one small badge beside the holder on Home.
 - Do not add more forest/green surfaces; reach for scenes, sky, sand, cream. Recent-round tiles
   stay small (124px).

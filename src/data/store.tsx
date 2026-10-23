@@ -16,7 +16,10 @@ import {
   type Trip,
 } from '../types'
 import { todayISO } from '../lib/dates'
-import { sortBookings } from '../lib/bookings'
+import { findRound, sortBookings } from '../lib/bookings'
+import { roundPatch } from '../lib/scorePatch'
+import { tripNews } from '../lib/tripNews'
+import { notifyGroup } from '../lib/push'
 import { shrinkPhoto, uploadTripPhoto } from '../lib/photos'
 import { cleanCourseName, courseSlug, noteRename, renameCourseIn } from '../lib/courses'
 import { syncStoredBrands } from '../lib/courseBrands'
@@ -163,6 +166,13 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     }
   }, [backend])
 
+  // Everyone on a trip hears when it's booked, and anyone added later.
+  const announceTrip = (before: Trip | undefined, after: Trip) => {
+    const d = dataRef.current
+    const news = tripNews(before, after, d.players.find((p) => p.id === d.currentUserId))
+    if (news) notifyGroup(news)
+  }
+
   const api: StoreApi = {
     data,
     cloud: backend.cloud,
@@ -184,7 +194,8 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
       return full
     },
     updateRound(round) {
-      commit({ kind: 'round.upsert', round }, (d) => ({
+      const patch = roundPatch(findRound(dataRef.current, round.id), round)
+      commit(patch ? { kind: 'round.patch', patch } : { kind: 'round.upsert', round }, (d) => ({
         ...d,
         rounds: d.rounds.map((r) => (r.id === round.id ? round : r)),
         bookings: d.bookings?.map((r) => (r.id === round.id ? round : r)),
@@ -309,9 +320,11 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     addTrip(trip) {
       const full: Trip = { ...trip, id: makeId(), groupId: data.group.id }
       commit({ kind: 'trip.upsert', trip: full }, (d) => ({ ...d, trips: [...d.trips, full] }))
+      announceTrip(undefined, full)
       return full
     },
     updateTrip(trip) {
+      announceTrip(dataRef.current.trips.find((t) => t.id === trip.id), trip)
       commit({ kind: 'trip.upsert', trip }, (d) => ({ ...d, trips: d.trips.map((t) => (t.id === trip.id ? trip : t)) }))
     },
     // Mirrors toggle_trip_vote in schema.sql so the screen updates

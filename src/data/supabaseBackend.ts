@@ -386,6 +386,42 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           )
           return
         }
+        case 'round.patch': {
+          const { round: r, roundChanged, scores, removed } = change.patch
+          if (roundChanged) guard((await client.from('rounds').upsert({ ...roundRow(r), created_by: playerId })).error, 'Saving round')
+          if (scores.length) {
+            const merged = await client.rpc('merge_round_scores', { p_round: r.id, p_scores: scores })
+            if (merged.error) {
+              // Before the function exists (supabase/apply-2026-10-22-merge-scores.sql),
+              // fall back to writing just the golfers this save touched.
+              if (merged.error.code !== 'PGRST202') guard(merged.error, 'Saving scores')
+              const touched = r.players.filter((rp) => scores.some((s) => s.playerId === rp.playerId))
+              guard(
+                (
+                  await client.from('round_players').upsert(
+                    touched.map((rp) => ({
+                      round_id: r.id,
+                      player_id: rp.playerId,
+                      gross: rp.gross,
+                      handicap_snapshot: rp.handicapSnapshot,
+                      holes: rp.holes ?? null,
+                      putts: rp.putts ?? null,
+                    })),
+                    { onConflict: 'round_id,player_id' },
+                  )
+                ).error,
+                'Saving scores',
+              )
+            }
+          }
+          if (removed.length) {
+            guard(
+              (await client.from('round_players').delete().eq('round_id', r.id).in('player_id', removed)).error,
+              'Removing golfers from round',
+            )
+          }
+          return
+        }
         case 'round.delete': {
           // The round's photos live in the bucket under its folder;
           // deleting the row alone would strand them there forever.

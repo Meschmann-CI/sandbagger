@@ -1,3 +1,4 @@
+import type { RoundPatch } from '../lib/scorePatch'
 import type { AppData, Bet, Course, CourseRanking, CourseRating, Expense, Group, Payment, Player, Round, Trip } from '../types'
 
 // Every mutation the app can make. The store applies the change to its
@@ -5,6 +6,10 @@ import type { AppData, Bet, Course, CourseRanking, CourseRating, Expense, Group,
 // so localStorage and Supabase share one code path in the UI.
 export type Change =
   | { kind: 'round.upsert'; round: Round }
+  // A save of a round that already exists: only what changed, merged hole
+  // by hole on the server, so phones sharing a card don't overwrite each
+  // other (src/lib/scorePatch.ts).
+  | { kind: 'round.patch'; patch: RoundPatch }
   | { kind: 'round.delete'; id: string }
   | { kind: 'course.upsert'; course: Course }
   | { kind: 'course.delete'; id: string }

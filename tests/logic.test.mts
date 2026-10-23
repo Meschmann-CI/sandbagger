@@ -30,6 +30,7 @@ const { calcMatchPlay, calcNassau, calcSkins } = await import('../src/lib/bets.t
 const { courseForRound, teeFor } = await import('../src/lib/courses.ts')
 const { ghostOptions } = await import('../src/lib/ghost.ts')
 const { badgesFor } = await import('../src/lib/badges.ts')
+const { roundPatch, applyScorePatch, CLEARED } = await import('../src/lib/scorePatch.ts')
 const { isBooked, sortBookings, findRound, bookedRounds, teeTimeLabel, teeTimeInput } = await import('../src/lib/bookings.ts')
 
 let failures = 0
@@ -235,6 +236,43 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('bookedRounds: soonest first, by tee time on the day', order.map((r) => r.id), ['a', 'b', 'c'])
   check('teeTimeLabel', [teeTimeLabel('08:10'), teeTimeLabel('13:05'), teeTimeLabel('00:30'), teeTimeLabel('12:00')], ['8:10 AM', '1:05 PM', '12:30 AM', '12:00 PM'])
   check('teeTimeInput', [teeTimeInput('8:10 AM'), teeTimeInput('1:05 PM'), teeTimeInput(undefined)], ['08:10', '13:05', '08:00'])
+}
+
+// 10. Two phones scoring the same card merge instead of overwriting.
+{
+  const blank = (): (number | null)[] => Array(18).fill(null)
+  const at = (card: (number | null)[], i: number, v: number | null) => card.map((h, k) => (k === i ? v : h))
+  const base = round('shared', '2026-10-24', [
+    { playerId: 'pat', handicapSnapshot: 12, gross: null, holes: undefined },
+    { playerId: 'matt', handicapSnapshot: 16.9, gross: null, holes: undefined },
+  ])
+  // Matt's phone (signal) scores Pat on holes 1 and 2; Pat's phone, with no
+  // signal and the old copy, scores himself on hole 3 and Matt on hole 1.
+  const mattSaves = { ...base, players: [{ ...base.players[0], holes: at(at(blank(), 0, 4), 1, 5) }, base.players[1]] }
+  const patSaves = { ...base, players: [{ ...base.players[0], holes: at(blank(), 2, 3) }, { ...base.players[1], holes: at(blank(), 0, 6) }] }
+  const a = roundPatch(base, mattSaves)!
+  const b = roundPatch(base, patSaves)!
+  check('roundPatch: only what changed', [a.roundChanged, a.scores.map((s) => [s.playerId, s.holes])], [false, [['pat', { '0': 4, '1': 5 }]]])
+  let server = base.players
+  for (const patch of [a, b]) {
+    server = server.map((rp) => {
+      const s = patch.scores.find((x) => x.playerId === rp.playerId)
+      return s ? applyScorePatch(rp, s) : rp
+    })
+  }
+  check('merge: Pat keeps holes from both phones', server[0].holes?.slice(0, 3), [4, 5, 3])
+  check('merge: Matt keeps his hole 1', server[1].holes?.[0], 6)
+  // Clearing a hole and finishing a card.
+  const cleared = applyScorePatch(server[0], { playerId: 'pat', handicapSnapshot: 12, holes: { '1': CLEARED } })
+  check('merge: a cleared hole clears', cleared.holes?.slice(0, 3), [4, null, 3])
+  const full = applyScorePatch(undefined, { playerId: 'pat', handicapSnapshot: 12, holes: Object.fromEntries(Array.from({ length: 18 }, (_, i) => [String(i), 4])) })
+  check('merge: a full card sets the total', full.gross, 72)
+  const putting = roundPatch(base, { ...base, players: [{ ...base.players[0], putts: at(blank(), 0, 2) }, base.players[1]] })!
+  check('roundPatch: putts switched on', [putting.scores[0].puttsMode, putting.scores[0].putts], ['on', { '0': 2 }])
+  check('merge: putts on', applyScorePatch(base.players[0], putting.scores[0]).putts?.slice(0, 2), [2, null])
+  check('merge: putts said no', applyScorePatch(base.players[0], { playerId: 'pat', handicapSnapshot: 12, puttsMode: 'off' }).putts, [])
+  const removed = roundPatch(base, { ...base, players: [base.players[0]], notes: 'rain' })!
+  check('roundPatch: removed golfers and round fields', [removed.removed, removed.roundChanged, removed.scores], [['matt'], true, []])
 }
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)
