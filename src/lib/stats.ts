@@ -362,12 +362,15 @@ export const HANDICAP_NUDGE_AFTER = 5
  * checking the real one. Read off the per-round snapshots, so it needs no
  * extra field and no migration.
  */
-export function roundsAtCurrentHandicap(data: AppData, playerId: string): number {
+// `checkedOn` is the day the golfer last said the number is right
+// (Matt, 2026-10-22): rounds up to then don't count again.
+export function roundsAtCurrentHandicap(data: AppData, playerId: string, checkedOn?: string): number {
   const player = data.players.find((p) => p.id === playerId)
   if (!player) return 0
   const current = round1(player.handicap)
   let count = 0
   for (const round of byDate(data.rounds).reverse()) {
+    if (checkedOn && round.date <= checkedOn) break
     const rp = round.players.find((p) => p.playerId === playerId)
     if (!rp) continue
     if (round1(rp.handicapSnapshot) !== current) break

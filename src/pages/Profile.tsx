@@ -27,7 +27,19 @@ import { Icon, IconTile } from '../components/icons'
 
 // Dismissing the nudge is remembered against the index it was about, so
 // saying "still right" quiets it until the number actually changes.
-const nudgeKey = (playerId: string, handicap: number) => `sandbagger-hcp-ok:${playerId}:${handicap.toFixed(1)}`
+// The day this phone's golfer last said their index was right, and the
+// index they said it of (Matt, 2026-10-22). The nudge counts rounds after
+// it, so it comes back after five more rounds at the same number rather
+// than never. Per phone, like the iPhone app's.
+const checkedKey = (playerId: string) => `sandbagger-hcp-checked:${playerId}`
+function readChecked(playerId: string, handicap: number): string | undefined {
+  try {
+    const [day, index] = (localStorage.getItem(checkedKey(playerId)) ?? '').split('|')
+    return day && Number(index).toFixed(1) === handicap.toFixed(1) ? day : undefined
+  } catch {
+    return undefined
+  }
+}
 
 export default function Profile() {
   const { data, cloud, syncError, updatePlayer, resetToSample } = useStore()
@@ -43,13 +55,7 @@ export default function Profile() {
   const [trophy, setTrophy] = useState<string | null>(null)
   const [editingHcp, setEditingHcp] = useState(false)
   const [hcpDraft, setHcpDraft] = useState('')
-  const [nudgeDismissed, setNudgeDismissed] = useState(() => {
-    try {
-      return !!localStorage.getItem(nudgeKey(data.currentUserId, me.handicap))
-    } catch {
-      return false
-    }
-  })
+  const [checkedOn, setCheckedOn] = useState(() => readChecked(data.currentUserId, me.handicap))
 
   const today = todayISO()
   const myReigns = saddamDays(data, today).get(me.id)
@@ -64,16 +70,18 @@ export default function Profile() {
   const seasonStart = history.find((p) => p.date.startsWith(today.slice(0, 4)))
   const indexMove = seasonStart ? round1(me.handicap - seasonStart.index) : null
 
-  const roundsAtIndex = roundsAtCurrentHandicap(data, me.id)
-  const showHandicapNudge = !nudgeDismissed && !editingHcp && roundsAtIndex >= HANDICAP_NUDGE_AFTER
+  const roundsAtIndex = roundsAtCurrentHandicap(data, me.id, readChecked(me.id, me.handicap) ?? checkedOn)
+  const showHandicapNudge = !editingHcp && roundsAtIndex >= HANDICAP_NUDGE_AFTER
 
-  const dismissHandicapNudge = () => {
+  // The index is right as of today: the nudge starts counting again.
+  const confirmHandicap = (index: number) => {
+    const day = todayISO()
     try {
-      localStorage.setItem(nudgeKey(me.id, me.handicap), '1')
+      localStorage.setItem(checkedKey(me.id), `${day}|${index.toFixed(1)}`)
     } catch {
       // private mode; the nudge just comes back next visit
     }
-    setNudgeDismissed(true)
+    setCheckedOn(day)
   }
 
   // The steppers move the draft, not the record — the old version fired a
@@ -84,7 +92,10 @@ export default function Profile() {
   const saveHandicap = () => {
     const value = Number(hcpDraft)
     if (!Number.isFinite(value)) return
-    updatePlayer({ ...me, handicap: round1(Math.min(54, Math.max(0, value))) })
+    const index = round1(Math.min(54, Math.max(0, value)))
+    updatePlayer({ ...me, handicap: index })
+    // Saving it, changed or not, says it's right as of today.
+    confirmHandicap(index)
     setEditingHcp(false)
   }
 
@@ -248,8 +259,8 @@ export default function Profile() {
               >
                 Update it
               </button>
-              <button onClick={dismissHandicapNudge} className="text-footnote font-bold text-ink-faint">
-                Still right
+              <button onClick={() => confirmHandicap(me.handicap)} className="text-footnote font-bold text-green">
+                Still {fmt1(me.handicap)}
               </button>
             </div>
           </div>
