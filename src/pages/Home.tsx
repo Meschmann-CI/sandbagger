@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { courseBrand } from '../lib/courseBrands'
 import { Link } from 'react-router-dom'
 import { useNavigate } from '../lib/nav'
 import { useLogSheet } from '../components/logSheet'
@@ -494,6 +495,8 @@ function RoundTile({ round: r, onOpen }: { round: Round; onOpen: () => void }) {
   const solo = isSoloRound(r)
   const waiting = pending(r)
   const photo = r.photos?.[0]
+  const brand = courseBrand(r.courseName)
+  const [logoFailed, setLogoFailed] = useState(false)
   const line = !top
     ? 'No scores yet'
     : waiting.length > 0
@@ -508,8 +511,20 @@ function RoundTile({ round: r, onOpen }: { round: Round; onOpen: () => void }) {
       className="w-[124px] shrink-0 snap-start text-left transition-transform active:scale-[0.98]"
     >
       <div data-shared={r.id} className="relative h-[70px] overflow-hidden rounded-xl bg-paper">
+        {/* Your photo first, then the course's logo, then its scene. */}
         {photo ? (
           <img src={photo.url} alt="" loading="lazy" className="h-full w-full object-cover" />
+        ) : brand?.logo && !logoFailed ? (
+          <span className="flex h-full w-full items-center justify-center px-3 pb-[26px] pt-2" style={{ backgroundColor: brand.dark ? brand.color : '#fff' }}>
+            <img
+              src={brand.logo}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              onError={() => setLogoFailed(true)}
+              className="max-h-full max-w-full object-contain"
+            />
+          </span>
         ) : (
           <RoundScene round={r} />
         )}
@@ -541,8 +556,13 @@ function TripRow({ trip, today, meId }: { trip: Trip; today: string; meId: strin
   const days = trip.startDate ? daysBetween(today, trip.startDate) : null
   return (
     <RowButton onClick={() => navigate(`/trips/${trip.id}`)} className="flex items-center gap-3.5 px-4 py-3.5">
+      {/* The trip's own photo when someone set one, the painted scene otherwise. */}
       <span className="h-[38px] w-[38px] shrink-0 overflow-hidden rounded-xl">
-        <CourseScene course={trip.location || trip.name} light="golden" className="h-full w-full" />
+        {trip.cover ? (
+          <img src={trip.cover} alt="" loading="lazy" className="h-full w-full object-cover" />
+        ) : (
+          <CourseScene course={trip.location || trip.name} light="golden" className="h-full w-full" />
+        )}
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-body font-bold text-ink truncate">{trip.name}</p>
