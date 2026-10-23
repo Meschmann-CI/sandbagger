@@ -215,6 +215,15 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   `node scripts/make-trophy-art.mjs ../design/sandbagger-trophies .`; `Medal` draws it in
   React with the count and lock dots as HTML overlays. A new trophy needs an entry there
   (it falls back to its shelf shape with its mark until it has one).
+- Bandit refinement, 2026-10-22 (Matt picked pieces from a four-option mockup and said
+  "not the rest of the recommendations"): Home's top and You's player card are full-bleed
+  forest (1d "Clubhouse"): edge to edge, square bottom, Home's title in cream on the forest
+  above a hairline, the season race's other bars as cream outlines with only yours solid.
+  On the web the band starts below the clock strip; the iPhone app runs it up behind a
+  white clock (`StatusBarTint`). Trophies are flat brass (legend, brag) and nickel (every
+  other shelf), no gradients, dimples, sheen or shadow (1b); shapes and glyphs unchanged.
+  The topo contour thumbnails, cream tags, ruled tables and calmer motion from the same
+  mockup were NOT taken.
 - The Saddam is minimal everywhere except Standings: one small badge beside the holder on Home.
 - Do not add more forest/green surfaces; reach for scenes, sky, sand, cream. Recent-round tiles
   stay small (124px).

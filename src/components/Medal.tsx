@@ -1,6 +1,5 @@
-import { useId } from 'react'
 import type { Badge } from '../lib/badges'
-import { COLORS, ICONS, SHAPES, TROPHY_ART, type ArtShelf, type TrophyArt } from '../lib/trophyArt'
+import { ICONS, SHAPES, TROPHY_ART, type ArtShelf, type TrophyArt } from '../lib/trophyArt'
 import { EXTRA_TROPHY_ART } from '../lib/trophyArtExtra'
 
 // The shelf a trophy's kind sits on, for one the art file doesn't know yet.
@@ -42,12 +41,21 @@ export function Medal({ badge, size = 66 }: { badge: Badge; size?: number }) {
   )
 }
 
-/** The badge itself: rim, recessed face, dimples, sheen, and the glyph. */
+// Flat brass and nickel (Matt, 2026-10-22, option 1b of the Bandit
+// refinement): one flat rim and one flat face, no gradients, dimples,
+// sheen or shadow. The gold shelves are brass, every other shelf nickel,
+// locked ones pencil gray. Shapes and glyphs are unchanged.
+const FLAT = {
+  brass: { rim: '#C6A55C', face: '#EBDCAE', glyph: '#5C3F0E' },
+  nickel: { rim: '#AEACA5', face: '#E6E5E0', glyph: '#3E423F' },
+  locked: { rim: '#D9D7CF', face: '#F1F0EB', glyph: '#A3A096' },
+} as const
+const metalOf = (shelf: ArtShelf) => (shelf === 'legend' || shelf === 'brag' ? 'brass' : 'nickel')
+
+/** The badge itself: a flat rim, a flat face and the glyph. */
 export function TrophyBadge({ art, locked = false, size = 120 }: { art: TrophyArt; locked?: boolean; size?: number }) {
-  // Gradient and clip ids must be unique on the page and safe inside url(#…).
-  const id = `tb${useId().replace(/[^a-zA-Z0-9]/g, '')}`
   const shelf = SHAPES[art.shelf] ? art.shelf : 'brag'
-  const c = COLORS[locked ? 'locked' : shelf]
+  const c = FLAT[locked ? 'locked' : metalOf(shelf)]
   const shape = SHAPES[shelf]
   const face = 'translate(60 60) scale(0.8) translate(-60 -60)'
   const num = art.num ?? ''
@@ -55,63 +63,23 @@ export function TrophyBadge({ art, locked = false, size = 120 }: { art: TrophyAr
   const iconD = !num && art.icon ? ICONS[art.icon] : ''
   const numSize = num.length <= 1 ? 52 : num.length === 2 ? 44 : num.length === 3 ? 34 : 27
   const numY = sub ? Math.round(52 + numSize * 0.7) : Math.round(60 + numSize * 0.36)
-  const shadow = locked ? 0 : 0.22
   const font = "Manrope, 'Helvetica Neue', Arial, sans-serif"
   return (
     <svg viewBox="-8 -8 136 136" width={size} height={size} aria-hidden>
-      <defs>
-        <linearGradient id={`${id}r`} x1="0.15" y1="0" x2="0.85" y2="1">
-          <stop offset="0" stopColor={c.rim1} />
-          <stop offset="0.5" stopColor={c.rim2} />
-          <stop offset="1" stopColor={c.rim3} />
-        </linearGradient>
-        <linearGradient id={`${id}f`} x1="0.3" y1="0" x2="0.7" y2="1">
-          <stop offset="0" stopColor={c.face1} />
-          <stop offset="1" stopColor={c.face2} />
-        </linearGradient>
-        <clipPath id={`${id}c`}>
-          <path d={shape} transform={face} />
-        </clipPath>
-        <pattern id={`${id}d`} width="8" height="8" patternUnits="userSpaceOnUse">
-          <circle cx="2" cy="2" r="1.35" fill="#000" fillOpacity="0.09" />
-          <circle cx="6" cy="6" r="1.35" fill="#000" fillOpacity="0.09" />
-        </pattern>
-        <filter id={`${id}s`} x="-20%" y="-20%" width="140%" height="140%">
-          {locked ? (
-            <feDropShadow dx="0" dy="1" stdDeviation="0.8" floodColor="#3C3728" floodOpacity="0.18" />
-          ) : (
-            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#32301A" floodOpacity="0.28" />
-          )}
-        </filter>
-      </defs>
-      <g filter={`url(#${id}s)`}>
-        <path d={shape} fill={`url(#${id}r)`} />
-        <path d={shape} transform="translate(60 60) scale(0.865) translate(-60 -60)" fill="#000" fillOpacity="0.3" />
-        <path d={shape} transform={face} fill={`url(#${id}f)`} />
-      </g>
-      <g clipPath={`url(#${id}c)`}>
-        <rect x="0" y="0" width="120" height="120" fill={`url(#${id}d)`} />
-        <ellipse cx="60" cy="22" rx="56" ry="30" fill="#fff" fillOpacity="0.17" />
-      </g>
-      <path d={shape} transform={face} fill="none" stroke="#fff" strokeOpacity="0.28" strokeWidth="1.2" />
+      <path d={shape} fill={c.rim} />
+      <path d={shape} transform={face} fill={c.face} />
       {iconD ? (
         <g transform="translate(34 34) scale(2.1667)" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1">
-          {shadow > 0 && <path d={iconD} stroke="#000" strokeOpacity={shadow} transform="translate(0 0.75)" />}
           <path d={iconD} stroke={c.glyph} />
         </g>
       ) : num ? (
         <>
           {sub && (
-            <text x="60" y="44" textAnchor="middle" fontFamily={font} fontWeight="800" fontSize="10" letterSpacing="1.4" fill={c.glyph} fillOpacity="0.88">
+            <text x="60" y="44" textAnchor="middle" fontFamily={font} fontWeight="700" fontSize="10" letterSpacing="1.4" fill={c.glyph} fillOpacity="0.85">
               {sub}
             </text>
           )}
-          {shadow > 0 && (
-            <text x="60" y={numY + 1.5} textAnchor="middle" fontFamily={font} fontWeight="800" fontSize={numSize} letterSpacing="-1" fill="#000" fillOpacity={shadow}>
-              {num}
-            </text>
-          )}
-          <text x="60" y={numY} textAnchor="middle" fontFamily={font} fontWeight="800" fontSize={numSize} letterSpacing="-1" fill={c.glyph}>
+          <text x="60" y={numY} textAnchor="middle" fontFamily={font} fontWeight="700" fontSize={numSize} letterSpacing="-1" fill={c.glyph}>
             {num}
           </text>
         </>

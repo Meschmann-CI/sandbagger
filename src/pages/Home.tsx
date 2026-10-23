@@ -139,21 +139,31 @@ export default function Home() {
     : null
   return (
     <div className="rise">
-      <header className="pt-5 pb-1 px-1 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-large font-bold text-ink leading-tight truncate">{data.group.name}</h1>
-          {subline && <p className="text-footnote text-ink-dim mt-0.5">{subline}</p>}
+      {/* The forest header, edge to edge: the group, then the season as a
+          race (Matt, 2026-10-22, the 1d "Clubhouse" header from the Bandit
+          refinement). An installed web app keeps the clock's strip its own
+          colour, so here it starts below it; the iPhone app runs it up behind. */}
+      <div className="-mx-4 -mt-3 bg-forest px-5 pb-6 pt-6 text-on-forest">
+        <header className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-large font-bold leading-tight truncate text-on-forest">{data.group.name}</h1>
+            {subline && <p className="text-footnote text-on-forest/75 mt-0.5">{subline}</p>}
+          </div>
+          <Link to="/profile" className="shrink-0 rounded-full ring-[1.5px] ring-on-forest/60 ring-offset-2 ring-offset-forest">
+            <Avatar player={me} size={40} />
+          </Link>
+        </header>
+        <div className="mt-[18px] h-px bg-on-forest/[0.18]" />
+        <div className="mt-4">
+          <SeasonRace board={board} meId={me.id} holderId={holder?.id} saddamSince={saddam.since} year={YEAR} />
         </div>
-        <Link to="/profile" className="shrink-0">
-          <Avatar player={me} size={40} />
-        </Link>
-      </header>
-
-      <div className="mt-3 space-y-2.5">
-        {inProgress && live && <LiveStrip round={inProgress} live={live} />}
-
-        <SeasonRace board={board} meId={me.id} holderId={holder?.id} saddamSince={saddam.since} year={YEAR} />
       </div>
+
+      {inProgress && live && (
+        <div className="mt-4">
+          <LiveStrip round={inProgress} live={live} />
+        </div>
+      )}
 
       {/* Money and a course to rate: rows on the page under the race. */}
       <div className="mt-4">
@@ -381,7 +391,7 @@ function SeasonRace({
     <button
       type="button"
       onClick={() => navigate('/h2h')}
-      className="press block w-full overflow-hidden rounded-3xl bg-forest px-5 pt-4 pb-5 text-left text-on-forest shadow-[0_10px_30px_rgba(28,70,50,0.22)]"
+      className="press block w-full text-left text-on-forest"
     >
       <div className="flex items-baseline justify-between">
         <p className="text-footnote font-bold text-on-forest/75">{year} season</p>
@@ -405,8 +415,8 @@ function SeasonRace({
                   )}
                 </span>
                 <span
-                  className={`flex w-full items-start justify-center rounded-t-lg pt-1.5 text-headline font-extrabold tabular-nums ${
-                    mine ? 'bg-cream text-forest' : 'bg-on-forest/12 text-on-forest'
+                  className={`flex w-full items-start justify-center rounded-t-[3px] pt-1.5 text-headline font-extrabold tabular-nums ${
+                    mine ? 'bg-cream text-forest' : 'border border-b-0 border-on-forest/45 text-on-forest'
                   }`}
                   style={{ height: 34 + Math.round((r.wins / top) * 62) }}
                 >

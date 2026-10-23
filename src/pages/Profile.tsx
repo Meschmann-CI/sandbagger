@@ -92,11 +92,13 @@ export default function Profile() {
       {/* The player card: who you are, your index as the hero with its
           trend beside it, and four numbers. Your home course's scene
           across the top, so everyone's card looks a little different
-          without anyone picking a theme. */}
-      <div className="relative mt-4 overflow-hidden rounded-3xl bg-forest text-on-forest shadow-[0_10px_30px_rgba(28,70,50,0.25)]">
+          without anyone picking a theme. Edge to edge like Home's header
+          (Matt, 2026-10-22), the scene faded into the forest at both ends. */}
+      <div className="relative -mx-4 -mt-3 overflow-hidden bg-forest text-on-forest">
         <div className="relative h-24">
           <CourseScene course={me.homeCourse || me.name} light="morning" className="h-full w-full" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent from-30% to-forest" />
+          <div className="absolute inset-0 bg-gradient-to-b from-forest to-transparent to-35%" />
           {!editingMe && (
             <button
               onClick={() => setEditingMe(true)}
