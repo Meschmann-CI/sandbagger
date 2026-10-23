@@ -10,6 +10,7 @@ import { setSoundOn, soundOn } from '../lib/sound'
 import { todayISO } from '../lib/dates'
 import CourseScene from '../components/CourseScene'
 import RoundScene from '../components/RoundScene'
+import { CourseTile, squareLogo } from '../components/CourseLogo'
 import { disablePush, enablePush, pushEnabled, pushSupported } from '../lib/push'
 import { fmt1, isSoloRound, round1 } from '../types'
 import { supabase } from '../lib/supabase'
@@ -98,7 +99,6 @@ export default function Profile() {
         <div className="relative h-24">
           <CourseScene course={me.homeCourse || me.name} light="morning" className="h-full w-full" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent from-30% to-forest" />
-          <div className="absolute inset-0 bg-gradient-to-b from-forest to-transparent to-35%" />
           {!editingMe && (
             <button
               onClick={() => setEditingMe(true)}
@@ -417,8 +417,16 @@ export default function Profile() {
         <Card className="divide-y divide-line">
           {stats.last5.map(({ round, gross }) => (
             <RowButton key={round.id} onClick={() => navigate(`/rounds/${round.id}`, { shared: round.id })} className="flex items-center gap-3 px-3.5 py-2.5">
-              <span data-shared={round.id} className="h-10 w-10 shrink-0 overflow-hidden rounded-lg">
-                <RoundScene round={round} />
+              {/* Same as the Rounds page: the course's logo, else the
+                  round's first photo, else its scene. */}
+              <span data-shared={squareLogo(round.courseName) ? undefined : round.id} className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-paper">
+                {squareLogo(round.courseName) ? (
+                  <CourseTile name={round.courseName} className="h-full w-full rounded-lg" />
+                ) : round.photos?.[0] ? (
+                  <img src={round.photos[0].url} alt="" loading="lazy" className="h-full w-full object-cover" />
+                ) : (
+                  <RoundScene round={round} />
+                )}
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-body font-bold text-ink truncate">{round.courseName}</p>

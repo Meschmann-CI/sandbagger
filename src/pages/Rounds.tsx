@@ -7,16 +7,8 @@ import { fmt1, isSoloRound, pending } from '../types'
 import { chip, AvatarStack, Card, EmptyState, Pill, PrimaryButton, RowBadge } from '../components/ui'
 import { Icon } from '../components/icons'
 import RoundScene from '../components/RoundScene'
-import { CourseTile } from '../components/CourseLogo'
+import { CourseTile, squareLogo } from '../components/CourseLogo'
 import { RoundsCoursesSwitch } from '../components/RoundsCoursesSwitch'
-import { courseBrand } from '../lib/courseBrands'
-
-// A logo that reads in a square tile. Wordmarks are too wide to, so those
-// rounds fall through to the photo or the scene, as on the course list.
-const squareLogo = (courseName: string) => {
-  const brand = courseBrand(courseName)
-  return !!brand?.logo && !brand.wide
-}
 
 type Filter = 'all' | 'mine' | 'group'
 

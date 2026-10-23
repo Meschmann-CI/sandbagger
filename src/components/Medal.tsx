@@ -41,21 +41,24 @@ export function Medal({ badge, size = 66 }: { badge: Badge; size?: number }) {
   )
 }
 
-// Flat brass and nickel (Matt, 2026-10-22, option 1b of the Bandit
-// refinement): one flat rim and one flat face, no gradients, dimples,
-// sheen or shadow. The gold shelves are brass, every other shelf nickel,
-// locked ones pencil gray. Shapes and glyphs are unchanged.
-const FLAT = {
-  brass: { rim: '#C6A55C', face: '#EBDCAE', glyph: '#5C3F0E' },
-  nickel: { rim: '#AEACA5', face: '#E6E5E0', glyph: '#3E423F' },
+// Flat (Matt, 2026-10-22, option 1b of the Bandit refinement): one flat
+// rim and one flat face, no gradients, dimples, sheen or shadow. Each
+// shelf keeps its own colour (Matt: the other shelves shouldn't go gray);
+// the brags are brass, locked ones pencil gray. Shapes and glyphs unchanged.
+const FLAT: Record<ArtShelf | 'locked', { rim: string; face: string; glyph: string }> = {
+  legend: { rim: '#D9AE4A', face: '#22543A', glyph: '#F1D58C' },
+  brag: { rim: '#C6A55C', face: '#EBDCAE', glyph: '#5C3F0E' },
+  group: { rim: '#B9C1CA', face: '#4579B5', glyph: '#FFFFFF' },
+  odd: { rim: '#B9C1CA', face: '#8863AE', glyph: '#FFFFFF' },
+  locker: { rim: '#D8A193', face: '#CD5F7A', glyph: '#FFFFFF' },
+  nobody: { rim: '#AA906C', face: '#926341', glyph: '#FFF1DC' },
   locked: { rim: '#D9D7CF', face: '#F1F0EB', glyph: '#A3A096' },
-} as const
-const metalOf = (shelf: ArtShelf) => (shelf === 'legend' || shelf === 'brag' ? 'brass' : 'nickel')
+}
 
 /** The badge itself: a flat rim, a flat face and the glyph. */
 export function TrophyBadge({ art, locked = false, size = 120 }: { art: TrophyArt; locked?: boolean; size?: number }) {
   const shelf = SHAPES[art.shelf] ? art.shelf : 'brag'
-  const c = FLAT[locked ? 'locked' : metalOf(shelf)]
+  const c = FLAT[locked ? 'locked' : shelf]
   const shape = SHAPES[shelf]
   const face = 'translate(60 60) scale(0.8) translate(-60 -60)'
   const num = art.num ?? ''

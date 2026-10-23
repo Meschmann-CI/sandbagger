@@ -58,3 +58,10 @@ export function CourseTile({ name, className = '' }: { name: string; className?:
     </span>
   )
 }
+
+/** A logo that reads in a square tile. Wordmarks are too wide to, so those
+ *  rounds fall through to the photo or the scene (Rounds and You). */
+export const squareLogo = (courseName: string) => {
+  const brand = courseBrand(courseName)
+  return !!brand?.logo && !brand.wide
+}
