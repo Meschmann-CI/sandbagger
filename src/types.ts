@@ -362,7 +362,97 @@ export interface Payment {
 
 // ---------- Bets ----------
 
-export type BetType = 'nassau' | 'skins' | 'match' | 'custom'
+export type BetType =
+  | 'nassau'
+  | 'skins'
+  | 'match'
+  | 'wolf'
+  | 'vegas'
+  | 'rabbit'
+  | 'snake'
+  | 'sixes'
+  | 'stableford'
+  | 'bbb'
+  | 'junk'
+  | 'hammer'
+  | 'custom'
+
+/**
+ * A press: a new bet at the same stake from `hole` (0-based) to the end of
+ * that nine. Pressed by hand on the live card; automatic presses aren't
+ * stored, they're worked out from the card each time.
+ */
+export interface Press {
+  hole: number
+  byId?: string
+}
+
+/**
+ * Nassau played as three matches between two golfers (holes won) rather
+ * than lowest total among everyone. Only this format takes presses.
+ */
+export interface NassauPlay {
+  format: 'match'
+  /** Press automatically when a golfer goes this many down in a bet on a nine. Unset or 0: off. */
+  autoPress?: number
+  presses?: Press[]
+}
+
+/** A wolf's call on a hole: the partner's player id, 'lone', or 'blind'. */
+export type WolfPick = string
+
+export interface WolfPlay {
+  /** The four golfers in tee order. The wolf on hole h is order[h % 4]. */
+  order: string[]
+  /** One per hole, null until the wolf has called it. */
+  picks: (WolfPick | null)[]
+}
+
+/** Sixes: the four in tee order. Partners rotate every six holes off it. */
+export interface SixesPlay {
+  order: string[]
+}
+
+/** Bingo Bango Bongo: per hole, who won [bingo, bango, bongo]. */
+export interface BbbPlay {
+  picks: ([string | null, string | null, string | null] | null)[]
+}
+
+export type JunkKind = 'greenie' | 'sandie' | 'barkie' | 'chippie' | 'birdie'
+
+/** Junk: which feats count, and the feats claimed. Birdies come off the card. */
+export interface JunkPlay {
+  kinds: JunkKind[]
+  claims: { hole: number; playerId: string; kind: JunkKind }[]
+}
+
+/**
+ * One hole of Hammer. `doubles` counts accepted hammers; `by` is the side
+ * that threw the last one (it may not throw the next); `pending` is a
+ * hammer thrown and not yet answered; `conceded` is the side that
+ * declined one, which loses the hole at its value before that hammer.
+ */
+export interface HammerHole {
+  doubles: number
+  by?: 0 | 1
+  pending?: 0 | 1
+  conceded?: 0 | 1
+}
+
+export interface HammerPlay {
+  /** One against one, or two against two. */
+  teams: [string[], string[]]
+  /** Most doublings a hole may take: 3 is eight times the stake. */
+  limit: number
+  holes: (HammerHole | null)[]
+}
+
+export interface VegasPlay {
+  /** Two against two. */
+  teams: [string[], string[]]
+  /** A birdie flips the other team's number, high digit first. */
+  birdieFlip?: boolean
+}
 
 export interface BetResult {
   playerId: string
@@ -390,6 +480,18 @@ export interface Bet {
    * per skin as they're won. A tie for most splits the pot.
    */
   winnerTakeAll?: boolean
+  /**
+   * How a game is set up, by type, all kept in the one `game` column:
+   * match-play Nassau and its presses, the wolf's order and calls, the
+   * Vegas teams. Absent on stroke-play Nassau and the other games.
+   */
+  nassau?: NassauPlay
+  wolf?: WolfPlay
+  vegas?: VegasPlay
+  sixes?: SixesPlay
+  bbb?: BbbPlay
+  junk?: JunkPlay
+  hammer?: HammerPlay
 }
 
 export interface AppData {
