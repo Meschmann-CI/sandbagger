@@ -292,6 +292,9 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   side in `merge_round_scores` with `current_player_id()`), and once a golfer has entered
   any hole themselves, other phones stop asking for them ("on their phone"). Rules in
   `src/lib/scoringFor.ts`, the same as `BanditCore/ScoringFor.swift`.
+- "+ Putts" on a golfer's row in the Hole view (2026-10-24, after Pat asked Matt on the first
+  hole to keep his putts and the switch was hidden below the pad): one tap turns their putts
+  on; earlier holes are filled by going back a hole. Shown only for golfers this phone keeps.
 - The watch goes back a hole (2026-10-24): ‹ › on the score page; a hole that's in shows
   everyone's score, tap one to change it or fill in a skipped one.
 - Stroke dots follow the game (2026-10-24, after Barry's paper card gave Pat 3 strokes on a

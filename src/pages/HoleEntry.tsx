@@ -1207,6 +1207,14 @@ export default function HoleEntry() {
                     })}
                   </div>
                 )}
+                {/* Keeping someone's putts once the round's going (Matt,
+                    2026-10-24: Pat asked on the first hole and the switch
+                    was below the pad). Earlier holes go in from the card. */}
+                {!tracking(rp.playerId) && keeping && (
+                  <button type="button" onClick={() => toggleTracking(rp.playerId)} className="mt-0.5 text-footnote font-bold text-green">
+                    + Putts
+                  </button>
+                )}
               </div>
               {bigBox(rp.playerId, h)}
             </div>
