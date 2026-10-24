@@ -29,11 +29,12 @@ export async function resolve(specifier, context, next) {
 const { calcMatchPlay, calcNassau, calcNassauMatch, calcSkins, calcVegas, calcWolf, settleFromCard, vegasNumber, nth, calcRabbit, calcSnake, calcSixes, calcStableford, stablefordPoints, calcBbb, calcJunk, calcHammer } = await import('../src/lib/bets.ts')
 const { betStatus } = await import('../src/lib/betText.ts')
 const { cardOf } = await import('../src/lib/holes.ts')
-const { courseForRound, teeFor } = await import('../src/lib/courses.ts')
+const { courseForRound, teeFor, cardStrokeDots } = await import('../src/lib/courses.ts')
 const { ghostOptions } = await import('../src/lib/ghost.ts')
 const { badgesFor } = await import('../src/lib/badges.ts')
 const { roundPatch, applyScorePatch, CLEARED } = await import('../src/lib/scorePatch.ts')
 const { roundBetSettlements } = await import('../src/lib/settlements.ts')
+const { asks, guardOwnHoles, selfScoring } = await import('../src/lib/scoringFor.ts')
 const { liveLines, cardSlice, leadStory, atTheTurn, spectatorNews } = await import('../src/lib/spectate.ts')
 const { trophiesFrom, trophyPushTitle, trophyWhy } = await import('../src/lib/trophyMoments.ts')
 const { isBooked, sortBookings, findRound, bookedRounds, teeTimeLabel, teeTimeInput } = await import('../src/lib/bookings.ts')
@@ -532,6 +533,47 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   const news = spectatorNews(d, before, after, '2026-10-24')
   check('spectatorNews: a lead change, to Matt only', news.map((n) => [n.title, n.toPlayerIds]), [['Lead change at Test Links', ['matt']]])
   check('spectatorNews: not on another day', spectatorNews(d, before, { ...after, date: '2026-10-20' }, '2026-10-24').length, 0)
+}
+
+// 14. Scoring for some of the group, and a golfer's own entry winning.
+{
+  const blank = (): (number | null)[] => Array(18).fill(null)
+  const at = (card: (number | null)[], i: number, v: number | null) => card.map((h, k) => (k === i ? v : h))
+  const base = round('own', '2026-10-24', [
+    { playerId: 'matt', handicapSnapshot: 16, gross: null, holes: blank() },
+    { playerId: 'barry', handicapSnapshot: 12, gross: null, holes: blank() },
+    { playerId: 'pat', handicapSnapshot: 14, gross: null, holes: blank() },
+  ])
+  check('asks: everyone, me first', asks(base, 'pat', undefined), ['pat', 'matt', 'barry'])
+  check('asks: just the picked', asks(base, 'matt', ['matt', 'barry']), ['matt', 'barry'])
+  // Pat enters his own 4 on hole 1: it's marked as his.
+  const patSaves = guardOwnHoles(base, { ...base, players: base.players.map((p) => (p.playerId === 'pat' ? { ...p, holes: at(blank(), 0, 4) } : p)) }, 'pat')
+  check('guardOwnHoles: my own entry is marked', patSaves.players[2].selfHoles?.[0], true)
+  check('selfScoring: Pat keeps his own', [...selfScoring(patSaves, 'matt')], ['pat'])
+  check('asks: Matt stops being asked for Pat', asks(patSaves, 'matt', undefined), ['matt', 'barry'])
+  // Matt then types 5 for Pat on hole 1 and 6 for Barry: Pat's 4 stands, Barry's 6 goes in.
+  const mattSaves = guardOwnHoles(patSaves, { ...patSaves, players: patSaves.players.map((p) => (p.playerId === 'pat' ? { ...p, holes: at(blank(), 0, 5) } : p.playerId === 'barry' ? { ...p, holes: at(blank(), 0, 6) } : p)) }, 'matt')
+  check('guardOwnHoles: Pat\'s own 4 stands', mattSaves.players[2].holes?.[0], 4)
+  check('guardOwnHoles: Barry\'s 6 goes in', mattSaves.players[1].holes?.[0], 6)
+}
+
+// 15. Stroke dots: off the low man, or off full handicaps for net Stableford (Bally's, 2026-10-24).
+{
+  const ballys: Course = {
+    id: 'c', groupId: G, name: "Bally's", slug: 'ballys',
+    pars: [4, 4, 3, 5, 4, 4, 4, 3, 4, 4, 4, 3, 4, 4, 5, 4, 3, 5],
+    strokeIndex: [9, 1, 15, 3, 7, 5, 13, 17, 11, 6, 14, 18, 8, 10, 2, 4, 16, 12],
+    rating: 69.8, slope: 131,
+  }
+  const r = round('bal', '2026-10-24', [
+    { playerId: 'barry', handicapSnapshot: 9.4, gross: null },
+    { playerId: 'matt', handicapSnapshot: 16.9, gross: null },
+    { playerId: 'pat', handicapSnapshot: 36.8, gross: null },
+  ])
+  const full = cardStrokeDots(ballys, r, true)!.dots.pat
+  const low = cardStrokeDots(ballys, r, false)!.dots.pat
+  check('dots: full handicap gives Pat 41, 3 on the five hardest', [full.reduce((a, b) => a + b, 0), Math.max(...full), full.filter((d) => d === 3).length], [41, 3, 5])
+  check('dots: off the low man gives Pat 31, never 3', [low.reduce((a, b) => a + b, 0), Math.max(...low)], [31, 2])
 }
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)

@@ -68,6 +68,8 @@ export interface RoundPlayer {
    * tracking turned off for this golfer and round.
    */
   putts?: (number | null)[]
+  /** Holes this golfer entered for themselves: their own entry wins (lib/scoringFor.ts). */
+  selfHoles?: boolean[]
 }
 
 export interface ScoredRoundPlayer extends RoundPlayer {

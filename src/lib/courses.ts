@@ -306,3 +306,28 @@ export function strokesByHole(course: Course, handicap: number): number[] {
   }
   return strokes
 }
+
+/**
+ * The stroke dots a card draws. Off the low handicap, as skins, Nassau and
+ * match play settle; but off each golfer's full course handicap when the
+ * round has a net Stableford game, since that's how its points are counted
+ * (Matt, 2026-10-24: Pat was getting 3 strokes on the hardest holes on
+ * Barry's paper card and the app's dots showed 2). Null when there's no
+ * stroke index or nobody to give strokes against.
+ */
+export function cardStrokeDots(
+  course: Course | undefined,
+  round: Pick<Round, 'players' | 'tee'>,
+  fullHandicap: boolean,
+): { dots: Record<string, number[]>; full: boolean } | null {
+  if (!hasStrokeIndex(course) || round.players.length < 2) return null
+  if (!fullHandicap) return { dots: strokesOffLow(course, round.players, round.tee), full: false }
+  return {
+    dots: Object.fromEntries(round.players.map((p) => [p.playerId, strokesByHole(course, playingHandicap(course, p.handicapSnapshot, round.tee))])),
+    full: true,
+  }
+}
+
+/** Whether a round's dots count off full handicaps: it has a net Stableford game. */
+export const dotsOffFullHandicap = (bets: { roundId: string; type: string; net?: boolean; manual?: boolean }[], roundId: string) =>
+  bets.some((b) => b.roundId === roundId && b.type === 'stableford' && b.net === true && !b.manual)

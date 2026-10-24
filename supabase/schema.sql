@@ -251,6 +251,8 @@ alter table groups add column if not exists saddam_award jsonb;
 alter table round_players alter column gross drop not null;
 -- Putts, added 2026-10-10:
 alter table round_players add column if not exists putts integer[];
+-- Holes the golfer entered themselves; their own entry wins (2026-10-24).
+alter table round_players add column if not exists self_holes boolean[];
 -- 27-hole courses, added 2026-10-10: each nine's pars, men's handicaps
 -- and yards per tee; a round names the two it played, in order (unset:
 -- the course's first two, which its own 18-hole pars describe).
@@ -666,7 +668,8 @@ begin
 end;
 $$;
 
--- Scores merged hole by hole (2026-10-22): see apply-2026-10-22-merge-scores.sql.
+-- Scores merged hole by hole (2026-10-22), a golfer's own entry winning (2026-10-24):
+-- see apply-2026-10-22-merge-scores.sql and apply-2026-10-24-own-scores.sql.
 create or replace function merge_round_scores(p_round uuid, p_scores jsonb)
 returns void
 language plpgsql
@@ -674,29 +677,38 @@ security invoker
 set search_path = public
 as $$
 declare
+  me uuid := current_player_id();
   s jsonb;
   pid uuid;
   h integer[];
   p integer[];
+  f boolean[];
   g integer;
   k text;
   v jsonb;
+  mine boolean;
 begin
   for s in select * from jsonb_array_elements(p_scores) loop
     pid := (s->>'playerId')::uuid;
+    mine := pid = me;
     insert into round_players (round_id, player_id, gross, handicap_snapshot)
     values (p_round, pid, null, (s->>'handicapSnapshot')::numeric)
     on conflict (round_id, player_id) do nothing;
 
-    select holes, putts, gross into h, p, g
+    select holes, putts, gross, self_holes into h, p, g, f
     from round_players where round_id = p_round and player_id = pid
     for update;
+    f := coalesce(f, '{}');
+    if cardinality(f) < 18 then f := f || array_fill(false, array[18 - cardinality(f)]); end if;
 
     if s ? 'holes' then
       h := coalesce(h, '{}');
       if cardinality(h) < 18 then h := h || array_fill(null::integer, array[18 - cardinality(h)]); end if;
       for k, v in select * from jsonb_each(s->'holes') loop
+        -- Someone else's change to a hole the golfer entered themselves: kept out.
+        if not mine and f[k::int + 1] then continue; end if;
         h[k::int + 1] := nullif((v #>> '{}')::int, -1);
+        if mine and h[k::int + 1] is not null then f[k::int + 1] := true; end if;
       end loop;
       if not exists (select 1 from unnest(h) x where x is not null) then h := null; end if;
     end if;
@@ -712,23 +724,27 @@ begin
       p := coalesce(p, '{}');
       if cardinality(p) < 18 then p := p || array_fill(null::integer, array[18 - cardinality(p)]); end if;
       for k, v in select * from jsonb_each(s->'putts') loop
+        if not mine and f[k::int + 1] then continue; end if;
         p[k::int + 1] := nullif((v #>> '{}')::int, -1);
       end loop;
     end if;
 
-    if coalesce((s->>'grossSet')::boolean, false) then g := (s->>'gross')::int; end if;
-    if h is not null and cardinality(h) >= 18
-       and not exists (select 1 from unnest(h[1:18]) x where x is null) then
+    if coalesce((s->>'grossSet')::boolean, false) and (mine or not (true = any(f))) then
+      g := (s->>'gross')::int;
+    end if;
+    if h is not null and cardinality(h) >= 18 and not exists (select 1 from unnest(h[1:18]) x where x is null) then
       g := (select sum(x) from unnest(h[1:18]) x);
     end if;
 
     update round_players
     set holes = h, putts = p, gross = g,
+        self_holes = case when true = any(f) then f else null end,
         handicap_snapshot = coalesce((s->>'handicapSnapshot')::numeric, handicap_snapshot)
     where round_id = p_round and player_id = pid;
   end loop;
 end;
 $$;
+
 
 -- Security linter follow-ups. jsonb_without takes no table names, but a
 -- role can still swap its search_path; pin it like the other helpers.

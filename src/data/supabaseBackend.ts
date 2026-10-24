@@ -290,6 +290,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           handicapSnapshot: num(rp.handicap_snapshot),
           holes: rp.holes ?? undefined,
           putts: rp.putts ?? undefined,
+          selfHoles: rp.self_holes?.some(Boolean) ? rp.self_holes : undefined,
         })
         scoresByRound.set(rp.round_id, list)
       }

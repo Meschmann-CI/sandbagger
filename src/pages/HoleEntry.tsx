@@ -12,7 +12,8 @@ import {
   padded,
   playingHandicap,
   scoreKind,
-  strokesOffLow,
+  cardStrokeDots,
+  dotsOffFullHandicap,
   teeFor,
   toPar,
   yardsFor,
@@ -41,6 +42,7 @@ import { todayISO } from '../lib/dates'
 import { ordinal } from '../lib/ratings'
 import { distancesWanted, setDistancesWanted, usePosition } from '../lib/usePosition'
 import { findRound } from '../lib/bookings'
+import { asks, enteredByThemselves, pickedFor, selfScoring, setPickedFor } from '../lib/scoringFor'
 
 // The live card, in two views.
 //
@@ -105,6 +107,10 @@ export default function HoleEntry() {
     if (pe !== puttEdits) setPuttEdits(pe)
   }
   const [pickingPutters, setPickingPutters] = useState(false)
+  // Who this phone keeps score for (Matt, 2026-10-24): picked per round,
+  // remembered on this phone. Unpicked, it's everyone.
+  const [picked, setPicked] = useState(() => pickedFor(id))
+  const [pickingScorers, setPickingScorers] = useState(false)
   const [active, setActive] = useState<Active | null>(null)
   // Digits typed into the active cell so far. "1" then "2" is a 12; any
   // other pair, the second replaces the first. No timers — the first
@@ -216,8 +222,8 @@ export default function HoleEntry() {
   // holes, else the card's own row, labelled with the tee it is from.
   const yardsCard = yardsFor(course, round?.tee)
   const yards = yardsCard?.yards ?? null
-  const strokeDots =
-    hasStrokeIndex(course) && players.length > 1 ? strokesOffLow(course, players, round?.tee) : null
+  // Off the low handicap, or off full handicaps for a net Stableford (cardStrokeDots).
+  const strokeDots = round ? (cardStrokeDots(course, { players, tee: round.tee }, dotsOffFullHandicap(data.bets, round.id))?.dots ?? null) : null
 
   // The hole map and GPS. Distances are this phone's own, and only once
   // its golfer has turned them on (the location prompt comes from that
@@ -377,11 +383,15 @@ export default function HoleEntry() {
   // this hole without a score (the first golfer once they're all in), so
   // the only thing to do is type. On the Card view it's up once a box is
   // picked.
+  // Only the golfers this phone keeps, you first; anyone entering their
+  // own scores drops off. The card view still reaches everyone.
+  const askIds = asks(round, data.currentUserId, picked)
+  const order = askIds.length ? askIds : round.players.map((rp) => rp.playerId)
   const cur: Active | null =
     active ??
-    (view === 'hole'
-      ? { playerId: (round.players.find((rp) => cards[rp.playerId][h] == null) ?? round.players[0]).playerId, hole: h }
-      : null)
+    (view === 'hole' ? { playerId: order.find((pid) => cards[pid][h] == null) ?? order[0], hole: h } : null)
+  // A hole a golfer entered on their own phone: theirs stands.
+  const theirs = !!cur && cur.playerId !== data.currentUserId && enteredByThemselves(round, cur.playerId, cur.hole)
 
   // A lone "1" might be the start of a 12, so an ace only counts once
   // the cell is left with the 1 still in it.
@@ -400,12 +410,15 @@ export default function HoleEntry() {
 
   // Down the golfers on this hole, then on to the next hole's first —
   // the order a scorekeeper reads names off a green.
-  const isLastGolfer = !!cur && round.players[round.players.length - 1].playerId === cur.playerId
+  // On the Hole view that's the golfers this phone keeps; on the Card
+  // view, everyone.
+  const walk = view === 'hole' ? order : round.players.map((rp) => rp.playerId)
+  const isLastGolfer = !!cur && walk[walk.length - 1] === cur.playerId
   const advance = () => {
     if (!cur) return
-    const i = round.players.findIndex((rp) => rp.playerId === cur.playerId)
-    if (i < round.players.length - 1) return select({ playerId: round.players[i + 1].playerId, hole: cur.hole })
-    if (cur.hole < HOLE_COUNT - 1) return select({ playerId: round.players[0].playerId, hole: cur.hole + 1 })
+    const i = walk.indexOf(cur.playerId)
+    if (i >= 0 && i < walk.length - 1) return select({ playerId: walk[i + 1], hole: cur.hole })
+    if (cur.hole < HOLE_COUNT - 1) return select({ playerId: walk[0], hole: cur.hole + 1 })
     leaveCell()
     setActive(null)
     if (view === 'hole') done()
@@ -414,7 +427,7 @@ export default function HoleEntry() {
   // Typing pins the box the pad was pointing at, so a 1 then a 2 lands
   // as a 12 in the same box instead of the pad moving on after the 1.
   const typeDigit = (d: number) => {
-    if (!cur) return
+    if (!cur || theirs) return
     if (!active) setActive(cur)
     if (buffer === '1' && d >= 0 && d <= 9) {
       setScore(cur.playerId, cur.hole, 10 + d)
@@ -428,7 +441,7 @@ export default function HoleEntry() {
   }
 
   const clearActive = () => {
-    if (!cur) return
+    if (!cur || theirs) return
     if (!active) setActive(cur)
     setScore(cur.playerId, cur.hole, null)
     setBuffer('')
@@ -453,6 +466,16 @@ export default function HoleEntry() {
   // reload and shows on everyone else's.
   const me = data.currentUserId
   const iPlay = round.players.some((rp) => rp.playerId === me)
+  const nameOf = (pid: string) => (pid === me ? 'You' : (data.players.find((pl) => pl.id === pid)?.name.split(' ')[0] ?? '?'))
+  const ownPhones = selfScoring(round, me)
+  const toggleScoring = (pid: string) => {
+    const now = picked ?? round.players.map((rp) => rp.playerId)
+    const next = now.includes(pid) ? now.filter((x) => x !== pid) : round.players.map((rp) => rp.playerId).filter((x) => x === pid || now.includes(x))
+    setPicked(next)
+    setPickedFor(round.id, next)
+    setActive(null)
+    setBuffer('')
+  }
   const myGhostOptions = iPlay ? ghostOptions(data, round, me) : []
   const myGhost = ghostFor(data, round, me)
   const setMyGhost = (roundId: string | null) => {
@@ -1135,10 +1158,11 @@ export default function HoleEntry() {
           const ghost = ghostFor(data, round, rp.playerId)
           const ghostHere = ghost?.card[h]
           const pointing = cur?.playerId === rp.playerId
+          const keeping = order.includes(rp.playerId)
           return (
             <div
               key={rp.playerId}
-              className={`flex min-h-[64px] items-center gap-3 border-b border-line px-4 py-1 ${pointing ? 'bg-green-soft/40' : ''}`}
+              className={`flex min-h-[64px] items-center gap-3 border-b border-line px-4 py-1 ${pointing ? 'bg-green-soft/40' : ''} ${keeping ? '' : 'opacity-50'}`}
             >
               <Avatar player={p} size={32} />
               <div className="min-w-0 flex-1">
@@ -1152,6 +1176,7 @@ export default function HoleEntry() {
                 </p>
                 <p className="truncate text-footnote text-ink-dim tabular-nums">
                   {thru === 0 ? 'No scores yet' : `${sum(card, 0, HOLE_COUNT)}${vs ? ` (${vs})` : ''} thru ${thru}`}
+                  {ownPhones.has(rp.playerId) && ' · on their phone'}
                   {ghostHere != null && (
                     <>
                       {' · '}
@@ -1187,6 +1212,41 @@ export default function HoleEntry() {
             </div>
           )
         })}
+      </div>
+
+      {/* Who this phone keeps score for: everyone, until you pick. */}
+      <div className="px-4 pt-2.5">
+        <div className="flex items-center justify-between gap-3">
+          <p className="min-w-0 truncate text-footnote text-ink-dim">
+            Scoring:{' '}
+            <span className="font-bold text-ink">
+              {askIds.length ? askIds.map(nameOf).join(', ') : 'nobody'}
+            </span>
+          </p>
+          <button type="button" onClick={() => setPickingScorers((v) => !v)} className="shrink-0 text-footnote font-bold text-green">
+            {pickingScorers ? 'Done' : 'Change'}
+          </button>
+        </div>
+        {pickingScorers && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {round.players.map((rp) => {
+              const on = (picked ?? round.players.map((x) => x.playerId)).includes(rp.playerId)
+              return (
+                <button
+                  key={rp.playerId}
+                  type="button"
+                  onClick={() => toggleScoring(rp.playerId)}
+                  aria-pressed={on}
+                  className={`rounded-full border px-3.5 py-1.5 text-footnote font-bold transition ${
+                    on ? 'border-ink bg-ink text-white' : 'border-line-strong bg-card text-ink-dim'
+                  }`}
+                >
+                  {nameOf(rp.playerId)}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Who's tracking putts this round: you, unless you say otherwise. */}
@@ -1686,6 +1746,7 @@ export default function HoleEntry() {
                 {(strokeDots?.[cur.playerId]?.[cur.hole] ?? 0) > 0 && (
                   <span className="text-gold font-bold"> · {'•'.repeat(Math.min(strokeDots![cur.playerId][cur.hole], 3))} stroke</span>
                 )}
+                {theirs && ' · entered on their phone'}
               </p>
               {view === 'card' && (
                 <button onClick={closePad} className="text-footnote font-bold text-green">

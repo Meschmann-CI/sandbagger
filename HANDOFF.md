@@ -96,6 +96,10 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-7. Own scores win (2026-10-24) want `supabase/apply-2026-10-24-own-scores.sql` pasted:
+   `round_players.self_holes` and a `merge_round_scores` that keeps a golfer's own entry
+   for a hole over anyone else's. Until then the apps still guard it on each phone, but a
+   phone on an older build can overwrite a golfer's own score.
 -6. The games menu, rules cards and seven more games (2026-10-23, same branch, both repos):
    Rabbit, Snake, Sixes, Stableford, Bingo Bango Bongo, Junk and Hammer. "Add bet" opens
    "Pick the games" (`src/components/GamesMenu.tsx`), each game's parlor rules card is
@@ -277,6 +281,28 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   copy, so a phone back from no signal blanked holes the others had entered, and could
   drop photos added meanwhile. New rounds still go out whole (`round.upsert`). Putts have
   three states: never said (null), said no (empty), tracking (18 entries).
+- Scoring for some of the group (2026-10-24, after a round where Matt kept his own and
+  Barry's card but not Pat's, and Pat's watch kept asking for Matt first). Each phone picks
+  the golfers it keeps, per round, stored on the phone (`bandit-scoring-for`); unpicked is
+  everyone. The live card's Hole view asks for them only, you first, then card order; the
+  others fade. "Scoring: You, Barry · Change" sits above Putts. The watch asks "Who are you
+  scoring?" when a round first reaches it (you checked) and changes it from the group page.
+  A golfer's own entry wins: entering your own hole sets `selfHoles[h]`, other phones can't
+  change that hole (client side in the store's `updateRound` via `guardOwnHoles`, server
+  side in `merge_round_scores` with `current_player_id()`), and once a golfer has entered
+  any hole themselves, other phones stop asking for them ("on their phone"). Rules in
+  `src/lib/scoringFor.ts`, the same as `BanditCore/ScoringFor.swift`.
+- The watch goes back a hole (2026-10-24): ‹ › on the score page; a hole that's in shows
+  everyone's score, tap one to change it or fill in a skipped one.
+- Stroke dots follow the game (2026-10-24, after Barry's paper card gave Pat 3 strokes on a
+  few holes and the app showed 2): a round with a net, non-manual Stableford bet dots each
+  golfer's full course handicap (Stableford pays off full handicaps, and its money always
+  did); otherwise dots stay off the low handicap. `cardStrokeDots` and `dotsOffFullHandicap`
+  in `src/lib/courses.ts`; the legend says which.
+- Sync fixes (2026-10-24): golfers keep roster order on every load (Postgres returns updated
+  rows last, which made names jump on the watch); edits the store already agrees with are
+  dropped so another phone's later change shows through; the apps reload on returning to
+  the foreground; the lock screen and watch redraw on refresh; the wearer is asked first.
 - Spectator mode (2026-10-23, Matt picked option A, gross, and chirps): `src/lib/spectate.ts`,
   `pages/WatchRound.tsx` at `/rounds/:id/watch`. Home's live strip for a round you're not in
   says who leads by gross and its button reads Watch. The watch page: the card cut to the

@@ -5,7 +5,7 @@ import { HOLE_COUNT, cardOf, hasPutts, inTotal, outTotal, puttsOf } from '../lib
 import { PuttsRow } from './PuttsRow'
 import { fmtDiff, ghostDiff, ghostFor } from '../lib/ghost'
 import { shortDate } from '../lib/stats'
-import { courseForRound, hasPars, hasStrokeIndex, ninesLabel, padded, scoreKind, strokesOffLow, toPar, yardsFor } from '../lib/courses'
+import { courseForRound, hasPars, hasStrokeIndex, ninesLabel, padded, scoreKind, cardStrokeDots, dotsOffFullHandicap, toPar, yardsFor } from '../lib/courses'
 import { Avatar, Card } from './ui'
 import { CourseLogo } from './CourseLogo'
 import { bandFill, courseBrand, inkOn, teeColour } from '../lib/courseBrands'
@@ -38,10 +38,10 @@ export default function Scorecard({ round }: { round: Round }) {
   const ydsDot = teeColour(yc?.tee)
 
   // The dots a paper card would carry: who gets a stroke where, off the
-  // low handicap in the round. Only when there's a stroke index to say
-  // which holes, and only when there's someone to give strokes against.
-  const strokeDots =
-    hasStrokeIndex(course) && round.players.length > 1 ? strokesOffLow(course, round.players, round.tee) : null
+  // low handicap in the round, or off full handicaps for a net Stableford
+  // (cardStrokeDots). Only with a stroke index and someone to give against.
+  const dotPlan = cardStrokeDots(course, round, dotsOffFullHandicap(data.bets, round.id))
+  const strokeDots = dotPlan?.dots ?? null
   const sumPars = (from: number, to: number) => (pars ?? []).slice(from, to).reduce<number>((s, p) => s + (p ?? 0), 0)
 
   // Best score on each hole, so the low number stands out. Only used when
@@ -286,7 +286,7 @@ export default function Scorecard({ round }: { round: Round }) {
       </div>
       {(pars || strokeDots) && (
         <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 border-t border-line px-3 py-2 text-caption text-ink-faint">
-          <MarkLegend pars={!!pars} strokeLabel={strokeDots ? 'stroke given, off the low handicap' : undefined} />
+          <MarkLegend pars={!!pars} strokeLabel={dotPlan ? (dotPlan.full ? 'stroke given, off each full handicap (Stableford)' : 'stroke given, off the low handicap') : undefined} />
         </div>
       )}
     </Card>

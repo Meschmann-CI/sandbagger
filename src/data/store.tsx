@@ -21,6 +21,7 @@ import { findRound, sortBookings } from '../lib/bookings'
 import { roundPatch } from '../lib/scorePatch'
 import { tripNews } from '../lib/tripNews'
 import { spectatorNews } from '../lib/spectate'
+import { guardOwnHoles } from '../lib/scoringFor'
 import { roundIsFinal, shortCourse, trophiesFrom, trophyPushTitle, trophyWhy, type EarnedTrophy } from '../lib/trophyMoments'
 import { notifyGroup } from '../lib/push'
 import { shrinkPhoto, uploadTripPhoto } from '../lib/photos'
@@ -262,8 +263,10 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
       announceTrophies(undefined, full)
       return full
     },
-    updateRound(round) {
-      const before = findRound(dataRef.current, round.id)
+    updateRound(incoming) {
+      const before = findRound(dataRef.current, incoming.id)
+      // Another golfer's own entry wins over this phone's (lib/scoringFor.ts).
+      const round = guardOwnHoles(before, incoming, dataRef.current.currentUserId)
       const patch = roundPatch(before, round)
       commit(patch ? { kind: 'round.patch', patch } : { kind: 'round.upsert', round }, (d) => ({
         ...d,
