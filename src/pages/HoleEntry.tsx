@@ -26,7 +26,7 @@ import { fmtDiff, ghostDiff, ghostFor, ghostOptions } from '../lib/ghost'
 import { scanScores, scanSupported, type ScannedScoreRow } from '../lib/scan'
 import { roundStandings, shortDate } from '../lib/stats'
 import { notifyGroup } from '../lib/push'
-import { fmt1, type Bet, type HammerHole, type JunkKind, type Round } from '../types'
+import { fmt1, type Bet, type HammerHole, type JunkKind, type Round, type RoundPlayer } from '../types'
 import { Avatar, Card, HelpTip, PrimaryButton, Segmented } from '../components/ui'
 import { rulesFor } from '../lib/betRules'
 import { Icon, IconTile } from '../components/icons'
@@ -79,6 +79,31 @@ export default function HoleEntry() {
   // And who this session switched putts tracking on or off for.
   const [puttEdits, setPuttEdits] = useState<Record<string, Record<number, number | null>>>({})
   const [trackEdits, setTrackEdits] = useState<Record<string, boolean>>({})
+  // An edit the saved round already agrees with has landed: drop it, so a
+  // later change from another phone shows through here instead of this
+  // card holding (and re-sending) its old number (Matt, 2026-10-24).
+  // Adjusted while rendering, when the round's golfers change.
+  const [seenPlayers, setSeenPlayers] = useState(round?.players)
+  if (round && round.players !== seenPlayers) {
+    setSeenPlayers(round.players)
+    const players = round.players
+    const landed = (mine: Record<string, Record<number, number | null>>, cardFor: (rp: RoundPlayer) => (number | null)[]) => {
+      let changed = false
+      const next: Record<string, Record<number, number | null>> = {}
+      for (const [pid, holes] of Object.entries(mine)) {
+        const rp = players.find((p) => p.playerId === pid)
+        const card = rp ? cardFor(rp) : []
+        const left = Object.fromEntries(Object.entries(holes).filter(([h, v]) => (card[Number(h)] ?? null) !== v))
+        if (Object.keys(left).length !== Object.keys(holes).length) changed = true
+        if (Object.keys(left).length) next[pid] = left
+      }
+      return changed ? next : mine
+    }
+    const e = landed(edits, (rp) => cardOf(rp))
+    if (e !== edits) setEdits(e)
+    const pe = landed(puttEdits, (rp) => rp.putts ?? [])
+    if (pe !== puttEdits) setPuttEdits(pe)
+  }
   const [pickingPutters, setPickingPutters] = useState(false)
   const [active, setActive] = useState<Active | null>(null)
   // Digits typed into the active cell so far. "1" then "2" is a 12; any

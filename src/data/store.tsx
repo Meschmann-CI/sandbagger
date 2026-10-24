@@ -216,6 +216,26 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     if (news) notifyGroup(news)
   }
 
+  // Back from the pocket: the live channel misses whatever happened while
+  // the phone was locked, so read everything again (Matt, 2026-10-24).
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      backend
+        .load()
+        .then((loaded) => {
+          const fresh = sortBookings(loaded)
+          dataRef.current = fresh
+          setData(fresh)
+        })
+        .catch(() => {
+          /* offline: keep what we have */
+        })
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [backend])
+
   const api: StoreApi = {
     data,
     trophyMoment,
@@ -234,7 +254,10 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     },
 
     addRound(round) {
-      const full: Round = { ...round, id: makeId(), groupId: data.group.id }
+      // Roster order, the order every device loads a round's golfers in.
+      const roster = dataRef.current.players.map((p) => p.id)
+      const players = [...round.players].sort((a, b) => roster.indexOf(a.playerId) - roster.indexOf(b.playerId))
+      const full: Round = { ...round, players, id: makeId(), groupId: data.group.id }
       commit({ kind: 'round.upsert', round: full }, (d) => ({ ...d, rounds: [...d.rounds, full] }))
       announceTrophies(undefined, full)
       return full

@@ -293,6 +293,14 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         })
         scoresByRound.set(rp.round_id, list)
       }
+      // The table has no order of its own, and Postgres hands back a row it
+      // has just updated after the others, so every saved score used to
+      // reshuffle the card on everyone else's phone mid-round (Matt,
+      // 2026-10-24). Roster order, the same on every device.
+      const rosterIndex = new Map((playersRes.data ?? []).map((p: any, i: number) => [p.id, i]))
+      for (const list of scoresByRound.values()) {
+        list.sort((a, b) => (rosterIndex.get(a.playerId) ?? 999) - (rosterIndex.get(b.playerId) ?? 999))
+      }
 
       const players = (playersRes.data ?? []).map(toPlayer)
       const group: Group = {
