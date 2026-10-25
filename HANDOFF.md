@@ -105,11 +105,24 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   wiping queued scores off the card, an unanswered hammer paying as if accepted, and a
   press on the 1st or 10th paying a whole extra nine. Two of them need a SQL paste
   (`merge_round_scores`: putts mode and the client total).
+  Items 1 to 10 fixed the same day in both repos (web 36a53b1, Swift the commit after
+  6c5d14b), not pushed: `bet.results` is a change kind of its own (the live card writes
+  only a bet's money, never its setup); `RoundPatch.changed` names the round fields a
+  save touched and the backend updates just those columns; reloads wait for this
+  phone's queued writes (`whenSettled()` on the web, `outbox.flush()` first on the
+  iPhone); an unanswered hammer counts at the hole's previous value; no press from a
+  nine's first hole and one per hole; stakes in whole cents; the scan and the card's
+  "landed" rule leave holes a golfer entered themselves; the iPhone outbox drains
+  after a relaunch and only treats real network errors as offline. Still to paste:
+  `supabase/apply-2026-10-24-merge-guards.sql` (items 9; `applyScorePatch` in both
+  apps already mirrors it). Items 11 to 33 are still open.
 
 ## Next actions
 
--8. Work the audit list (`AUDIT-2026-10-24.md`, items 1 to 10) before the push and
-   TestFlight build 7 that -7 is holding. Items 2, 3, 4, 5, 6, 7 land in both repos.
+-8. Paste `supabase/apply-2026-10-24-merge-guards.sql` (the two `merge_round_scores`
+   guards), then the push and TestFlight build 7 that -7 is holding. After that, the
+   audit's "soon" list (`AUDIT-2026-10-24.md` items 11 to 33), the final-moment
+   detection and the iPhone GPS/lock-screen items first.
 -7. Own scores win (2026-10-24): `supabase/apply-2026-10-24-own-scores.sql` is pasted
    (verified 2026-10-24: `round_players.self_holes` and the new `merge_round_scores`).
    Matt is holding the push and TestFlight build 7 until he says go.
