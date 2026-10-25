@@ -96,10 +96,9 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
--7. Own scores win (2026-10-24) want `supabase/apply-2026-10-24-own-scores.sql` pasted:
-   `round_players.self_holes` and a `merge_round_scores` that keeps a golfer's own entry
-   for a hole over anyone else's. Until then the apps still guard it on each phone, but a
-   phone on an older build can overwrite a golfer's own score.
+-7. Own scores win (2026-10-24): `supabase/apply-2026-10-24-own-scores.sql` is pasted
+   (verified 2026-10-24: `round_players.self_holes` and the new `merge_round_scores`).
+   Matt is holding the push and TestFlight build 7 until he says go.
 -6. The games menu, rules cards and seven more games (2026-10-23, same branch, both repos):
    Rabbit, Snake, Sixes, Stableford, Bingo Bango Bongo, Junk and Hammer. "Add bet" opens
    "Pick the games" (`src/components/GamesMenu.tsx`), each game's parlor rules card is
