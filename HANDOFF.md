@@ -116,6 +116,15 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   after a relaunch and only treats real network errors as offline. Still to paste:
   `supabase/apply-2026-10-24-merge-guards.sql` (items 9; `applyScorePatch` in both
   apps already mirrors it). Items 11 to 33 are still open.
+  Matt's three from the first TestFlight rounds (2026-10-25, both repos): the iPhone's You
+  page never had the web's Putting block (`PuttingStats` in `YouView.swift`, nine holes of
+  putts to show, the same numbers as `Profile.tsx`); a photo added with others went
+  missing (the Ferry Point round: four files in the bucket, three on the row) because
+  direct writes went out concurrently and a reload could land between them, so direct
+  sends are now one at a time in order in both outboxes and reloads also wait for
+  in-flight writes (`outboxStatus().inFlight`, `Outbox.quiesce()`); tapping the tab you're
+  on brings you back to its first page on the iPhone (paths per tab in `UIState`, the
+  web's tab links already did).
 
 ## Next actions
 

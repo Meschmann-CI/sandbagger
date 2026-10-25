@@ -103,7 +103,7 @@ export function whenSettled(): Promise<boolean> {
 /** For useSyncExternalStore. Returns a stable string so React can compare it. */
 export const outboxSnapshot = () => `${queue.length}:${lastError ?? ''}`
 
-export const outboxStatus = () => ({ pending: queue.length, error: lastError })
+export const outboxStatus = () => ({ pending: queue.length, inFlight: inflight, error: lastError })
 
 export function onOutboxChange(listener: () => void) {
   listeners.add(listener)
@@ -138,6 +138,8 @@ export function withOutbox(inner: Backend): Backend {
   let latest: AppData | null = null
 
   const send = async (change: Change) => inner.apply(change, latest as AppData)
+  // The direct sends, chained so they reach the server in the order made.
+  let sending: Promise<void> = Promise.resolve()
 
   const flush = async () => {
     if (flushing) {
@@ -201,7 +203,16 @@ export function withOutbox(inner: Backend): Backend {
 
       inflight++
       try {
-        await send(change)
+        // One at a time, in order. Four photos added together used to go
+        // out as four concurrent writes of the whole photo list, and the
+        // one that landed last won, whichever it was (2026-10-24: a photo
+        // vanished from a round that way).
+        const run = sending.then(() => send(change))
+        sending = run.then(
+          () => {},
+          () => {},
+        )
+        await run
         if (lastError) {
           lastError = null
           announce()

@@ -179,7 +179,10 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         .catch(() => {
           /* a failed refresh just means we keep showing what we have */
         })
-    if (outboxStatus().pending === 0) return void go()
+    // Queued or still in flight: a write the server hasn't got yet would
+    // read as undone the moment the server's copy came back.
+    const { pending, inFlight } = outboxStatus()
+    if (pending === 0 && inFlight === 0) return void go()
     if (reloadWaiting.current) return
     reloadWaiting.current = true
     void whenSettled().then(() => {
