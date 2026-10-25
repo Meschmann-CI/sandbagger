@@ -714,7 +714,9 @@ begin
     end if;
 
     -- Putts tracking: never said (null), said no (empty), on (18 entries).
-    if s ? 'puttsMode' then
+    -- Another phone can't switch it for a golfer keeping their own card
+    -- (audit 2026-10-24): "off" would wipe the putts they entered.
+    if s ? 'puttsMode' and (mine or not (true = any(f))) then
       p := case s->>'puttsMode' when 'unset' then null when 'off' then '{}' else coalesce(p, '{}') end;
       if s->>'puttsMode' = 'on' and cardinality(p) < 18 then
         p := p || array_fill(null::integer, array[18 - cardinality(p)]);
@@ -734,6 +736,10 @@ begin
     end if;
     if h is not null and cardinality(h) >= 18 and not exists (select 1 from unnest(h[1:18]) x where x is null) then
       g := (select sum(x) from unnest(h[1:18]) x);
+    elsif s ? 'holes' and h is not null then
+      -- A card with holes in it that isn't finished has no total yet,
+      -- whatever the saving phone's copy added up to (audit 2026-10-24).
+      g := null;
     end if;
 
     update round_players

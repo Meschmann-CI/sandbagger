@@ -32,10 +32,20 @@ export interface ScorePatch {
   gross?: number | null
 }
 
+/**
+ * The round's own fields a save can change. The backend writes only the
+ * ones in `changed`, so a phone that set the green fee doesn't put its
+ * stale photos back over the ones another phone added (audit 2026-10-24).
+ */
+export const ROUND_FIELDS = ['date', 'courseName', 'tee', 'tripId', 'notes', 'saddamOnTheLine', 'ghosts', 'photos', 'nines', 'greenFee', 'teeTime', 'bookedById'] as const
+export type RoundField = (typeof ROUND_FIELDS)[number]
+
 export interface RoundPatch {
   round: Round
   /** Anything besides the scores changed: the round row is written too. */
   roundChanged: boolean
+  /** Which of the round's own fields changed. Empty with roundChanged set means something unlisted did. */
+  changed: RoundField[]
   scores: ScorePatch[]
   /** Golfers taken off the round by this save. */
   removed: string[]
@@ -79,7 +89,9 @@ export function roundPatch(before: Round | undefined, after: Round): RoundPatch 
     .map((rp) => playerPatch(before.players.find((p) => p.playerId === rp.playerId), rp))
     .filter((p): p is ScorePatch => p !== null)
   const removed = before.players.filter((p) => !after.players.some((q) => q.playerId === p.playerId)).map((p) => p.playerId)
-  return { round: after, roundChanged: strip(before) !== strip(after), scores, removed }
+  const same = (k: RoundField) => JSON.stringify(before[k] ?? null) === JSON.stringify(after[k] ?? null)
+  const changed = ROUND_FIELDS.filter((k) => !same(k))
+  return { round: after, roundChanged: strip(before) !== strip(after), changed, scores, removed }
 }
 
 /**
@@ -106,5 +118,8 @@ export function applyScorePatch(rp: RoundPlayer | undefined, s: ScorePatch): Rou
   if (s.grossSet) gross = s.gross ?? null
   const card = Array.from({ length: HOLE_COUNT }, (_, i) => holes?.[i] ?? null)
   if (card.every((h) => h != null)) gross = card.reduce<number>((a, h) => a + (h ?? 0), 0)
+  // A card with holes in it that isn't finished has no total yet, whatever
+  // the saving phone's copy added up to (audit 2026-10-24).
+  else if (s.holes && card.some((h) => h != null)) gross = null
   return { playerId: s.playerId, handicapSnapshot: s.handicapSnapshot, gross, holes, putts }
 }

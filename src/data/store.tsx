@@ -27,7 +27,7 @@ import { notifyGroup } from '../lib/push'
 import { shrinkPhoto, uploadTripPhoto } from '../lib/photos'
 import { cleanCourseName, courseSlug, noteRename, renameCourseIn } from '../lib/courses'
 import { syncStoredBrands } from '../lib/courseBrands'
-import { onOutboxChange, outboxSnapshot, outboxStatus } from './outbox'
+import { onOutboxChange, outboxSnapshot, outboxStatus, whenSettled } from './outbox'
 import type { Backend, Change } from './backend'
 
 // One store, two backends. The UI never learns which one is behind it:
@@ -89,6 +89,8 @@ interface StoreApi {
   setMyRanking: (slugs: string[]) => void
   addBet: (bet: Omit<Bet, 'id'>) => void
   updateBet: (bet: Bet) => void
+  /** The live card's settlement: writes only the money, nothing when it's unchanged. */
+  updateBetResults: (betId: string, results: Bet['results']) => void
   deleteBet: (betId: string) => void
   addTrip: (trip: Omit<Trip, 'id' | 'groupId'>) => Trip
   updateTrip: (trip: Trip) => void
@@ -160,30 +162,45 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     [backend],
   )
 
+  // Reads everything again. Never while this phone's own writes are still
+  // queued: the server's copy would blank them off the card until the
+  // queue lands, and the live card would ask for them again (audit
+  // 2026-10-24). One reload waits for the queue, however many asked.
+  const reloadWaiting = useRef(false)
+  const reload = useCallback(() => {
+    const go = () =>
+      backend
+        .load()
+        .then((loaded) => {
+          const fresh = sortBookings(loaded)
+          dataRef.current = fresh
+          setData(fresh)
+        })
+        .catch(() => {
+          /* a failed refresh just means we keep showing what we have */
+        })
+    if (outboxStatus().pending === 0) return void go()
+    if (reloadWaiting.current) return
+    reloadWaiting.current = true
+    void whenSettled().then(() => {
+      reloadWaiting.current = false
+      return go()
+    })
+  }, [backend])
+
   // Someone else logging a round on the course should show up here.
   useEffect(() => {
     if (!backend.subscribe) return
     let timer: ReturnType<typeof setTimeout> | undefined
     const unsubscribe = backend.subscribe(() => {
       clearTimeout(timer)
-      timer = setTimeout(() => {
-        backend
-          .load()
-          .then((loaded) => {
-            const fresh = sortBookings(loaded)
-            dataRef.current = fresh
-            setData(fresh)
-          })
-          .catch(() => {
-            /* a failed refresh just means we keep showing what we have */
-          })
-      }, 400)
+      timer = setTimeout(reload, 400)
     })
     return () => {
       clearTimeout(timer)
       unsubscribe()
     }
-  }, [backend])
+  }, [backend, reload])
 
   // The save that put a round's last score in: each golfer's new trophies
   // go to the group as one push (Matt, 2026-10-22), and this phone's
@@ -221,21 +238,11 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
   // the phone was locked, so read everything again (Matt, 2026-10-24).
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState !== 'visible') return
-      backend
-        .load()
-        .then((loaded) => {
-          const fresh = sortBookings(loaded)
-          dataRef.current = fresh
-          setData(fresh)
-        })
-        .catch(() => {
-          /* offline: keep what we have */
-        })
+      if (document.visibilityState === 'visible') reload()
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [backend])
+  }, [reload])
 
   const api: StoreApi = {
     data,
@@ -388,6 +395,14 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     },
     updateBet(bet) {
       commit({ kind: 'bet.upsert', bet }, (d) => ({ ...d, bets: d.bets.map((b) => (b.id === bet.id ? bet : b)) }))
+    },
+    updateBetResults(betId, results) {
+      // Only the money goes out, so a stale copy of the game's setup on
+      // this phone can't land over a newer one (audit 2026-10-24).
+      const current = dataRef.current.bets.find((b) => b.id === betId)
+      if (!current || JSON.stringify(current.results) === JSON.stringify(results)) return
+      const bet = { ...current, results }
+      commit({ kind: 'bet.results', id: betId, results }, (d) => ({ ...d, bets: d.bets.map((b) => (b.id === betId ? bet : b)) }))
     },
     deleteBet(betId) {
       commit({ kind: 'bet.delete', id: betId }, (d) => ({ ...d, bets: d.bets.filter((b) => b.id !== betId) }))

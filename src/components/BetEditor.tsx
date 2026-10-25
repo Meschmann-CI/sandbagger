@@ -105,7 +105,9 @@ export default function BetEditor({
   const [manual, setManual] = useState<Record<string, string>>({})
   const [manualMode, setManualMode] = useState(false)
 
-  const stakeNum = Number(stake) || 0
+  // Whole cents only: a $0.125 stake rounded per golfer makes money out of
+  // nothing (audit 2026-10-24).
+  const stakeNum = Math.round((Number(stake) || 0) * 100) / 100
   const card = gameCard(type)
   const cardsExist = anyCards(round)
 
@@ -243,7 +245,7 @@ export default function BetEditor({
           <label className={label}>Stake</label>
           <input
             value={stake}
-            onChange={(e) => setStake(e.target.value.replace(/[^\d.]/g, ''))}
+            onChange={(e) => setStake(e.target.value.replace(/[^\d.]/g, '').replace(/^(\d*\.\d{0,2}).*$/, '$1'))}
             inputMode="decimal"
             className={`${field} tabular-nums text-center`}
           />

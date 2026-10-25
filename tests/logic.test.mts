@@ -279,6 +279,12 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('merge: putts said no', applyScorePatch(base.players[0], { playerId: 'pat', handicapSnapshot: 12, puttsMode: 'off' }).putts, [])
   const removed = roundPatch(base, { ...base, players: [base.players[0]], notes: 'rain' })!
   check('roundPatch: removed golfers and round fields', [removed.removed, removed.roundChanged, removed.scores], [['matt'], true, []])
+  // Only the fields that changed are named, so the backend writes just those (audit 2026-10-24).
+  check('roundPatch: names the changed fields', removed.changed, ['notes'])
+  check('roundPatch: no round fields changed', roundPatch(base, mattSaves)!.changed, [])
+  // A stale phone's total over a card the merge knows is unfinished: no total.
+  const stale = applyScorePatch({ playerId: 'pat', handicapSnapshot: 12, gross: null, holes: at(blank(), 0, 4) }, { playerId: 'pat', handicapSnapshot: 12, holes: { '17': 5 }, grossSet: true, gross: 88 })
+  check('merge: no total on an unfinished card', stale.gross, null)
 }
 
 // 11. Green fees one golfer covered: the others owe them a head.
@@ -510,6 +516,26 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('hammer: the read-out', out.detail, ['18 holes played.', 'Took the 1st at ×4|a', 'Took the 2nd when the hammer was declined|a', 'Took the 3rd at ×8|b', '15 holes halved.'])
   const four = round('hammer4', '2026-06-01', [rp('a', fours()), rp('b', fours()), rp('c', fours()), rp('d', fours())])
   check('hammer: four need sides', calcHammer(four, ['a', 'b', 'c', 'd'], 1, false).detail, ['Pick the two sides.'])
+  // 21b. A hammer thrown on the 1st and never answered: the hole is worth
+  //      what it was before, x1 (audit 2026-10-24).
+  const unanswered = { teams: [['a'], ['b']] as [string[], string[]], limit: 3, holes: [{ doubles: 1, by: 1 as const, pending: 0 as const }] }
+  const open = calcHammer(r, ['a', 'b'], 1, false, undefined, unanswered)
+  // a takes the 1st at x1 and b the 3rd at x1, so it's a wash (x2 would leave a up $1).
+  check('hammer: an unanswered hammer counts for nothing', [amount(open.results, 'a'), open.detail], [0, ['18 holes played.', '16 holes halved.']])
+}
+
+// 12b. Match-play Nassau: a press on the 1st or 10th is the nine over again
+//      and a hole pressed twice is one press (audit 2026-10-24). A wins 3-9,
+//      B wins 1-2: front 3&2 for A, one press from the 5th 3&2 for A, $30.
+{
+  const card = Array<number>(18).fill(4)
+  const a = round('press1', '2026-06-01', [rp('a', card.map((x, i) => (i < 2 ? 5 : i < 9 ? 3 : x))), rp('b', [...card])])
+  const play = { format: 'match' as const, presses: [{ hole: 0 }, { hole: 4 }, { hole: 4 }, { hole: 9 }] }
+  const out = calcNassauMatch(a, ['a', 'b'], 10, false, undefined, play)
+  check('match nassau: no press from the 1st or 10th, no double press', [amount(out.results, 'a'), out.detail], [
+    30,
+    ['Takes the front 3&2|a', 'Takes the press from the 5th 3&2|a', 'The back halved.', 'Takes the eighteen 5&4|a'],
+  ])
 }
 
 // 13. Spectator mode: the lead by gross, the slice, the turn, and who hears.

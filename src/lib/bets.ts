@@ -445,9 +445,10 @@ export function calcNassauMatch(
     to: number
   }
   const autoPress = play?.autoPress && play.autoPress > 0 ? play.autoPress : 0
-  const manual = (play?.presses ?? [])
-    .map((p) => p.hole)
-    .filter((h) => Number.isInteger(h) && h >= 0 && h < HOLE_COUNT)
+  // One leg per pressed hole, and never from a nine's first hole: a press
+  // there would just be the nine over again (audit 2026-10-24).
+  const manual = [...new Set((play?.presses ?? []).map((p) => p.hole))]
+    .filter((h) => Number.isInteger(h) && h >= 0 && h < HOLE_COUNT && h !== FRONT[0] && h !== BACK[0])
     .sort((x, y) => x - y)
   const pressLeg = (h: number, to: number): Leg => ({ label: `the press from the ${nth(h + 1)}`, from: h, to })
 
@@ -1132,7 +1133,9 @@ export function calcHammer(
   let halved = 0
   for (let h = 0; h < HOLE_COUNT; h++) {
     const hole = play?.holes?.[h] ?? null
-    const doubles = Math.min(hole?.doubles ?? 0, limit)
+    // A hammer nobody has answered yet doesn't count: the hole is worth
+    // what it was before it was thrown (audit 2026-10-24).
+    const doubles = Math.min(Math.max(0, (hole?.doubles ?? 0) - (hole?.pending != null ? 1 : 0)), limit)
     let winner: 0 | 1
     if (hole?.conceded === 0 || hole?.conceded === 1) {
       winner = hole.conceded === 0 ? 1 : 0

@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AppData, Bet, Course, CourseRanking, CourseRating, Expense, Group, Payment, Player, Round, Trip } from '../types'
 import type { Backend, Change } from './backend'
 import { RetryLater } from './outbox'
+import type { RoundField } from '../lib/scorePatch'
 
 // Maps between the app's camelCase shapes and the snake_case tables in
 // supabase/schema.sql. Rounds keep their player scores in a child table;
@@ -111,6 +112,23 @@ const courseRankingRow = (r: CourseRanking) => ({
   slugs: r.slugs,
   updated_at: new Date().toISOString(),
 })
+
+// A round's own fields (src/lib/scorePatch.ts) to their columns, for a
+// patch that writes only what changed.
+const ROUND_COLUMNS: Record<RoundField, string> = {
+  date: 'played_on',
+  courseName: 'course_name',
+  tee: 'tee',
+  tripId: 'trip_id',
+  notes: 'notes',
+  saddamOnTheLine: 'saddam',
+  ghosts: 'ghosts',
+  photos: 'photos',
+  nines: 'nines',
+  greenFee: 'green_fee',
+  teeTime: 'tee_time',
+  bookedById: 'booked_by',
+}
 
 const roundRow = (r: Round) => ({
   id: r.id,
@@ -445,7 +463,16 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         }
         case 'round.patch': {
           const { round: r, roundChanged, scores, removed } = change.patch
-          if (roundChanged) guard((await client.from('rounds').upsert({ ...roundRow(r), created_by: playerId })).error, 'Saving round')
+          const changed = change.patch.changed ?? []
+          if (roundChanged && changed.length) {
+            // Only the columns this save changed, so a stale copy of the
+            // rest (photos, the fee) stays out of the write.
+            const row = roundRow(r) as Record<string, unknown>
+            const partial = Object.fromEntries(changed.map((k) => [ROUND_COLUMNS[k], ROUND_COLUMNS[k] in row ? row[ROUND_COLUMNS[k]] : null]))
+            guard((await client.from('rounds').update(partial).eq('id', r.id)).error, 'Saving round')
+          } else if (roundChanged) {
+            guard((await client.from('rounds').upsert({ ...roundRow(r), created_by: playerId })).error, 'Saving round')
+          }
           if (scores.length) {
             const merged = await client.rpc('merge_round_scores', { p_round: r.id, p_scores: scores })
             if (merged.error) {
@@ -552,6 +579,9 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           return
         case 'bet.upsert':
           guard((await client.from('bets').upsert(betRow(change.bet))).error, 'Saving bet')
+          return
+        case 'bet.results':
+          guard((await client.from('bets').update({ results: change.results }).eq('id', change.id)).error, 'Saving bet')
           return
         case 'bet.delete':
           await removeRow('bets', change.id, 'Deleting bet')

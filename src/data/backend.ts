@@ -1,5 +1,5 @@
 import type { RoundPatch } from '../lib/scorePatch'
-import type { AppData, Bet, Chirp, Course, CourseRanking, CourseRating, Expense, Group, Payment, Player, Round, Trip } from '../types'
+import type { AppData, Bet, BetResult, Chirp, Course, CourseRanking, CourseRating, Expense, Group, Payment, Player, Round, Trip } from '../types'
 
 // Every mutation the app can make. The store applies the change to its
 // own state optimistically and hands the same descriptor to the backend,
@@ -22,6 +22,10 @@ export type Change =
   // and only ever by its owner, so there's nothing to clobber.
   | { kind: 'courseRanking.upsert'; ranking: CourseRanking }
   | { kind: 'bet.upsert'; bet: Bet }
+  // The live card's settlement of a bet: only the money, so a phone with a
+  // stale copy of the setup (wolf calls, presses, hammers) can't write it
+  // back over a newer one (audit 2026-10-24).
+  | { kind: 'bet.results'; id: string; results: BetResult[] }
   | { kind: 'bet.delete'; id: string }
   | { kind: 'trip.upsert'; trip: Trip }
   | { kind: 'trip.delete'; id: string }

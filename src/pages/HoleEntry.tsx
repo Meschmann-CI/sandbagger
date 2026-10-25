@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useNavigate } from '../lib/nav'
 import { useStore } from '../data/store'
-import { HOLE_COUNT, cardOf, cardTotal, holesEntered, puttsOf, tracksPutts } from '../lib/holes'
+import { BACK, FRONT, HOLE_COUNT, cardOf, cardTotal, holesEntered, puttsOf, tracksPutts } from '../lib/holes'
 import {
   courseForRound,
   hasPars,
@@ -69,8 +69,9 @@ interface Active {
 export default function HoleEntry() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { data, updateRound, updateBet } = useStore()
+  const { data, updateRound, updateBet, updateBetResults } = useStore()
   const round = findRound(data, id)
+  const me = data.currentUserId
 
   // Only the cells this session actually typed, keyed player → hole.
   // Everything on screen is the live round with these laid over the top,
@@ -95,7 +96,10 @@ export default function HoleEntry() {
       for (const [pid, holes] of Object.entries(mine)) {
         const rp = players.find((p) => p.playerId === pid)
         const card = rp ? cardFor(rp) : []
-        const left = Object.fromEntries(Object.entries(holes).filter(([h, v]) => (card[Number(h)] ?? null) !== v))
+        // A hole the golfer entered on their own phone is theirs: an edit
+        // of it here (the scanner's, say) is dropped, not kept and re-sent.
+        const theirs = pid !== me ? (rp?.selfHoles ?? []) : []
+        const left = Object.fromEntries(Object.entries(holes).filter(([h, v]) => (card[Number(h)] ?? null) !== v && !theirs[Number(h)]))
         if (Object.keys(left).length !== Object.keys(holes).length) changed = true
         if (Object.keys(left).length) next[pid] = left
       }
@@ -308,7 +312,7 @@ export default function HoleEntry() {
     const saved: Round = { ...round, players: nextPlayers }
     for (const bet of data.bets.filter((b) => b.roundId === round.id)) {
       const outcome = settleFromCard(bet, saved, course)
-      if (outcome) updateBet({ ...bet, results: outcome.results })
+      if (outcome) updateBetResults(bet.id, outcome.results)
     }
 
     // The moment the last score lands is the moment the group hears the
@@ -464,7 +468,6 @@ export default function HoleEntry() {
   // Ghosts: each golfer races their own earlier card here, if they have
   // one. Chosen on your own phone, stored on the round so it survives a
   // reload and shows on everyone else's.
-  const me = data.currentUserId
   const iPlay = round.players.some((rp) => rp.playerId === me)
   const nameOf = (pid: string) => (pid === me ? 'You' : (data.players.find((pl) => pl.id === pid)?.name.split(' ')[0] ?? '?'))
   const ownPhones = selfScoring(round, me)
@@ -538,9 +541,11 @@ export default function HoleEntry() {
       const next = { ...all }
       for (const row of scanRows) {
         if (!row.playerId) continue
-        const mine = { ...(next[row.playerId] ?? {}) }
+        const pid = row.playerId
+        const mine = { ...(next[pid] ?? {}) }
         row.scores.forEach((s, i) => {
-          if (s != null) mine[i] = Math.max(1, Math.min(20, s))
+          // A hole the golfer entered on their own phone stands over the paper.
+          if (s != null && !(pid !== me && enteredByThemselves(round, pid, i))) mine[i] = Math.max(1, Math.min(20, s))
         })
         next[row.playerId] = mine
       }
@@ -702,7 +707,9 @@ export default function HoleEntry() {
     `rounded-full border px-3 py-1.5 text-footnote font-bold transition active:scale-95 ${
       on ? 'border-ink bg-ink text-white' : 'border-line-strong bg-card text-ink-dim'
     }`
-  const gameCalls = (wolfBets.length > 0 || pressBets.length > 0 || bbbBets.length > 0 || junkBets.length > 0 || hammerBets.length > 0) && (
+  // No press from a nine's first hole: that's the nine over again.
+  const pressable = h !== FRONT[0] && h !== BACK[0]
+  const gameCalls = (wolfBets.length > 0 || (pressBets.length > 0 && pressable) || bbbBets.length > 0 || junkBets.length > 0 || hammerBets.length > 0) && (
     <Card className="p-3.5 space-y-3">
       {wolfBets.map((bet) => {
         const order = wolfOrder(bet.results.map((r) => r.playerId), bet.wolf)
@@ -732,7 +739,7 @@ export default function HoleEntry() {
           </div>
         )
       })}
-      {pressBets.map((bet) => {
+      {pressable && pressBets.map((bet) => {
         const pressed = bet.nassau?.presses?.some((p) => p.hole === h) ?? false
         return (
           <div key={bet.id} className="flex items-center justify-between gap-3">
