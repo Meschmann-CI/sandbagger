@@ -94,8 +94,22 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   redirects by hand and streams the body to the 400 KB cap. `npm test` now runs
   `tests/outbox.test.mts` and `tests/logic.test.mts` (55 checks).
 
+- Audit (2026-10-24, review only, nothing fixed yet): `AUDIT-2026-10-24.md` covers
+  everything since the first audit in both repos, with the live project checked read-only.
+  Mechanical checks all green, the money in all fourteen games nets to zero over 105,000
+  random rounds (`tests/random-bets.test.mts`, run by hand), the schema and prod agree.
+  Ten items are listed under "Fix before the next push and TestFlight build"; the big
+  ones are the iPhone outbox not draining after a relaunch, every live save rewriting
+  every bet's game setup from that phone's copy (Wolf calls, presses and hammers vanish),
+  non-score round edits still writing the whole `rounds` row, the foreground reload
+  wiping queued scores off the card, an unanswered hammer paying as if accepted, and a
+  press on the 1st or 10th paying a whole extra nine. Two of them need a SQL paste
+  (`merge_round_scores`: putts mode and the client total).
+
 ## Next actions
 
+-8. Work the audit list (`AUDIT-2026-10-24.md`, items 1 to 10) before the push and
+   TestFlight build 7 that -7 is holding. Items 2, 3, 4, 5, 6, 7 land in both repos.
 -7. Own scores win (2026-10-24): `supabase/apply-2026-10-24-own-scores.sql` is pasted
    (verified 2026-10-24: `round_players.self_holes` and the new `merge_round_scores`).
    Matt is holding the push and TestFlight build 7 until he says go.
