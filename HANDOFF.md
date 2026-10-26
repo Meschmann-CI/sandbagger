@@ -113,9 +113,10 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   iPhone); an unanswered hammer counts at the hole's previous value; no press from a
   nine's first hole and one per hole; stakes in whole cents; the scan and the card's
   "landed" rule leave holes a golfer entered themselves; the iPhone outbox drains
-  after a relaunch and only treats real network errors as offline. Still to paste:
-  `supabase/apply-2026-10-24-merge-guards.sql` (items 9; `applyScorePatch` in both
-  apps already mirrors it). Items 11 to 33 are still open.
+  after a relaunch and only treats real network errors as offline.
+  `supabase/apply-2026-10-24-merge-guards.sql` (items 9) was pasted by Matt 2026-10-26 and
+  verified in prod (both guards present, execute granted to authenticated and
+  service_role only). Items 11 to 33 are still open.
   Matt's three from the first TestFlight rounds (2026-10-25, both repos): the iPhone's You
   page never had the web's Putting block (`PuttingStats` in `YouView.swift`, nine holes of
   putts to show, the same numbers as `Profile.tsx`); a photo added with others went
@@ -128,10 +129,11 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
--8. Paste `supabase/apply-2026-10-24-merge-guards.sql` (the two `merge_round_scores`
-   guards), then the push and TestFlight build 7 that -7 is holding. After that, the
-   audit's "soon" list (`AUDIT-2026-10-24.md` items 11 to 33), the final-moment
-   detection and the iPhone GPS/lock-screen items first.
+-8. The merge-guards SQL is pasted (2026-10-26). Next: the push of both repos and
+   TestFlight build 7 that -7 is holding (everyone updates before the first Wolf,
+   match-play Nassau or hammer bet). After that, the audit's "soon" list
+   (`AUDIT-2026-10-24.md` items 11 to 33), the final-moment detection and the iPhone
+   GPS/lock-screen items first.
 -7. Own scores win (2026-10-24): `supabase/apply-2026-10-24-own-scores.sql` is pasted
    (verified 2026-10-24: `round_players.self_holes` and the new `merge_round_scores`).
    Matt is holding the push and TestFlight build 7 until he says go.
