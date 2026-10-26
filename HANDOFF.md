@@ -129,14 +129,15 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
--8. The merge-guards SQL is pasted (2026-10-26). Next: the push of both repos and
-   TestFlight build 7 that -7 is holding (everyone updates before the first Wolf,
-   match-play Nassau or hammer bet). After that, the audit's "soon" list
-   (`AUDIT-2026-10-24.md` items 11 to 33), the final-moment detection and the iPhone
-   GPS/lock-screen items first.
+-8. Done 2026-10-26: the merge-guards SQL pasted, both repos pushed (web b13c7b9 live,
+   bundle index-DlcL4-Lx; Swift 03e3d18) and TestFlight build 1.0 (7) uploaded (the
+   audit fixes, the Putting block, the tab re-tap, the photo write fix). Everyone updates
+   before the first Wolf, match-play Nassau or hammer bet: build 6 rewrites a bet's setup
+   whole on every save. Next: the audit's "soon" list (`AUDIT-2026-10-24.md` items 11 to
+   33), the final-moment detection and the iPhone GPS/lock-screen items first.
 -7. Own scores win (2026-10-24): `supabase/apply-2026-10-24-own-scores.sql` is pasted
    (verified 2026-10-24: `round_players.self_holes` and the new `merge_round_scores`).
-   Matt is holding the push and TestFlight build 7 until he says go.
+   Pushed with build 7 on 2026-10-26 (see -8).
 -6. The games menu, rules cards and seven more games (2026-10-23, same branch, both repos):
    Rabbit, Snake, Sixes, Stableford, Bingo Bango Bongo, Junk and Hammer. "Add bet" opens
    "Pick the games" (`src/components/GamesMenu.tsx`), each game's parlor rules card is
