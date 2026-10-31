@@ -20,10 +20,11 @@ import CourseRatingEditor from '../components/CourseRatingEditor'
 import { courseSummaries, fmtStars } from '../lib/ratings'
 import Scorecard from '../components/Scorecard'
 import RoundPhotos from '../components/RoundPhotos'
+import RoundNote from '../components/RoundNote'
 import SettleUp from '../components/SettleUp'
 import { roundBetSettlements } from '../lib/settlements'
 import { useConfirm } from '../components/Confirm'
-import { Avatar, Card, HelpTip, MoneyBadge, Pill, PrimaryButton, SaddamIcon, SECONDARY_BTN, SectionLabel } from '../components/ui'
+import { Avatar, Card, HelpTip, LIVE_YELLOW, MoneyBadge, Pill, PrimaryButton, SaddamIcon, SECONDARY_BTN, SectionLabel } from '../components/ui'
 import { rulesFor } from '../lib/betRules'
 import { sandbaggers } from '../lib/delight'
 import { SandbagStamp } from '../components/Delight'
@@ -243,9 +244,9 @@ function PlayedRound() {
               to={`/rounds/${round.id}/watch`}
               className="mt-2 flex items-center gap-2 rounded-xl bg-[#141816] px-4 py-2.5 text-footnote font-bold text-white"
             >
-              <span className="h-[7px] w-[7px] rounded-full bg-[#F6C744]" />
+              <span className="h-[7px] w-[7px] rounded-full" style={{ backgroundColor: LIVE_YELLOW }} />
               Live now
-              <span className="ml-auto text-[#F6C744]">Watch</span>
+              <span className="ml-auto" style={{ color: LIVE_YELLOW }}>Watch</span>
             </Link>
           )}
         {/* The round as a picture: its first photo, or its course painted
@@ -404,6 +405,9 @@ function PlayedRound() {
           ))}
         </div>
       </Card>
+
+      {/* The round's own line, from whoever was there. */}
+      <RoundNote round={round} />
 
       {/* Attesting, once every hole is in: sign it and the card turns over. */}
       {iPlayed && anyCards(round) && round.players.every(cardComplete) && (

@@ -10,7 +10,8 @@ import { settleFromCard } from '../lib/bets'
 import { betStatus } from '../lib/betText'
 import { cardSlice, liveLines, moments, toParLabel, type Moment } from '../lib/spectate'
 import { SCORE_MARK } from '../components/scoreMarks'
-import { Avatar, Card, SectionLabel } from '../components/ui'
+import { HoldUpdates } from '../lib/holdUpdates'
+import { Avatar, Card, LIVE_YELLOW, SectionLabel } from '../components/ui'
 
 // Watching a round you're not in (Matt, 2026-10-23, option A): who leads
 // by gross, the card cut to its last three holes, the money as it stands,
@@ -19,7 +20,6 @@ import { Avatar, Card, SectionLabel } from '../components/ui'
 // as WatchRoundView.swift.
 
 const CHIRPS = ['Holy... 🙌', '😬 Yikes', '😱 Wow']
-const LIVE_YELLOW = '#F6C744'
 
 export default function WatchRound() {
   const { id } = useParams()
@@ -183,6 +183,7 @@ export default function WatchRound() {
               }}
               className="mt-2.5 flex gap-2 px-1"
             >
+              <HoldUpdates />
               <input
                 value={custom}
                 onChange={(e) => setCustom(e.target.value)}

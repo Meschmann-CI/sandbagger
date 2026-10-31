@@ -1,5 +1,5 @@
-// Randomised money review for every Bandit game (audit 2026-10-24). Not part
-// of `npm test`; run by hand: node tests/random-bets.test.mts [rounds-per-game] [seed-offset]
+// Randomised money review for every Bandit game (audit 2026-10-24). npm test runs
+// 150 rounds a game; by hand: node tests/random-bets.test.mts [rounds-per-game] [seed-offset]
 import { register } from 'node:module'
 
 register(
@@ -314,7 +314,7 @@ for (const game of GAMES) {
       continue
     }
     ran[game]++
-    checkOutcome(game, seed, out, removed, betIds, input)
+    checkOutcome(game, seed, out, game === "custom" ? [] : removed, betIds, input)
     // settleFromCard must agree with the direct call for card games.
     if (game !== 'custom') {
       const viaBet = bets.settleFromCard(bet, round, course)

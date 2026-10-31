@@ -17,7 +17,7 @@ import { canSeeTrip, fmt1, isSoloRound, pending, type Round, type Trip } from '.
 import { Icon, IconTile } from '../components/icons'
 import CourseScene from '../components/CourseScene'
 import RoundScene from '../components/RoundScene'
-import { Avatar, AvatarStack, Card, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
+import { Avatar, AvatarStack, Card, LIVE_YELLOW, RowButton, SaddamIcon, SectionLabel } from '../components/ui'
 import { CountUp } from '../components/Delight'
 
 // The front door, titled with the group's name. A round being played
@@ -514,8 +514,6 @@ interface Live {
   watch?: boolean
 }
 
-// The yellow of the flag on the pin: only for Live, here.
-const LIVE_YELLOW = '#F6C744'
 
 /**
  * A round being played right now, as a slim strip like a Live Activity.

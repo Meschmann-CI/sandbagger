@@ -4,6 +4,9 @@ import { money } from '../lib/money'
 import { Icon, IconTile } from './icons'
 import { StreakContext } from './streakContext'
 
+/** The yellow of the flag on the pin: Live on Home, your bar on Standings, the watch page. */
+export const LIVE_YELLOW = '#F6C744'
+
 // A golfer on a hot run wears a gold ring everywhere their face shows up,
 // with a flame once the avatar is big enough to carry one, and loses it
 // the moment the run ends. Cold runs used to get an icy ring too, but

@@ -648,5 +648,51 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('roundBetSettlements reads through the card', roundBetSettlements(d, r).map((s) => [s.fromId, s.toId, s.amount]), [['a', 'b', 4]])
 }
 
+// 26. The gaps the audit named (2026-10-24): a net game among the new ones,
+//     a 27-hole index through a bet, a golfer gone from a new game, and an
+//     odd stake.
+{
+  const idx: Course = { id: 'n', groupId: G, name: 'N', slug: 'n', pars: Array(18).fill(4), strokeIndex: Array.from({ length: 18 }, (_, i) => i + 1) }
+  // Net Stableford pays off full handicaps: a (10) gets a stroke on the ten
+  // hardest holes, 46 points on all 4s; b (18) a stroke a hole, 36 on all 5s.
+  const r = round('netstab', '2026-06-01', [rp('a', fours(), 10), rp('b', Array(18).fill(5), 18)])
+  const stab = calcStableford(r, ['a', 'b'], 1, true, idx)
+  check('net stableford: full handicaps, settled on the gap', [amount(stab.results, 'a'), amount(stab.results, 'b'), stab.detail.slice(1, 3)], [10, -10, ['46 points|a', '36 points|b']])
+  // Net rabbit off the low man: b gets one stroke, on the hardest hole, and
+  // takes the 1st with it; nobody catches the rabbit again.
+  const rab = calcRabbit(round('netrab', '2026-06-01', [rp('a', fours(), 10), rp('b', fours(), 11)]), ['a', 'b'], 1, true, idx)
+  check('net rabbit: the one stroke off the low man wins the 1st', [amount(rab.results, 'a'), amount(rab.results, 'b')], [-2, 2])
+
+  // 27 holes: Meadows (odd index, it's the longer nine) then Lakes. b is one
+  // stroke worse than a, so b strokes on Meadows' 1st, the joined index 1,
+  // and takes that skin net.
+  const nine = (n: number) => Array(9).fill(n)
+  const c27: Course = {
+    id: 'c27', groupId: G, name: 'Centennial', slug: 'centennial', pars: [],
+    nines: [
+      { name: 'Meadows', pars: nine(4), strokeIndex: [1, 2, 3, 4, 5, 6, 7, 8, 9], tees: [{ name: 'White', holeYards: nine(420) }] },
+      { name: 'Lakes', pars: nine(4), strokeIndex: [1, 2, 3, 4, 5, 6, 7, 8, 9], tees: [{ name: 'White', holeYards: nine(380) }] },
+    ],
+  }
+  const r27 = round('r27', '2026-06-01', [rp('a', fours(), 10), rp('b', fours(), 11)], { courseName: 'Centennial', tee: 'White', nines: ['Meadows', 'Lakes'] })
+  const joined = courseForRound(data({ courses: [c27] }), r27)
+  const sk27 = calcSkins(r27, ['a', 'b'], 1, true, joined)
+  check('27 holes: the joined index reaches a net bet', [joined?.strokeIndex?.length, amount(sk27.results, 'a'), amount(sk27.results, 'b'), sumCents(sk27.results)], [18, -1, 1, 0])
+
+  // A golfer gone from the round after a new game was placed owes nothing.
+  const gone = round('gone2', '2026-06-01', [rp('a', fours([0, 3])), rp('b', fours())])
+  const rabGone = calcRabbit(gone, ['a', 'b', 'c'], 1, false)
+  const stabGone = calcStableford(gone, ['a', 'b', 'c'], 1, false, { id: 'p', groupId: G, name: 'P', slug: 'p', pars: Array(18).fill(4) })
+  check('new games: a removed golfer owes nothing', [amount(rabGone.results, 'c'), amount(stabGone.results, 'c'), sumCents(rabGone.results), sumCents(stabGone.results)], [0, 0, 0, 0])
+
+  // An odd stake stays in whole cents and nets to zero: 35 cents a skin from
+  // each of two others, and a 40-cent pot three ways (net of the dime each anted).
+  const odd = round('odd', '2026-06-01', [rp('a', fours([0, 3])), rp('b', fours()), rp('c', fours())])
+  const perSkin = calcSkins(odd, ['a', 'b', 'c'], 0.35, false)
+  check('odd stake: per skin, whole cents', [amount(perSkin.results, 'a'), amount(perSkin.results, 'b'), sumCents(perSkin.results)], [0.7, -0.35, 0])
+  const pot = calcSkins(round('odd2', '2026-06-01', [rp('a', fours([0, 3])), rp('b', fours([1, 3])), rp('c', fours([2, 3])), rp('d', fours())]), ['a', 'b', 'c', 'd'], 0.1, false, undefined, true)
+  check('odd stake: a pot in whole cents, odd cent to the first', [['a', 'b', 'c', 'd'].map((id) => amount(pot.results, id)), sumCents(pot.results)], [[0.04, 0.03, 0.03, -0.1], 0])
+}
+
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)
 process.exit(failures === 0 ? 0 : 1)

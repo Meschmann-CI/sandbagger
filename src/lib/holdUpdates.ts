@@ -9,6 +9,12 @@ let holds = 0
 
 export const updatesHeld = () => holds > 0
 
+/** The same hold as an element, for a form that lives inside a bigger component: `<HoldUpdates />` next to the input. */
+export function HoldUpdates() {
+  useHoldUpdates()
+  return null
+}
+
 /** The same hold for work outside React (pulling hole maps). Call the result to let go. */
 export function holdUpdates(): () => void {
   holds++

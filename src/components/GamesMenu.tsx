@@ -114,7 +114,7 @@ export function GamesMenu({
           <div className="flex items-center gap-1.5">
             <span className="text-body font-bold text-ink">{g.label}</span>
             {NEW_GAMES.includes(g.type) && !lastPlayed.has(g.type) && (
-              <span className="rounded-md bg-green-soft px-1.5 py-0.5 text-[11px] font-extrabold text-green-deep">NEW</span>
+              <span className="rounded-md bg-green-soft px-1.5 py-0.5 text-caption font-extrabold text-green-deep">New</span>
             )}
           </div>
           <p className="text-footnote leading-snug text-ink-dim">{g.blurb}</p>
@@ -156,7 +156,7 @@ export function GamesMenu({
   const section = (title: string, games: GameInfo[]) =>
     games.length > 0 && (
       <div className="flex flex-col">
-        <p className="pb-1 text-caption font-bold tracking-wide text-ink-faint">{title}</p>
+        <p className="pb-1 text-caption font-bold text-ink-faint">{title}</p>
         {games.map(row)}
       </div>
     )
@@ -169,7 +169,7 @@ export function GamesMenu({
           <div className="mx-auto h-1.5 w-10 rounded-full bg-line-strong" />
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <h2 className="text-[28px] font-extrabold tracking-tight text-ink">Pick the games</h2>
+              <h2 className="text-large font-extrabold text-ink">Pick the games</h2>
               <button type="button" onClick={onClose} aria-label="Close" className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-ink-dim">
                 <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
                   <path d="M2 2l10 10M12 2L2 12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
@@ -188,21 +188,22 @@ export function GamesMenu({
             </div>
           </div>
 
-          <div className="flex items-center gap-3.5 rounded-[18px] bg-forest p-4 text-on-forest">
-            <svg width="52" height="52" viewBox="0 0 40 40" aria-hidden="true" className="shrink-0">
-              <g fill="none" stroke="#F3EAD4" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          {/* Cream, not forest: no new forest surfaces (Decisions, 2026-10-10). */}
+          <div className="flex items-center gap-3.5 rounded-[18px] bg-cream p-4 text-ink">
+            <svg width="52" height="52" viewBox="0 0 40 40" aria-hidden="true" className="shrink-0 text-forest">
+              <g fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="7" y="9" width="20" height="20" rx="4" />
                 <path d="M27 15l6 3v14l-14 2-2-5" />
-                <circle cx="12.5" cy="14.5" r="1.4" fill="#F3EAD4" />
-                <circle cx="17" cy="19" r="1.4" fill="#F3EAD4" />
-                <circle cx="21.5" cy="23.5" r="1.4" fill="#F3EAD4" />
+                <circle cx="12.5" cy="14.5" r="1.4" fill="currentColor" />
+                <circle cx="17" cy="19" r="1.4" fill="currentColor" />
+                <circle cx="21.5" cy="23.5" r="1.4" fill="currentColor" />
               </g>
             </svg>
             <div className="min-w-0 flex-1">
-              <p className="text-[17px] font-bold">Surprise us</p>
-              <p className="text-footnote leading-snug opacity-90">{spunLine}</p>
+              <p className="text-headline font-bold">Surprise us</p>
+              <p className="text-footnote leading-snug text-ink-dim">{spunLine}</p>
             </div>
-            <button type="button" onClick={surprise} className="h-11 shrink-0 rounded-full bg-on-forest px-[18px] text-body font-bold text-forest active:scale-95">
+            <button type="button" onClick={surprise} className="h-11 shrink-0 rounded-full bg-forest px-[18px] text-body font-bold text-on-forest active:scale-95">
               Spin
             </button>
           </div>
@@ -223,9 +224,9 @@ export function GamesMenu({
             ))}
           </div>
 
-          {section('YOUR USUAL', usual)}
-          {section(usual.length ? 'NEW TO TRY' : 'THE GAMES', fresh)}
-          {section('OR', other)}
+          {section('Your usual', usual)}
+          {section(usual.length ? 'New to try' : 'The games', fresh)}
+          {section('Or', other)}
 
           {hidden.length > 0 && (
             <p className="text-caption leading-snug text-ink-faint">
@@ -244,7 +245,7 @@ export function GamesMenu({
             type="button"
             disabled={!picked.length}
             onClick={() => onPick(picked)}
-            className="h-[52px] w-full rounded-full bg-green text-[17px] font-bold text-white disabled:opacity-40"
+            className="h-[52px] w-full rounded-full bg-green text-headline font-bold text-white disabled:opacity-40"
           >
             {picked.length > 1 ? `Set up the ${countWord(picked.length)} games` : picked.length ? `Set up ${names[0]}` : 'Pick a game'}
           </button>

@@ -6,6 +6,7 @@ import { courseSuggestions, shortDate } from '../lib/stats'
 import { daysAgoISO, shortDay, todayISO, weekdayName } from '../lib/dates'
 import { courseSlug } from '../lib/courses'
 import CourseScene from '../components/CourseScene'
+import { BackButton } from '../components/Nav'
 import { Icon } from '../components/icons'
 import { ghostOptions } from '../lib/ghost'
 import { GROSS_CEILING, GROSS_FLOOR, grossWarning } from '../lib/scores'
@@ -281,9 +282,7 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
           <div className="mx-auto h-1.5 w-10 rounded-full bg-line-strong" />
           <div className="mt-3 flex items-center justify-between">
             {step === 2 ? (
-              <button onClick={() => setStep(0)} className="text-footnote font-bold text-green">
-                ‹ Back
-              </button>
+              <BackButton fallback="/" label="Back" onBack={() => setStep(0)} />
             ) : (
               <h2 className="text-title font-bold tracking-tight text-ink">{booking ? 'Book a round' : playing ? 'Play a round' : 'Log a round'}</h2>
             )}

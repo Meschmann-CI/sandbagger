@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "test": "node tests/outbox.test.mts && node tests/logic.test.mts",
+    "test": "node tests/outbox.test.mts && node tests/logic.test.mts && node tests/random-bets.test.mts 150",
     "icons": "node scripts/make-icons.mjs",
     "preview": "vite preview"
   },

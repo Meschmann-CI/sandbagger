@@ -117,8 +117,10 @@ export default function HoleEntry() {
   const [picked, setPicked] = useState(() => pickedFor(id))
   const [pickingScorers, setPickingScorers] = useState(false)
   const [active, setActive] = useState<Active | null>(null)
-  // Digits typed into the active cell so far. "1" then "2" is a 12; any
-  // other pair, the second replaces the first. No timers — the first
+  // Digits typed into the active cell so far. A 2 to 9 lands and the pad
+  // moves on to the next golfer at once (two taps a golfer was 54 extra
+  // taps a round); a 1 waits, since it might be the start of a 12, and
+  // moves on with the second digit or with Next. No timers: the first
   // live round proved a clock is wrong for whoever is holding the phone.
   const [buffer, setBuffer] = useState('')
   const commitRef = useRef<() => void>(() => {})
@@ -426,8 +428,10 @@ export default function HoleEntry() {
 
   // Picking a box (or Next walking to another hole) takes the Hole view
   // with it.
-  const select = (cell: Active) => {
-    leaveCell()
+  // `quiet` skips the ace check: the cell was just given a 10-plus and the
+  // buffer's lone 1 hasn't cleared yet.
+  const select = (cell: Active, quiet = false) => {
+    if (!quiet) leaveCell()
     setActive(cell)
     setHole(cell.hole)
     setBuffer('')
@@ -439,30 +443,35 @@ export default function HoleEntry() {
   // view, everyone.
   const walk = view === 'hole' ? order : round.players.map((rp) => rp.playerId)
   const isLastGolfer = !!cur && walk[walk.length - 1] === cur.playerId
-  const advance = () => {
+  const advance = (quiet = false) => {
     if (!cur) return
     const i = walk.indexOf(cur.playerId)
-    if (i >= 0 && i < walk.length - 1) return select({ playerId: walk[i + 1], hole: cur.hole })
-    if (cur.hole < HOLE_COUNT - 1) return select({ playerId: walk[0], hole: cur.hole + 1 })
-    leaveCell()
+    if (i >= 0 && i < walk.length - 1) return select({ playerId: walk[i + 1], hole: cur.hole }, quiet)
+    if (cur.hole < HOLE_COUNT - 1) return select({ playerId: walk[0], hole: cur.hole + 1 }, quiet)
+    if (!quiet) leaveCell()
     setActive(null)
     if (view === 'hole') done()
   }
 
   // Typing pins the box the pad was pointing at, so a 1 then a 2 lands
   // as a 12 in the same box instead of the pad moving on after the 1.
+  // Any other digit is the score, and the pad walks on by itself.
   const typeDigit = (d: number) => {
     if (!cur || theirs) return
     if (!active) setActive(cur)
     if (buffer === '1' && d >= 0 && d <= 9) {
       setScore(cur.playerId, cur.hole, 10 + d)
       setBuffer('')
+      advance(true)
       return
     }
     if (d === 0) return
     setScore(cur.playerId, cur.hole, d)
     setBuffer(String(d))
-    if (d !== 1) celebrate(cur.playerId, cur.hole, d)
+    if (d !== 1) {
+      celebrate(cur.playerId, cur.hole, d)
+      advance()
+    }
   }
 
   const clearActive = () => {
@@ -1854,7 +1863,7 @@ export default function HoleEntry() {
                 0
               </button>
               <button
-                onClick={advance}
+                onClick={() => advance()}
                 className="flex h-[52px] items-center justify-center rounded-xl bg-green text-body font-bold text-white shadow-[0_2px_8px_rgba(28,124,74,0.3)] transition active:scale-[0.96] active:bg-green-deep"
               >
                 {view === 'hole' && isLastGolfer ? (cur.hole === HOLE_COUNT - 1 ? 'Finish' : 'Next hole') : 'Next →'}
