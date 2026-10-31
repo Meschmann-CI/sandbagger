@@ -13,7 +13,7 @@ import { useHoldUpdates } from '../lib/holdUpdates'
 import { AddGames } from '../components/AddGames'
 import TeePicker from '../components/TeePicker'
 import CourseScene, { roundLight } from '../components/CourseScene'
-import { useRoundWeather } from '../lib/weather'
+import { useRoundWeather, weatherCapsule } from '../lib/weather'
 import { useConfirm } from '../components/Confirm'
 import { Avatar, Card, PrimaryButton, SECONDARY_BTN, SectionLabel } from '../components/ui'
 import { Icon } from '../components/icons'
@@ -76,7 +76,7 @@ export default function BookedRound({ round }: { round: Round }) {
           <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/60" />
           {weather && (
             <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/35 px-2.5 py-1 text-caption font-bold text-white backdrop-blur-sm tabular-nums">
-              {weather.label} · {weather.tempF}°F · wind {weather.windMph} mph
+              {weatherCapsule(weather)}
             </span>
           )}
           <div className="absolute inset-x-4 bottom-4 min-w-0 text-white">
