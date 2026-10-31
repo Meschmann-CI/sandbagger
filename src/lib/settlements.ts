@@ -1,6 +1,7 @@
 import type { AppData, Round, Trip } from '../types'
 import { canSeeTrip } from '../types'
 import { settleUp, tripBalances, type Settlement } from './money'
+import { betResults } from './betMoney'
 
 // Who still owes who, across everything. One place computes it, so the
 // number on the Home screen can never disagree with the card on the
@@ -17,7 +18,7 @@ export function roundBetSettlements(data: AppData, round: Round): Settlement[] {
   if (bets.length === 0 && !fee) return []
   const net = new Map<string, number>()
   const shift = (id: string, by: number) => net.set(id, (net.get(id) ?? 0) + by)
-  for (const bet of bets) for (const result of bet.results) shift(result.playerId, result.amount)
+  for (const bet of bets) for (const result of betResults(data, bet)) shift(result.playerId, result.amount)
   // Green fees one golfer paid for everyone: each of the others owes them a head.
   if (fee) {
     for (const rp of round.players) {

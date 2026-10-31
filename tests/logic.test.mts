@@ -630,5 +630,23 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('bag: two clubs say nothing about gaps', bagGaps(bag.slice(0, 2)).widest, null)
 }
 
+// 25. Money is read off the cards, not the row (audit 2026-10-24, item 14): a
+//     bet saved from a phone that was missing holes settles from the merged
+//     card everywhere money is shown; a custom bet keeps what was typed.
+{
+  const { betResults } = await import('../src/lib/betMoney.ts')
+  const { moneyTotals } = await import('../src/lib/stats.ts')
+  // a wins the 1st outright; the phone that saved only had the front nine.
+  const r = round('merged', '2026-06-01', [rp('a', fours([0, 3])), rp('b', fours())])
+  const staleSkins: Bet = { id: 'sk', roundId: 'merged', type: 'skins', name: 'Skins', stake: 1, net: false, results: [{ playerId: 'a', amount: 0 }, { playerId: 'b', amount: 0 }] }
+  const custom: Bet = { id: 'cu', roundId: 'merged', type: 'custom', name: 'Closest', stake: 5, results: [{ playerId: 'a', amount: -5 }, { playerId: 'b', amount: 5 }] }
+  const d = data({ rounds: [r], bets: [staleSkins, custom], players: [{ id: 'a', name: 'A', initials: 'A', handicap: 10, color: '#000' }, { id: 'b', name: 'B', initials: 'B', handicap: 10, color: '#000' }] })
+  check('betResults: the card wins over stale stored money', [amount(betResults(d, staleSkins), 'a'), amount(betResults(d, staleSkins), 'b')], [1, -1])
+  check('betResults: a custom bet keeps what was typed', betResults(d, custom), custom.results)
+  check('betResults: a bet whose round is gone keeps its results', betResults(data({ bets: [staleSkins] }), staleSkins), staleSkins.results)
+  check('moneyTotals reads through the card', [moneyTotals(d).get('a'), moneyTotals(d).get('b')], [-4, 4])
+  check('roundBetSettlements reads through the card', roundBetSettlements(d, r).map((s) => [s.fromId, s.toId, s.amount]), [['a', 'b', 4]])
+}
+
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)
 process.exit(failures === 0 ? 0 : 1)

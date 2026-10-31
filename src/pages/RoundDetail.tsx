@@ -679,6 +679,9 @@ function PlayedRound() {
               // holes judged" — for bets that settle from the card.
               const live = settleFromCard(bet, round, course)
               const status = live && betStatus(live.detail, (id) => data.players.find((p) => p.id === id)?.name)
+              // The money shown is the card's too, the same numbers
+              // Standings and Settle up read (lib/betMoney.ts).
+              const results = live ? live.results : bet.results
               return (
               <Card key={bet.id} className="p-4">
                 <div className="flex items-baseline justify-between gap-2">
@@ -721,7 +724,7 @@ function PlayedRound() {
                   </p>
                 )}
                 <div className="mt-2.5 space-y-1.5">
-                  {[...bet.results]
+                  {[...results]
                     .sort((a, b) => b.amount - a.amount)
                     .map((res) => {
                       const p = data.players.find((pl) => pl.id === res.playerId)

@@ -13,6 +13,7 @@ import {
 } from '../types'
 import { cardOf, hasCard } from './holes'
 import { courseSlug, courseForRound, hasPars, padded, scoreKind, type ScoreKind } from './courses'
+import { betResults } from './betMoney'
 
 export const byDate = (rounds: Round[]) =>
   [...rounds].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
@@ -125,7 +126,7 @@ export function leaderboard(data: AppData, rounds = data.rounds): LeaderRow[] {
     const roundIds = new Set(rounds.map((r) => r.id))
     const money = data.bets
       .filter((b) => roundIds.has(b.roundId))
-      .flatMap((b) => b.results)
+      .flatMap((b) => betResults(data, b))
       .filter((res) => res.playerId === player.id)
       .reduce((sum, res) => sum + res.amount, 0)
     return {
@@ -298,7 +299,7 @@ export function moneyTotals(data: AppData, roundIds?: Set<string>) {
   for (const p of data.players) totals.set(p.id, 0)
   for (const bet of data.bets) {
     if (roundIds && !roundIds.has(bet.roundId)) continue
-    for (const res of bet.results) {
+    for (const res of betResults(data, bet)) {
       totals.set(res.playerId, (totals.get(res.playerId) ?? 0) + res.amount)
     }
   }

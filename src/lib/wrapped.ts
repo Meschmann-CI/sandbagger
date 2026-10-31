@@ -2,6 +2,7 @@ import type { AppData, Round, ScoredRoundPlayer } from '../types'
 import { hasScore, isGroupRound, net } from '../types'
 import { byDate, moneyTotals, roundWinnerIds, saddamReigns } from './stats'
 import { badgesFor, type Badge } from './badges'
+import { betResults } from './betMoney'
 
 // Season Wrapped: one golfer's year, as the numbers a story-style recap
 // needs. Everything is worked out from rounds already logged, and only
@@ -95,7 +96,7 @@ export function wrappedFor(data: AppData, playerId: string, year: string, today:
   // line ends where the headline number is.
   const moneyLine: Wrapped['moneyLine'] = []
   for (const r of mine) {
-    const mineHere = data.bets.filter((b) => b.roundId === r.id).flatMap((b) => b.results.filter((res) => res.playerId === playerId))
+    const mineHere = data.bets.filter((b) => b.roundId === r.id).flatMap((b) => betResults(data, b).filter((res) => res.playerId === playerId))
     if (!mineHere.length) continue
     const delta = mineHere.reduce((sum, res) => sum + res.amount, 0)
     moneyLine.push({ roundId: r.id, courseName: r.courseName, date: r.date, delta, total: (moneyLine.at(-1)?.total ?? 0) + delta })
