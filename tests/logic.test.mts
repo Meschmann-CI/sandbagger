@@ -604,7 +604,7 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
 
 // 24. The bag (2026-10-30): laid out driver to putter, and the club for a shot.
 {
-  const { sortBag, clubFor, clubLabel, clubShort } = await import('../src/lib/bag.ts')
+  const { sortBag, clubFor, clubLabel, clubShort, brandOf, bagHeadlines } = await import('../src/lib/bag.ts')
   const bag = [
     { id: 'c', club: 'PW', yards: 115 },
     { id: 'a', club: 'P' },
@@ -615,6 +615,15 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('bag: driver to putter', sortBag(bag).map((c) => c.club), ['D', '4H', '7I', 'PW', 'P'])
   check('bag: the club that gets there', [clubFor(bag, 140)?.club, clubFor(bag, 185)?.club, clubFor(bag, 260)?.club, clubFor([{ id: 'a', club: 'P' }], 100)], ['7I', '4H', 'D', undefined])
   check('bag: labels', [clubLabel('D'), clubLabel('5H'), clubLabel('7I'), clubLabel('SW'), clubShort('7I'), clubShort('3W')], ['Driver', '5 hybrid', '7 iron', 'Sand wedge', '7i', '3W'])
+  check(
+    'bag: the make in the typed text',
+    [brandOf('Titleist TSR3')?.key, brandOf('Titleist Vokey SM10')?.key, brandOf('scotty cameron newport')?.key, brandOf('TaylorMade Qi10')?.key, brandOf('Ping G430')?.key, brandOf('shopping cart')?.key, brandOf(undefined)],
+    ['titleist', 'vokey', 'scotty', 'taylormade', 'ping', undefined, undefined],
+  )
+  const full = ['D', '3W', '4H', '5I', '6I', '7I', '8I', '9I', 'PW', 'SW', 'P'].map((club, i) => ({ id: String(i), club, yards: club === 'P' ? undefined : 240 - i * 15 }))
+  check('bag: the three headline clubs', bagHeadlines(full).map((c) => c.club), ['D', '7I', 'SW'])
+  check('bag: headlines without a 7 iron take the middle', bagHeadlines(full.filter((c) => c.club !== '7I')).map((c) => c.club), ['D', '6I', 'SW'])
+  check('bag: four swings still pick three', bagHeadlines(bag).map((c) => c.club), ['D', '7I', 'PW'])
 }
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)

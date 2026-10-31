@@ -129,8 +129,9 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
--9. Paste `supabase/apply-2026-10-30-bag.sql` (one jsonb column on players) before the
-   next push: Your bag writes it as soon as someone adds a club.
+-9. Done 2026-10-30: `players.bag` jsonb is in prod (Matt pasted `apply-2026-10-30-bag.sql`,
+   checked with information_schema). Next push carries Your bag, the Play sheet, the live
+   strip rule and the Pat fix; cut TestFlight build 8 with it.
 -8. Done 2026-10-26: the merge-guards SQL pasted, both repos pushed (web b13c7b9 live,
    bundle index-DlcL4-Lx; Swift 03e3d18) and TestFlight build 1.0 (7) uploaded (the
    audit fixes, the Putting block, the tab re-tap, the photo write fix). Everyone updates
@@ -311,14 +312,24 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   "Score not in yet" row, which opens the live card asking for them alone, and the live
   card itself offers "Barry and Pat have no scores yet. Score them too" once this
   phone's own golfers are in (`blanks` in HoleEntry.tsx and HoleEntryView.swift).
-- Your bag (Matt, 2026-10-30, both apps): a section on You between Your game and Your last
-  rounds listing each club (driver to putter), its make and model and how far a full swing
-  goes; "+ Add a club" and tap a row to change or take it out. `players.bag` jsonb, a list
-  of {id, club, brand, yards}; the club codes (D, 3W, 5H, 7I, PW, GW, SW, LW, P), labels,
-  order, typical yards and `clubFor(bag, yards)` live in `src/lib/bag.ts` and
-  `BanditCore/Bag.swift`. Written only when set, so saves work before the column exists.
-  Paste `supabase/apply-2026-10-30-bag.sql` before the push. `clubFor` is there for the
-  watch's hole page to suggest a club later; not shown anywhere yet.
+- Your bag (Matt, 2026-10-30, both apps): one card on You between Your game and Your last
+  rounds: the bag drawn (`public/brands/bag-glyph.svg`, forest green, the tall silhouette
+  Matt picked over a drawn stand bag), "N clubs", and the three numbers worth a glance
+  (longest club, the 7 iron or the middle club, the shortest full swing), each with its
+  make's logo on a pill under it (`bagHeadlines`; no breakdown line, Matt cut it). Tap the
+  card for `/bag` (`src/pages/Bag.tsx`: every club driver to putter with logo, make and
+  model, yards; tap a row to change or take it out), "+ Add a club" for the editor
+  (`ClubEditor` in BagEditor.tsx, which shows the make's logo beside the field as you
+  type). `players.bag` jsonb, a list of {id, club, brand, yards}; the club codes (D, 3W,
+  5H, 7I, PW, GW, SW, LW, P), labels, order, typical yards, `brandOf` (20 makes matched by
+  regex against the typed text, Vokey and Scotty before Titleist) and `clubFor(bag, yards)`
+  live in `src/lib/bag.ts` and `BanditCore/Bag.swift`. Logos are `public/brands/<key>.svg|png`
+  (19 of the 20; XXIO shows its name): Wikimedia Commons (public domain), Wikipedia's
+  fair-use files (Scotty Cameron, Adams), the makers' own sites (Cobra, Honma, Tour Edge,
+  Ben Hogan), worldvectorlogo (Cobra, Odyssey, Honma) and Vokey's site icon. Fine for a
+  four-person app, not for anything public. Written only when set, so saves work before
+  the column exists. `clubFor` is there for the watch's hole page to suggest a club later;
+  not shown anywhere yet. The demo golfer has an 11-club bag in `seed.ts`.
 - When a round is live (Matt, 2026-10-30, after his own finished card left the Live strip
   up all evening because Barry's and Pat's cards were blank): a round is underway while a
   card that was started is unfinished (`roundUnderway` in holes.ts, `Round.underway` in

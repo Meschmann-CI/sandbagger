@@ -11,7 +11,22 @@ const daysAheadISO = (n: number) => toISODate(new Date(Date.now() + n * 86_400_0
 export const seedData: AppData = {
   currentUserId: 'p-alex',
   players: [
-    { id: 'p-alex', name: 'Alex', initials: 'AM', handicap: 11.2, homeCourse: 'Cobbs Creek', color: '#1c7c4a', venmo: 'Alex-Demo' },
+    {
+      id: 'p-alex', name: 'Alex', initials: 'AM', handicap: 11.2, homeCourse: 'Cobbs Creek', color: '#1c7c4a', venmo: 'Alex-Demo',
+      bag: [
+        { id: 'bag-d', club: 'D', brand: 'Titleist TSR3', yards: 240 },
+        { id: 'bag-3w', club: '3W', brand: 'Titleist TSR2', yards: 215 },
+        { id: 'bag-4h', club: '4H', brand: 'Callaway Apex', yards: 195 },
+        { id: 'bag-5i', club: '5I', brand: 'Mizuno JPX 923', yards: 175 },
+        { id: 'bag-6i', club: '6I', brand: 'Mizuno JPX 923', yards: 165 },
+        { id: 'bag-7i', club: '7I', brand: 'Mizuno JPX 923', yards: 150 },
+        { id: 'bag-8i', club: '8I', brand: 'Mizuno JPX 923', yards: 140 },
+        { id: 'bag-9i', club: '9I', brand: 'Mizuno JPX 923', yards: 130 },
+        { id: 'bag-pw', club: 'PW', brand: 'Vokey SM10', yards: 115 },
+        { id: 'bag-sw', club: 'SW', brand: 'Vokey SM10', yards: 90 },
+        { id: 'bag-p', club: 'P', brand: 'Scotty Cameron Newport' },
+      ],
+    },
     { id: 'p-ravi', name: 'Ravi', initials: 'RS', handicap: 14.8, homeCourse: 'Rancho Park', color: '#2f6fa8', venmo: 'Ravi-Demo' },
     { id: 'p-danny', name: 'Danny', initials: 'DC', handicap: 17.5, homeCourse: 'Cobbs Creek', color: '#b8702f', venmo: 'Danny-Demo' },
     { id: 'p-kim', name: 'Kim', initials: 'KR', handicap: 21.0, homeCourse: 'Sandy Hollow', color: '#7a5195' },

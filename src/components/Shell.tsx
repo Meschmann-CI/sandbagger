@@ -83,7 +83,7 @@ const tabs: { to: string; label: string; icon: ((on: boolean) => ReactNode) | nu
 function tabFor(pathname: string) {
   if (pathname.startsWith('/rounds') || pathname.startsWith('/courses')) return '/rounds'
   if (pathname.startsWith('/trips')) return '/trips'
-  if (pathname.startsWith('/profile') || pathname.startsWith('/group') || pathname.startsWith('/trophies')) return '/profile'
+  if (pathname.startsWith('/profile') || pathname.startsWith('/group') || pathname.startsWith('/trophies') || pathname.startsWith('/bag')) return '/profile'
   return '/'
 }
 

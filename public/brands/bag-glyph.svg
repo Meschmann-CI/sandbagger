@@ -1,0 +1,21 @@
+<svg role="img" aria-label="A golf bag" width="110" height="220" viewBox="0 0 110 220" xmlns="http://www.w3.org/2000/svg" fill="#1F4D3A">
+  <!-- four clubs: shafts with wood heads turned out -->
+  <rect x="45" y="22" width="7" height="56" rx="3.5"/>
+  <path d="M52 28 c0 -8 -7 -12 -16 -11 c-8 1 -9 9 -2 12 c6 2 14 1 18 -1 z"/>
+  <rect x="56" y="8" width="7" height="70" rx="3.5"/>
+  <path d="M56 14 c0 -8 7 -12 16 -11 c8 1 9 9 2 12 c-6 2 -14 1 -18 -1 z"/>
+  <rect x="36" y="38" width="7" height="42" rx="3.5"/>
+  <path d="M43 44 c0 -8 -7 -12 -16 -11 c-8 1 -9 9 -2 12 c6 2 14 1 18 -1 z"/>
+  <rect x="66" y="32" width="7" height="48" rx="3.5"/>
+  <path d="M66 38 c0 -8 7 -12 16 -11 c8 1 9 9 2 12 c-6 2 -14 1 -18 -1 z"/>
+  <!-- cuff -->
+  <rect x="26" y="74" width="58" height="16" rx="6"/>
+  <!-- body, tall, with the pocket stripe cut out of it -->
+  <path d="M30 95 h50 a4 4 0 0 1 4 4 v98 h-58 v-98 a4 4 0 0 1 4 -4 z M48 95 v30 a4 4 0 0 0 4 4 h4 v64 h-14 v-98 z" fill-rule="evenodd"/>
+  <!-- side pocket -->
+  <path d="M26 128 h-6 a10 10 0 0 0 -10 10 v38 a10 10 0 0 0 10 10 h6 z"/>
+  <!-- handle -->
+  <path d="M84 104 c12 0 18 10 18 24 v26 c0 10 -6 18 -14 20" fill="none" stroke="#1F4D3A" stroke-width="6" stroke-linecap="round"/>
+  <!-- base -->
+  <rect x="26" y="200" width="58" height="16" rx="6"/>
+</svg>
