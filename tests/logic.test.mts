@@ -614,7 +614,8 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   ]
   check('bag: driver to putter', sortBag(bag).map((c) => c.club), ['D', '4H', '7I', 'PW', 'P'])
   check('bag: the club that gets there', [clubFor(bag, 140)?.club, clubFor(bag, 185)?.club, clubFor(bag, 260)?.club, clubFor([{ id: 'a', club: 'P' }], 100)], ['7I', '4H', 'D', undefined])
-  check('bag: labels', [clubLabel('D'), clubLabel('5H'), clubLabel('7I'), clubLabel('SW'), clubShort('7I'), clubShort('3W')], ['Driver', '5 hybrid', '7 iron', 'Sand wedge', '7i', '3W'])
+  check('bag: labels', [clubLabel('D'), clubLabel('5H'), clubLabel('7I'), clubLabel('SW'), clubLabel('56'), clubShort('7I'), clubShort('3W'), clubShort('60')], ['Driver', '5 hybrid', '7 iron', 'Sand wedge', '56° wedge', '7i', '3W', '60°'])
+  check('bag: lofted wedges sit among the wedges', sortBag([{ id: 'a', club: '60' }, { id: 'b', club: 'PW' }, { id: 'c', club: 'LW' }, { id: 'd', club: '52' }, { id: 'e', club: 'P' }]).map((c) => c.club), ['PW', '52', '60', 'LW', 'P'])
   check(
     'bag: the make in the typed text',
     [brandOf('Titleist TSR3')?.key, brandOf('Titleist Vokey SM10')?.key, brandOf('scotty cameron newport')?.key, brandOf('TaylorMade Qi10')?.key, brandOf('Ping G430')?.key, brandOf('shopping cart')?.key, brandOf(undefined)],

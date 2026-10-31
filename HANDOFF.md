@@ -326,7 +326,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   model, yards; tap a row to change or take it out), "+ Add a club" for the editor
   (`ClubEditor` in BagEditor.tsx, which shows the make's logo beside the field as you
   type). `players.bag` jsonb, a list of {id, club, brand, yards}; the club codes (D, 3W,
-  5H, 7I, PW, GW, SW, LW, P), labels, order, typical yards, `brandOf` (20 makes matched by
+  5H, 7I, PW, GW, 50, 52, 54, 56, SW, 58, 60, LW, P; the lofted wedges came 2026-10-30 and
+  sit among the named ones by loft), labels, order, typical yards, `brandOf` (20 makes matched by
   regex against the typed text, Vokey and Scotty before Titleist) and `clubFor(bag, yards)`
   live in `src/lib/bag.ts` and `BanditCore/Bag.swift`. Logos are `public/brands/<key>.svg|png`
   (19 of the 20; XXIO shows its name): Wikimedia Commons (public domain), Wikipedia's

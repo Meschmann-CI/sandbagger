@@ -2,20 +2,23 @@ import type { BagClub } from '../types'
 
 // What's in the bag (Matt, 2026-10-30): each club by a short code the
 // apps share, with how far a full swing goes and what the club is. The
-// order is the order a bag is laid out in, driver to putter. Same codes
-// and rules as BanditCore/Bag.swift.
+// order is the order a bag is laid out in, driver to putter; the lofted
+// wedges (Matt, 2026-10-30: 52, 54, 56, 60 and their neighbours) sit
+// among PW, GW, SW and LW by loft. Same codes and rules as
+// BanditCore/Bag.swift.
 
 export const CLUBS = [
   'D', '3W', '5W', '7W', '9W',
   '2H', '3H', '4H', '5H', '6H', '7H',
   '2I', '3I', '4I', '5I', '6I', '7I', '8I', '9I',
-  'PW', 'GW', 'SW', 'LW',
+  'PW', 'GW', '50', '52', '54', '56', 'SW', '58', '60', 'LW',
   'P',
 ] as const
 export type ClubCode = (typeof CLUBS)[number]
 
-/** "Driver", "3 wood", "5 hybrid", "7 iron", "Pitching wedge", "Putter". */
+/** "Driver", "3 wood", "5 hybrid", "7 iron", "Pitching wedge", "56° wedge", "Putter". */
 export function clubLabel(code: string): string {
+  if (/^\d+$/.test(code)) return `${code}° wedge`
   if (code === 'D') return 'Driver'
   if (code === 'P') return 'Putter'
   if (code === 'PW') return 'Pitching wedge'
@@ -30,8 +33,9 @@ export function clubLabel(code: string): string {
   return code
 }
 
-/** The chip: "Driver", "3W", "5H", "7i", "PW", "Putter". */
+/** The chip: "Driver", "3W", "5H", "7i", "PW", "56°", "Putter". */
 export function clubShort(code: string): string {
+  if (/^\d+$/.test(code)) return `${code}°`
   if (code === 'D') return 'Driver'
   if (code === 'P') return 'Putter'
   return code.endsWith('I') ? `${code.slice(0, -1)}i` : code
@@ -42,7 +46,7 @@ export const TYPICAL_YARDS: Record<string, number> = {
   D: 230, '3W': 210, '5W': 195, '7W': 185, '9W': 175,
   '2H': 200, '3H': 190, '4H': 180, '5H': 170, '6H': 160, '7H': 150,
   '2I': 200, '3I': 190, '4I': 180, '5I': 170, '6I': 160, '7I': 150, '8I': 140, '9I': 130,
-  PW: 115, GW: 100, SW: 85, LW: 70,
+  PW: 115, GW: 100, '50': 100, '52': 95, '54': 90, '56': 85, SW: 85, '58': 75, '60': 70, LW: 70,
 }
 
 /** An id for a club someone just added. */
