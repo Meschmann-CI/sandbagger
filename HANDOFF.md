@@ -160,7 +160,9 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    out of auto mode; in auto mode the classifier refuses every deploy. Matt's three
    dashboard attempts left a stray `dynamic-endpoint` function to delete from the
    Edge Functions page (nothing calls it). The Swift repo is committed, not pushed, and
-   TestFlight build 11 is not made. Still to do, Matt only:
+   TestFlight build 11 (Swift 01ec750) was archived and uploaded 2026-10-31 (upload reached
+   100%; the export summary line was cut by the log filter, so check it landed in App
+   Store Connect). Both repos pushed. Still to do, Matt only:
    1. (Done.) Deploy the new `watch` Edge Function from `supabase/functions/watch/` with
       verify_jwt OFF (the POST checks the caller itself; the GET is the public link). The
       connector's deploy call was refused by the auto-mode classifier ("Production
