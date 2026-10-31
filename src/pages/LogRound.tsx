@@ -26,22 +26,13 @@ import { Avatar, Card, PrimaryButton, SaddamIcon, SECONDARY_BTN } from '../compo
 // the hole-by-hole card or a second screen for totals.
 // Defaults to just you, since most rounds are solo.
 
-// Today, yesterday, and the last weekend day before that if it was this
-// week, since that's when most rounds happen.
+// Today and yesterday; anything else is the date picker (Matt, 2026-10-30:
+// the "last weekend day" chip just sat there all week).
 function dateChips(): { iso: string; label: string }[] {
-  const out = [
+  return [
     { iso: todayISO(), label: 'Today' },
     { iso: daysAgoISO(1), label: 'Yesterday' },
   ]
-  for (let n = 2; n <= 6; n++) {
-    const iso = daysAgoISO(n)
-    const d = new Date(`${iso}T12:00:00`)
-    if (d.getDay() === 0 || d.getDay() === 6) {
-      out.push({ iso, label: d.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' }) })
-      break
-    }
-  }
-  return out
 }
 
 // "Jul 25" this year, "Oct 2025" before that: short enough for a card.
