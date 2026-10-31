@@ -22,6 +22,8 @@ import Scorecard from '../components/Scorecard'
 import RoundPhotos from '../components/RoundPhotos'
 import RoundNote from '../components/RoundNote'
 import { paceLine, paceOf } from '../lib/pace'
+import { shareWatchLink, watchLink } from '../lib/watchLink'
+import { isCloudMode } from '../lib/supabase'
 import SettleUp from '../components/SettleUp'
 import { roundBetSettlements } from '../lib/settlements'
 import { useConfirm } from '../components/Confirm'
@@ -180,6 +182,22 @@ function PlayedRound() {
   // up below once there's something in it.
   if (!anyCards(round)) chips.push({ key: 'card', label: 'Score by hole', short: 'By hole', icon: 'pencil', onClick: () => navigate(`/rounds/${round.id}/card`) })
   if ((round.photos?.length ?? 0) === 0) chips.push({ key: 'photos', label: 'Add photos', short: 'Photos', icon: 'camera', onClick: () => openPhotos.current?.() })
+  // A link for whoever isn't in the app to follow the round (today's, with a card going).
+  if (isCloudMode && round.date === todayISO() && anyCards(round))
+    chips.push({
+      key: 'link',
+      label: 'Share a link to watch',
+      short: 'Link',
+      icon: 'share',
+      onClick: async () => {
+        try {
+          const url = await watchLink(round.id)
+          if (await shareWatchLink(round, url)) await confirm({ title: 'Link copied', body: 'Paste it into the group text. Anyone with it can follow the round, no app needed.', confirmLabel: 'Done' })
+        } catch (e) {
+          await confirm({ title: 'No link right now', body: (e as Error).message, confirmLabel: 'OK' })
+        }
+      },
+    })
   if (bets.length === 0 && !addingBet) chips.push({ key: 'bet', label: 'Add a bet', short: 'Bet', icon: 'cash', onClick: () => setAddingBet(true) })
   // The result as a picture for the group text, once there is a result.
   if (podium.length >= 2 || (solo && standings.length > 0))

@@ -33,6 +33,7 @@ import CourseDetail from './pages/CourseDetail'
 import CourseEdit from './pages/CourseEdit'
 import CourseMap from './pages/CourseMap'
 import SignIn from './pages/SignIn'
+import PublicWatch from './pages/PublicWatch'
 import Setup from './pages/Setup'
 import { Card } from './components/ui'
 
@@ -95,6 +96,10 @@ function Splash({ message, error }: { message: string; error?: boolean }) {
 }
 
 export default function App() {
+  // A shared link to watch a round: the one page served without signing
+  // in (lib/watchLink.ts). The hash is read once; the link is the page.
+  const watchKey = window.location.hash.match(/^#\/watch\/([0-9a-f-]{36}\.[0-9a-f]{24})$/i)?.[1]
+  if (watchKey) return <PublicWatch linkKey={watchKey} />
   // Local mode: no accounts, everything in this browser.
   if (!isCloudMode || !supabase) return <LocalApp />
   return <CloudApp />
