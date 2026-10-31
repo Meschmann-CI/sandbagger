@@ -91,7 +91,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   `course-lookup` v5 (both deployed) require a player row via `claim_my_player`, not just
   a Supabase account, and scan-card returns a CORS-clean 502 when the Anthropic call
   fails. Cleanup: dead files and exports removed, PuttsRow on `text-caption`, empty-value
-  glyph is `–` everywhere, README/SETUP brought up to date, eight merged branches and
+  glyph is `â` everywhere, README/SETUP brought up to date, eight merged branches and
   `flat-preview` deleted. `faces` was left alone on purpose (Matt undecided).
   Applied to prod by Matt through the SQL editor the same day (the MCP migration call is
   blocked in auto mode): `supabase/apply-2026-10-11.sql`, storage listing policies scoped
@@ -152,17 +152,16 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
--13. The review round (2026-10-31) is committed in both repos and not pushed. Before the
-   push and TestFlight build 11, two things only Matt can do:
-   1. Paste `supabase/apply-2026-10-31-hole-times.sql` (the `hole_times` column and
-      `merge_hole_times`). Until it's in, the apps keep their pace stamps on the phone
-      (the RPC's "not found" is swallowed) and nothing else breaks.
-   2. Deploy the new `watch` Edge Function from `supabase/functions/watch/` with
+-13. The review round (2026-10-31). Web pushed and live (d037699, bundle index-D7o6Z4Bx,
+   the three new strings checked on the live bundle). `apply-2026-10-31-hole-times.sql`
+   is pasted (verified: column and function present). The Swift repo is committed, not
+   pushed, and TestFlight build 11 is not made. Still to do, Matt only:
+   1. Deploy the new `watch` Edge Function from `supabase/functions/watch/` with
       verify_jwt OFF (the POST checks the caller itself; the GET is the public link). The
       connector's deploy call was refused by the auto-mode classifier ("Production
       Deploy"), the same gate as migrations. Until it's deployed, "Share a link to watch"
-      says it couldn't make the link.
-   Then push the web (one push), build 11 for TestFlight, and everyone updates: build 10
+      says it couldn’t make the link.
+   2. Push the Swift repo and build 11 for TestFlight; everyone updates: build 10
    phones don't stamp pace or show the meter, which is harmless, but the pad now moves on
    by itself, so a mixed foursome will notice. First real round is the check for the pad,
    the hole-history line, the milestone watch and the pace line; the first booking is the
@@ -325,7 +324,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 - Putts (Matt, 2026-10-10): `round_players.putts int[]`. Undefined means the round never
   said, so the current golfer is tracked by default; an empty list is tracking turned off;
   18 entries is on. Entered with 0/1/2/3/4+ buttons under each tracking golfer on the Hole
-  view ("Putts: You · Change" picks who), shown as a tiny row tucked under the golfer on
+  view ("Putts: You Â· Change" picks who), shown as a tiny row tucked under the golfer on
   both cards (`PuttsRow`; the corner-number version was tried and dropped), with Putting
   stats in Your game once 9 holes are in and the Flatstick and Four-Jack trophies (art in
   `trophyArtExtra.ts`, kept out of the generated file).
@@ -397,7 +396,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   distance chip (HoleEntry.tsx and HoleEntryView.swift), after the yards on the Live
   Activity (`ContentState.club`), and beside the middle yards and the target on the watch
   (`WatchRound.bag` carries the wearer's bag). Nothing shows for a golfer with no bag.
-- The clubs page's arcs carry a line under them: "Widest gap: 3W to 4H, 20 yds · 56° and
+- The clubs page's arcs carry a line under them: "Widest gap: 3W to 4H, 20 yds Â· 56Â° and
   SW both go 85" (`bagGaps`), only once three clubs have yards.
 - When a round is live (Matt, 2026-10-30, after his own finished card left the Live strip
   up all evening because Barry's and Pat's cards were blank): a round is underway while a
@@ -423,12 +422,12 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   - Pace of play: the live card stamps each hole with the moment its first score lands
     (`rounds.hole_times`, on the day only, never for a hole scored before the feature),
     merged on the server through `merge_hole_times` so two phones keep each other's. The
-    round page: "3h 58m from the 1st to the 18th · 14 min a hole · the 7th took 31"; Home's
+    round page: "3h 58m from the 1st to the 18th Â· 14 min a hole Â· the 7th took 31"; Home's
     live strip adds the time out so far. Trophies: Glacial (five hours, shame) and Speed
     Round (under three, odd); both fall back to their shelf shape until they have art.
   - A booking within sixteen days shows Open-Meteo's forecast at the tee hour (asked again
-    after three hours): the capsule reads "Showers · 58°F · 40% rain · wind 12 mph", Home's
-    Up next row ends "58° and 40% rain".
+    after three hours): the capsule reads "Showers Â· 58Â°F Â· 40% rain Â· wind 12 mph", Home's
+    Up next row ends "58Â° and 40% rain".
   - "Share a link to watch" on today's round page: `/#/watch/<round>.<token>` served
     outside the sign-in gate, the last three holes and where everyone stands, refreshed
     every half minute, first names only. The token is an HMAC of the round id on the
@@ -468,7 +467,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   Barry's card but not Pat's, and Pat's watch kept asking for Matt first). Each phone picks
   the golfers it keeps, per round, stored on the phone (`bandit-scoring-for`); unpicked is
   everyone. The live card's Hole view asks for them only, you first, then card order; the
-  others fade. "Scoring: You, Barry · Change" sits above Putts. The watch asks "Who are you
+  others fade. "Scoring: You, Barry Â· Change" sits above Putts. The watch asks "Who are you
   scoring?" when a round first reaches it (you checked) and changes it from the group page.
   A golfer's own entry wins: entering your own hole sets `selfHoles[h]`, other phones can't
   change that hole (client side in the store's `updateRound` via `guardOwnHoles`, server
@@ -478,7 +477,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 - "+ Putts" on a golfer's row in the Hole view (2026-10-24, after Pat asked Matt on the first
   hole to keep his putts and the switch was hidden below the pad): one tap turns their putts
   on; earlier holes are filled by going back a hole. Shown only for golfers this phone keeps.
-- The watch goes back a hole (2026-10-24): ‹ › on the score page; a hole that's in shows
+- The watch goes back a hole (2026-10-24): â¹ âº on the score page; a hole that's in shows
   everyone's score, tap one to change it or fill in a skipped one.
 - Stroke dots follow the game (2026-10-24, after Barry's paper card gave Pat 3 strokes on a
   few holes and the app showed 2): a round with a net, non-manual Stableford bet dots each
@@ -493,7 +492,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   `pages/WatchRound.tsx` at `/rounds/:id/watch`. Home's live strip for a round you're not in
   says who leads by gross and its button reads Watch. The watch page: the card cut to the
   last three holes anyone has scored, score to par and thru, the money, the moments, chirps
-  (Holy... 🙌, 😬 Yikes, 😱 Wow, Custom) at one golfer as a push, and a per-round switch for
+  (Holy... ð, ð¬ Yikes, ð± Wow, Custom) at one golfer as a push, and a per-round switch for
   the pushes. Pushes to members not in the round: at the turn (everyone has 9 in) and when the
   lead changes outright, replayed over holes everyone has in so it can't flicker while the
   group types; the final keeps its own push. No lock-screen leaderboard (Matt: not needed).
@@ -524,8 +523,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 - Trophy names are Matt's, raunchy on purpose. Keep them.
 - Wrapped music is Matt's own recording (`public/wrapped-song.m4a`). A copyrighted melody was
   declined; do not reintroduce one.
-- Use the named text scale (text-caption … text-hero), never `text-[Npx]`; section titles in
-  sentence case; `BackButton` from `components/Nav.tsx`, never a literal "← Back";
+- Use the named text scale (text-caption â¦ text-hero), never `text-[Npx]`; section titles in
+  sentence case; `BackButton` from `components/Nav.tsx`, never a literal "â Back";
   `useLogSheet().open`, never `navigate('/log')`; new inline editors call `useHoldUpdates()`.
 - Copy reads like a person wrote it for four friends: no tracked all-caps labels (form labels,
   eyebrows, table heads are sentence case; only the scorecard grid's HOLE/PAR row and the
@@ -564,7 +563,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   (<80% of 6+): that's how Split Rock is kept from getting Pelham Bay's 18. Stored packed
   (decimetre deltas, about 25KB a course) in `course_maps` (own table, RLS by group; not on
   `courses`, which every phone reloads on each change), and on the phone per course played.
-  "© OpenStreetMap" shows on every map (ODbL). A course's map is fetched on its own when it's
+  "Â© OpenStreetMap" shows on every map (ODbL). A course's map is fetched on its own when it's
   added (Edit card or the Log sheet's directory pull) and the first time a round opens at a
   course with none (`autoFetchCourseMap`, once per course per phone; a busy server clears
   the flag so a later round retries). Candidate search: name and town, name, then the club's
