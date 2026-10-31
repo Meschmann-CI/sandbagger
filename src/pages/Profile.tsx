@@ -15,6 +15,7 @@ import { disablePush, enablePush, pushEnabled, pushSupported } from '../lib/push
 import { fmt1, isSoloRound, round1 } from '../types'
 import { supabase } from '../lib/supabase'
 import EditGolfer from '../components/EditGolfer'
+import YourBag from '../components/BagEditor'
 import { Avatar, AvatarStack, Card, Meta, PrimaryButton, RowButton, SaddamBadge, SaddamIcon, SectionLabel } from '../components/ui'
 import { useConfirm } from '../components/Confirm'
 import { CountUp } from '../components/Delight'
@@ -411,6 +412,9 @@ export default function Profile() {
           </p>
         </Card>
       )}
+
+      {/* What's in the bag (Matt, 2026-10-30). */}
+      <YourBag me={me} />
 
       {/* My recent rounds */}
       <SectionLabel

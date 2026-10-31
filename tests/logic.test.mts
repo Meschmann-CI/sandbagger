@@ -602,5 +602,20 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('dots: off the low man gives Pat 31, never 3', [low.reduce((a, b) => a + b, 0), Math.max(...low)], [31, 2])
 }
 
+// 24. The bag (2026-10-30): laid out driver to putter, and the club for a shot.
+{
+  const { sortBag, clubFor, clubLabel, clubShort } = await import('../src/lib/bag.ts')
+  const bag = [
+    { id: 'c', club: 'PW', yards: 115 },
+    { id: 'a', club: 'P' },
+    { id: 'b', club: 'D', yards: 235 },
+    { id: 'd', club: '7I', yards: 150 },
+    { id: 'e', club: '4H', yards: 185 },
+  ]
+  check('bag: driver to putter', sortBag(bag).map((c) => c.club), ['D', '4H', '7I', 'PW', 'P'])
+  check('bag: the club that gets there', [clubFor(bag, 140)?.club, clubFor(bag, 185)?.club, clubFor(bag, 260)?.club, clubFor([{ id: 'a', club: 'P' }], 100)], ['7I', '4H', 'D', undefined])
+  check('bag: labels', [clubLabel('D'), clubLabel('5H'), clubLabel('7I'), clubLabel('SW'), clubShort('7I'), clubShort('3W')], ['Driver', '5 hybrid', '7 iron', 'Sand wedge', '7i', '3W'])
+}
+
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)
 process.exit(failures === 0 ? 0 : 1)

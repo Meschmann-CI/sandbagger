@@ -964,6 +964,9 @@ end $$;
 -- pushes from, and whether they take chirps while they play.
 alter table players add column if not exists muted_rounds uuid[];
 alter table players add column if not exists chirps_off boolean;
+-- Your bag (2026-10-30): a list of {id, club, brand, yards}; see
+-- apply-2026-10-30-bag.sql and src/lib/bag.ts for the club codes.
+alter table players add column if not exists bag jsonb;
 
 -- ============================================================
 -- Realtime (so a round logged on the course shows up on everyone's phone)

@@ -129,6 +129,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-9. Paste `supabase/apply-2026-10-30-bag.sql` (one jsonb column on players) before the
+   next push: Your bag writes it as soon as someone adds a club.
 -8. Done 2026-10-26: the merge-guards SQL pasted, both repos pushed (web b13c7b9 live,
    bundle index-DlcL4-Lx; Swift 03e3d18) and TestFlight build 1.0 (7) uploaded (the
    audit fixes, the Putting block, the tab re-tap, the photo write fix). Everyone updates
@@ -309,6 +311,14 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   "Score not in yet" row, which opens the live card asking for them alone, and the live
   card itself offers "Barry and Pat have no scores yet. Score them too" once this
   phone's own golfers are in (`blanks` in HoleEntry.tsx and HoleEntryView.swift).
+- Your bag (Matt, 2026-10-30, both apps): a section on You between Your game and Your last
+  rounds listing each club (driver to putter), its make and model and how far a full swing
+  goes; "+ Add a club" and tap a row to change or take it out. `players.bag` jsonb, a list
+  of {id, club, brand, yards}; the club codes (D, 3W, 5H, 7I, PW, GW, SW, LW, P), labels,
+  order, typical yards and `clubFor(bag, yards)` live in `src/lib/bag.ts` and
+  `BanditCore/Bag.swift`. Written only when set, so saves work before the column exists.
+  Paste `supabase/apply-2026-10-30-bag.sql` before the push. `clubFor` is there for the
+  watch's hole page to suggest a club later; not shown anywhere yet.
 - When a round is live (Matt, 2026-10-30, after his own finished card left the Live strip
   up all evening because Barry's and Pat's cards were blank): a round is underway while a
   card that was started is unfinished (`roundUnderway` in holes.ts, `Round.underway` in

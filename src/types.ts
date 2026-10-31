@@ -24,6 +24,18 @@ export interface Player {
   mutedRounds?: string[]
   /** No chirps on this golfer's phone while they play. */
   chirpsOff?: boolean
+  /** What's in the bag: each club, how far it goes, what it is (src/lib/bag.ts). */
+  bag?: BagClub[]
+}
+
+/** One club in a golfer's bag. `club` is a code from src/lib/bag.ts (D, 3W, 7I, PW, P). */
+export interface BagClub {
+  id: string
+  club: string
+  /** Make and model, as typed: "Titleist TSR3", "Vokey 56". */
+  brand?: string
+  /** A full swing, in yards. None for the putter. */
+  yards?: number
 }
 
 /** A reaction from someone watching, at a golfer in the round (Matt, 2026-10-23). */

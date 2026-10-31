@@ -24,6 +24,7 @@ function toPlayer(row: any): Player {
     guest: row.is_guest || undefined,
     mutedRounds: row.muted_rounds?.length ? row.muted_rounds : undefined,
     chirpsOff: row.chirps_off ?? undefined,
+    bag: Array.isArray(row.bag) && row.bag.length ? row.bag : undefined,
   }
 }
 
@@ -618,6 +619,8 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
                 // Written only when set, so a save works before the spectator columns exist.
                 ...(p.mutedRounds ? { muted_rounds: p.mutedRounds } : {}),
                 ...(p.chirpsOff != null ? { chirps_off: p.chirpsOff } : {}),
+                // Written only when set, so a save works before apply-2026-10-30-bag.sql.
+                ...(p.bag ? { bag: p.bag } : {}),
               })
             ).error,
             'Saving golfer',
