@@ -253,6 +253,13 @@ export interface Round {
   bookedById?: string
   /** Green fees one golfer paid for the tee time, a head. Unset: paid at the course. */
   greenFee?: GreenFee
+  /**
+   * Pace of play: the moment each hole's first score landed, an ISO
+   * instant or null per hole (src/lib/pace.ts). Stamped by the live card
+   * on the day only; merged on the server so two phones keep each
+   * other's (merge_hole_times).
+   */
+  holeTimes?: (string | null)[]
 }
 
 /** Everyone else on the round owes the payer `amount` (Matt, 2026-10-22). */

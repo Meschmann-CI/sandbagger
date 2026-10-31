@@ -129,6 +129,7 @@ const ROUND_COLUMNS: Record<RoundField, string> = {
   greenFee: 'green_fee',
   teeTime: 'tee_time',
   bookedById: 'booked_by',
+  holeTimes: 'hole_times',
 }
 
 const roundRow = (r: Round) => ({
@@ -148,6 +149,7 @@ const roundRow = (r: Round) => ({
   green_fee: r.greenFee ?? null,
   ...(r.teeTime ? { tee_time: r.teeTime } : {}),
   ...(r.bookedById ? { booked_by: r.bookedById } : {}),
+  ...(r.holeTimes ? { hole_times: r.holeTimes } : {}),
 })
 
 const expenseRow = (e: Expense) => ({
@@ -375,6 +377,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           teeTime: r.tee_time ?? undefined,
           bookedById: r.booked_by ?? undefined,
           greenFee: r.green_fee?.payerId ? { payerId: r.green_fee.payerId, amount: num(r.green_fee.amount) } : undefined,
+          holeTimes: Array.isArray(r.hole_times) && r.hole_times.length ? r.hole_times : undefined,
           players: scoresByRound.get(r.id) ?? [],
         })),
         bets: (betsRes.data ?? []).map((b: any) => ({
@@ -469,8 +472,17 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
             // Only the columns this save changed, so a stale copy of the
             // rest (photos, the fee) stays out of the write.
             const row = roundRow(r) as Record<string, unknown>
-            const partial = Object.fromEntries(changed.map((k) => [ROUND_COLUMNS[k], ROUND_COLUMNS[k] in row ? row[ROUND_COLUMNS[k]] : null]))
-            guard((await client.from('rounds').update(partial).eq('id', r.id)).error, 'Saving round')
+            // Hole stamps go through merge_hole_times, so two phones keep
+            // each other's; the column is never written whole.
+            const columns = changed.filter((k) => k !== 'holeTimes')
+            const partial = Object.fromEntries(columns.map((k) => [ROUND_COLUMNS[k], ROUND_COLUMNS[k] in row ? row[ROUND_COLUMNS[k]] : null]))
+            if (columns.length) guard((await client.from('rounds').update(partial).eq('id', r.id)).error, 'Saving round')
+            if (changed.includes('holeTimes') && r.holeTimes) {
+              const merged = await client.rpc('merge_hole_times', { p_round: r.id, p_times: r.holeTimes })
+              // Before the function exists (supabase/apply-2026-10-31-hole-times.sql)
+              // the stamps stay on this phone; nothing else is lost.
+              if (merged.error && merged.error.code !== 'PGRST202') guard(merged.error, 'Saving pace')
+            }
           } else if (roundChanged) {
             guard((await client.from('rounds').upsert({ ...roundRow(r), created_by: playerId })).error, 'Saving round')
           }

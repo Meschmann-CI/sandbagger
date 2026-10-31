@@ -734,5 +734,41 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('hole history: a 27 counts only the same pairing', [dflt.rounds, dflt.holes[0].avg, dflt.holes[0].par, woods.rounds, woods.holes[0].par], [2, 5, 4, 1, 3])
 }
 
+// 28. Pace of play (2026-10-31): the stamps, the line, the trophies' minutes,
+//     stamping on the day only, and merging two phones' stamps.
+{
+  const { paceOf, paceLine, fmtDuration, roundMinutes, stampHoleTimes, mergeHoleTimes } = await import('../src/lib/pace.ts')
+  const at = (hhmm: string) => `2026-06-01T${hhmm}:00.000Z`
+  const times = Array<string | null>(18).fill(null)
+  times[0] = at('08:10')
+  times[1] = at('08:24')
+  times[2] = at('08:55')
+  times[4] = at('09:20')
+  times[17] = at('12:08')
+  const pace = paceOf({ holeTimes: times })!
+  check('pace: elapsed, per hole, the slowest hole', [pace.holes, pace.elapsedMin, pace.from, pace.to, pace.perHoleMin, pace.slowest], [5, 238, 0, 17, 14, { hole: 2, minutes: 31 }])
+  check('pace: the line', paceLine(pace), '3h 58m from the 1st to the 18th · 14 min a hole · the 3rd took 31')
+  check('pace: minutes for the trophies, and durations', [roundMinutes({ holeTimes: times }), fmtDuration(48), fmtDuration(120), fmtDuration(238)], [238, '48 min', '2h', '3h 58m'])
+  check('pace: one stamp says nothing yet, none says null', [paceOf({ holeTimes: [at('08:10')] })?.elapsedMin, paceOf({})], [null, null])
+  const now = new Date('2026-06-01T12:30:00.000Z')
+  const r = round('p', '2026-06-01', [rp('me', [4, ...Array<null>(17).fill(null)]), rp('b', Array<null>(18).fill(null))])
+  const out = stampHoleTimes(r, { me: [4, 5, ...Array<null>(16).fill(null)] }, now, '2026-06-01')!
+  check('pace: a hole scored before stays unknown, a new one gets the moment', [out[0], out[1], out[2]], [null, now.toISOString(), null])
+  const kept = stampHoleTimes({ ...r, holeTimes: [null, at('08:00'), ...Array<null>(16).fill(null)] }, { me: [4, 5, 6, ...Array<null>(15).fill(null)] }, now, '2026-06-01')!
+  check('pace: an existing stamp keeps its time', kept[1], at('08:00'))
+  check('pace: not today, nothing is stamped', stampHoleTimes(r, { me: [4, 5, ...Array<null>(16).fill(null)] }, now, '2026-06-02'), undefined)
+  const merged = mergeHoleTimes([at('08:00'), null, ...Array<null>(16).fill(null)], [at('08:05'), at('08:20'), ...Array<null>(16).fill(null)])!
+  check('pace: merging keeps the earlier stamp and never drops one', [merged[0], merged[1]], [at('08:00'), at('08:20')])
+  // The trophies: five hours is Glacial, under three is a Speed Round.
+  const slow = Array<string | null>(18).fill(null)
+  slow[0] = at('08:00')
+  slow[17] = at('12:45')
+  const quick = Array<string | null>(18).fill(null)
+  quick[0] = at('08:00')
+  quick[17] = at('10:40')
+  const forTrophies = (holeTimes: (string | null)[]) => badgesFor(data({ rounds: [round('t', '2026-06-01', [rp('me', fours())], { holeTimes })] }), 'me').filter((b) => b.earned).map((b) => b.key)
+  check('pace: Glacial and Speed Round', [forTrophies(slow).includes('glacial'), forTrophies(quick).includes('blitz'), forTrophies(slow).includes('blitz')], [true, true, false])
+}
+
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)
 process.exit(failures === 0 ? 0 : 1)

@@ -37,7 +37,7 @@ export interface ScorePatch {
  * ones in `changed`, so a phone that set the green fee doesn't put its
  * stale photos back over the ones another phone added (audit 2026-10-24).
  */
-export const ROUND_FIELDS = ['date', 'courseName', 'tee', 'tripId', 'notes', 'saddamOnTheLine', 'ghosts', 'photos', 'nines', 'greenFee', 'teeTime', 'bookedById'] as const
+export const ROUND_FIELDS = ['date', 'courseName', 'tee', 'tripId', 'notes', 'saddamOnTheLine', 'ghosts', 'photos', 'nines', 'greenFee', 'teeTime', 'bookedById', 'holeTimes'] as const
 export type RoundField = (typeof ROUND_FIELDS)[number]
 
 export interface RoundPatch {

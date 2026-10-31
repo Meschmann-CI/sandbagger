@@ -319,6 +319,10 @@ alter table rounds add column if not exists booked_by uuid references players(id
 -- Green fees one golfer covered, {payerId, amount} a head (2026-10-22).
 -- Everyone else on the round owes them; null means paid at the course.
 alter table rounds add column if not exists green_fee jsonb;
+-- Pace of play (2026-10-31): the moment each hole's first score landed, 18 ISO
+-- instants or nulls, stamped by the live card on the day. Written through
+-- merge_hole_times (below, with the functions) so two phones keep each other's.
+alter table rounds add column if not exists hole_times jsonb;
 
 -- How many scorecard scans each account has run today, so the scan-card
 -- function can stop at a sane number. Written only by the function
@@ -989,3 +993,31 @@ begin
     end;
   end loop;
 end $$;
+
+-- Pace of play (2026-10-31): lays a phone's hole stamps onto the round's,
+-- the earlier stamp for a hole winning and a null never overwriting one.
+create or replace function merge_hole_times(p_round uuid, p_times jsonb)
+returns void
+language plpgsql
+security invoker
+as $$
+declare
+  cur jsonb;
+  merged jsonb := '[]'::jsonb;
+  i int;
+begin
+  select coalesce(hole_times, '[]'::jsonb) into cur from rounds where id = p_round;
+  if cur is null then
+    return;
+  end if;
+  for i in 0..17 loop
+    merged := merged || jsonb_build_array(
+      coalesce(nullif(cur -> i, 'null'::jsonb), nullif(p_times -> i, 'null'::jsonb))
+    );
+  end loop;
+  update rounds set hole_times = merged where id = p_round;
+end;
+$$;
+
+revoke execute on function merge_hole_times(uuid, jsonb) from public, anon;
+grant execute on function merge_hole_times(uuid, jsonb) to authenticated, service_role;

@@ -7,6 +7,8 @@ import { useStore } from '../data/store'
 import { byDate, leaderboard, playerStats, roundStandings, saddamState, shortDate, timeToMinutes, type LeaderRow } from '../lib/stats'
 import { daysAgoISO, shortDay, todayISO, weekdayName } from '../lib/dates'
 import { bookedRounds } from '../lib/bookings'
+import { fmtDuration, paceOf } from '../lib/pace'
+import { forecastLine, useRoundWeather } from '../lib/weather'
 import { liveLines, toParLabel } from '../lib/spectate'
 import { myOutstanding } from '../lib/settlements'
 import { anyCards, cardComplete, cardOf, holesEntered, roundUnderway } from '../lib/holes'
@@ -534,6 +536,8 @@ function BookedRow({ round, today }: { round: Round; today: string }) {
   const isToday = days === 0
   const gone = days < 0
   const people = round.players.map((rp) => data.players.find((p) => p.id === rp.playerId))
+  // The forecast at the tee time, once the day is close enough to have one.
+  const outlook = forecastLine(useRoundWeather(data, gone ? undefined : round))
   const teeOff = () => {
     const now = new Date()
     const mins = timeToMinutes(round.teeTime) - (now.getHours() * 60 + now.getMinutes())
@@ -556,6 +560,7 @@ function BookedRow({ round, today }: { round: Round; today: string }) {
                 : days === 1
                   ? 'Tomorrow'
                   : `${weekdayName(round.date)} · in ${days} days`}
+            {!gone && outlook ? ` · ${outlook}` : ''}
           </p>
         </div>
       </RowButton>
@@ -588,6 +593,8 @@ export function CalendarPage({ iso, today = false }: { iso: string; today?: bool
 }
 
 function LiveStrip({ round, live }: { round: Round; live: Live }) {
+  // How long they've been out, from the live card's hole stamps.
+  const elapsed = paceOf(round)?.elapsedMin ?? null
   const navigate = useNavigate()
   return (
     <button
@@ -606,7 +613,10 @@ function LiveStrip({ round, live }: { round: Round; live: Live }) {
           </span>
           <span className="mt-0.5 flex items-baseline gap-2">
             <span className="text-title font-extrabold tabular-nums">{live.big}</span>
-            <span className="truncate text-footnote text-white/70">{live.line}</span>
+            <span className="truncate text-footnote text-white/70">
+              {live.line}
+              {elapsed != null ? ` · ${fmtDuration(elapsed)}` : ''}
+            </span>
           </span>
         </span>
         <span className="flex h-10 shrink-0 items-center gap-1 rounded-xl bg-white pr-2.5 pl-3.5 text-footnote font-bold text-ink">

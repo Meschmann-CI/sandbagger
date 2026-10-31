@@ -45,6 +45,7 @@ import { distancesWanted, setDistancesWanted, usePosition } from '../lib/usePosi
 import { findRound } from '../lib/bookings'
 import { asks, enteredByThemselves, pickedFor, selfScoring, setPickedFor } from '../lib/scoringFor'
 import { holeHistory, holeHistoryLine } from '../lib/holeHistory'
+import { stampHoleTimes } from '../lib/pace'
 
 // The live card, in two views.
 //
@@ -312,8 +313,9 @@ export default function HoleEntry() {
         putts: nextPutts,
       }
     })
-    updateRound({ ...round, players: nextPlayers })
-    const saved: Round = { ...round, players: nextPlayers }
+    // Pace: a hole getting its first score gets the moment (lib/pace.ts).
+    const saved: Round = { ...round, players: nextPlayers, holeTimes: stampHoleTimes(round, cards, new Date()) }
+    updateRound(saved)
     for (const bet of data.bets.filter((b) => b.roundId === round.id)) {
       const outcome = settleFromCard(bet, saved, course)
       if (outcome) updateBetResults(bet.id, outcome.results)

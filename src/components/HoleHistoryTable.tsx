@@ -9,7 +9,7 @@ import type { Course } from '../types'
 // hole that has each of them. Same as HoleHistoryView.swift.
 
 /** The colour of an average against par: under, around, a stroke over, worse. */
-export function avgClass(avg: number | null, par: number | null): string {
+function avgClass(avg: number | null, par: number | null): string {
   if (avg == null || par == null) return 'text-ink-faint'
   const over = avg - par
   if (over < 0) return 'text-green font-bold'

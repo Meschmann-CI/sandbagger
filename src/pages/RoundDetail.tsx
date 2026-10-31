@@ -21,6 +21,7 @@ import { courseSummaries, fmtStars } from '../lib/ratings'
 import Scorecard from '../components/Scorecard'
 import RoundPhotos from '../components/RoundPhotos'
 import RoundNote from '../components/RoundNote'
+import { paceLine, paceOf } from '../lib/pace'
 import SettleUp from '../components/SettleUp'
 import { roundBetSettlements } from '../lib/settlements'
 import { useConfirm } from '../components/Confirm'
@@ -213,6 +214,7 @@ function PlayedRound() {
     })
 
   const holesIn = round.players.reduce((sum, rp) => sum + holesEntered(rp), 0)
+  const pace = paceLine(paceOf(round))
   const blurb = !top
     ? anyCards(round)
       ? `Card's going, ${holesIn} hole score${holesIn === 1 ? '' : 's'} in so far.`
@@ -403,6 +405,8 @@ function PlayedRound() {
               {b.basis === 'handicap' ? 'better than the handicap says' : 'better than usual'}. Someone check the GHIN.
             </p>
           ))}
+          {/* Pace, from the live card's hole stamps. */}
+          {pace && <p className="mt-2 text-footnote text-ink-dim tabular-nums">{pace}</p>}
         </div>
       </Card>
 

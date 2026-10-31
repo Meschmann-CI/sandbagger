@@ -3,6 +3,7 @@ import { canSeeTrip, hasScore, isGroupRound } from '../types'
 import type { IconName } from '../components/icons'
 import { byDate, roundStandings, roundWinnerIds, saddamDays, saddamReigns } from './stats'
 import { HOLE_COUNT, cardOf } from './holes'
+import { roundMinutes } from './pace'
 import { courseSlug, courseForRound, hasPars, hasStrokeIndex, padded, strokesOffLow } from './courses'
 
 // The trophy case. Every trophy is worked out from data the app already
@@ -240,8 +241,11 @@ const DEFS: Def[] = [
   },
   { key: 'newlow', kind: 'shame', label: 'New Low (the Bad Kind)', mark: 'PW', how: 'Set a new personal worst score.', check: (f, c) => f.gross != null && c.prior.length >= 3 && f.gross > Math.max(...c.prior) },
   { key: 'roughstart', kind: 'shame', label: 'Rough Start', mark: '7', how: 'Seven or worse on the first hole.', check: (f) => f.card[0] != null && f.card[0]! >= 7 },
+  // Pace (2026-10-31): from the 1st hole's first score to the 18th's (lib/pace.ts), so about 17 holes' worth.
+  { key: 'glacial', kind: 'shame', label: 'Glacial', mark: '5h', how: 'Five hours or more from the 1st hole to the 18th.', check: (f) => (roundMinutes(f.round) ?? 0) >= 280 },
 
   // ---- The odd ones ----
+  { key: 'blitz', kind: 'odd', label: 'Speed Round', mark: '<3h', how: 'Eighteen holes in under three hours.', check: (f) => { const m = roundMinutes(f.round); return m != null && m <= 165 } },
   { key: 'mirror', kind: 'odd', label: 'Mirror Nines', mark: '=', how: 'Identical front and back nine scores.', check: (f) => f.complete && f.out === f.in },
   { key: 'rainbow', kind: 'odd', label: 'Rainbow Round', mark: '5', how: 'A birdie, par, bogey, double and triple all in one round.', check: (f) => [-1, 0, 1, 2, 3].every((n) => f.diffs.includes(n)) },
   { key: 'consistent', kind: 'odd', label: 'Mr. Consistent', mark: '0/1', how: 'Every hole a par or a bogey, nothing else.', check: (f) => f.complete && !!f.pars && f.diffs.every((d) => d === 0 || d === 1) },
