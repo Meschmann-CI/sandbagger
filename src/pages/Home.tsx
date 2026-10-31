@@ -9,7 +9,7 @@ import { daysAgoISO, shortDay, todayISO, weekdayName } from '../lib/dates'
 import { bookedRounds } from '../lib/bookings'
 import { liveLines, toParLabel } from '../lib/spectate'
 import { myOutstanding } from '../lib/settlements'
-import { anyCards, cardComplete, cardOf, holesEntered } from '../lib/holes'
+import { anyCards, cardComplete, cardOf, holesEntered, roundUnderway } from '../lib/holes'
 import { money } from '../lib/money'
 import { courseSlug, courseForRound, hasPars, padded } from '../lib/courses'
 import { ratingFor } from '../lib/ratings'
@@ -67,7 +67,13 @@ export default function Home() {
   // back to the app mid-round is the single most common thing on a
   // course. Latest first, in case of a 36-hole day.
   const inProgress = rounds
-    .filter((r) => r.date === TODAY && anyCards(r) && r.players.some((rp) => !cardComplete(rp)))
+    // The strip goes once your own card is in, whatever the others are doing
+    // (Matt, 2026-10-30); for a round you're not on, while anyone's started
+    // card is unfinished.
+    .filter((r) => {
+      const mine = r.players.find((rp) => rp.playerId === me.id)
+      return r.date === TODAY && roundUnderway(r) && !(mine && cardComplete(mine))
+    })
     .at(-1)
   // How the live round is going for me, for the strip: my score (against
   // par when the course has pars, strokes when it doesn't), how many holes

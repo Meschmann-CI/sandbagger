@@ -31,6 +31,16 @@ export const hasPutts = (rp: RoundPlayer) => !!rp.putts?.some((p) => p != null)
 export const holesEntered = (rp: RoundPlayer) => cardOf(rp).filter((h) => h != null).length
 export const cardComplete = (rp: RoundPlayer) => holesEntered(rp) === HOLE_COUNT
 
+/**
+ * A round still being played: some card has started and isn't finished.
+ * A golfer with nothing on the card at all (keeping theirs on paper, or
+ * still to come) doesn't hold the round open: Matt's own finished card
+ * left the Live strip up all evening because Barry's and Pat's were
+ * blank (2026-10-30). Same rule as BanditCore's Round.underway.
+ */
+export const roundUnderway = (round: { players: RoundPlayer[] }) =>
+  round.players.some((rp) => holesEntered(rp) > 0 && !cardComplete(rp))
+
 /** Strokes over a slice of the card, ignoring holes not filled in. */
 export function strokes(rp: RoundPlayer, from = 0, to = HOLE_COUNT): number {
   return cardOf(rp)

@@ -309,6 +309,16 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   "Score not in yet" row, which opens the live card asking for them alone, and the live
   card itself offers "Barry and Pat have no scores yet. Score them too" once this
   phone's own golfers are in (`blanks` in HoleEntry.tsx and HoleEntryView.swift).
+- When a round is live (Matt, 2026-10-30, after his own finished card left the Live strip
+  up all evening because Barry's and Pat's cards were blank): a round is underway while a
+  card that was started is unfinished (`roundUnderway` in holes.ts, `Round.underway` in
+  BanditCore); a golfer with nothing on the card doesn't hold it open. Home's Live strip
+  goes the moment your own card is in, whatever the others are doing; for a round you're
+  not on it stays while anyone's started card is unfinished. The lock screen and the
+  watch end when everyone that phone scores for is in, or when every started card is.
+  Two phones scoring one golfer: the live card opens on the first hole still open for
+  the golfers this phone keeps, not the first hole nobody has filled (Pat's phone opened
+  on the 18th with his card blank once Matt's was done).
 - Rounds booked ahead, 2026-10-22 (Matt: "a better way to schedule an upcoming round"):
   the Log sheet with a future date becomes "Book a round" with a tee time and "Book it".
   A booking is a round with `teeTime` set and no scores (`src/lib/bookings.ts`); the store
