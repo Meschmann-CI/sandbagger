@@ -1,3 +1,4 @@
+import { setPickedFor } from '../lib/scoringFor'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useGoBack, useNavigate } from '../lib/nav'
@@ -547,12 +548,26 @@ function PlayedRound() {
                     <button onClick={() => setEntering(null)} className="px-1 text-footnote font-bold text-ink-faint">✕</button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => { setEntering(rp.playerId); setDraftScore('') }}
-                    className={`shrink-0 rounded-lg px-3 py-1.5 text-footnote ${SECONDARY_BTN}`}
-                  >
-                    {isMe ? 'Add mine' : 'Add it'}
-                  </button>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {/* Their holes, on the live card, asking for them alone
+                        (Matt, 2026-10-30: friends who kept their own card
+                        on paper had no way in but a total). */}
+                    <button
+                      onClick={() => {
+                        setPickedFor(round.id, [rp.playerId])
+                        navigate(`/rounds/${round.id}/card`)
+                      }}
+                      className={`rounded-lg px-3 py-1.5 text-footnote ${SECONDARY_BTN}`}
+                    >
+                      By hole
+                    </button>
+                    <button
+                      onClick={() => { setEntering(rp.playerId); setDraftScore('') }}
+                      className={`rounded-lg px-3 py-1.5 text-footnote ${SECONDARY_BTN}`}
+                    >
+                      {isMe ? 'My total' : 'Total'}
+                    </button>
+                  </div>
                 )}
               </div>
               {entering === rp.playerId && draftWarning && (

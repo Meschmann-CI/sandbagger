@@ -217,7 +217,7 @@ export default function Shell() {
             <button
               type="button"
               onClick={openLog}
-              aria-label="Log a round"
+              aria-label="Play a round"
               aria-haspopup="dialog"
               className={`flex flex-col items-center gap-0.5 py-1.5 text-caption font-bold ${logOpen ? 'text-green' : 'text-ink-faint'}`}
             >
@@ -228,7 +228,7 @@ export default function Shell() {
                   </svg>
                 </span>
               </span>
-              Log
+              Play
             </button>
             {tabs.slice(2).map((t) => tabLink(t))}
           </div>

@@ -83,6 +83,10 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
   // no scores, and the golfers on it hear.
   const [teeTime, setTeeTime] = useState('08:00')
   const booking = date > todayISO()
+  // Today is a round about to be played, not one to write up (Matt,
+  // 2026-10-30): the card first, totals as the second choice. A past date
+  // is the other way round.
+  const playing = date === todayISO()
 
   const guests = data.players.filter((p) => p.guest)
 
@@ -290,7 +294,7 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
                 ‹ Back
               </button>
             ) : (
-              <h2 className="text-title font-bold tracking-tight text-ink">{booking ? 'Book a round' : 'Log a round'}</h2>
+              <h2 className="text-title font-bold tracking-tight text-ink">{booking ? 'Book a round' : playing ? 'Play a round' : 'Log a round'}</h2>
             )}
             {step === 2 && <h2 className="text-headline font-bold text-ink">Scores</h2>}
             <button onClick={onClose} className="px-1 text-footnote font-bold text-ink-faint">
@@ -560,7 +564,7 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
               {/* Who: faces to tap. Guests are on the round and in the bets,
                   off the lifetime records, and stick around for next time. */}
               <div>
-                <span className={label}>{booking ? "Who's playing" : 'Who played'}</span>
+                <span className={label}>{booking || playing ? "Who's playing" : 'Who played'}</span>
                 <div className="flex flex-wrap gap-x-3 gap-y-3 px-1">
                   {everyone.map((p) => {
                     const on = playerIds.includes(p.id)
@@ -820,16 +824,20 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
             </PrimaryButton>
           ) : step === 0 ? (
             <div className="grid gap-2">
-              <PrimaryButton onClick={() => save()} disabled={!courseName.trim() || playerIds.length === 0} className="w-full !py-3.5">
-                Start scoring
+              <PrimaryButton
+                onClick={() => (playing ? save() : setStep(2))}
+                disabled={!courseName.trim() || playerIds.length === 0}
+                className="w-full !py-3.5"
+              >
+                {playing ? 'Start scoring' : 'Enter scores'}
               </PrimaryButton>
               <button
                 type="button"
-                onClick={() => setStep(2)}
+                onClick={() => (playing ? setStep(2) : save())}
                 disabled={!courseName.trim() || playerIds.length === 0}
                 className={`w-full rounded-xl py-3 text-body ${SECONDARY_BTN}`}
               >
-                Just enter totals
+                {playing ? 'Just enter totals' : 'Score it hole by hole'}
               </button>
             </div>
           ) : (

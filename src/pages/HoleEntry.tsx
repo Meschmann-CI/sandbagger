@@ -391,6 +391,20 @@ export default function HoleEntry() {
   // own scores drops off. The card view still reaches everyone.
   const askIds = asks(round, data.currentUserId, picked)
   const order = askIds.length ? askIds : round.players.map((rp) => rp.playerId)
+  // Golfers this phone isn't keeping who have nothing on the card at all,
+  // offered once this phone's own are in (Matt, 2026-10-30: Barry and Pat
+  // kept theirs on paper, and there was no obvious way to put them in after).
+  const blanks = round.players
+    .filter((rp) => !askIds.includes(rp.playerId) && rp.gross == null && cards[rp.playerId].every((x) => x == null))
+    .map((rp) => rp.playerId)
+  const askedDone = askIds.length > 0 && askIds.every((pid) => cards[pid].every((x) => x != null))
+  const scoreBlanks = () => {
+    setPicked(blanks)
+    setPickedFor(round.id, blanks)
+    setActive(null)
+    setBuffer('')
+    setHole(0)
+  }
   const cur: Active | null =
     active ??
     (view === 'hole' ? { playerId: order.find((pid) => cards[pid][h] == null) ?? order[0], hole: h } : null)
@@ -1231,6 +1245,16 @@ export default function HoleEntry() {
 
       {/* Who this phone keeps score for: everyone, until you pick. */}
       <div className="px-4 pt-2.5">
+        {askedDone && blanks.length > 0 && (
+          <button
+            type="button"
+            onClick={scoreBlanks}
+            className="mb-2.5 w-full rounded-xl bg-flag/10 px-3.5 py-2.5 text-left text-footnote text-ink"
+          >
+            <span className="font-bold">{blanks.map(nameOf).join(' and ')}</span> {blanks.length === 1 ? 'has' : 'have'} no scores yet.{' '}
+            <span className="font-bold text-green">Score {blanks.length === 1 ? 'theirs' : 'them'} too</span>
+          </button>
+        )}
         <div className="flex items-center justify-between gap-3">
           <p className="min-w-0 truncate text-footnote text-ink-dim">
             Scoring:{' '}

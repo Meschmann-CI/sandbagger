@@ -239,7 +239,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   address would break installed home screens and the sign-in links.
 
 - Light theme only, Manrope, "Scorecard Clean". Dark mode and stylized fonts were rejected.
-- Tabs (Matt, 2026-10-12, replacing 2026-10-10): Home, Rounds, Log (centre), Trips, You, on a
+- Tabs (Matt, 2026-10-12, replacing 2026-10-10): Home, Rounds, Log (centre; labelled "Play" since 2026-10-30), Trips, You, on a
   floating pill (white at 92% over a blur, after Matt found 70% too see-through; soft shadow, a light green pill behind the current tab, Log a
   small forest circle in the middle). Matt picked it from three looks (flat, floating with Log
   beside, this); his 2026-10-10 walk-back was the round-everything restyle, not the bar, so only
@@ -299,6 +299,16 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   `Medal.tsx`; an all-nickel first pass read as grey and Matt sent it back).
   The topo contour thumbnails, cream tags, ruled tables and calmer motion from the same
   mockup were NOT taken.
+- Play, not Log (Matt, 2026-10-30): the centre tab button reads "Play" in both apps. The
+  sheet is "Play a round" on today's date (primary "Start scoring" opens the live card,
+  "Just enter totals" underneath), "Log a round" on a past date (primary "Enter scores",
+  "Score it hole by hole" underneath), "Book a round" on a future one. The iPhone sheet
+  used to push today's round through the totals screen first; the web already led with
+  the card. Same decision: a golfer with nothing on the card after the round (friends
+  who kept their own on paper) gets "By hole" beside the total on the round page's
+  "Score not in yet" row, which opens the live card asking for them alone, and the live
+  card itself offers "Barry and Pat have no scores yet. Score them too" once this
+  phone's own golfers are in (`blanks` in HoleEntry.tsx and HoleEntryView.swift).
 - Rounds booked ahead, 2026-10-22 (Matt: "a better way to schedule an upcoming round"):
   the Log sheet with a future date becomes "Book a round" with a tee time and "Book it".
   A booking is a round with `teeTime` set and no scores (`src/lib/bookings.ts`); the store
