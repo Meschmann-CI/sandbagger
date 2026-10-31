@@ -694,5 +694,45 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('odd stake: a pot in whole cents, odd cent to the first', [['a', 'b', 'c', 'd'].map((id) => amount(pot.results, id)), sumCents(pot.results)], [[0.04, 0.03, 0.03, -0.1], 0])
 }
 
+// 27. Hole-by-hole history at a course (2026-10-31): averages, the best,
+//     the nemesis, and a 27 counting only the same pairing.
+{
+  const { holeHistory, holeHistoryLine, nemesisLine } = await import('../src/lib/holeHistory.ts')
+  const card = (...s: number[]) => [...s, ...Array<null>(18 - s.length).fill(null)]
+  const course: Course = { id: 'c', groupId: G, name: 'Split Rock', slug: 'split rock', pars: Array(18).fill(4) }
+  const d = data({
+    courses: [course],
+    rounds: [
+      round('r1', '2026-05-01', [rp('me', card(4, 6, 7)), rp('barry', card(5, 5, 4))], { courseName: 'Split Rock' }),
+      round('r2', '2026-06-01', [rp('me', card(3, 5, 6))], { courseName: 'Split Rock' }),
+      round('r3', '2026-06-02', [rp('me', card(9, 9, 9))], { courseName: 'Elsewhere' }),
+    ],
+  })
+  const mine = holeHistory(d, course, 'me')
+  check('hole history: rounds here, averages and best', [mine.rounds, mine.holes[0].avg, mine.holes[0].best, mine.holes[1].avg, mine.holes[2].avg, mine.holes[2].parOrBetter, mine.holes[3].played], [2, 3.5, 3, 5.5, 6.5, 0, 0])
+  check('hole history: the nemesis and the lines', [mine.nemesis?.hole, holeHistoryLine(mine, 0), holeHistoryLine(mine, 1), holeHistoryLine(mine, 3), nemesisLine('You', mine)], [
+    2,
+    'You average 3.5 here. Your kind of hole.',
+    'You average 5.5 here. Best 5.',
+    null,
+    'Your nemesis is the 3rd: 6.5 on a par 4, never a par in 2 tries.',
+  ])
+  const barry = holeHistory(d, course, 'barry')
+  check('hole history: one round here says nothing yet', [barry.rounds, holeHistoryLine(barry, 0, 'Barry'), barry.nemesis], [1, null, null])
+  const nine = (n: number) => Array(9).fill(n)
+  const c27: Course = { id: 'c27', groupId: G, name: 'Centennial', slug: 'centennial', pars: [], nines: [{ name: 'Meadows', pars: nine(4) }, { name: 'Lakes', pars: nine(4) }, { name: 'Woods', pars: nine(3) }] }
+  const d27 = data({
+    courses: [c27],
+    rounds: [
+      round('a', '2026-05-01', [rp('me', card(4))], { courseName: 'Centennial', nines: ['Meadows', 'Lakes'] }),
+      round('b', '2026-05-02', [rp('me', card(6))], { courseName: 'Centennial' }),
+      round('c', '2026-05-03', [rp('me', card(2))], { courseName: 'Centennial', nines: ['Woods', 'Meadows'] }),
+    ],
+  })
+  const dflt = holeHistory(d27, c27, 'me')
+  const woods = holeHistory(d27, c27, 'me', ['Woods', 'Meadows'])
+  check('hole history: a 27 counts only the same pairing', [dflt.rounds, dflt.holes[0].avg, dflt.holes[0].par, woods.rounds, woods.holes[0].par], [2, 5, 4, 1, 3])
+}
+
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)
 process.exit(failures === 0 ? 0 : 1)

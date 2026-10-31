@@ -12,6 +12,7 @@ import { CourseLogo } from '../components/CourseLogo'
 import { courseBrand } from '../lib/courseBrands'
 import { useConfirm } from '../components/Confirm'
 import CourseRatingEditor from '../components/CourseRatingEditor'
+import HoleHistoryTable from '../components/HoleHistoryTable'
 import { StarRating } from '../components/Stars'
 import { Avatar, Card, Pill, SectionLabel } from '../components/ui'
 import { IconTile } from '../components/icons'
@@ -305,6 +306,8 @@ export default function CourseDetail() {
           </p>
         </>
       )}
+
+      {course && <HoleHistoryTable course={course} />}
 
       {rounds.length > 0 && (
         <>

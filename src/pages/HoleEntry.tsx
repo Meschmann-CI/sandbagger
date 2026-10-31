@@ -44,6 +44,7 @@ import { ordinal } from '../lib/ratings'
 import { distancesWanted, setDistancesWanted, usePosition } from '../lib/usePosition'
 import { findRound } from '../lib/bookings'
 import { asks, enteredByThemselves, pickedFor, selfScoring, setPickedFor } from '../lib/scoringFor'
+import { holeHistory, holeHistoryLine } from '../lib/holeHistory'
 
 // The live card, in two views.
 //
@@ -1027,6 +1028,8 @@ export default function HoleEntry() {
   // card prints them, then a row per golfer with their box. The course's
   // scene fills whatever the golfers leave, big for a solo round and a
   // slim band for a foursome, and the pad sits underneath, always up.
+  // "You average 5.8 here", from this golfer's earlier cards at this course.
+  const historyLine = round && course ? holeHistoryLine(holeHistory(data, course, me, round.nines), h) : null
   const facts: { label: string; value: string; dot?: string }[] = [
     yards?.[h] != null && { label: yardsCard?.tee ? `${yardsCard.tee} yds` : 'Yards', value: String(yards[h]), dot: yardsDot },
     pars?.[h] != null && { label: 'Par', value: String(pars[h]) },
@@ -1191,6 +1194,8 @@ export default function HoleEntry() {
           <p className="py-3 text-center text-footnote text-ink-dim">No card for this course yet. Add it from the course page.</p>
         )}
       </div>
+      {/* How this golfer has played this hole before, once there's a history here. */}
+      {historyLine && <p className="border-b border-line bg-paper px-4 py-1.5 text-center text-caption font-semibold text-ink-dim">{historyLine}</p>}
 
       <div className="bg-card">
         {round.players.map((rp) => {
