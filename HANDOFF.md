@@ -129,9 +129,17 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
--9. Done 2026-10-30: `players.bag` jsonb is in prod (Matt pasted `apply-2026-10-30-bag.sql`,
-   checked with information_schema). Next push carries Your bag, the Play sheet, the live
-   strip rule and the Pat fix; cut TestFlight build 8 with it.
+-10. TestFlight build 8 (2026-10-30): the Swift repo is pushed with the build number at 8
+   and the archive is made (`~/Library/Developer/Xcode/DerivedData/Bandit/Bandit8.xcarchive`),
+   but `xcodebuild -exportArchive` stopped with "Unable to process request - PLA Update
+   available": Apple has a new Program License Agreement to accept. Matt accepts it at
+   https://developer.apple.com/account (Agreements) or App Store Connect > Business, then
+   Claude re-runs the export from that archive (no rebuild) with the ExportOptions.plist
+   (app-store-connect, upload, team Z689MA24A3). Everyone updates before Wolf, the match-play
+   Nassau or a hammer bet.
+-9. Done 2026-10-30: `players.bag` jsonb is in prod (Matt pasted `apply-2026-10-30-bag.sql`).
+   Web pushed (b6c11fc live, bundle index-lQ2HcG9b): Your bag with the card, the clubs page
+   and the flight arcs, the Play sheet, the live strip rule and the Pat fix.
 -8. Done 2026-10-26: the merge-guards SQL pasted, both repos pushed (web b13c7b9 live,
    bundle index-DlcL4-Lx; Swift 03e3d18) and TestFlight build 1.0 (7) uploaded (the
    audit fixes, the Putting block, the tab re-tap, the photo write fix). Everyone updates
