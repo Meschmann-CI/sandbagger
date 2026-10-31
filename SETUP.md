@@ -84,7 +84,9 @@ scanner or the course directory; a stray Supabase account with no profile gets a
 6. Edge Function secrets, under **Edge Functions → Secrets** in Supabase:
    `VAPID_PRIVATE_KEY` (push, pairs with the public key in `src/lib/push.ts`),
    `ANTHROPIC_API_KEY` (or `sandbag-api-key`) for `scan-card`, and `GOLFCOURSE_API_KEY`
-   for `course-lookup`. Deploy the three functions from `supabase/functions/`.
+   for `course-lookup`. Deploy the four functions from `supabase/functions/`; `watch`
+   (the public link to follow a round) goes up with "Verify JWT" off, since it checks
+   the caller itself and the link has to work without an account.
 7. Storage: create public buckets `round-photos`, `course-logos` and `player-photos`
    (`schema.sql` does this and sets their policies when re-run).
 

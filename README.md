@@ -33,6 +33,13 @@ Cell service on a golf course is bad, so the app is built to survive it:
   device and sends itself when the phone reconnects. The header says how many
   are waiting. `src/data/outbox.ts`, covered by `npm test`.
 
+Beyond the card: rounds booked ahead with a tee time and the forecast for it,
+green fees one golfer covered (netted into the same settle-up as the bets), a
+games menu with fourteen money games that settle themselves from the card,
+spectator mode with chirps for a round you're not in, a public link to watch a
+round without the app, hole-by-hole history at each course, pace of play, and a
+sandbagger meter on Standings.
+
 ## Stack
 
 - Vite + React + TypeScript, Tailwind CSS v4
@@ -76,8 +83,9 @@ Two things only work once deployed:
   pulling** — it's safe to re-run, and trip voting needs the `toggle_trip_vote`
   function it adds.
 - `supabase/functions/` — the Edge Functions: `notify` (push), `scan-card` (reads a
-  photographed scorecard with Claude), `course-lookup` (GolfCourseAPI directory). Secrets
-  live in the Supabase dashboard, never in the repo.
+  photographed scorecard with Claude), `course-lookup` (GolfCourseAPI directory), `watch`
+  (the public link to follow a round; deployed with verify_jwt off, it checks the caller
+  itself). Secrets live in the Supabase dashboard, never in the repo.
 - Storage buckets `round-photos`, `course-logos` and `player-photos`: public to read by
   URL, written and listed only inside the group's own folder.
 - `.github/workflows/keepalive.yml` — writes one heartbeat row every 6 hours so the free

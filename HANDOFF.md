@@ -44,6 +44,28 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   `rounds` (empty for anon). Check with `select * from keepalive_heartbeat`. The old weekly
   read-only ping is the pattern that drew a pause warning on Process Mapper.
 
+- Review round (2026-10-31, both repos, committed, NOT pushed, no TestFlight build yet).
+  Matt asked for a review against the big golf apps and said "fix those, besides
+  fairways/penalties for now". Done, web commits 0772507..e38eb19, Swift ed1331c..after:
+  audit items 14, 15, 17 and 22 (money reads off the loaded cards through
+  `lib/betMoney.ts` / `AppData.betResults`, so Standings, Settle up, Venmo, Wrapped and
+  the round page agree; GPS stops when the Live Activity ends or is swiped away; a watch
+  score older than 90 s doesn't overwrite a filled cell or move the card back; the iPhone
+  outbox reads its queue entry by entry); the pad walks to the next golfer on a 2 to 9 (a 1
+  waits for the second digit or Next); `rounds.notes` shown and edited on the round page
+  ("Add a line about the day"); the games menu, Log sheet Back, the live yellow and the
+  chirp input brought onto the conventions; hole-by-hole history at a course
+  (`lib/holeHistory.ts`: the course page's table, "You average 5.8 here" on the hole view);
+  pace of play (`lib/pace.ts`, see below); the forecast at the tee time on a booking;
+  "Share a link to watch" (the `watch` Edge Function and `pages/PublicWatch.tsx`); the
+  sandbagger meter on Standings (`lib/sandbagMeter.ts`) and the milestone watch on the
+  hole view (`lib/milestone.ts`); on the iPhone only, the night-before card (a local
+  notification at 8 pm, `NightBefore.swift`). Tests: the audit's named gaps, and
+  `npm test` now runs the random money review at 150 rounds a game.
+  Not verifiable in the demo: the hole-history table (the seed has no hole-by-hole
+  cards), pace, the forecast and the link; all covered by tests. The pad auto-advance,
+  the round note and the games menu were checked in Chromium.
+
 - Design polish (2026-10-11, merged to main and pushed): explainer captions
   trimmed; forest kept for the big moments (season race, You header, Saddam, Log button),
   picked chips are ink via `chip()` and view switches are the iOS `Segmented` in
@@ -116,7 +138,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   after a relaunch and only treats real network errors as offline.
   `supabase/apply-2026-10-24-merge-guards.sql` (items 9) was pasted by Matt 2026-10-26 and
   verified in prod (both guards present, execute granted to authenticated and
-  service_role only). Items 11 to 33 are still open.
+  service_role only). Items 14, 15, 17 and 22 were fixed 2026-10-31 (the review round);
+  11, 12, 13, 16, 18 to 21 and 23 to 33 are still open.
   Matt's three from the first TestFlight rounds (2026-10-25, both repos): the iPhone's You
   page never had the web's Putting block (`PuttingStats` in `YouView.swift`, nine holes of
   putts to show, the same numbers as `Profile.tsx`); a photo added with others went
@@ -129,6 +152,22 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-13. The review round (2026-10-31) is committed in both repos and not pushed. Before the
+   push and TestFlight build 11, two things only Matt can do:
+   1. Paste `supabase/apply-2026-10-31-hole-times.sql` (the `hole_times` column and
+      `merge_hole_times`). Until it's in, the apps keep their pace stamps on the phone
+      (the RPC's "not found" is swallowed) and nothing else breaks.
+   2. Deploy the new `watch` Edge Function from `supabase/functions/watch/` with
+      verify_jwt OFF (the POST checks the caller itself; the GET is the public link). The
+      connector's deploy call was refused by the auto-mode classifier ("Production
+      Deploy"), the same gate as migrations. Until it's deployed, "Share a link to watch"
+      says it couldn't make the link.
+   Then push the web (one push), build 11 for TestFlight, and everyone updates: build 10
+   phones don't stamp pace or show the meter, which is harmless, but the pad now moves on
+   by itself, so a mixed foursome will notice. First real round is the check for the pad,
+   the hole-history line, the milestone watch and the pace line; the first booking is the
+   check for the forecast and the night-before card (it needs the notifications
+   permission the push switch asks for).
 -12. Done 2026-10-31: TestFlight build 1.0 (10) uploaded (Swift 8b7b4bd) and the web live
    (18ed9a2, bundle index-BzxZKIYU): the putting bars, the suggested club beside GPS yards
    (phone, lock screen, watch), the bag's gapping line. Everyone should take 10. First real
@@ -370,6 +409,41 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   Two phones scoring one golfer: the live card opens on the first hole still open for
   the golfers this phone keeps, not the first hole nobody has filled (Pat's phone opened
   on the 18th with his card blank once Matt's was done).
+- The review round (Matt, 2026-10-31: "yes, let's fix those, besides fairways, penalties
+  for now"), both apps:
+  - The pad moves on by itself: a 2 to 9 lands and the pad walks to the next golfer; a 1
+    waits for a second digit or Next. Still no timers. Fairways, greens and penalties
+    were left out on purpose.
+  - A round's own line (`rounds.notes`, "Add a line about the day") sits under the
+    verdict on the round page; anyone on the round writes it, 280 characters.
+  - Hole-by-hole history: the course page shows every golfer with two cards there, their
+    average on each hole against par (green under, sand a stroke over, flag worse) and a
+    nemesis line; the hole view says "You average 5.8 here". A 27 counts only rounds on
+    the same pairing.
+  - Pace of play: the live card stamps each hole with the moment its first score lands
+    (`rounds.hole_times`, on the day only, never for a hole scored before the feature),
+    merged on the server through `merge_hole_times` so two phones keep each other's. The
+    round page: "3h 58m from the 1st to the 18th · 14 min a hole · the 7th took 31"; Home's
+    live strip adds the time out so far. Trophies: Glacial (five hours, shame) and Speed
+    Round (under three, odd); both fall back to their shelf shape until they have art.
+  - A booking within sixteen days shows Open-Meteo's forecast at the tee hour (asked again
+    after three hours): the capsule reads "Showers · 58°F · 40% rain · wind 12 mph", Home's
+    Up next row ends "58° and 40% rain".
+  - "Share a link to watch" on today's round page: `/#/watch/<round>.<token>` served
+    outside the sign-in gate, the last three holes and where everyone stands, refreshed
+    every half minute, first names only. The token is an HMAC of the round id on the
+    service role key, so it never expires and opens nothing else.
+  - Sandbagger watch on Standings: net against par with the day's course handicap over the
+    last ten rounds with a par, biggest bandit first, with a verdict word (Sandbagger from
+    +2, Playing above it from +0.5, Honest, Vanity handicap under -2). It measures the gap;
+    it still doesn't compute a handicap.
+  - Milestone watch on the hole view from the 10th: what the rest has to be to break the
+    lowest of 100, 90, 80, 70 still in reach ("Bogey golf from here breaks 90"), in gold,
+    for whoever the pad is on.
+  - Reminders for bookings, parked on 2026-10-22, are reopened as the night-before card
+    on the iPhone only: a local notification at 8 pm the evening before, with who's going,
+    who owes whom (netted the way Home shows it), who holds the Saddam and the forecast.
+    The web app can't schedule a notification, so it has none.
 - Rounds booked ahead, 2026-10-22 (Matt: "a better way to schedule an upcoming round"):
   the Log sheet with a future date becomes "Book a round" with a tee time and "Book it".
   A booking is a round with `teeTime` set and no scores (`src/lib/bookings.ts`); the store
