@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useNavigate } from '../lib/nav'
 import { useStore } from '../data/store'
-import { BACK, FRONT, HOLE_COUNT, cardOf, cardTotal, holesEntered, puttsOf, tracksPutts } from '../lib/holes'
+import { BACK, FRONT, HOLE_COUNT, cardOf, cardTotal, puttsOf, tracksPutts } from '../lib/holes'
 import {
   courseForRound,
   hasPars,
@@ -377,10 +377,17 @@ export default function HoleEntry() {
     buzz(big ? [30, 50, 30, 50, 70] : 25)
   }
 
-  // Start on the first hole nobody has filled in.
+  // Start on the first hole still open for someone this phone is scoring.
+  // It used to be the first hole nobody at all had filled in, so once
+  // Matt's card was complete Pat's phone opened on the 18th with his card
+  // blank, which read as nothing there (Pat, 2026-10-30).
+  const askIds = asks(round, data.currentUserId, picked)
+  const openIds = askIds.length ? askIds : round.players.map((rp) => rp.playerId)
   const firstOpenHole = Math.min(
-    Math.max(0, ...round.players.map((rp) => holesEntered(rp))),
-    HOLE_COUNT - 1,
+    ...openIds.map((pid) => {
+      const i = cards[pid].findIndex((x) => x == null)
+      return i < 0 ? HOLE_COUNT - 1 : i
+    }),
   )
   const h = hole ?? firstOpenHole
   // On the Hole view the pad is always up, pointed at the first golfer on
@@ -389,8 +396,7 @@ export default function HoleEntry() {
   // picked.
   // Only the golfers this phone keeps, you first; anyone entering their
   // own scores drops off. The card view still reaches everyone.
-  const askIds = asks(round, data.currentUserId, picked)
-  const order = askIds.length ? askIds : round.players.map((rp) => rp.playerId)
+  const order = openIds
   // Golfers this phone isn't keeping who have nothing on the card at all,
   // offered once this phone's own are in (Matt, 2026-10-30: Barry and Pat
   // kept theirs on paper, and there was no obvious way to put them in after).
