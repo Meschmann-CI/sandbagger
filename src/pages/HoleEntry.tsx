@@ -46,6 +46,7 @@ import { findRound } from '../lib/bookings'
 import { asks, enteredByThemselves, pickedFor, selfScoring, setPickedFor } from '../lib/scoringFor'
 import { holeHistory, holeHistoryLine } from '../lib/holeHistory'
 import { stampHoleTimes } from '../lib/pace'
+import { milestoneWatch } from '../lib/milestone'
 
 // The live card, in two views.
 //
@@ -1032,6 +1033,14 @@ export default function HoleEntry() {
   // slim band for a foursome, and the pad sits underneath, always up.
   // "You average 5.8 here", from this golfer's earlier cards at this course.
   const historyLine = round && course ? holeHistoryLine(holeHistory(data, course, me, round.nines), h) : null
+  // Milestone watch: what the rest has to be to break 90 (lib/milestone.ts), for whoever the pad is on.
+  const watchFor = cur?.playerId ?? me
+  const watch = pars && cards[watchFor] ? milestoneWatch(cards[watchFor], pars) : null
+  const milestoneText = watch
+    ? watchFor === me
+      ? watch.line
+      : `${data.players.find((p) => p.id === watchFor)?.name.split(' ')[0] ?? '?'}: ${watch.line.replace('you break', 'they break')}`
+    : null
   const facts: { label: string; value: string; dot?: string }[] = [
     yards?.[h] != null && { label: yardsCard?.tee ? `${yardsCard.tee} yds` : 'Yards', value: String(yards[h]), dot: yardsDot },
     pars?.[h] != null && { label: 'Par', value: String(pars[h]) },
@@ -1198,6 +1207,7 @@ export default function HoleEntry() {
       </div>
       {/* How this golfer has played this hole before, once there's a history here. */}
       {historyLine && <p className="border-b border-line bg-paper px-4 py-1.5 text-center text-caption font-semibold text-ink-dim">{historyLine}</p>}
+      {milestoneText && <p className="border-b border-line bg-paper px-4 py-1.5 text-center text-caption font-semibold text-gold">{milestoneText}</p>}
 
       <div className="bg-card">
         {round.players.map((rp) => {

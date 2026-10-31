@@ -9,6 +9,7 @@ import { coursePar, courseForRound, playingHandicap } from '../lib/courses'
 import { Avatar, Card, HelpTip, SaddamIcon, SectionLabel } from '../components/ui'
 import { Icon } from '../components/icons'
 import { todayISO } from '../lib/dates'
+import { meterLine, meterVerdict, sandbagBoard } from '../lib/sandbagMeter'
 
 // Standings, a tab of its own: the season (or all time) on the group's
 // terms. The Saddam up top as a band, then the table with each golfer's
@@ -81,6 +82,7 @@ export default function Ledger() {
   const { data } = useStore()
   const members = useMembers()
   const navigate = useNavigate()
+  const meterBoard = sandbagBoard(data, members.map((m) => m.id))
   const [scope, setScope] = useState<Scope>('season')
   const [showGrid, setShowGrid] = useState(false)
   const today = todayISO()
@@ -441,6 +443,35 @@ export default function Ledger() {
             )}
           </Card>
         </>
+      )}
+
+      {/* The sandbagger meter: each golfer against the number they claim (lib/sandbagMeter.ts). */}
+      {meterBoard.length > 0 && (
+        <div className="mt-6">
+          <SectionLabel>Sandbagger watch</SectionLabel>
+          <Card className="divide-y divide-line">
+            {meterBoard.map((m) => {
+              const p = data.players.find((pl) => pl.id === m.playerId)
+              if (!p) return null
+              return (
+                <div key={m.playerId} className="flex items-center gap-3 px-4 py-2.5">
+                  <Avatar player={p} size={28} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-body font-bold text-ink">
+                      {p.name} <span className="ml-1 text-caption font-semibold text-ink-faint">{meterVerdict(m)}</span>
+                    </p>
+                    <p className="text-caption text-ink-dim">{meterLine(m)}</p>
+                  </div>
+                  <span className={`text-headline font-extrabold tabular-nums ${m.avgBy >= 2 ? 'text-flag' : m.avgBy >= 0.5 ? 'text-gold' : 'text-ink'}`}>
+                    {m.avgBy > 0 ? '+' : ''}
+                    {m.avgBy.toFixed(1)}
+                  </span>
+                </div>
+              )
+            })}
+          </Card>
+          <p className="mt-2 px-2 text-caption text-ink-faint">Net against par with the day’s course handicap, over the last ten rounds with a par. Plus means they beat their number.</p>
+        </div>
       )}
 
       {/* Handicaps this year */}

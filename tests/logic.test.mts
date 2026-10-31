@@ -770,5 +770,43 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('pace: Glacial and Speed Round', [forTrophies(slow).includes('glacial'), forTrophies(quick).includes('blitz'), forTrophies(slow).includes('blitz')], [true, true, false])
 }
 
+// 29. The sandbagger meter and the milestone watch (2026-10-31).
+{
+  const { sandbagMeter, sandbagBoard, meterLine, meterVerdict } = await import('../src/lib/sandbagMeter.ts')
+  const { milestoneWatch, milestoneLine } = await import('../src/lib/milestone.ts')
+  const par72: Course = { id: 'm', groupId: G, name: 'Meter Links', slug: 'meter links', pars: Array(18).fill(4) }
+  // a claims a 10 and shoots 78, 79, 80 (net 68, 69, 70: beats 72 by 4, 3, 2); b claims 18 and shoots 92, 93, 88 (net 74, 75, 70).
+  const rounds = [
+    [78, 92],
+    [79, 93],
+    [80, 88],
+  ].map(([ga, gb], i) =>
+    round(`m${i}`, `2026-0${i + 4}-01`, [
+      { playerId: 'a', gross: ga, handicapSnapshot: 10 },
+      { playerId: 'b', gross: gb, handicapSnapshot: 18 },
+    ], { courseName: 'Meter Links' }),
+  )
+  const d = data({ courses: [par72], rounds })
+  const a = sandbagMeter(d, 'a')!
+  const b = sandbagMeter(d, 'b')!
+  check('meter: beats the number by the average margin', [a.rounds, a.avgBy, a.beat, a.margins], [3, 3, 3, [4, 3, 2]])
+  check('meter: misses it', [b.avgBy, b.beat, b.margins], [-1, 1, [-2, -3, 2]])
+  check('meter: the lines and the verdicts', [meterLine(a), meterVerdict(a), meterLine(b), meterVerdict(b)], ['Beats the number by 3.0 a round, 3 of the last 3.', 'Sandbagger', 'Misses the number by 1.0 a round, 1 of the last 3.', 'Honest'])
+  check('meter: the board, biggest bandit first, and two rounds say nothing', [sandbagBoard(d, ['b', 'a', 'c']).map((m) => m.playerId), sandbagMeter(data({ courses: [par72], rounds: rounds.slice(0, 2) }), 'a')], [['a', 'b'], null])
+  // A course with slope and rating: the course handicap, not the index.
+  const sloped: Course = { ...par72, rating: 74, slope: 135 }
+  const steep = sandbagMeter(data({ courses: [sloped], rounds }), 'a')!
+  // 10 × 135/113 + 2 = 13.9 → 14 strokes: 78 - 14 = 64, beats 72 by 8.
+  check('meter: uses the course handicap', steep.margins[0], 8)
+
+  const pars = Array<number | null>(18).fill(4)
+  const nine = (over: number) => [...Array(9).fill(4 + over), ...Array<null>(9).fill(null)] as (number | null)[]
+  check('milestone: 45 at the turn, eight bogeys still break 90', milestoneWatch(nine(1), pars)?.line, '8 bogeys in the last 9 still break 90.')
+  check('milestone: 54 at the turn, bogey golf breaks 100', milestoneWatch(nine(2), pars)?.line, 'Bogey golf from here breaks 100.')
+  check('milestone: 43 thru ten, four bogeys still break 80', milestoneWatch([...Array(9).fill(4), 7, ...Array<null>(8).fill(null)], pars)?.line, '4 bogeys in the last 8 still break 80.')
+  check('milestone: too early, and a full card, say nothing', [milestoneWatch([4, 4, 4, ...Array<null>(15).fill(null)], pars), milestoneWatch(Array(18).fill(4), pars)], [null, null])
+  check('milestone: the exact line', [milestoneLine(80, 3, 0), milestoneLine(90, 1, 1), milestoneLine(70, 4, 4)], ['Par the last 3 and you break 80.', 'A bogey on the last still breaks 90.', 'Bogey golf from here breaks 70.'])
+}
+
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)
 process.exit(failures === 0 ? 0 : 1)
