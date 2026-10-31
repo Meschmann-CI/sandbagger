@@ -329,7 +329,12 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   Ben Hogan), worldvectorlogo (Cobra, Odyssey, Honma) and Vokey's site icon. Fine for a
   four-person app, not for anything public. Written only when set, so saves work before
   the column exists. `clubFor` is there for the watch's hole page to suggest a club later;
-  not shown anywhere yet. The demo golfer has an 11-club bag in `seed.ts`.
+  not shown anywhere yet. The demo golfer has an 11-club bag in `seed.ts`. The clubs page
+  opens with the bag as flight arcs (`src/components/BagArcs.tsx`, after an Arccos graphic
+  Matt liked): every club from one tee, landing on a yardage line at its distance, club and
+  number under the spot, labels on two rows past six clubs. Linear in yards, so the gapping
+  is the point; wedges arc higher than woods. Woods forest, hybrids sky, irons green, wedges
+  gold.
 - When a round is live (Matt, 2026-10-30, after his own finished card left the Live strip
   up all evening because Barry's and Pat's cards were blank): a round is underway while a
   card that was started is unfinished (`roundUnderway` in holes.ts, `Round.underway` in

@@ -5,6 +5,7 @@ import { BackButton } from '../components/Nav'
 import { useStore } from '../data/store'
 import { brandOf, clubLabel, clubShort, newClubId, sortBag } from '../lib/bag'
 import { BrandMark, ClubEditor } from '../components/BagEditor'
+import BagArcs from '../components/BagArcs'
 import { Card, RowButton } from '../components/ui'
 
 // Every club in the bag (Matt, 2026-10-30), driver to putter, each with
@@ -44,6 +45,11 @@ export default function Bag() {
         </div>
       </header>
 
+      {bag.length > 0 && (
+        <Card className="mb-3 px-3 pt-3 pb-1">
+          <BagArcs bag={bag} />
+        </Card>
+      )}
       {bag.length === 0 && !editing ? (
         <Card className="p-5 text-footnote text-ink-dim">
           Nothing in the bag yet.{' '}
