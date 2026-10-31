@@ -129,6 +129,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-11. Done 2026-10-30: TestFlight build 1.0 (9) uploaded (Swift f1259fc) with the lofted
+   wedges; the web has them live (29e4857, bundle index-CCJjSaRr). Everyone should take 9.
 -10. Done 2026-10-30: TestFlight build 1.0 (8) uploaded (Swift 7dfa373: Your bag with the
    card, the clubs page and the flight arcs, the Play sheet, the live-round rule, the Pat
    fix, the watch redesign). It needed Matt to accept Apple's new Program License Agreement
