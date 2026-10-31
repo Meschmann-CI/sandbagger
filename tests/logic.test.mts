@@ -604,7 +604,7 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
 
 // 24. The bag (2026-10-30): laid out driver to putter, and the club for a shot.
 {
-  const { sortBag, clubFor, clubLabel, clubShort, brandOf, bagHeadlines } = await import('../src/lib/bag.ts')
+  const { sortBag, clubFor, clubLabel, clubShort, brandOf, bagHeadlines, bagGaps } = await import('../src/lib/bag.ts')
   const bag = [
     { id: 'c', club: 'PW', yards: 115 },
     { id: 'a', club: 'P' },
@@ -625,6 +625,9 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('bag: the three headline clubs', bagHeadlines(full).map((c) => c.club), ['D', '7I', 'SW'])
   check('bag: headlines without a 7 iron take the middle', bagHeadlines(full.filter((c) => c.club !== '7I')).map((c) => c.club), ['D', '6I', 'SW'])
   check('bag: four swings still pick three', bagHeadlines(bag).map((c) => c.club), ['D', '7I', 'PW'])
+  const gaps = bagGaps([...full, { id: 'x', club: '56', yards: 105 }])
+  check('bag: the widest gap and the doubled distance', [gaps.widest?.from.club, gaps.widest?.to.club, gaps.widest?.yards, gaps.same?.map((c) => c.club)], ['D', '3W', 15, ['56', 'SW']])
+  check('bag: two clubs say nothing about gaps', bagGaps(bag.slice(0, 2)).widest, null)
 }
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)

@@ -134,3 +134,22 @@ export function clubFor(bag: BagClub[], yards: number): BagClub | undefined {
   const reaching = swings.filter((c) => c.yards! >= yards).sort((a, b) => a.yards! - b.yards!)
   return reaching[0] ?? swings.sort((a, b) => b.yards! - a.yards!)[0]
 }
+
+/**
+ * Where the bag's yardages leave room or double up: the widest gap between
+ * neighbouring clubs and any two that go the same distance. For the line
+ * under the flight arcs. Needs three swings with yards to say anything.
+ */
+export function bagGaps(bag: BagClub[]): { widest: { from: BagClub; to: BagClub; yards: number } | null; same: [BagClub, BagClub] | null } {
+  const swings = sortBag(bag).filter((c) => c.club !== 'P' && c.yards != null && c.yards > 0)
+  if (swings.length < 3) return { widest: null, same: null }
+  let widest: { from: BagClub; to: BagClub; yards: number } | null = null
+  let same: [BagClub, BagClub] | null = null
+  for (let i = 1; i < swings.length; i++) {
+    const a = swings[i - 1], b = swings[i]
+    const gap = Math.abs(a.yards! - b.yards!)
+    if (!widest || gap > widest.yards) widest = { from: a, to: b, yards: gap }
+    if (gap === 0 && !same) same = [a, b]
+  }
+  return { widest, same }
+}

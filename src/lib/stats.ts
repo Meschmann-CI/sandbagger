@@ -445,6 +445,10 @@ export interface PuttStats {
   fullRounds: number
   threePuttsPerRound: number | null
   onePuttRate: number | null
+  /** Holes by putts taken: one, two, three or more. */
+  counts: { one: number; two: number; three: number }
+  /** Putts in each complete eighteen, oldest first, the last ten. */
+  recent: { date: string; putts: number }[]
 }
 
 export function puttStats(data: AppData, playerId: string): PuttStats {
@@ -453,7 +457,8 @@ export function puttStats(data: AppData, playerId: string): PuttStats {
   let threes = 0
   let ones = 0
   const fullTotals: number[] = []
-  for (const round of data.rounds) {
+  const recent: { date: string; putts: number }[] = []
+  for (const round of [...data.rounds].sort((a, b) => a.date.localeCompare(b.date))) {
     const rp = round.players.find((p) => p.playerId === playerId)
     if (!rp?.putts?.some((x) => x != null)) continue
     const putts = Array.from({ length: 18 }, (_, i) => rp.putts![i] ?? null)
@@ -462,7 +467,11 @@ export function puttStats(data: AppData, playerId: string): PuttStats {
     total += entered.reduce((s, x) => s + x, 0)
     threes += entered.filter((x) => x >= 3).length
     ones += entered.filter((x) => x === 1).length
-    if (entered.length === 18) fullTotals.push(entered.reduce((s, x) => s + x, 0))
+    if (entered.length === 18) {
+      const sum = entered.reduce((s, x) => s + x, 0)
+      fullTotals.push(sum)
+      recent.push({ date: round.date, putts: sum })
+    }
   }
   const r2 = (n: number) => Math.round(n * 100) / 100
   return {
@@ -472,6 +481,8 @@ export function puttStats(data: AppData, playerId: string): PuttStats {
     fullRounds: fullTotals.length,
     threePuttsPerRound: holes ? Math.round(((threes / holes) * 18) * 10) / 10 : null,
     onePuttRate: holes ? ones / holes : null,
+    counts: { one: ones, two: holes - ones - threes, three: threes },
+    recent: recent.slice(-10),
   }
 }
 

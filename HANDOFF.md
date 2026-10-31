@@ -343,6 +343,19 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   number under the spot, labels on two rows past six clubs. Linear in yards, so the gapping
   is the point; wedges arc higher than woods. Woods forest, hybrids sky, irons green, wedges
   gold.
+- Putting on You (Matt, 2026-10-30, both apps): under the three putting numbers, a bar of
+  holes by putts taken (one, two, three or more, the scoring bar's colours) and the putts
+  in each full eighteen as small bars, oldest to newest, the best in green (`PuttStats.counts`
+  and `.recent`, the last ten). The Your game card now shows with putts alone, as the iPhone
+  always did; its scoring half still waits for hole-by-hole cards.
+- Suggested club (Matt, 2026-10-30): wherever the app knows the yards to the middle of the
+  green it shows the club from this phone's golfer's bag that gets there (`clubFor`, the
+  shortest club that reaches, by their own numbers): a green pill in the hole card's
+  distance chip (HoleEntry.tsx and HoleEntryView.swift), after the yards on the Live
+  Activity (`ContentState.club`), and beside the middle yards and the target on the watch
+  (`WatchRound.bag` carries the wearer's bag). Nothing shows for a golfer with no bag.
+- The clubs page's arcs carry a line under them: "Widest gap: 3W to 4H, 20 yds · 56° and
+  SW both go 85" (`bagGaps`), only once three clubs have yards.
 - When a round is live (Matt, 2026-10-30, after his own finished card left the Live strip
   up all evening because Barry's and Pat's cards were blank): a round is underway while a
   card that was started is unfinished (`roundUnderway` in holes.ts, `Round.underway` in

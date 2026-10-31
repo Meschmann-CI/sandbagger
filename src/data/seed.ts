@@ -97,7 +97,7 @@ export const seedData: AppData = {
     {
       id: 'r-t1', groupId: 'g-1', date: '2025-10-10', courseName: 'Pine Barrens Course', tripId: 't-sandhills',
       players: [
-        { playerId: 'p-alex', gross: 90, handicapSnapshot: 11.8 },
+        { playerId: 'p-alex', gross: 90, handicapSnapshot: 11.8, putts: [2, 2, 1, 2, 3, 2, 2, 1, 2, 2, 2, 2, 3, 1, 2, 2, 2, 1] },
         { playerId: 'p-ravi', gross: 95, handicapSnapshot: 15.2 },
         { playerId: 'p-danny', gross: 99, handicapSnapshot: 17.9 },
         { playerId: 'p-kim', gross: 104, handicapSnapshot: 21.4 },
@@ -106,7 +106,7 @@ export const seedData: AppData = {
     {
       id: 'r-t2', groupId: 'g-1', date: '2025-10-11', courseName: 'Mid Pines', tripId: 't-sandhills',
       players: [
-        { playerId: 'p-alex', gross: 87, handicapSnapshot: 11.8 },
+        { playerId: 'p-alex', gross: 87, handicapSnapshot: 11.8, putts: [2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 1, 2, 2, 1, 2] },
         { playerId: 'p-ravi', gross: 92, handicapSnapshot: 15.2 },
         { playerId: 'p-danny', gross: 94, handicapSnapshot: 17.9 },
         { playerId: 'p-kim', gross: 106, handicapSnapshot: 21.4 },
@@ -115,7 +115,7 @@ export const seedData: AppData = {
     {
       id: 'r-t3', groupId: 'g-1', date: '2025-10-12', courseName: 'Pine Needles', tripId: 't-sandhills',
       players: [
-        { playerId: 'p-alex', gross: 93, handicapSnapshot: 11.8 },
+        { playerId: 'p-alex', gross: 93, handicapSnapshot: 11.8, putts: [2, 3, 2, 2, 3, 2, 1, 2, 2, 3, 2, 2, 2, 2, 2, 1, 2, 1] },
         { playerId: 'p-ravi', gross: 91, handicapSnapshot: 15.2 },
         { playerId: 'p-danny', gross: 97, handicapSnapshot: 17.9 },
         { playerId: 'p-kim', gross: 101, handicapSnapshot: 21.4 },
@@ -126,7 +126,7 @@ export const seedData: AppData = {
     {
       id: 'r-h1', groupId: 'g-1', date: '2026-04-18', courseName: 'Cobbs Creek', tee: 'White',
       players: [
-        { playerId: 'p-alex', gross: 88, handicapSnapshot: 11.2 },
+        { playerId: 'p-alex', gross: 88, handicapSnapshot: 11.2, putts: [2, 1, 2, 2, 1, 2, 2, 1, 2, 1, 2, 2, 1, 2, 2, 1, 2, 1] },
         { playerId: 'p-ravi', gross: 93, handicapSnapshot: 14.8 },
         { playerId: 'p-danny', gross: 97, handicapSnapshot: 17.5 },
       ],

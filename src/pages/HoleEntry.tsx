@@ -38,6 +38,7 @@ import HoleMapSheet from '../components/HoleMapSheet'
 import { autoFetchCourseMap, drawable, emptyCourseMap, greenCentre, greenYards, mapHoleFor, markKey, metres, ON_HOLE_METRES, saveCourseMap } from '../lib/courseMap'
 import { useCourseMap } from '../lib/useCourseMap'
 import { useLiveWind } from '../lib/liveWind'
+import { clubFor, clubShort } from '../lib/bag'
 import { todayISO } from '../lib/dates'
 import { ordinal } from '../lib/ratings'
 import { distancesWanted, setDistancesWanted, usePosition } from '../lib/usePosition'
@@ -1029,6 +1030,9 @@ export default function HoleEntry() {
   const gy = onThisHole ? greenYards(courseMap!, mapHole!, pos.at!) : null
   // A fix worse than about 15 yards either way shows grey, not trusted.
   const weakFix = pos.accuracy != null && pos.accuracy > 14
+  // The club from this phone's golfer's bag for the middle of the green
+  // (Matt, 2026-10-30): the shortest club that gets there, by their own numbers.
+  const suggested = gy ? clubFor(data.players.find((p) => p.id === me)?.bag ?? [], gy.middle) : undefined
   // Standing on another hole's tee: the card is usually still on the
   // hole just finished. Offered, never done for you.
   const onTee = (() => {
@@ -1082,6 +1086,11 @@ export default function HoleEntry() {
       <span className="flex items-baseline gap-1.5">
         <span className="text-title font-extrabold tabular-nums">{gy.middle}</span>
         <span className="text-caption font-semibold text-ink-dim">{gy.front == null && gy.back == null ? 'to the green' : 'to middle'}</span>
+        {suggested && (
+          <span className="ml-1 self-center rounded-full bg-green-soft px-2 py-0.5 text-caption font-bold text-green-deep" aria-label={`Your ${clubShort(suggested.club)} goes ${suggested.yards}`}>
+            {clubShort(suggested.club)}
+          </span>
+        )}
       </span>
       {(gy.front != null || gy.back != null) && (
         <span className="block text-caption font-semibold tabular-nums text-ink-dim">

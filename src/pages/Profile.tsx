@@ -334,10 +334,13 @@ export default function Profile() {
       {/* What the hole-by-hole cards and course pars add up to. Only
           holes with both a score and a known par count, so the rates
           can't be gamed by an uncarded 88. */}
-      {game.holes > 0 ? (
+      {game.holes > 0 || putting.holes >= 9 ? (
         <>
-          <SectionLabel>Your game · {game.holes} holes</SectionLabel>
+          <SectionLabel>{game.holes > 0 ? `Your game · ${game.holes} holes` : 'Your game'}</SectionLabel>
           <Card className="p-4">
+            {/* The scoring half waits for hole-by-hole cards; putts can come first (as on the iPhone). */}
+            {game.holes > 0 && (
+              <>
             <div className="grid grid-cols-3 divide-x divide-line mb-4">
               {([3, 4, 5] as const).map((par) => (
                 <div key={par} className="text-center">
@@ -379,9 +382,11 @@ export default function Profile() {
                 </>
               )
             })()}
+              </>
+            )}
             {/* Putting, once there are nine holes of it to go on. */}
             {putting.holes >= 9 && (
-              <div className="mt-4 border-t border-line pt-3">
+              <div className={game.holes > 0 ? 'mt-4 border-t border-line pt-3' : ''}>
                 <p className="text-caption font-bold text-ink-faint">Putting · {putting.holes} holes</p>
                 <div className="mt-2 grid grid-cols-3 divide-x divide-line">
                   {[
@@ -395,12 +400,58 @@ export default function Profile() {
                     </div>
                   ))}
                 </div>
-                {putting.onePuttRate != null && (
-                  <p className="mt-2.5 text-caption text-ink-faint">
-                    One-putts on {Math.round(putting.onePuttRate * 100)}% of holes
-                    {putting.fullRounds === 0 && '. Putts a round shows once a full eighteen is tracked.'}
-                  </p>
-                )}
+                {(() => {
+                  // Holes by putts taken, the way the scoring bar above reads.
+                  const buckets = [
+                    { label: 'One-putt', count: putting.counts.one, cls: 'bg-green' },
+                    { label: 'Two', count: putting.counts.two, cls: 'bg-green/40' },
+                    { label: 'Three+', count: putting.counts.three, cls: 'bg-ink-faint/45' },
+                  ]
+                  const recent = putting.recent
+                  const best = recent.length ? Math.min(...recent.map((r) => r.putts)) : null
+                  const worst = recent.length ? Math.max(...recent.map((r) => r.putts)) : null
+                  return (
+                    <>
+                      <div className="mt-3 flex h-3 overflow-hidden rounded-full">
+                        {buckets.map((b) => b.count > 0 && <div key={b.label} className={b.cls} style={{ width: `${(100 * b.count) / putting.holes}%` }} />)}
+                      </div>
+                      <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1">
+                        {buckets.map((b) => (
+                          <span key={b.label} className="inline-flex items-center gap-1.5 text-caption text-ink-dim">
+                            <span className={`h-2.5 w-2.5 rounded-full ${b.cls}`} />
+                            <span className="font-bold">{b.label}</span>
+                            <span className="tabular-nums text-ink-faint">
+                              {b.count} · {Math.round((100 * b.count) / putting.holes)}%
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                      {recent.length >= 2 && best != null && worst != null ? (
+                        // Putts in each full round, oldest to newest; the best one in green.
+                        <div className="mt-4">
+                          <p className="text-caption font-bold text-ink-faint">
+                            Putts a round, last {recent.length} · best {best}
+                          </p>
+                          <div className="mt-2 flex h-14 items-end gap-1.5">
+                            {recent.map((r) => {
+                              const span = Math.max(1, worst - best)
+                              // Pixels, not a percentage: the column has no height of its own to measure against.
+                              const h = Math.round(12 + (28 * (r.putts - best)) / span)
+                              return (
+                                <div key={r.date} className="flex flex-1 flex-col items-center justify-end" title={shortDate(r.date)}>
+                                  <span className={`text-caption font-bold tabular-nums ${r.putts === best ? 'text-green' : 'text-ink-dim'}`}>{r.putts}</span>
+                                  <div className={`mt-0.5 w-full rounded-t ${r.putts === best ? 'bg-green' : 'bg-line-strong'}`} style={{ height: `${h}px` }} />
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        putting.fullRounds === 0 && <p className="mt-2.5 text-caption text-ink-faint">Putts a round shows once a full eighteen is tracked.</p>
+                      )}
+                    </>
+                  )
+                })()}
               </div>
             )}
           </Card>

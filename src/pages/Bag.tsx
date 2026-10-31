@@ -3,7 +3,7 @@ import type { BagClub } from '../types'
 import { useGoBack } from '../lib/nav'
 import { BackButton } from '../components/Nav'
 import { useStore } from '../data/store'
-import { brandOf, clubLabel, clubShort, newClubId, sortBag } from '../lib/bag'
+import { bagGaps, brandOf, clubLabel, clubShort, newClubId, sortBag } from '../lib/bag'
 import { BrandMark, ClubEditor } from '../components/BagEditor'
 import BagArcs from '../components/BagArcs'
 import { Card, RowButton } from '../components/ui'
@@ -11,6 +11,15 @@ import { Card, RowButton } from '../components/ui'
 // Every club in the bag (Matt, 2026-10-30), driver to putter, each with
 // its make's logo, what it is, and how far it goes. Tap a row to change
 // it; the editor opens under the list, like the handicap editor.
+
+/** "Widest gap: Driver to 3W, 25 yds · 56° and SW both go 85", or null for a bag too small to say. */
+function gapsLine(bag: BagClub[]): string | null {
+  const g = bagGaps(bag)
+  if (!g.widest) return null
+  let line = `Widest gap: ${clubShort(g.widest.from.club)} to ${clubShort(g.widest.to.club)}, ${g.widest.yards} yds`
+  if (g.same) line += ` · ${clubShort(g.same[0].club)} and ${clubShort(g.same[1].club)} both go ${g.same[0].yards}`
+  return line
+}
 
 export default function Bag() {
   const goBack = useGoBack('/profile')
@@ -48,6 +57,7 @@ export default function Bag() {
       {bag.length > 0 && (
         <Card className="mb-3 px-3 pt-3 pb-1">
           <BagArcs bag={bag} />
+          {gapsLine(bag) && <p className="px-1 pb-2 text-caption text-ink-dim">{gapsLine(bag)}</p>}
         </Card>
       )}
       {bag.length === 0 && !editing ? (
