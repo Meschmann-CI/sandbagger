@@ -129,6 +129,10 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-12. Done 2026-10-31: TestFlight build 1.0 (10) uploaded (Swift 8b7b4bd) and the web live
+   (18ed9a2, bundle index-BzxZKIYU): the putting bars, the suggested club beside GPS yards
+   (phone, lock screen, watch), the bag's gapping line. Everyone should take 10. First real
+   round on a mapped course is the check for the club chips.
 -11. Done 2026-10-30: TestFlight build 1.0 (9) uploaded (Swift f1259fc) with the lofted
    wedges; the web has them live (29e4857, bundle index-CCJjSaRr). Everyone should take 9.
 -10. Done 2026-10-30: TestFlight build 1.0 (8) uploaded (Swift 7dfa373: Your bag with the
