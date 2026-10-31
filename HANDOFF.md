@@ -154,9 +154,14 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 -13. The review round (2026-10-31). Web pushed and live (d037699, bundle index-D7o6Z4Bx,
    the three new strings checked on the live bundle). `apply-2026-10-31-hole-times.sql`
-   is pasted (verified: column and function present). The Swift repo is committed, not
-   pushed, and TestFlight build 11 is not made. Still to do, Matt only:
-   1. Deploy the new `watch` Edge Function from `supabase/functions/watch/` with
+   is pasted (verified: column and function present). The `watch` Edge Function is
+   deployed (v1, verify_jwt off, checked: a bad token gets 403 with no sign-in, an
+   unsigned POST gets 401). It went up through the connector once Matt took the session
+   out of auto mode; in auto mode the classifier refuses every deploy. Matt's three
+   dashboard attempts left a stray `dynamic-endpoint` function to delete from the
+   Edge Functions page (nothing calls it). The Swift repo is committed, not pushed, and
+   TestFlight build 11 is not made. Still to do, Matt only:
+   1. (Done.) Deploy the new `watch` Edge Function from `supabase/functions/watch/` with
       verify_jwt OFF (the POST checks the caller itself; the GET is the public link). The
       connector's deploy call was refused by the auto-mode classifier ("Production
       Deploy"), the same gate as migrations. Until it's deployed, "Share a link to watch"
