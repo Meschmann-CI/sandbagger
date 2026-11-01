@@ -36,7 +36,7 @@ const { roundPatch, applyScorePatch, CLEARED } = await import('../src/lib/scoreP
 const { roundBetSettlements } = await import('../src/lib/settlements.ts')
 const { asks, guardOwnHoles, selfScoring } = await import('../src/lib/scoringFor.ts')
 const { liveLines, cardSlice, leadStory, atTheTurn, spectatorNews } = await import('../src/lib/spectate.ts')
-const { trophiesFrom, trophyPushTitle, trophyWhy } = await import('../src/lib/trophyMoments.ts')
+const { trophiesFrom, trophyPushTitle, trophyWhy, closedOut, roundIsFinal } = await import('../src/lib/trophyMoments.ts')
 const { isBooked, sortBookings, findRound, bookedRounds, teeTimeLabel, teeTimeInput } = await import('../src/lib/bookings.ts')
 
 let failures = 0
@@ -312,6 +312,26 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('push: two', trophyPushTitle('Barry', 'Split Rock', [b, s]), 'Barry earned Broke 90 and Snowman at Split Rock')
   check('push: four', trophyPushTitle('Barry', 'Split Rock', [b, s, s, s]), 'Barry earned Broke 90 and 3 other trophies at Split Rock')
   check('why: a repeat', trophyWhy(s), "Make an 8 on any hole. That's 3.")
+}
+
+// 12b. A golfer's own trophies at their close-out; the ones the other cards decide at the final (Matt, 2026-11-01).
+{
+  const old = round('s-old', '2026-05-01', [{ playerId: 'kim', handicapSnapshot: 21, gross: 97 }])
+  const fresh = round('s-new', '2026-10-24', [
+    { playerId: 'kim', handicapSnapshot: 21, gross: 89 },
+    { playerId: 'ravi', handicapSnapshot: 15, gross: 89 },
+  ])
+  const d = data({ rounds: [old, fresh] })
+  const mine = trophiesFrom(d, 's-new', 'kim', '2026-10-24', 'mine').map((t) => t.badge.key)
+  const everyone = trophiesFrom(d, 's-new', 'kim', '2026-10-24', 'everyone').map((t) => t.badge.key)
+  check('scope mine: Broke 90, not Twins', [mine.includes('break90'), mine.includes('twins')], [true, false])
+  check('scope everyone: Twins, not Broke 90', [everyone.includes('twins'), everyone.includes('break90')], [true, false])
+  check('scope all: both', trophiesFrom(d, 's-new', 'kim', '2026-10-24').map((t) => t.badge.key).sort(), [...mine, ...everyone].sort())
+  const waiting = { ...fresh, players: [{ ...fresh.players[0], gross: null }, fresh.players[1]] }
+  check('closedOut: the score that just landed', closedOut(waiting, fresh), ['kim'])
+  check('closedOut: a logged round closes everyone with a score', closedOut(undefined, fresh), ['kim', 'ravi'])
+  check('closedOut: a corrected score is not a close-out', closedOut(fresh, { ...fresh, players: [{ ...fresh.players[0], gross: 90 }, fresh.players[1]] }), [])
+  check('roundIsFinal: waits for every score', [roundIsFinal(waiting), roundIsFinal(fresh)], [false, true])
 }
 
 // 12. Match-play Nassau with presses. Holes as A sees them: B wins the 1st

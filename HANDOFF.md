@@ -152,6 +152,18 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-14. Trophies at each golfer's close-out (2026-11-01, both apps, committed, NOT pushed, not
+   in a TestFlight build). Matt: a golfer who never posts was holding up everyone's
+   trophies. Now `announceTrophies` runs on every save: the golfers whose score just
+   landed (`closedOut`: a card finished, or a total entered) get their own trophies
+   (`trophiesFrom(..., 'mine')`), and the save that makes the round final hands out the
+   ones the other cards decide (`'everyone'`: `needsEveryone`, the `group` shelf plus
+   Skins Sweep, The Donor and Hot Streak) to everyone, so nobody is told they won by a
+   stroke with a card still out. The last golfer in gets both in one push. The "Final at"
+   push stays on the last card; no per-golfer "is in" push (Matt agreed, 2026-11-01).
+   Web: tsc, oxlint, tests, build clean. Swift: 85 tests, app builds. Not run on the
+   simulator. Push the web repo and make TestFlight build 14 when Matt says.
+
 -13. The review round (2026-10-31). Web pushed and live (d037699, bundle index-D7o6Z4Bx,
    the three new strings checked on the live bundle). `apply-2026-10-31-hole-times.sql`
    is pasted (verified: column and function present). The `watch` Edge Function is
@@ -502,12 +514,15 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   the pushes. Pushes to members not in the round: at the turn (everyone has 9 in) and when the
   lead changes outright, replayed over holes everyone has in so it can't flicker while the
   group types; the final keeps its own push. No lock-screen leaderboard (Matt: not needed).
-- Trophy moments (2026-10-22, Matt picked option A with one push per golfer): the save that
-  puts a round's last score in works out each golfer's new trophies (`trophiesFrom`: counts
-  with the round versus without it; `src/lib/trophyMoments.ts`). This phone's golfer gets the
-  "Trophy unlocked" sheet (`TrophyMoment.tsx`, firsts first, swipe through, confetti); the
-  group gets ONE push per golfer: "Barry earned Broke 90 and 3 other trophies at Split Rock".
-  Not one per trophy. The Saddam keeps its own handover.
+- Trophy moments (2026-10-22, Matt picked option A with one push per golfer; split
+  2026-11-01): the save that puts a golfer's score in (card finished, or a total entered)
+  works out that golfer's own trophies (`trophiesFrom(..., 'mine')`: counts with the round
+  versus without it; `src/lib/trophyMoments.ts`), and the save that puts the last score in
+  hands out the ones the other cards decide (`'everyone'`: the `group` shelf, Skins Sweep,
+  The Donor, Hot Streak) to everyone. This phone's golfer gets the "Trophy unlocked" sheet
+  (`TrophyMoment.tsx`, firsts first, swipe through, confetti); the group gets ONE push per
+  golfer per moment: "Barry earned Broke 90 and 3 other trophies at Split Rock". Not one
+  per trophy. No per-golfer "is in" push. The Saddam keeps its own handover.
 - Standings bars (2026-10-22, Matt picked "shaded, you outlined" in flag yellow): every bar
   filled cream, lighter down the order (1, .68, .42, .24...; ties share a shade), yours with a
   2.5pt inset border in the pin flag's yellow (#F6C744, `LIVE_YELLOW`), a cream ring on your

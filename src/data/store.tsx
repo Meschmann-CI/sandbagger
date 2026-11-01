@@ -22,7 +22,7 @@ import { roundPatch } from '../lib/scorePatch'
 import { tripNews } from '../lib/tripNews'
 import { spectatorNews } from '../lib/spectate'
 import { guardOwnHoles } from '../lib/scoringFor'
-import { roundIsFinal, shortCourse, trophiesFrom, trophyPushTitle, trophyWhy, type EarnedTrophy } from '../lib/trophyMoments'
+import { closedOut, roundIsFinal, shortCourse, trophiesFrom, trophyPushTitle, trophyWhy, type EarnedTrophy, type TrophyScope } from '../lib/trophyMoments'
 import { notifyGroup } from '../lib/push'
 import { shrinkPhoto, uploadTripPhoto } from '../lib/photos'
 import { cleanCourseName, courseSlug, noteRename, renameCourseIn } from '../lib/courses'
@@ -205,18 +205,25 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     }
   }, [backend, reload])
 
-  // The save that put a round's last score in: each golfer's new trophies
-  // go to the group as one push (Matt, 2026-10-22), and this phone's
-  // golfer sees theirs pop up.
+  // A golfer's own trophies go out the moment their score lands (a card
+  // finished, or a total entered): one push per golfer to the group
+  // (Matt, 2026-10-22), and this phone's golfer sees theirs pop up. The
+  // ones the other cards decide (a win, a skin, a partner's holes) wait
+  // for the save that puts the last score in (Matt, 2026-11-01), so a
+  // golfer who never posts holds up only those.
   const [trophyMoment, setTrophyMoment] = useState<TrophyMoment | null>(null)
   const announceTrophies = (before: Round | undefined, after: Round) => {
-    if (!roundIsFinal(after) || (before && roundIsFinal(before))) return
+    const closed = new Set(closedOut(before, after))
+    const final = roundIsFinal(after) && !(before && roundIsFinal(before))
+    if (!closed.size && !final) return
     const d = dataRef.current
     const today = todayISO()
     for (const rp of after.players) {
+      const scope: TrophyScope | null = closed.has(rp.playerId) ? (final ? 'all' : 'mine') : final ? 'everyone' : null
+      if (!scope) continue
       const p = d.players.find((x) => x.id === rp.playerId)
       if (!p || p.guest) continue
-      const won = trophiesFrom(d, after.id, p.id, today)
+      const won = trophiesFrom(d, after.id, p.id, today, scope)
       if (!won.length) continue
       const course = shortCourse(after.courseName)
       if (p.id === d.currentUserId) setTrophyMoment({ id: makeId(), roundId: after.id, course, trophies: won })
