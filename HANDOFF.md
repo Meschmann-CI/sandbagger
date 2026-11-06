@@ -153,7 +153,9 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 ## Next actions
 
 -15. The Log sheet picks the course you're at, and suggests the tees (2026-11-06, both
-   apps, committed, NOT pushed, not in a TestFlight build). `src/lib/suggest.ts` (pure,
+   apps). Web pushed and live (ff59649, bundle index-CX1hYahJ, checked). TestFlight
+   build 14 (Swift 20bbe9b: the trophy split, this, the pre-selected tee) uploaded
+   2026-11-06 at 11:10 am; the Swift repo is NOT pushed. `src/lib/suggest.ts` (pure,
    mirrored in `BanditCore/Suggest.swift`, tests in both): `nearestCourse` is the course
    with a mapped hole within 1,500 m of the phone (hole maps only; no town guessing, so a
    round logged from home is never pre-filled wrong), `suggestTee` is the course's men's
@@ -174,11 +176,12 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    out of `courseMap.ts` into `src/lib/geo.ts` so the tests can import `suggest.ts`
    without the Supabase client. The demo's Cobbs Creek got tees and a town in both
    seeds. Checked in the browser (stubbed GPS and map) and on the simulator (map file
-   in the app container, `simctl location`). Push the web repo and make TestFlight
-   build 14 when Matt says.
+   in the app container, `simctl location`). The scratchpad `ExportOptions.plist` the
+   uploads use vanished between sessions; recreate it (app-store-connect, upload, team
+   Z689MA24A3, uploadSymbols, manageAppVersionAndBuildNumber off) before an export.
 
--14. Trophies at each golfer's close-out (2026-11-01, both apps, committed, NOT pushed, not
-   in a TestFlight build). Matt: a golfer who never posts was holding up everyone's
+-14. Trophies at each golfer's close-out (2026-11-01, both apps; web live and Swift in
+   TestFlight build 14 since 2026-11-06). Matt: a golfer who never posts was holding up everyone's
    trophies. Now `announceTrophies` runs on every save: the golfers whose score just
    landed (`closedOut`: a card finished, or a total entered) get their own trophies
    (`trophiesFrom(..., 'mine')`), and the save that makes the round final hands out the
@@ -187,7 +190,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    stroke with a card still out. The last golfer in gets both in one push. The "Final at"
    push stays on the last card; no per-golfer "is in" push (Matt agreed, 2026-11-01).
    Web: tsc, oxlint, tests, build clean. Swift: 85 tests, app builds. Not run on the
-   simulator. Push the web repo and make TestFlight build 14 when Matt says.
+   simulator. Pushed and in build 14 on 2026-11-06.
 
 -13. The review round (2026-10-31). Web pushed and live (d037699, bundle index-D7o6Z4Bx,
    the three new strings checked on the live bundle). `apply-2026-10-31-hole-times.sql`
