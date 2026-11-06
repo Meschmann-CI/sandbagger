@@ -594,8 +594,9 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   per hole key) so every phone and the watch read it. A marked tee and green draw a
   straight hole; a marked front and back win over the traced green for distances.
   Mapbox (Matt's friend's tip) is free at this scale but its map data is OSM's; its
-  satellite imagery would only serve as a backdrop for marking in the native app, and
-  its terms bar caching tiles for the web app. Not done.
+  satellite imagery is a backdrop for marking in the native app only (done 2026-11-06,
+  `bandit-swift/Bandit/Data/Satellite.swift`, needs `Config/Mapbox.plist` with a free
+  public token; the web app stays drawn, since Mapbox's terms bar caching tiles there).
 - The Log sheet's suggestions (Matt, 2026-11-06): the course is pre-filled from the GPS
   only when a hole map puts a hole within 1,500 m, never from the town, and only into an
   empty course field, once. The recommended tee is pre-selected (Matt, 2026-11-06, "with
