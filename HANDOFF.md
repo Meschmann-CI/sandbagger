@@ -152,6 +152,26 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-15. The Log sheet picks the course you're at, and suggests the tees (2026-11-06, both
+   apps, committed, NOT pushed, not in a TestFlight build). `src/lib/suggest.ts` (pure,
+   mirrored in `BanditCore/Suggest.swift`, tests in both): `nearestCourse` is the course
+   with a mapped hole within 1,500 m of the phone (hole maps only; no town guessing, so a
+   round logged from home is never pre-filled wrong), `suggestTee` is the course's men's
+   tee closest to the yardage the golfers' average index calls for (`targetYards`: 6,600
+   up to a 5, 6,300 to 10, 6,000 to 15, 5,700 to 20, else 5,400). `useNearbyCourse` (web)
+   and `NearbyCourses` (Swift) watch the GPS while the sheet's first step is up, only for
+   a golfer who turned distances on or whose phone already allows the app its location
+   (never a prompt from the sheet), read each course's map from the phone and fetch the
+   missing ones once. The sheet fills an empty course once ("Your phone puts you at X.
+   Tap another course if that's wrong.") and, under the tee picker, offers "Try the
+   White tees. 5,870 yds suits indexes averaging 14.2." as one tap. The Swift sheet now
+   lists the course's own men's tees as chips when its card is on file. Geometry moved
+   out of `courseMap.ts` into `src/lib/geo.ts` so the tests can import `suggest.ts`
+   without the Supabase client. The demo's Cobbs Creek got tees and a town in both
+   seeds. Checked in the browser (stubbed GPS and map) and on the simulator (map file
+   in the app container, `simctl location`). Push the web repo and make TestFlight
+   build 14 when Matt says.
+
 -14. Trophies at each golfer's close-out (2026-11-01, both apps, committed, NOT pushed, not
    in a TestFlight build). Matt: a golfer who never posts was holding up everyone's
    trophies. Now `announceTrophies` runs on every save: the golfers whose score just
@@ -514,6 +534,10 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   the pushes. Pushes to members not in the round: at the turn (everyone has 9 in) and when the
   lead changes outright, replayed over holes everyone has in so it can't flicker while the
   group types; the final keeps its own push. No lock-screen leaderboard (Matt: not needed).
+- The Log sheet's suggestions (Matt, 2026-11-06): the course is pre-filled from the GPS
+  only when a hole map puts a hole within 1,500 m, never from the town, and only into an
+  empty course field, once. Tees are suggested, not set: one tap takes them. No per-golfer
+  tees; the group's average index picks one tee for the round.
 - Trophy moments (2026-10-22, Matt picked option A with one push per golfer; split
   2026-11-01): the save that puts a golfer's score in (card finished, or a total entered)
   works out that golfer's own trophies (`trophiesFrom(..., 'mine')`: counts with the round

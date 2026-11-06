@@ -1,3 +1,4 @@
+import { EARTH_R as R, rad, metres, yards, YARDS_PER_METRE, type LngLat } from './geo'
 import { supabase } from './supabase'
 import type { Course } from '../types'
 
@@ -12,9 +13,8 @@ import type { Course } from '../types'
 // Rounds then read the stored copy, saved on the phone too, so nothing
 // on the course depends on OpenStreetMap being up (it often isn't) or on
 // there being signal.
-
-/** [longitude, latitude], rounded to 6 places (about 10cm). */
-export type LngLat = [number, number]
+export type { LngLat } from './geo'
+export { metres, yards, YARDS_PER_METRE } from './geo'
 
 /** f fairway, g green, b bunker, t tee, w water, r trees. */
 export type FeatureKind = 'f' | 'g' | 'b' | 't' | 'w' | 'r'
@@ -50,19 +50,6 @@ export interface CourseMap {
 }
 
 // ---------- Geometry ----------
-
-const R = 6371008.8
-const rad = (d: number) => (d * Math.PI) / 180
-export const YARDS_PER_METRE = 1.0936133
-
-/** Metres between two points. */
-export function metres(a: LngLat, b: LngLat): number {
-  const dLat = rad(b[1] - a[1])
-  const dLng = rad(b[0] - a[0])
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a[1])) * Math.cos(rad(b[1])) * Math.sin(dLng / 2) ** 2
-  return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)))
-}
-export const yards = (a: LngLat, b: LngLat) => Math.round(metres(a, b) * YARDS_PER_METRE)
 
 /** A flat metre grid around `origin`: good to a few centimetres across a golf hole. */
 export function projector(origin: LngLat) {

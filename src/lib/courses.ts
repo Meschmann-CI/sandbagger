@@ -97,7 +97,7 @@ export function renameCourseIn(data: AppData, oldSlug: string, newName: string):
 const NINE = 9
 const nine = (xs: (number | null)[] | undefined) => Array.from({ length: NINE }, (_, i) => xs?.[i] ?? null)
 /** A tee name as typed anywhere, loosely: "White", "white", "Whites", "White Tees" all read "white". */
-const teeKey = (name: string) => name.trim().toLowerCase().replace(/\s*tees?$/, '').replace(/s$/, '')
+export const teeKey = (name: string) => name.trim().toLowerCase().replace(/\s*tees?$/, '').replace(/s$/, '')
 /** The nine's length off its longest tee, as the stand-in for which nine is harder. */
 const nineLength = (n: CourseNine) =>
   Math.max(0, ...(n.tees ?? []).map((t) => (t.holeYards ?? []).reduce<number>((s, y) => s + (y ?? 0), 0)))

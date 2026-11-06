@@ -37,6 +37,7 @@ const { roundBetSettlements } = await import('../src/lib/settlements.ts')
 const { asks, guardOwnHoles, selfScoring } = await import('../src/lib/scoringFor.ts')
 const { liveLines, cardSlice, leadStory, atTheTurn, spectatorNews } = await import('../src/lib/spectate.ts')
 const { trophiesFrom, trophyPushTitle, trophyWhy, closedOut, roundIsFinal } = await import('../src/lib/trophyMoments.ts')
+const { nearestCourse, suggestTee, targetYards } = await import('../src/lib/suggest.ts')
 const { isBooked, sortBookings, findRound, bookedRounds, teeTimeLabel, teeTimeInput } = await import('../src/lib/bookings.ts')
 
 let failures = 0
@@ -332,6 +333,31 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check('closedOut: a logged round closes everyone with a score', closedOut(undefined, fresh), ['kim', 'ravi'])
   check('closedOut: a corrected score is not a close-out', closedOut(fresh, { ...fresh, players: [{ ...fresh.players[0], gross: 90 }, fresh.players[1]] }), [])
   check('roundIsFinal: waits for every score', [roundIsFinal(waiting), roundIsFinal(fresh)], [false, true])
+}
+
+// 12c. The Log sheet's suggestions: the course you're at, and the tees for the group (Matt, 2026-11-06).
+{
+  const mk = (id: string, tees?: Course['tees']): Course => ({ id, groupId: G, name: id, slug: id, pars: Array(18).fill(4), tees })
+  const here: [number, number] = [-75.2456, 39.9609]
+  const close = { course: mk('close'), points: [[-75.25, 39.9609], [-75.243, 39.963]] as [number, number][] }
+  const far = { course: mk('far'), points: [[-75.18, 39.95]] as [number, number][] }
+  const hit = nearestCourse(here, [far, close])
+  check('nearest: the course a few hundred metres off', hit?.course.id, 'close')
+  check('nearest: metres to its closest hole', (hit?.metres ?? 0) > 100 && (hit?.metres ?? 9999) < 400, true)
+  check('nearest: nothing within reach is no answer', nearestCourse([-75.3, 39.9], [far, close]), null)
+  check('nearest: no mapped holes, no answer', nearestCourse(here, [{ course: mk('blank'), points: [] }]), null)
+
+  const cobbs = mk('cobbs', [
+    { name: 'Blue', yards: 6202, rating: 70.5, slope: 126 },
+    { name: 'White', yards: 5870, rating: 68.9, slope: 122 },
+    { name: 'Red', yards: 5243, rating: 70.1, slope: 118, gender: 'W' },
+  ])
+  const tip = suggestTee(cobbs, [8, 12, 15, 21])
+  check('tees: a 14 average plays about 6,000, the whites', [tip?.tee.name, tip?.target, tip?.average], ['White', 6000, 14])
+  check('tees: two low players, the blues', suggestTee(cobbs, [2, 4])?.tee.name, 'Blue')
+  check("tees: never the women's set", suggestTee(cobbs, [30])?.tee.name, 'White')
+  check('tees: nothing to go on', [suggestTee(cobbs, []), suggestTee(mk('bare'), [10]), suggestTee(undefined, [10])], [null, null, null])
+  check('tees: the yardage ladder', [targetYards(5), targetYards(5.1), targetYards(20.5)], [6600, 6300, 5400])
 }
 
 // 12. Match-play Nassau with presses. Holes as A sees them: B wins the 1st

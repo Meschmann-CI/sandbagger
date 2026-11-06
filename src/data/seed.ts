@@ -53,6 +53,15 @@ export const seedData: AppData = {
       // Odd rankings on the front, even on the back, so strokes fall
       // evenly over both nines. That's how a real card is laid out.
       strokeIndex: [5, 1, 17, 7, 11, 15, 3, 9, 13, 6, 16, 8, 2, 10, 12, 18, 4, 14],
+      // The demo's tees, so the Log sheet has a suggestion to make.
+      town: 'Philadelphia, PA',
+      rating: 68.9,
+      slope: 122,
+      tees: [
+        { name: 'Blue', yards: 6202, rating: 70.5, slope: 126 },
+        { name: 'White', yards: 5870, rating: 68.9, slope: 122 },
+        { name: 'Red', yards: 5243, rating: 70.1, slope: 118, gender: 'W' },
+      ],
     },
   ],
 
