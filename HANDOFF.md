@@ -154,7 +154,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 -16. Hole maps: the audit, wider hand-marking, and a looser card match (2026-11-06, both
    apps). Web pushed and live (c499dbb, bundle index-Cby3LOzF, checked). TestFlight build
-   15 (Swift a7b1435) uploaded 2026-11-06 at 1:00 pm; the Swift repo is NOT pushed. Matt: "do the GPS half, hold
+   15 (Swift a7b1435) uploaded 2026-11-06 at 1:00 pm; build 16 (the Mapbox satellite
+   view under the iPhone's full map) uploaded at 1:35 pm; the Swift repo pushed after. Matt: "do the GPS half, hold
    off on Golfbert", plus "audit the courses loaded into the live app vs how many holes
    are mapped".
    - Audit of the live group (SQL over `courses` and `course_maps`): 44 courses, 29 with a
