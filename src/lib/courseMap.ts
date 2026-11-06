@@ -76,6 +76,15 @@ export function withMark(map: CourseMap, key: string, what: MarkWhat, at: LngLat
   return { ...map, marks: { ...map.marks, [key]: { ...map.marks?.[key], [field]: at } } }
 }
 
+/** The map with everything marked by hand on hole `key` taken off. What OpenStreetMap traced stays. */
+export function withoutMarks(map: CourseMap, key: string): CourseMap {
+  const marked = { ...map.marked }
+  const marks = { ...map.marks }
+  delete marked[key]
+  delete marks[key]
+  return { ...map, marked, marks }
+}
+
 // ---------- Geometry ----------
 
 /** A flat metre grid around `origin`: good to a few centimetres across a golf hole. */

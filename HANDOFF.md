@@ -152,6 +152,18 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-17. Marking a course from the sofa, iPhone only (2026-11-06, evening; Swift committed, NOT
+   pushed, not in a TestFlight build). Matt is playing River Vale this weekend and OSM has
+   it only as an unnamed outline (way 39648062) with one green, one fairway and one tee
+   traced and no numbered holes. The course map page has "Mark the holes on satellite":
+   Apple's satellite map finds the course by name, and tapping each hole's tee then green
+   saves to the course's map (`marked`, `marks`) for everyone, the web app included. Web
+   side: "Fetch again" on the course map page now keeps `marks` too (it kept only the
+   green centres), and `withoutMarks` joins `withMark` in `src/lib/courseMap.ts` (test
+   12d). Matt's step: open River Vale on the iPhone, Hole map, Mark the holes on satellite,
+   18 tees and greens. The OSM trace (`notes/osm-tracing-home-courses.md`) is still worth
+   doing later for green outlines and bunkers.
+
 -16. Hole maps: the audit, wider hand-marking, and a looser card match (2026-11-06, both
    apps). Web pushed and live (c499dbb, bundle index-Cby3LOzF, checked). TestFlight build
    15 (Swift a7b1435) uploaded 2026-11-06 at 1:00 pm; build 16 (the Mapbox satellite

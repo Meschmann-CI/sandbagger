@@ -40,8 +40,10 @@ export default function CourseMap() {
     try {
       const r = await fetchCourseMap(course)
       if (r.map) {
-        // Greens the group marked by hand survive a fresh fetch.
-        await saveCourseMap(course, { ...r.map, marked: map?.marked })
+        // Everything the group marked by hand survives a fresh fetch: the
+        // greens, and the tees, fronts and backs (marked on the iPhone's
+        // satellite view too).
+        await saveCourseMap(course, { ...r.map, marked: map?.marked, marks: map?.marks })
         reload()
       } else setProblem(r.problem ?? 'Nothing came back.')
     } catch (err) {

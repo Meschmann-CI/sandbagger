@@ -38,7 +38,7 @@ const { asks, guardOwnHoles, selfScoring } = await import('../src/lib/scoringFor
 const { liveLines, cardSlice, leadStory, atTheTurn, spectatorNews } = await import('../src/lib/spectate.ts')
 const { trophiesFrom, trophyPushTitle, trophyWhy, closedOut, roundIsFinal } = await import('../src/lib/trophyMoments.ts')
 const { nearestCourse, suggestTee, targetYards } = await import('../src/lib/suggest.ts')
-const { withMark, mapHoleFor, drawable, teeOf, greenYards, pack, unpack } = await import('../src/lib/courseMap.ts')
+const { withMark, withoutMarks, mapHoleFor, drawable, teeOf, greenYards, pack, unpack } = await import('../src/lib/courseMap.ts')
 const { isBooked, sortBookings, findRound, bookedRounds, teeTimeLabel, teeTimeInput } = await import('../src/lib/bookings.ts')
 
 let failures = 0
@@ -377,6 +377,9 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   const gy = greenYards(marked, mapHoleFor(marked, 0)!, tee)
   check('mark: a marked front gives the front yards, back stays unknown', [gy.front != null && gy.front > 60 && gy.front < 100, gy.back], [true, null])
   check('mark: packs and unpacks with the marks', unpack(JSON.parse(JSON.stringify(pack(marked)))).marks, marked.marks)
+  const two = withMark(marked, '2', 'green', [-75.25, 39.962])
+  const cleared = withoutMarks(two, '1')
+  check('mark: clearing a hole leaves the others', [mapHoleFor(cleared, 0), cleared.marks?.['1'], !!mapHoleFor(cleared, 1)], [undefined, undefined, true])
 }
 
 // 12. Match-play Nassau with presses. Holes as A sees them: B wins the 1st
