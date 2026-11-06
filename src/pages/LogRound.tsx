@@ -57,7 +57,8 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
   const [pickingDate, setPickingDate] = useState(false)
   const [courseName, setCourseName] = useState('')
   const [date, setDate] = useState(todayISO)
-  const [tee, setTee] = useState('')
+  // Null follows the recommendation below; a string is tees someone picked by hand.
+  const [teeChoice, setTeeChoice] = useState<string | null>(null)
   const [nines, setNines] = useState<[string, string] | undefined>(undefined)
   const [tripId, setTripId] = useState<string>('')
   // Most rounds are just rounds. The trip picker stays folded until
@@ -94,6 +95,18 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
   }, [nearby, autoPicked, courseName, query])
 
   const guests = data.players.filter((p) => p.guest)
+  const everyone = [...members, ...guests]
+
+  // The tees the group's indexes call for, picked for you (Matt,
+  // 2026-11-06, "autoselected with the word recommended"): they follow
+  // the course and the golfers until someone picks tees by hand.
+  const teeTip = suggestTee(
+    findCourse(data, courseName),
+    everyone.filter((p) => playerIds.includes(p.id)).map((p) => p.handicap),
+  )
+  const recommended = teeTip?.tee.name ?? ''
+  const tee = teeChoice ?? recommended
+  const onRecommended = !!teeTip && teeKey(tee) === teeKey(recommended)
 
   const addGuest = () => {
     if (!guestName.trim()) return
@@ -285,11 +298,6 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
   const toggle = (on: boolean) =>
     `rounded-full px-3.5 py-2 text-footnote font-bold transition active:scale-95 ${on ? 'bg-ink text-white' : 'bg-card text-ink-dim ring-1 ring-inset ring-line-strong'}`
 
-  const everyone = [...members, ...guests]
-  const teeTip = suggestTee(
-    findCourse(data, courseName),
-    everyone.filter((p) => playerIds.includes(p.id)).map((p) => p.handicap),
-  )
 
   return createPortal(
     <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label="Log a round">
@@ -556,22 +564,34 @@ export default function LogRound({ onClose }: { onClose: () => void }) {
                   <span className={label}>Tees (optional)</span>
                   <TeePicker
                     value={tee}
-                    onChange={setTee}
+                    onChange={setTeeChoice}
                     course={findCourse(data, courseName)}
                     className="w-full rounded-xl border border-line-strong bg-card px-4 py-3 text-body text-ink placeholder:text-ink-faint focus:border-green focus:outline-none"
+                    note={
+                      onRecommended ? (
+                        <>
+                          <span className="font-bold text-green">Recommended</span> · {teeTip.tee.yards!.toLocaleString()} yds
+                        </>
+                      ) : undefined
+                    }
                   />
-                  {/* The tees the group's indexes call for (Matt, 2026-11-06),
-                      one tap to take. Below the picker's own yardage line. */}
-                  {teeTip && teeKey(tee) !== teeKey(teeTip.tee.name) && (
-                    <button
-                      type="button"
-                      onClick={() => setTee(teeTip.tee.name)}
-                      className={`${tee.trim() ? 'mt-7' : 'mt-2'} block w-full px-1 text-left text-caption text-ink-faint`}
-                    >
-                      <span className="font-bold text-green">Try the {teeTip.tee.name} tees.</span>{' '}
-                      {teeTip.tee.yards!.toLocaleString()} yds suits indexes averaging {fmt1(teeTip.average)}.
-                    </button>
-                  )}
+                  {/* Why, under the picker's own line; or the way back to the
+                      recommendation once someone has picked other tees. */}
+                  {teeTip &&
+                    (onRecommended ? (
+                      <p className="mt-6 px-1 text-caption text-ink-faint">Based on the group's average index of {fmt1(teeTip.average)}.</p>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setTeeChoice(null)}
+                        className={`${tee.trim() ? 'mt-7' : 'mt-2'} block w-full px-1 text-left text-caption text-ink-faint`}
+                      >
+                        <span className="font-bold text-green">
+                          Recommended: {teeTip.tee.name}, {teeTip.tee.yards!.toLocaleString()} yds.
+                        </span>{' '}
+                        Based on the group's average index of {fmt1(teeTip.average)}.
+                      </button>
+                    ))}
                 </div>
               )}
 

@@ -164,8 +164,13 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    (never a prompt from the sheet), read each course's map from the phone and fetch the
    missing ones once. The sheet fills an empty course once ("Your phone puts you at X.
    Tap another course if that's wrong.") and, under the tee picker, offers "Try the
-   White tees. 5,870 yds suits indexes averaging 14.2." as one tap. The Swift sheet now
-   lists the course's own men's tees as chips when its card is on file. Geometry moved
+   White tees. 5,870 yds suits indexes averaging 14.2." as one tap. Then, same day, Matt
+   asked for the tees pre-selected: the recommended tee is picked on its own and follows
+   the course and the golfers (`teeChoice` null = follow; a tee picked by hand is a
+   string), with "Recommended · 5,870 yds" under the picker (`TeePicker`'s new `note`
+   prop) and "Based on the group's average index of 14.2." beneath; once someone picks
+   other tees the line becomes the way back. The Swift sheet now lists the course's own
+   men's tees as chips when its card is on file. Geometry moved
    out of `courseMap.ts` into `src/lib/geo.ts` so the tests can import `suggest.ts`
    without the Supabase client. The demo's Cobbs Creek got tees and a town in both
    seeds. Checked in the browser (stubbed GPS and map) and on the simulator (map file
@@ -536,8 +541,10 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   group types; the final keeps its own push. No lock-screen leaderboard (Matt: not needed).
 - The Log sheet's suggestions (Matt, 2026-11-06): the course is pre-filled from the GPS
   only when a hole map puts a hole within 1,500 m, never from the town, and only into an
-  empty course field, once. Tees are suggested, not set: one tap takes them. No per-golfer
-  tees; the group's average index picks one tee for the round.
+  empty course field, once. The recommended tee is pre-selected (Matt, 2026-11-06, "with
+  the word recommended" and the group's average index under it) and follows the roster
+  until someone picks tees by hand. No per-golfer tees; the group's average index picks
+  one tee for the round.
 - Trophy moments (2026-10-22, Matt picked option A with one push per golfer; split
   2026-11-01): the save that puts a golfer's score in (card finished, or a total entered)
   works out that golfer's own trophies (`trophiesFrom(..., 'mine')`: counts with the round

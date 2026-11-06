@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Course } from '../types'
 import { Icon } from './icons'
 
@@ -17,11 +17,14 @@ export default function TeePicker({
   onChange,
   course,
   className,
+  note,
 }: {
   value: string
   onChange: (tee: string) => void
   course?: Course
   className: string
+  /** Shown under the field in place of the yardage, e.g. "Recommended · 5,870 yds". */
+  note?: ReactNode
 }) {
   // The course's tees; on a 27-hole course whose card is only on file a
   // nine at a time, the tee names that card prints.
@@ -70,8 +73,8 @@ export default function TeePicker({
     <div className="relative">
       {/* Yardage under the field rather than in the option, where a
           half-width box would cut it off. */}
-      {yards != null && (
-        <p className="absolute left-1 top-full mt-1 text-caption text-ink-faint tabular-nums">{yards.toLocaleString()} yds</p>
+      {(note || yards != null) && (
+        <p className="absolute left-1 top-full mt-1 text-caption text-ink-faint tabular-nums">{note ?? `${yards!.toLocaleString()} yds`}</p>
       )}
       <select
         value={selected}
