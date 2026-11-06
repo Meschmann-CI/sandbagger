@@ -152,6 +152,48 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-16. Hole maps: the audit, wider hand-marking, and a looser card match (2026-11-06, both
+   apps, committed, NOT pushed, not in a TestFlight build). Matt: "do the GPS half, hold
+   off on Golfbert", plus "audit the courses loaded into the live app vs how many holes
+   are mapped".
+   - Audit of the live group (SQL over `courses` and `course_maps`): 44 courses, 29 with a
+     map (every one fetched in the 2026-10-11 bulk pull), 15 without, and nobody has marked
+     a green by hand anywhere (`marked` is empty on all 29). Of the 15 courses the group has
+     played, 8 are mapped and 7 are not: Somers National (2 rounds), Split Rock (2), New York
+     CC, Putnam County, River Vale, Sea Pines Atlantic Dunes, Weequahic. Partial among the
+     mapped: Pelham Bay 11 of 18 greens, Hendricks Field and Mohansic 6 of 18, Sprain Lake 16
+     of 18, Bally's 17 of 18, Silver Lake 17 holes, Van Cortlandt 14 holes, Centennial 27
+     (fine, three nines). Sea Pines' town is "Valentine, NE" in prod (the directory's
+     mistake); the fix is `update courses set town = 'Hilton Head Island, SC' where id =
+     'eb1fd417-167c-4ada-806c-302672808a66';` for Matt to paste (the connector refused the
+     write in auto mode).
+   - The fetch retried from a Node script running the app's own `fetchCourseMap`
+     (`tools/osm-retry/` at the folder root, a loader hook stubbing the Supabase import;
+     it has to run in the Terminal panel, the sandbox proxy's certificate breaks Node's
+     fetch). Under the old all-or-nothing card check: 0 of 14. The check now keeps the holes
+     that fit the card and drops the rest when at least six fit and at least half do (a hole
+     whose length is wrong goes even if its par matches); same rule in Swift. With that:
+     Split Rock 11 holes, Eisenhower Red 12, Eisenhower White 14, Harbor Links 9, La Tourette
+     12. Still nothing: Somers (3 of 11 fit), Putnam (3 of 12), Eisenhower Blue (5 of 13);
+     New York CC, Sea Pines, Weequahic and Overpeck (OSM has greens but no numbered holes);
+     Dutcher and Palm Beach (outline only); River Vale (not in OSM by that name). The script
+     cannot write to prod: after the web push, open each of those five courses' map page and
+     tap "Get it" (or run the hole maps catch-up) and the app stores them for the group.
+   - Hand marks widened beyond "I'm on the green": `CourseMap.marks` ({t, f, b} per hole
+     key, beside `marked`), `withMark`, `MarkWhat`; `mapHoleFor` draws a marked tee as a
+     straight line to the green, `greenYards` lets a marked front or back win over the
+     trace, `pack`/`unpack` carry `marks` (both now exported; `unpack` for the tests). On
+     the live card "Mark this hole" (any hole missing its line or green) opens chips for
+     tee, front, green and back, saved from the phone's position; the full map sheet and the
+     course map page have "Save the target as" Tee / Front / Green / Back for marking from
+     the clubhouse. `src/lib/supabase.ts` tolerates a missing `import.meta.env` so the tests
+     can import `courseMap.ts`. Tests 12d (web) and `MarksTests.swift`; 88 Swift tests; both
+     apps checked (browser: chips, saved tee drew the hole, sheet row saved a front;
+     simulator: chips, saved tee drew the hole).
+   - Notes: `notes/osm-tracing-home-courses.md` (how to finish a course in OSM's editor,
+     which tags the app reads, the courses worth doing first) and the research note from
+     the morning. Mapbox: see Decisions.
+
 -15. The Log sheet picks the course you're at, and suggests the tees (2026-11-06, both
    apps). Web pushed and live (ff59649, bundle index-CX1hYahJ, checked). TestFlight
    build 14 (Swift 20bbe9b: the trophy split, this, the pre-selected tee) uploaded
@@ -542,6 +584,17 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   the pushes. Pushes to members not in the round: at the turn (everyone has 9 in) and when the
   lead changes outright, replayed over holes everyone has in so it can't flicker while the
   group types; the final keeps its own push. No lock-screen leaderboard (Matt: not needed).
+- Hole maps stay on OpenStreetMap (Matt, 2026-11-06, after a survey of Golfbert, iGolf,
+  GolfCourseAPI, Golf Intelligence, OpenGolfAPI and satellite tiles: `notes/2026-11-06-
+  course-gps-sources-and-ghin-v7.md`). No commercial source is worth $49 a month for a
+  foursome; Golfbert is parked ("hold off for now"). Instead the group marks what OSM
+  lacks: tee, front, green and back, by standing there or by dragging the full map's
+  target, stored in the map (`marked` for the green centre as before, `marks` {t, f, b}
+  per hole key) so every phone and the watch read it. A marked tee and green draw a
+  straight hole; a marked front and back win over the traced green for distances.
+  Mapbox (Matt's friend's tip) is free at this scale but its map data is OSM's; its
+  satellite imagery would only serve as a backdrop for marking in the native app, and
+  its terms bar caching tiles for the web app. Not done.
 - The Log sheet's suggestions (Matt, 2026-11-06): the course is pre-filled from the GPS
   only when a hole map puts a hole within 1,500 m, never from the town, and only into an
   empty course field, once. The recommended tee is pre-selected (Matt, 2026-11-06, "with

@@ -47,6 +47,33 @@ export interface CourseMap {
   features: MapFeature[]
   /** Greens someone marked by standing on them, keyed "n" or "nine n". Wins over the map's own. */
   marked?: Record<string, LngLat>
+  /**
+   * The rest of what the group marks by hand (Matt, 2026-11-06): the tee
+   * and the front and back of the green, keyed like `marked`. A tee makes
+   * a hole with no trace drawable (a straight line to the green); the
+   * front and back win over the traced green's edges for distances.
+   */
+  marks?: Record<string, HoleMarks>
+}
+
+/** What's marked on one hole besides the middle of its green. */
+export interface HoleMarks {
+  /** The tee. */
+  t?: LngLat
+  /** The front of the green. */
+  f?: LngLat
+  /** The back of the green. */
+  b?: LngLat
+}
+
+/** The four things a golfer can mark on a hole. */
+export type MarkWhat = 'tee' | 'front' | 'green' | 'back'
+
+/** The map with `at` marked as `what` on hole `key`: the green into `marked`, the rest into `marks`. */
+export function withMark(map: CourseMap, key: string, what: MarkWhat, at: LngLat): CourseMap {
+  if (what === 'green') return { ...map, marked: { ...map.marked, [key]: at } }
+  const field = what === 'tee' ? 't' : what === 'front' ? 'f' : 'b'
+  return { ...map, marks: { ...map.marks, [key]: { ...map.marks?.[key], [field]: at } } }
 }
 
 // ---------- Geometry ----------
@@ -146,10 +173,14 @@ export function mapHoleFor(map: CourseMap, i: number, nines?: [string, string] |
   const found = nine
     ? map.holes.find((h) => h.nine?.toLowerCase() === nine.toLowerCase() && h.n === n)
     : map.holes.find((h) => !h.nine && h.n === n)
-  if (found) return found
-  // A green the group marked by standing on it: distances, no drawing.
-  const marked = map.marked?.[holeKey({ n, nine })]
-  return marked ? { n, nine, centre: marked } : undefined
+  // A green the group marked by standing on it: distances, and a drawing
+  // once the tee is marked too.
+  const key = holeKey({ n, nine })
+  const marked = map.marked?.[key]
+  const hole = found ?? (marked ? { n, nine, centre: marked } : undefined)
+  if (!hole) return undefined
+  const tee = map.marks?.[key]?.t
+  return !hole.line && tee ? { ...hole, line: [tee, greenCentre(map, hole)] } : hole
 }
 
 /** The key a round's hole `i` is marked under. */
@@ -180,8 +211,15 @@ export interface GreenYards {
   back: number | null
 }
 
-/** Front, middle and back of the green, along the line from `from` to its middle. */
+/** Front, middle and back of the green, along the line from `from` to its middle. A marked front or back wins over the trace. */
 export function greenYards(map: CourseMap, hole: MapHole, from: LngLat): GreenYards {
+  const traced = tracedGreenYards(map, hole, from)
+  const mk = map.marks?.[holeKey(hole)]
+  if (!mk?.f && !mk?.b) return traced
+  return { front: mk.f ? yards(from, mk.f) : traced.front, middle: traced.middle, back: mk.b ? yards(from, mk.b) : traced.back }
+}
+
+function tracedGreenYards(map: CourseMap, hole: MapHole, from: LngLat): GreenYards {
   const c = greenCentre(map, hole)
   const middle = yards(from, c)
   if (!hole.green || map.marked?.[holeKey(hole)]) return { front: null, middle, back: null }
@@ -498,21 +536,36 @@ out geom;`)
     if (h.nine) return course.nines?.find((x) => x.name === h.nine)?.pars[h.n - 1] ?? null
     return course.pars?.[h.n - 1] ?? null
   }
-  let agree = 0, disagree = 0
-  for (const h of holes) {
+  const scores = holes.map((h) => {
     let score = 0
     const par = ourPar(h)
     if (h.par != null && par != null) score += h.par === par ? 1 : -1
     const ys = cardYards(course, h.n, h.nine)
+    let lengthOff = false
     if (h.line && ys.length) {
       const len = lineYards(h.line)
-      score += ys.some((y) => Math.abs(y - len) <= Math.max(30, y * 0.12)) ? 1 : -1
+      const fits = ys.some((y) => Math.abs(y - len) <= Math.max(30, y * 0.12))
+      score += fits ? 1 : -1
+      lengthOff = !fits
     }
-    if (score > 0) agree++
-    else if (score < 0) disagree++
-  }
+    return { score, lengthOff }
+  })
+  const agree = scores.filter((s) => s.score > 0).length
+  const disagree = scores.filter((s) => s.score < 0).length
   if (agree + disagree >= 6 && agree / (agree + disagree) < 0.8) {
-    return { problem: `OpenStreetMap's holes here don't match your card (${agree} of ${agree + disagree} holes agree), so they're probably another course's.` }
+    // Most agree: keep the holes that fit the card and drop the rest (a
+    // facility with several courses in one outline, or a few holes
+    // numbered wrong) rather than refuse the lot. Half the group's
+    // unmapped courses were this close (Matt, 2026-11-06: La Tourette 11
+    // of 14, Eisenhower White 12 of 16, Split Rock 8 of 11).
+    // A hole whose length is wrong goes even when its par happens to
+    // match: pars alone can't tell neighbouring courses apart.
+    if (agree >= 6 && agree / (agree + disagree) >= 0.5) {
+      const kept = holes.filter((_, i) => scores[i].score >= 0 && !scores[i].lengthOff)
+      holes.splice(0, holes.length, ...kept)
+    } else {
+      return { problem: `OpenStreetMap's holes here don't match your card (${agree} of ${agree + disagree} holes agree), so they're probably another course's.` }
+    }
   }
 
   // ---- The shapes around them ----
@@ -585,9 +638,10 @@ interface PackedMap {
   holes: PackedHole[]
   f: [FeatureKind, number[]][]
   marked?: Record<string, LngLat>
+  marks?: Record<string, HoleMarks>
 }
 
-function pack(map: CourseMap): PackedMap {
+export function pack(map: CourseMap): PackedMap {
   const o = map.holes[0]?.centre ?? [0, 0]
   const pr = projector(o)
   const enc = (pts: LngLat[]) => {
@@ -611,10 +665,11 @@ function pack(map: CourseMap): PackedMap {
     holes: map.holes.map((h) => ({ n: h.n, nine: h.nine, par: h.par, line: h.line && enc(h.line), green: h.green && enc(h.green), centre: enc([h.centre]) })),
     f: map.features.map((x) => [x.k, enc(x.p)]),
     marked: map.marked,
+    marks: map.marks,
   }
 }
 
-function unpack(raw: CourseMap | PackedMap): CourseMap {
+export function unpack(raw: CourseMap | PackedMap): CourseMap {
   if ((raw as PackedMap).v !== 2) return raw as CourseMap
   const m = raw as PackedMap
   const pr = projector(m.o)
@@ -635,6 +690,7 @@ function unpack(raw: CourseMap | PackedMap): CourseMap {
     holes: m.holes.map((h) => ({ n: h.n, nine: h.nine, par: h.par, line: h.line && dec(h.line), green: h.green && dec(h.green), centre: dec(h.centre)[0] })),
     features: m.f.map(([k, d]) => ({ k, p: dec(d) })),
     marked: m.marked,
+    marks: m.marks,
   }
 }
 

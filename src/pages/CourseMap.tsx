@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useStore } from '../data/store'
 import { currentSlug } from '../lib/courses'
-import { emptyCourseMap, fetchCourseMap, mapHoleFor, saveCourseMap } from '../lib/courseMap'
+import { emptyCourseMap, fetchCourseMap, mapHoleFor, markKey, saveCourseMap, withMark } from '../lib/courseMap'
 import { useCourseMap } from '../lib/useCourseMap'
 import { useGoBack, useNavigate } from '../lib/nav'
 import { BackButton } from '../components/Nav'
@@ -76,7 +76,18 @@ export default function CourseMap() {
         <p className="px-1 text-footnote text-ink-dim">Checking for a map…</p>
       ) : map ? (
         <div className="-mx-4">
-          <HoleMapSheet map={map} holeAt={holeAt} index={index} onIndex={setIndex} par={nines ? undefined : course.pars?.[index]} overlay={false} />
+          <HoleMapSheet
+            map={map}
+            holeAt={holeAt}
+            index={index}
+            onIndex={setIndex}
+            par={nines ? undefined : course.pars?.[index]}
+            overlay={false}
+            onMark={async (what, at) => {
+              await saveCourseMap(course, withMark(map, markKey(index, nines), what, at))
+              reload()
+            }}
+          />
         </div>
       ) : (
         <Card tile className="mt-2 p-4">

@@ -35,7 +35,7 @@ import { bandFill, courseBrand, inkOn, teeColour } from '../lib/courseBrands'
 import RoundScene from '../components/RoundScene'
 import HoleMap from '../components/HoleMap'
 import HoleMapSheet from '../components/HoleMapSheet'
-import { autoFetchCourseMap, drawable, emptyCourseMap, greenCentre, greenYards, mapHoleFor, markKey, metres, ON_HOLE_METRES, saveCourseMap } from '../lib/courseMap'
+import { autoFetchCourseMap, drawable, emptyCourseMap, greenCentre, greenYards, mapHoleFor, markKey, metres, ON_HOLE_METRES, saveCourseMap, withMark, type LngLat, type MarkWhat } from '../lib/courseMap'
 import { useCourseMap } from '../lib/useCourseMap'
 import { useLiveWind } from '../lib/liveWind'
 import { clubFor, clubShort } from '../lib/bag'
@@ -259,6 +259,7 @@ export default function HoleEntry() {
   const [mapOpen, setMapOpen] = useState<number | null>(null)
   const [marking, setMarking] = useState(false)
   const [markError, setMarkError] = useState<string | null>(null)
+  const [marksOpen, setMarksOpen] = useState(false)
   roundAlive.current = !!round
 
   const liveRound: Round | null = round
@@ -1066,27 +1067,66 @@ export default function HoleEntry() {
     }
     return null
   })()
-  // A hole the map hasn't got: standing on its green and tapping saves
-  // that spot for everyone, and distances work here from then on.
-  const markGreenHere = async () => {
-    if (!course || !pos.at) return
+  // A hole the map hasn't got, or has only half of: standing on the tee,
+  // the front of the green, the green or its back and tapping saves that
+  // spot for everyone (Matt, 2026-11-06, widening "I'm on the green").
+  // A marked tee and green draw as a straight hole; a marked front and
+  // back win over the trace for distances.
+  const saveMark = async (what: MarkWhat, at: LngLat) => {
+    if (!course) return
     setMarking(true)
     setMarkError(null)
     try {
-      const base = courseMap ?? emptyCourseMap()
-      await saveCourseMap(course, { ...base, marked: { ...base.marked, [markKey(h, ninePair)]: pos.at } })
+      await saveCourseMap(course, withMark(courseMap ?? emptyCourseMap(), markKey(h, ninePair), what, at))
       reloadMap()
     } catch {
-      setMarkError('Couldn’t save the green. Try again in a bit.')
+      setMarkError('Couldn’t save that. Try again in a bit.')
+      throw new Error('mark')
     } finally {
       setMarking(false)
     }
   }
+  const markHere = async (what: MarkWhat) => {
+    if (!pos.at) return
+    try {
+      await saveMark(what, pos.at)
+    } catch {
+      // Shown under the buttons.
+    }
+  }
+  const halfMapped = !mapHole || !mapHole.line || !mapHole.green
   const greenButton =
-    courseMap && gpsOn && pos.at && !mapHole ? (
-      <button type="button" onClick={() => void markGreenHere()} disabled={marking} className="rounded-full bg-forest px-3 py-2 text-footnote font-bold text-on-forest active:scale-95 disabled:opacity-60">
-        {marking ? 'Saving…' : 'I’m on the green'}
-      </button>
+    courseMap && gpsOn && pos.at && halfMapped ? (
+      marksOpen ? (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-footnote font-bold text-white drop-shadow">I’m on the</span>
+          {(
+            [
+              ['tee', 'tee'],
+              ['front', 'front'],
+              ['green', 'green'],
+              ['back', 'back'],
+            ] as [MarkWhat, string][]
+          ).map(([what, label]) => (
+            <button
+              key={what}
+              type="button"
+              disabled={marking}
+              onClick={() => void markHere(what)}
+              className="rounded-full bg-forest px-3 py-1.5 text-footnote font-bold text-on-forest active:scale-95 disabled:opacity-60"
+            >
+              {marking ? '…' : label}
+            </button>
+          ))}
+          <button type="button" onClick={() => setMarksOpen(false)} aria-label="Done marking" className="rounded-full bg-white/95 px-2.5 py-1.5 text-footnote font-bold text-ink-dim">
+            Done
+          </button>
+        </div>
+      ) : (
+        <button type="button" onClick={() => setMarksOpen(true)} className="rounded-full bg-forest px-3 py-2 text-footnote font-bold text-on-forest active:scale-95">
+          {mapHole ? 'Mark this hole' : 'I’m on the green'}
+        </button>
+      )
     ) : null
   const distanceChip = !courseMap ? null : !gpsOn ? (
     <button
@@ -1426,6 +1466,7 @@ export default function HoleEntry() {
           from={pos.at}
           wind={wind}
           onClose={() => setMapOpen(null)}
+          onMark={course ? async (what, at) => saveMark(what, at) : undefined}
         />
       )}
       {view === 'hole' ? (

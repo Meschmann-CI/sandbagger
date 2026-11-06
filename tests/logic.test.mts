@@ -38,6 +38,7 @@ const { asks, guardOwnHoles, selfScoring } = await import('../src/lib/scoringFor
 const { liveLines, cardSlice, leadStory, atTheTurn, spectatorNews } = await import('../src/lib/spectate.ts')
 const { trophiesFrom, trophyPushTitle, trophyWhy, closedOut, roundIsFinal } = await import('../src/lib/trophyMoments.ts')
 const { nearestCourse, suggestTee, targetYards } = await import('../src/lib/suggest.ts')
+const { withMark, mapHoleFor, drawable, teeOf, greenYards, pack, unpack } = await import('../src/lib/courseMap.ts')
 const { isBooked, sortBookings, findRound, bookedRounds, teeTimeLabel, teeTimeInput } = await import('../src/lib/bookings.ts')
 
 let failures = 0
@@ -358,6 +359,24 @@ const amount = (results: { playerId: string; amount: number }[], id: string) => 
   check("tees: never the women's set", suggestTee(cobbs, [30])?.tee.name, 'White')
   check('tees: nothing to go on', [suggestTee(cobbs, []), suggestTee(mk('bare'), [10]), suggestTee(undefined, [10])], [null, null, null])
   check('tees: the yardage ladder', [targetYards(5), targetYards(5.1), targetYards(20.5)], [6600, 6300, 5400])
+}
+
+// 12d. Hand marks on a hole map (Matt, 2026-11-06): a tee and green draw a straight hole, front and back win for distances.
+{
+  const green: [number, number] = [-75.2456, 39.9609]
+  const tee: [number, number] = [-75.244, 39.9609] // about 150 yards east
+  const base = { source: 'osm' as const, fetchedAt: 'x', holes: [], features: [] }
+  const greenOnly = withMark(base, '1', 'green', green)
+  check('mark: a marked green alone is a hole with no drawing', [!!mapHoleFor(greenOnly, 0), drawable(mapHoleFor(greenOnly, 0))], [true, false])
+  const withTee = withMark(greenOnly, '1', 'tee', tee)
+  const h = mapHoleFor(withTee, 0)!
+  check('mark: a marked tee makes it drawable, tee first', [drawable(h), h.line?.[0], h.line?.[1]], [true, tee, green])
+  check('mark: the tee is where the hole starts', teeOf(withTee, h), tee)
+  const front: [number, number] = [-75.24488, 39.9609]
+  const marked = withMark(withTee, '1', 'front', front)
+  const gy = greenYards(marked, mapHoleFor(marked, 0)!, tee)
+  check('mark: a marked front gives the front yards, back stays unknown', [gy.front != null && gy.front > 60 && gy.front < 100, gy.back], [true, null])
+  check('mark: packs and unpacks with the marks', unpack(JSON.parse(JSON.stringify(pack(marked)))).marks, marked.marks)
 }
 
 // 12. Match-play Nassau with presses. Holes as A sees them: B wins the 1st

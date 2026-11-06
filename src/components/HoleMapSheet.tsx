@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { drawable, greenCentre, greenYards, metres, ON_HOLE_METRES, teeOf, type CourseMap, type LngLat, type MapHole } from '../lib/courseMap'
+import { drawable, greenCentre, greenYards, metres, ON_HOLE_METRES, teeOf, type CourseMap, type LngLat, type MapHole, type MarkWhat } from '../lib/courseMap'
 import HoleMap from './HoleMap'
 import type { Wind } from '../lib/liveWind'
 import { Icon } from './icons'
@@ -33,9 +33,31 @@ interface Props {
   /** Shown over the map, fixed to the screen. Off: laid out in the page (the course map page). */
   overlay?: boolean
   onClose?: () => void
+  /** Saves the target as this hole's tee, front, green or back (Matt, 2026-11-06): marking from the clubhouse, no walking. */
+  onMark?: (what: MarkWhat, at: LngLat) => Promise<void>
 }
 
-export default function HoleMapSheet({ map, holeAt, index, onIndex, par, from, wind, overlay = true, onClose }: Props) {
+const MARKS: [MarkWhat, string][] = [
+  ['tee', 'Tee'],
+  ['front', 'Front'],
+  ['green', 'Green'],
+  ['back', 'Back'],
+]
+
+export default function HoleMapSheet({ map, holeAt, index, onIndex, par, from, wind, overlay = true, onClose, onMark }: Props) {
+  const [saving, setSaving] = useState<MarkWhat | null>(null)
+  const [saved, setSaved] = useState<string | null>(null)
+  const mark = async (what: MarkWhat) => {
+    if (!onMark || !target) return
+    setSaving(what)
+    try {
+      await onMark(what, target)
+      setSaved(what)
+      setTimeout(() => setSaved(null), 1500)
+    } finally {
+      setSaving(null)
+    }
+  }
   const hole = holeAt(index)
   const centre = hole ? greenCentre(map, hole) : null
   const here = from && centre && metres(from, centre) < ON_HOLE_METRES ? from : null
@@ -87,6 +109,22 @@ export default function HoleMapSheet({ map, holeAt, index, onIndex, par, from, w
 
       {g && (
         <div className="border-t border-line bg-card" style={overlay ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}>
+          {onMark && target && hole && drawable(hole) && (
+            <div className="flex items-center gap-2 overflow-x-auto px-3 pt-2 [scrollbar-width:none]">
+              <span className="shrink-0 text-caption font-semibold text-ink-faint">Save the target as</span>
+              {MARKS.map(([what, label]) => (
+                <button
+                  key={what}
+                  type="button"
+                  disabled={!!saving}
+                  onClick={() => void mark(what)}
+                  className="shrink-0 rounded-full bg-paper px-3 py-1 text-caption font-bold text-green ring-1 ring-inset ring-line active:scale-95 disabled:opacity-60"
+                >
+                  {saving === what ? 'Saving…' : saved === what ? 'Saved' : label}
+                </button>
+              ))}
+            </div>
+          )}
           {!here && <p className="pt-2 text-center text-caption text-ink-faint">From the tee</p>}
           <div className="grid grid-cols-3 py-2 text-center">
             {(
