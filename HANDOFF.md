@@ -152,8 +152,9 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
--17. Marking a course from the sofa, iPhone only (2026-11-06, evening; Swift committed, NOT
-   pushed, not in a TestFlight build). Matt is playing River Vale this weekend and OSM has
+-17. Marking a course from the sofa, iPhone only (2026-11-06, evening). Web pushed and live
+   (8050266, bundle index-DrkS4qKr, checked). TestFlight build 17 (Swift 22004f1) uploaded
+   at 2:19 pm; Swift pushed. Matt is playing River Vale this weekend and OSM has
    it only as an unnamed outline (way 39648062) with one green, one fairway and one tee
    traced and no numbered holes. The course map page has "Mark the holes on satellite":
    Apple's satellite map finds the course by name, and tapping each hole's tee then green
