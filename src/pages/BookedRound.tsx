@@ -18,6 +18,7 @@ import { useConfirm } from '../components/Confirm'
 import { Avatar, Card, PrimaryButton, SECONDARY_BTN, SectionLabel } from '../components/ui'
 import { Icon } from '../components/icons'
 import { BookedSettleUp, GreenFeeSection } from '../components/GreenFees'
+import Playlist from '../components/Playlist'
 
 // A round booked ahead (Matt, 2026-10-22): who's in, the tee time and tees,
 // and bets set up early. Only whoever booked it changes who's in, the day
@@ -154,6 +155,9 @@ export default function BookedRound({ round }: { round: Round }) {
 
       <GreenFeeSection round={round} />
       <BookedSettleUp round={round} />
+
+      {/* The playlist fills up during the week (components/Playlist.tsx). */}
+      <Playlist round={round} />
 
       <SectionLabel
         action={

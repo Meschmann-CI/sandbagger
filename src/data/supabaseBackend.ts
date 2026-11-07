@@ -281,6 +281,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         expensesRes,
         paymentsRes,
         chirpsRes,
+        tracksRes,
       ] = await Promise.all([
         client.from('groups').select('*').eq('id', groupId).single(),
         client.from('players').select('*').eq('group_id', groupId).order('created_at'),
@@ -295,6 +296,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
         client.from('payments').select('*'),
         // The last two days only: chirps are for the round being watched.
         client.from('chirps').select('*').gte('created_at', new Date(Date.now() - 2 * 86_400_000).toISOString()).order('created_at'),
+        client.from('round_tracks').select('*').order('created_at'),
       ])
 
       guard(groupRes.error, 'Loading group')
@@ -427,6 +429,25 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
               toId: c.to_player,
               text: c.text,
               at: c.created_at,
+            })),
+        // Likewise before apply-2026-11-07-round-tracks.sql.
+        tracks: tracksRes.error
+          ? []
+          : (tracksRes.data ?? []).map((t: any) => ({
+              id: t.id,
+              roundId: t.round_id,
+              addedById: t.added_by,
+              isrc: t.isrc ?? undefined,
+              title: t.title,
+              artist: t.artist ?? '',
+              album: t.album ?? undefined,
+              artwork: t.artwork ?? undefined,
+              durationMs: t.duration_ms ?? undefined,
+              appleId: t.apple_id ?? undefined,
+              appleUrl: t.apple_url ?? undefined,
+              spotifyId: t.spotify_id ?? undefined,
+              spotifyUrl: t.spotify_url ?? undefined,
+              at: t.created_at,
             })),
       }
     },
@@ -665,6 +686,33 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           )
           return
         }
+        case 'track.add': {
+          const t = change.track
+          guard(
+            (
+              await client.from('round_tracks').insert({
+                id: t.id,
+                round_id: t.roundId,
+                added_by: t.addedById,
+                isrc: t.isrc ?? null,
+                title: t.title,
+                artist: t.artist,
+                album: t.album ?? null,
+                artwork: t.artwork ?? null,
+                duration_ms: t.durationMs ?? null,
+                apple_id: t.appleId ?? null,
+                apple_url: t.appleUrl ?? null,
+                spotify_id: t.spotifyId ?? null,
+                spotify_url: t.spotifyUrl ?? null,
+              })
+            ).error,
+            'Adding the song',
+          )
+          return
+        }
+        case 'track.delete':
+          await removeRow('round_tracks', change.id, 'Removing the song')
+          return
         case 'payment.delete':
           await removeRow('payments', change.id, 'Deleting payback')
           return

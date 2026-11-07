@@ -39,6 +39,25 @@ export interface BagClub {
 }
 
 /** A reaction from someone watching, at a golfer in the round (Matt, 2026-10-23). */
+/** A song on a round's playlist, with both services' ids so anyone can open it (supabase/functions/music). */
+export interface RoundTrack {
+  id: string
+  roundId: string
+  addedById: string
+  isrc?: string
+  title: string
+  artist: string
+  album?: string
+  artwork?: string
+  durationMs?: number
+  appleId?: string
+  appleUrl?: string
+  spotifyId?: string
+  spotifyUrl?: string
+  /** ISO instant. */
+  at: string
+}
+
 export interface Chirp {
   id: string
   roundId: string
@@ -551,6 +570,8 @@ export interface AppData {
   bookings?: Round[]
   /** Reactions on live rounds, from the people watching. */
   chirps?: Chirp[]
+  /** The rounds' playlists (lib/playlist.ts), newest last. */
+  tracks?: RoundTrack[]
   trips: Trip[]
   bets: Bet[]
   expenses: Expense[]

@@ -14,6 +14,7 @@ import {
   type Player,
   type RatingAspect,
   type Round,
+  type RoundTrack,
   type Trip,
 } from '../types'
 import { daysAgoISO, todayISO } from '../lib/dates'
@@ -23,6 +24,7 @@ import { tripNews } from '../lib/tripNews'
 import { guardOwnHoles } from '../lib/scoringFor'
 import { roundIsFinal, type EarnedTrophy } from '../lib/trophyMoments'
 import { recapFacts } from '../lib/recapFacts'
+import type { CatalogTrack } from '../lib/music'
 import { roundMoments } from '../lib/roundMoments'
 import { markAnnounced, wasAnnounced } from '../lib/announced'
 import { notifyGroup, type PushMessage } from '../lib/push'
@@ -68,6 +70,10 @@ interface StoreApi {
   addChirp: (roundId: string, toId: string, text: string) => void
   /** Stop (or start again) the turn and lead-change pushes for a round I'm watching. */
   setRoundMuted: (roundId: string, muted: boolean) => void
+  /** A song onto the round's playlist (lib/playlist.ts); the same song twice is ignored. */
+  addTrack: (roundId: string, track: CatalogTrack) => void
+  /** Off the playlist: only the golfer who added it can. */
+  removeTrack: (trackId: string) => void
   deleteRound: (roundId: string) => void
   /** Creates the course record on first use, keyed on the normalised name. */
   saveCourse: (
@@ -591,6 +597,31 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
       if (target && !target.chirpsOff) {
         notifyGroup({ toPlayerIds: [toId], title: `${me?.name.split(' ')[0] ?? 'Someone'} from the couch`, body: clean, url: `/rounds/${roundId}` })
       }
+    },
+    addTrack(roundId, t) {
+      const d = dataRef.current
+      const same = (d.tracks ?? []).some((x) => x.roundId === roundId && ((t.isrc && x.isrc === t.isrc) || (t.appleId && x.appleId === t.appleId)))
+      if (same || !t.title) return
+      const track: RoundTrack = {
+        id: makeId(),
+        roundId,
+        addedById: d.currentUserId,
+        isrc: t.isrc ?? undefined,
+        title: t.title.slice(0, 200),
+        artist: t.artist,
+        album: t.album ?? undefined,
+        artwork: t.artwork ?? undefined,
+        durationMs: t.durationMs ?? undefined,
+        appleId: t.appleId ?? undefined,
+        appleUrl: t.appleUrl ?? undefined,
+        spotifyId: t.spotifyId ?? undefined,
+        spotifyUrl: t.spotifyUrl ?? undefined,
+        at: new Date().toISOString(),
+      }
+      commit({ kind: 'track.add', track }, (cur) => ({ ...cur, tracks: [...(cur.tracks ?? []), track] }))
+    },
+    removeTrack(trackId) {
+      commit({ kind: 'track.delete', id: trackId }, (cur) => ({ ...cur, tracks: (cur.tracks ?? []).filter((t) => t.id !== trackId) }))
     },
     setRoundMuted(roundId, muted) {
       const me = dataRef.current.players.find((p) => p.id === dataRef.current.currentUserId)

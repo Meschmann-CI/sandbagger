@@ -152,6 +152,38 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-21. The round playlist (2026-11-07): half the group is on Apple Music, half on Spotify,
+   so the list lives in Bandit and each golfer takes it to their own service. Web committed,
+   not pushed; Swift port in progress in this session.
+   - `supabase/functions/music/index.ts` (deployed v1 through the connector): `search` is
+     the Apple Music catalog (ten songs, each with its ISRC and, once the Spotify secrets
+     exist, its Spotify id), `resolve` turns ISRCs into both ids, `token` hands the web a
+     one-hour Apple developer token and the public Spotify client id, `ping` (no user)
+     says whether each service's credentials work. Apple's answered ok on 2026-11-07
+     (secrets `APPLE_MUSIC_KEY`, `APPLE_MUSIC_KEY_ID`, `APPLE_TEAM_ID`, pasted by Matt from
+     a MusicKit key under Media ID `media.com.eschmann.bandit`). Spotify waits on Matt
+     creating the developer app (redirect URI `https://thesandbagger.netlify.app/`) and
+     adding `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`; until then search still
+     works and the Spotify button says it isn't set up.
+   - `round_tracks` (`supabase/apply-2026-11-07-round-tracks.sql`, Matt's to paste; in
+     the realtime publication; insert-only, delete your own, like chirps): `RoundTrack`
+     on `AppData.tracks`, `track.add` / `track.delete` changes, `store.addTrack` (same
+     ISRC or Apple id twice is ignored) and `removeTrack`.
+   - `src/lib/playlist.ts`: `playlistFor` (order added, the commissioner's first pick on
+     top: the third power), `playlistName` ("Bandit · Split Rock · Nov 9"), `playlistLength`.
+   - `src/lib/appleMusic.ts` (MusicKit JS v3 from Apple's CDN, authorise, make the
+     library playlist once, add what's new after, remembered per round in localStorage)
+     and `src/lib/spotify.ts` (PKCE sign-in back to the site root, `App.tsx` finishes it
+     with `SpotifyReturn` and goes to the round; private playlist made once, added to
+     after). Both resolve missing ids by ISRC first.
+   - `components/Playlist.tsx` on the round page (after the call) and the booked page
+     (after the green fees): rows with artwork, the adder's avatar, × on your own, the
+     "Commissioner's pick" chip, the Apple Music and Spotify buttons, and the search
+     sheet. Demo mode shows "The playlist needs the online app."
+   - Not yet seen end to end: no track has been added on the real group and neither
+     export has run on a real account (MusicKit JS on the web needs a subscribed,
+     signed-in Apple account; the iPhone app's native path is the solid one).
+
 -20. The commissioner (2026-11-07): whoever holds the Saddam, no election, no new field
    (`commissionerId` in `src/lib/commissioner.ts` is `saddamState().holderId`). Three
    powers, Matt's "keep it simple for now": a tied trip vote goes the commissioner's way

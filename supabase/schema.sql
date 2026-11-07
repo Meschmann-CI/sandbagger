@@ -1043,3 +1043,36 @@ create policy round_events_insert on round_events for insert
 -- The call (2026-11-06): see apply-2026-11-06-recap.sql. {text, at}, written
 -- once by the `recap` Edge Function when the last score lands.
 alter table rounds add column if not exists recap jsonb;
+
+-- The round playlist (2026-11-07): see apply-2026-11-07-round-tracks.sql.
+create table if not exists round_tracks (
+  id uuid primary key default gen_random_uuid(),
+  round_id uuid not null references rounds(id) on delete cascade,
+  added_by uuid not null references players(id) on delete cascade,
+  isrc text,
+  title text not null check (char_length(title) between 1 and 200),
+  artist text not null default '',
+  album text,
+  artwork text,
+  duration_ms integer,
+  apple_id text,
+  apple_url text,
+  spotify_id text,
+  spotify_url text,
+  created_at timestamptz not null default now()
+);
+create index if not exists round_tracks_round_idx on round_tracks(round_id);
+alter table round_tracks enable row level security;
+drop policy if exists round_tracks_select on round_tracks;
+create policy round_tracks_select on round_tracks for select
+  using (round_id in (select id from rounds));
+drop policy if exists round_tracks_insert on round_tracks;
+create policy round_tracks_insert on round_tracks for insert
+  with check (round_id in (select id from rounds) and added_by = current_player_id());
+drop policy if exists round_tracks_delete on round_tracks;
+create policy round_tracks_delete on round_tracks for delete
+  using (added_by = current_player_id());
+do $$ begin
+  alter publication supabase_realtime add table round_tracks;
+exception when duplicate_object then null; when undefined_object then null;
+end $$;

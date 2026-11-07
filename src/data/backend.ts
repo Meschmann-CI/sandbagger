@@ -1,6 +1,6 @@
 import type { RoundPatch } from '../lib/scorePatch'
 import type { RecapFacts } from '../lib/recapFacts'
-import type { AppData, Bet, BetResult, Chirp, Course, CourseRanking, CourseRating, Expense, Group, Payment, Player, Round, RoundRecap, Trip } from '../types'
+import type { AppData, Bet, BetResult, Chirp, Course, CourseRanking, CourseRating, Expense, Group, Payment, Player, Round, RoundRecap, RoundTrack, Trip } from '../types'
 
 // Every mutation the app can make. The store applies the change to its
 // own state optimistically and hands the same descriptor to the backend,
@@ -40,6 +40,9 @@ export type Change =
   | { kind: 'payment.upsert'; payment: Payment }
   // A reaction from someone watching a live round. Insert-only: nothing edits a chirp.
   | { kind: 'chirp.add'; chirp: Chirp }
+  // A song on a round's playlist: added by anyone on the round, removed by whoever added it.
+  | { kind: 'track.add'; track: RoundTrack }
+  | { kind: 'track.delete'; id: string }
   | { kind: 'payment.delete'; id: string }
   | { kind: 'group.upsert'; group: Group }
   | { kind: 'session.currentUser'; playerId: string }

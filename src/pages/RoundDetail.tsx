@@ -22,6 +22,7 @@ import Scorecard from '../components/Scorecard'
 import RoundPhotos from '../components/RoundPhotos'
 import RoundNote from '../components/RoundNote'
 import TheCall from '../components/TheCall'
+import Playlist from '../components/Playlist'
 import { paceLine, paceOf } from '../lib/pace'
 import { shareWatchLink, watchLink } from '../lib/watchLink'
 import { isCloudMode } from '../lib/supabase'
@@ -434,6 +435,9 @@ function PlayedRound() {
 
       {/* The booth's call of the round, once the last score is in. */}
       <TheCall round={round} />
+
+      {/* The round's playlist, for whoever has the aux cord. */}
+      <Playlist round={round} />
 
       {/* Attesting, once every hole is in: sign it and the card turns over. */}
       {iPlayed && anyCards(round) && round.players.every(cardComplete) && (

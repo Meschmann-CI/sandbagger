@@ -23,6 +23,7 @@ import SignIn from './pages/SignIn'
 import PublicWatch from './pages/PublicWatch'
 import { Card } from './components/ui'
 import { lazyPage } from './lib/lazyPage'
+import { finishSpotifyLogin, spotifyReturning } from './lib/spotify'
 
 // Off-Sunday screens load on their first tap (lib/lazyPage.tsx).
 const EditRound = lazyPage(() => import('./pages/EditRound'))
@@ -101,11 +102,23 @@ function Splash({ message, error }: { message: string; error?: boolean }) {
 export default function App() {
   // A shared link to watch a round: the one page served without signing
   // in (lib/watchLink.ts). The hash is read once; the link is the page.
+  // Back from Spotify's sign-in (lib/spotify.ts): finish it, then return
+  // to the round whose playlist asked for it.
+  if (spotifyReturning()) return <SpotifyReturn />
   const watchKey = window.location.hash.match(/^#\/watch\/([0-9a-f-]{36}\.[0-9a-f]{24})$/i)?.[1]
   if (watchKey) return <PublicWatch linkKey={watchKey} />
   // Local mode: no accounts, everything in this browser.
   if (!isCloudMode || !supabase) return <LocalApp />
   return <CloudApp />
+}
+
+function SpotifyReturn() {
+  useEffect(() => {
+    void finishSpotifyLogin().then((roundId) => {
+      window.location.replace(`${window.location.origin}/#${roundId ? `/rounds/${roundId}` : '/'}`)
+    })
+  }, [])
+  return <Splash message="Back from Spotify…" />
 }
 
 function LocalApp() {
