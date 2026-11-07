@@ -31,8 +31,12 @@ const LIMIT = 10
 const APPLE_KEY = Deno.env.get('APPLE_MUSIC_KEY')?.replaceAll('\\n', '\n').trim()
 const APPLE_KEY_ID = Deno.env.get('APPLE_MUSIC_KEY_ID')?.trim()
 const APPLE_TEAM_ID = Deno.env.get('APPLE_TEAM_ID')?.trim()
-const SPOTIFY_ID = Deno.env.get('SPOTIFY_CLIENT_ID')?.trim()
-const SPOTIFY_SECRET = Deno.env.get('SPOTIFY_CLIENT_SECRET')?.trim()
+// The Spotify pair, under the documented names or any close spelling
+// (the dashboard keeps whatever was typed).
+const env = Deno.env.toObject()
+const envLike = (re: RegExp) => Object.keys(env).find((k) => re.test(k))
+const SPOTIFY_ID = env[envLike(/^spotify[\s_-]*(client[\s_-]*)?id$/i) ?? '']?.trim()
+const SPOTIFY_SECRET = env[envLike(/^spotify[\s_-]*(client[\s_-]*)?secret$/i) ?? '']?.trim()
 const appleReady = !!(APPLE_KEY && APPLE_KEY_ID && APPLE_TEAM_ID)
 const spotifyReady = !!(SPOTIFY_ID && SPOTIFY_SECRET)
 
@@ -201,7 +205,7 @@ Deno.serve(async (req) => {
         out.apple = `error: ${err instanceof Error ? err.message.slice(0, 120) : String(err)}`
       }
     }
-    if (!spotifyReady) out.spotify = 'missing secrets'
+    if (!spotifyReady) out.spotify = `missing secrets (names seen: ${Object.keys(env).filter((k) => /spotify/i.test(k)).join(', ') || 'none'})`
     else {
       try {
         await spotifyAppToken()
