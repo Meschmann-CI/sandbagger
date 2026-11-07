@@ -154,7 +154,10 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 -21. The round playlist (2026-11-07): half the group is on Apple Music, half on Spotify,
    so the list lives in Bandit and each golfer takes it to their own service. Web committed,
-   not pushed; Swift port in progress in this session.
+   not pushed; Swift port committed (114 package tests, iPhone build green), not pushed. Both
+   services answered the function's ping ok on 2026-11-07 (the Spotify secrets are saved
+   as "Spotify Client ID" / "Spotify Client Secret", with spaces, and the function accepts
+   that spelling); the round_tracks SQL is pasted.
    - `supabase/functions/music/index.ts` (deployed v1 through the connector): `search` is
      the Apple Music catalog (ten songs, each with its ISRC and, once the Spotify secrets
      exist, its Spotify id), `resolve` turns ISRCs into both ids, `token` hands the web a
