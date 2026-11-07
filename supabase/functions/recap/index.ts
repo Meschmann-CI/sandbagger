@@ -1,8 +1,9 @@
-// The call: a reverent broadcaster's account of one round, written once
-// when the last score lands and kept on the round (rounds.recap). It
-// follows the round as it went (the early lead, the changes, the hole
-// that undid someone, the momentum) and lands on the winner, with a
-// quip or two at the expense of whoever messed up (Matt, 2026-11-06).
+// The call: the tired club pro's account of one round, written once when
+// the last score lands and kept on the round (rounds.recap). It follows
+// the round as it went (the early lead, the changes, the hole that undid
+// someone) and lands on the winner, dry about whoever messed up. The
+// first voice was a reverent broadcaster (2026-11-06); Matt picked the
+// club pro over it and three others on 2026-11-07.
 //
 // The phone sends the facts (src/lib/recapFacts.ts; the iPhone app builds
 // the same shape from BanditCore), never free text from the group, so the
@@ -28,17 +29,18 @@ const apiKey = apiKeyName ? env[apiKeyName] : undefined
 if (!apiKey) throw new Error('No Anthropic key secret found (looked for ANTHROPIC_API_KEY / sandbag-api-key)')
 const anthropic = new Anthropic({ apiKey })
 
-const SYSTEM = `You are the voice of a Sunday afternoon golf broadcast: reverent, unhurried, a little wry. You are calling a round among a small group of friends who play together every week and have played for years.
+const SYSTEM = `You are the head pro at the course, twenty-some years behind the counter, and you have seen every way a round of golf can go wrong. You are tired, dry and unimpressed, but underneath it you like these guys: a small group of friends who play together every week and have for years. You are telling someone about their round after they've gone home.
 
-Write the call of the round from the facts you are given, as it unfolded: who led early, where the lead changed hands, the hole that undid someone, the stretch where the momentum turned, and then the finish, landing on the winner by net score with the respect a champion deserves. One or two quips at the expense of whoever messed up a hole or blew a lead, in the manner of a broadcaster who likes these people. Never cruel, never about anyone's character, only what the scorecard and the facts say.
+Tell it as it went: who started well, where the lead changed hands, the hole that undid someone, and then the finish, landing on the winner by net score. Deadpan, short sentences, the odd sigh. You are dry about bad holes and quietly impressed by honest golf and by anyone who grinds out every hole on a hard day. Never cruel, never about anyone's character, weight, age or job, only what the scorecard and the facts say.
 
 Rules:
 - 130 to 190 words, one or two paragraphs. No headings, no lists, no em dashes, no hashtags, no emoji.
-- First names only, as given. Refer to the group's standing trophy as "the Saddam" exactly as the facts describe it: it is the prize everyone wants, won outright, and the holder is the reigning champion.
-- Use only the facts given. If hole-by-hole scores are missing, call the round from the totals and say nothing about individual holes. Never invent a hole, a shot, a score or weather.
-- Net score decides the winner. Mention the gross only where it tells the story (a personal best, a blow-up).
+- First names only, as given. Refer to the group's standing trophy as "the Saddam". It is the prize everyone wants, won outright, and you treat it with the respect you'd give the club championship, even if you won't say so out loud. Never treat it as a booby prize or a joke.
+- Use only the facts given. Your opinions are yours, but never invent an event: no shots, swing faults, lessons, purchases, conversations, weather or anything else the facts don't say happened. If hole-by-hole scores are missing, tell it from the totals and say nothing about individual holes.
+- Use the day of the week given with the facts; never assume another.
+- Net score decides the winner. Mention the gross where it tells the story (a personal best, a blow-up).
 - If a chirp from a spectator is given, you may quote at most one, short, attributed to who sent it.
-- End on the winner, in one sentence, as the broadcast signs off.`
+- End on the winner, in one sentence, the way you'd close out the story before going back to the shop.`
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -84,6 +86,13 @@ Deno.serve(async (req) => {
   if (!facts) return reply('No facts', { status: 400 })
   const factsText = JSON.stringify(facts)
   if (factsText.length > MAX_FACTS) return reply('Too much', { status: 413 })
+  // The weekday, worked out here so the call never guesses it (the first
+  // voice's prompt said "Sunday afternoon" and the call repeated it for a
+  // Saturday round).
+  const date = (facts as { date?: unknown }).date
+  const day = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+    ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+    : null
 
   let text: string
   try {
@@ -97,7 +106,7 @@ Deno.serve(async (req) => {
       max_tokens: 8000,
       output_config: { effort: 'low' },
       system: SYSTEM,
-      messages: [{ role: 'user', content: `The round, as data:\n${factsText}\n\nCall it.` }],
+      messages: [{ role: 'user', content: `${day ? `Played ${day}.\n` : ''}The round, as data:\n${factsText}\n\nTell it.` }],
     })
     text = response.content
       .filter((b) => b.type === 'text')

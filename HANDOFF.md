@@ -238,7 +238,17 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
      each). Now `max_tokens: 8000` with `output_config.effort: 'low'`, and an empty answer
      logs its `stop_reason` and usage. No client change: both apps already show the
      function's error. That round still has no recap, so tapping again should work;
-     not yet confirmed by a real tap. Any new Opus 5.5 call needs the same headroom.
+     Matt confirmed it works the same day. Any new Opus 5.5 call needs the same headroom.
+   - Voice changed 2026-11-07 (recap v8): the tired club pro, for every call. Matt saw
+     the Ferry Point round in five voices (the booth, tired club pro, smug guy on the
+     patio, AM radio, nature documentary) and picked the club pro. The prompt keeps the
+     facts-only rule and adds "no invented swing faults, lessons or purchases" (opinions
+     are fine, events are not) and keeps the Saddam as the prize everyone wants. The
+     function now puts the weekday from `facts.date` in the message, since the booth's
+     "Sunday afternoon" prompt made the Ferry Point call say Sunday for a Saturday round.
+     Calls already stored (only Ferry Point, adcaec0b) keep the old voice unless that
+     row's `recap` is cleared. The UI copy still says "the booth" ("Hear the call",
+     "The booth hasn't called this one yet").
 
 -18. The review (2026-11-06, evening): the first load split, and the two-phone pushes.
    Web pushed and live (0dd1656, an empty deploy commit after a `[skip netlify]` head;
