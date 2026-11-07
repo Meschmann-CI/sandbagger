@@ -163,7 +163,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    leading, tied, vetoed in `TripPlanning.tsx` and the Trips page's `VoteRace`; Home's
    Saddam line ends "Commissioner until someone takes it." Tests: `tests/moments.test.mts`
    section 7. The longer powers menu is parked in `notes/ideas.md`. Web committed, not
-   pushed; Swift port in progress in this session.
+   pushed; Swift port committed (107 package tests, iPhone build green), not pushed. No
+   SQL: the veto rides in the trip's options jsonb.
 
 -19. The call (2026-11-06, late): a reverent broadcaster's account of each round, from the
    brainstorm in `notes/ideas.md` (Matt: one voice only, follow the round, lead changes,
