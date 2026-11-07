@@ -120,7 +120,8 @@ const short = (name: string) => name.replace(/ (Golf Course|Golf Club|Country Cl
 
 /**
  * The pushes a save sends to the rest of the group: the turn and a lead
- * change. The final has its own push already. Only for a round being
+ * change, each keyed so it goes once per round across phones
+ * (lib/roundMoments.ts). The final has its own push already. Only for a round being
  * played today, to members who aren't in it and haven't muted it.
  */
 export function spectatorNews(data: AppData, before: Round | undefined, after: Round, today: string): PushMessage[] {
@@ -146,6 +147,7 @@ export function spectatorNews(data: AppData, before: Round | undefined, after: R
     const first = front[0]
     const firstLabel = par == null ? `${first.out}` : `${first.out} (${toParLabel({ toPar: first.out - par, strokes: first.out })})`
     out.push({
+      key: 'turn',
       toPlayerIds: to,
       title: `${course} at the turn`,
       body: [`${name(first.id)} ${firstLabel}`, ...front.slice(1).map((f) => `${name(f.id)} ${f.out}`)].join(', ') + '.',
@@ -172,6 +174,7 @@ export function spectatorNews(data: AppData, before: Round | undefined, after: R
       return toParLabel({ strokes, toPar: pars ? toPar : null })
     }
     out.push({
+      key: `lead:${c.hole}`,
       toPlayerIds: to,
       title: `Lead change at ${course}`,
       body: `${name(c.leaderId)} takes the lead on ${c.hole + 1}. ${name(c.leaderId)} ${label(c.leaderId)}, ${name(c.fromId)} ${label(c.fromId)}.`,

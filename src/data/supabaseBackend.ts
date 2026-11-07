@@ -681,6 +681,13 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
       }
     },
 
+    async claim(roundId: string, key: string) {
+      const { error } = await client.from('round_events').insert({ round_id: roundId, kind: key, by_player: playerId })
+      // Taken already: another phone's went out. Anything else (the table
+      // not pasted yet, no signal) and this phone sends, as it always did.
+      return error?.code !== '23505'
+    },
+
     subscribe(onRemoteChange: () => void) {
       const channel = client
         .channel('sandbagger-sync')

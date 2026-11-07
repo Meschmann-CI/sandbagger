@@ -139,7 +139,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
   `supabase/apply-2026-10-24-merge-guards.sql` (items 9) was pasted by Matt 2026-10-26 and
   verified in prod (both guards present, execute granted to authenticated and
   service_role only). Items 14, 15, 17 and 22 were fixed 2026-10-31 (the review round);
-  11, 12, 13, 16, 18 to 21 and 23 to 33 are still open.
+  16, 18 to 21 and 23 to 33 are still open; 11 to 13 are the moments work of 2026-11-06 (entry -18).
   Matt's three from the first TestFlight rounds (2026-10-25, both repos): the iPhone's You
   page never had the web's Putting block (`PuttingStats` in `YouView.swift`, nine holes of
   putts to show, the same numbers as `Profile.tsx`); a photo added with others went
@@ -166,6 +166,23 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
      load: `index-*.js` 460 KB + `icons-*.js` 87 KB (the shared chunk, named after one
      module) + vendor, 282 KB gzipped, from 1,162 KB / 323 KB in one file.
      `useNewVersion` still keys on `assets/index-*.js`, which is still the entry.
+   - Audit items 11 to 13 (two phones, one line): every change to a round, saved here or
+     arriving on a reload from another phone, goes through `roundMoments` in
+     `src/lib/roundMoments.ts`: the Final, each golfer's trophies (`mine` at their
+     close-out, `everyone` at the final), the turn and a lead change, each with a key
+     (`final`, `trophies:<id>:mine|everyone`, `turn`, `lead:<hole>`). The store
+     (`announce`, `sendOnce`, `absorb`) marks each key on this phone (`src/lib/announced.ts`,
+     localStorage, 60 rounds kept) and claims it on the server (`Backend.claim`: an insert
+     into `round_events`, unique on round and kind; Postgres 23505 means another phone sent
+     it) before the push goes. So the final Matt and Barry cross between them is announced
+     by whichever phone's reload sees it first, two phones seeing the same turn send one
+     push, and a score cleared and typed again fires nothing twice. The Final push moved
+     out of `HoleEntry.tsx` into the moments; a round logged whole after the fact still
+     sends trophies only. `tests/moments.test.mts` (in `npm test`) has the cases.
+     Matt's step before the push: paste `supabase/apply-2026-11-06-round-events.sql`
+     (until then the insert fails with another error and every phone sends, as today).
+     The Swift port of the same (BanditCore `RoundMoments.swift`, `Backend.claim`,
+     `Store.announce` and the absorb pass in `refresh()`) is in progress in this session.
 
 -17. Marking a course from the sofa, iPhone only (2026-11-06, evening). Web pushed and live
    (8050266, bundle index-DrkS4qKr, checked). TestFlight build 17 (Swift 22004f1) uploaded

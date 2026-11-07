@@ -1021,3 +1021,21 @@ $$;
 
 revoke execute on function merge_hole_times(uuid, jsonb) from public, anon;
 grant execute on function merge_hole_times(uuid, jsonb) to authenticated, service_role;
+
+-- Round moments announced once across phones (2026-11-06): see
+-- apply-2026-11-06-round-events.sql. Not in the realtime publication on
+-- purpose: an insert here must not make every phone reload.
+create table if not exists round_events (
+  round_id uuid not null references rounds(id) on delete cascade,
+  kind text not null check (char_length(kind) between 1 and 80),
+  by_player uuid references players(id) on delete set null,
+  at timestamptz not null default now(),
+  primary key (round_id, kind)
+);
+alter table round_events enable row level security;
+drop policy if exists round_events_select on round_events;
+create policy round_events_select on round_events for select
+  using (round_id in (select id from rounds));
+drop policy if exists round_events_insert on round_events;
+create policy round_events_insert on round_events for insert
+  with check (round_id in (select id from rounds) and by_player = current_player_id());

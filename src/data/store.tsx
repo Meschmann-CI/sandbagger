@@ -16,14 +16,15 @@ import {
   type Round,
   type Trip,
 } from '../types'
-import { todayISO } from '../lib/dates'
+import { daysAgoISO, todayISO } from '../lib/dates'
 import { findRound, sortBookings } from '../lib/bookings'
 import { roundPatch } from '../lib/scorePatch'
 import { tripNews } from '../lib/tripNews'
-import { spectatorNews } from '../lib/spectate'
 import { guardOwnHoles } from '../lib/scoringFor'
-import { closedOut, roundIsFinal, shortCourse, trophiesFrom, trophyPushTitle, trophyWhy, type EarnedTrophy, type TrophyScope } from '../lib/trophyMoments'
-import { notifyGroup } from '../lib/push'
+import type { EarnedTrophy } from '../lib/trophyMoments'
+import { roundMoments } from '../lib/roundMoments'
+import { markAnnounced, wasAnnounced } from '../lib/announced'
+import { notifyGroup, type PushMessage } from '../lib/push'
 import { shrinkPhoto, uploadTripPhoto } from '../lib/photos'
 import { cleanCourseName, courseSlug, noteRename, renameCourseIn } from '../lib/courses'
 import { syncStoredBrands } from '../lib/courseBrands'
@@ -162,6 +163,9 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     [backend],
   )
 
+  // What to do with the data once read (absorb, below).
+  const absorbRef = useRef<(fresh: AppData) => void>(() => {})
+
   // Reads everything again. Never while this phone's own writes are still
   // queued: the server's copy would blank them off the card until the
   // queue lands, and the live card would ask for them again (audit
@@ -171,11 +175,7 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     const go = () =>
       backend
         .load()
-        .then((loaded) => {
-          const fresh = sortBookings(loaded)
-          dataRef.current = fresh
-          setData(fresh)
-        })
+        .then((loaded) => absorbRef.current(sortBookings(loaded)))
         .catch(() => {
           /* a failed refresh just means we keep showing what we have */
         })
@@ -205,37 +205,50 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     }
   }, [backend, reload])
 
-  // A golfer's own trophies go out the moment their score lands (a card
-  // finished, or a total entered): one push per golfer to the group
-  // (Matt, 2026-10-22), and this phone's golfer sees theirs pop up. The
-  // ones the other cards decide (a win, a skin, a partner's holes) wait
-  // for the save that puts the last score in (Matt, 2026-11-01), so a
-  // golfer who never posts holds up only those.
+  // What a change to a round tells the group (lib/roundMoments.ts): a
+  // golfer's own trophies the moment their score lands, one push per
+  // golfer and the sheet on their own phone (Matt, 2026-10-22); the ones
+  // the other cards decide, and the Final, when the last score is in
+  // (Matt, 2026-11-01); the turn and a lead change to whoever is watching.
+  // Each moment is marked on this phone and claimed on the server before
+  // its push goes, so phones crossing the same line between them send it
+  // once (audit 2026-10-24, items 11 to 13).
   const [trophyMoment, setTrophyMoment] = useState<TrophyMoment | null>(null)
-  const announceTrophies = (before: Round | undefined, after: Round) => {
-    const closed = new Set(closedOut(before, after))
-    const final = roundIsFinal(after) && !(before && roundIsFinal(before))
-    if (!closed.size && !final) return
+  const announce = (before: Round | undefined, after: Round) => {
     const d = dataRef.current
-    const today = todayISO()
-    for (const rp of after.players) {
-      const scope: TrophyScope | null = closed.has(rp.playerId) ? (final ? 'all' : 'mine') : final ? 'everyone' : null
-      if (!scope) continue
-      const p = d.players.find((x) => x.id === rp.playerId)
-      if (!p || p.guest) continue
-      const won = trophiesFrom(d, after.id, p.id, today, scope)
-      if (!won.length) continue
-      const course = shortCourse(after.courseName)
-      if (p.id === d.currentUserId) setTrophyMoment({ id: makeId(), roundId: after.id, course, trophies: won })
-      const others = won.slice(1).map((t) => t.badge.label)
-      notifyGroup({
-        toPlayerIds: d.group.memberIds.filter((id) => id !== d.currentUserId),
-        title: trophyPushTitle(p.name.split(' ')[0], course, won),
-        body: others.length >= 2 ? `${others.join(', ')}.` : trophyWhy(won[0]),
-        url: `/rounds/${after.id}`,
-      })
+    for (const m of roundMoments(d, before, after, todayISO(), (key) => wasAnnounced(after.id, key))) {
+      for (const key of m.keys) markAnnounced(after.id, key)
+      if (m.trophies && m.trophies.playerId === d.currentUserId) {
+        setTrophyMoment({ id: makeId(), roundId: after.id, course: m.trophies.course, trophies: m.trophies.won })
+      }
+      if (m.push) sendOnce(after.id, m.keys, m.push)
     }
   }
+  const sendOnce = (roundId: string, keys: string[], push: PushMessage) => {
+    if (!backend.claim || !keys.length) return notifyGroup(push)
+    void Promise.all(keys.map((key) => backend.claim!(roundId, key)))
+      .then((claimed) => {
+        if (claimed.some(Boolean)) notifyGroup(push)
+      })
+      .catch(() => notifyGroup(push))
+  }
+
+  // The group's data read again, from a reload or a pull. A round another
+  // phone saved since this one last looked is run through the same
+  // moments as a save made here, so the line two phones cross between them
+  // is still announced, by whichever phone claims it first.
+  const absorb = (fresh: AppData) => {
+    const prev = dataRef.current
+    dataRef.current = fresh
+    setData(fresh)
+    const since = daysAgoISO(1)
+    for (const r of fresh.rounds) {
+      if (r.date < since) continue
+      const was = prev.rounds.find((x) => x.id === r.id)
+      if (was) announce(was, r)
+    }
+  }
+  absorbRef.current = absorb
 
   // Everyone on a trip hears when it's booked, and anyone added later.
   const announceTrip = (before: Trip | undefined, after: Trip) => {
@@ -266,9 +279,7 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     newId: makeId,
 
     async refresh() {
-      const fresh = sortBookings(await backend.load())
-      dataRef.current = fresh
-      setData(fresh)
+      absorb(sortBookings(await backend.load()))
     },
 
     addRound(round) {
@@ -277,7 +288,7 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
       const players = [...round.players].sort((a, b) => roster.indexOf(a.playerId) - roster.indexOf(b.playerId))
       const full: Round = { ...round, players, id: makeId(), groupId: data.group.id }
       commit({ kind: 'round.upsert', round: full }, (d) => ({ ...d, rounds: [...d.rounds, full] }))
-      announceTrophies(undefined, full)
+      announce(undefined, full)
       return full
     },
     updateRound(incoming) {
@@ -290,8 +301,7 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
         rounds: d.rounds.map((r) => (r.id === round.id ? round : r)),
         bookings: d.bookings?.map((r) => (r.id === round.id ? round : r)),
       }))
-      announceTrophies(before, round)
-      for (const news of spectatorNews(dataRef.current, before, round, todayISO())) notifyGroup(news)
+      announce(before, round)
     },
     deleteRound(roundId) {
       commit({ kind: 'round.delete', id: roundId }, (d) => ({

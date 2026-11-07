@@ -25,9 +25,8 @@ import { MarkLegend, SCORE_MARK, StrokeDots } from '../components/scoreMarks'
 import { PuttsRow } from '../components/PuttsRow'
 import { fmtDiff, ghostDiff, ghostFor, ghostOptions } from '../lib/ghost'
 import { scanScores, scanSupported, type ScannedScoreRow } from '../lib/scan'
-import { roundStandings, shortDate } from '../lib/stats'
-import { notifyGroup } from '../lib/push'
-import { fmt1, type Bet, type HammerHole, type JunkKind, type Round, type RoundPlayer } from '../types'
+import { shortDate } from '../lib/stats'
+import { type Bet, type HammerHole, type JunkKind, type Round, type RoundPlayer } from '../types'
 import { Avatar, Card, HelpTip, PrimaryButton, Segmented } from '../components/ui'
 import { rulesFor } from '../lib/betRules'
 import { Icon, IconTile } from '../components/icons'
@@ -323,20 +322,8 @@ export default function HoleEntry() {
       if (outcome) updateBetResults(bet.id, outcome.results)
     }
 
-    // The moment the last score lands is the moment the group hears the
-    // result — once, on the save that crossed the line.
-    const wasFinal = round.players.length > 1 && round.players.every((rp) => rp.gross != null)
-    const isFinal = saved.players.length > 1 && saved.players.every((rp) => rp.gross != null)
-    if (isFinal && !wasFinal) {
-      const standings = roundStandings(saved)
-      const winner = data.players.find((p) => p.id === standings[0]?.playerId)
-      notifyGroup({
-        toPlayerIds: data.group.memberIds.filter((id) => id !== data.currentUserId),
-        title: `Final at ${round.courseName}`,
-        body: `${winner ? `${winner.name} takes it, net ${fmt1(standings[0].netScore)}.` : 'All the cards are in.'} Rate the course while it’s fresh.`,
-        url: `/rounds/${round.id}`,
-      })
-    }
+    // The Final push goes from the store's moments (lib/roundMoments.ts),
+    // so a line two phones cross between them is still crossed.
   }
   commitRef.current = commitCards
 

@@ -57,6 +57,8 @@ export async function disablePush(): Promise<void> {
 }
 
 export interface PushMessage {
+  /** A moment sent once per round across phones (lib/roundMoments.ts); the store claims it before sending. Not sent. */
+  key?: string
   toPlayerIds: string[]
   title: string
   body?: string
@@ -71,7 +73,8 @@ export interface PushMessage {
  */
 export function notifyGroup(message: PushMessage): void {
   if (!supabase || message.toPlayerIds.length === 0) return
-  void supabase.functions.invoke('notify', { body: message }).catch(() => {
+  const { key: _key, ...body } = message
+  void supabase.functions.invoke('notify', { body }).catch(() => {
     /* their phones just don't buzz this time */
   })
 }

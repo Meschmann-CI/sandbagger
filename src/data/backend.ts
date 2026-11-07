@@ -50,4 +50,10 @@ export interface Backend {
   apply(change: Change, next: AppData): Promise<void>
   /** Fires when another device changes something. Cloud only. */
   subscribe?(onRemoteChange: () => void): () => void
+  /**
+   * Claims one of a round's moments (the Final, a golfer's trophies, the
+   * turn, a lead change) for this phone to announce: true when no other
+   * phone has, false when one already did (round_events). Cloud only.
+   */
+  claim?(roundId: string, key: string): Promise<boolean>
 }
