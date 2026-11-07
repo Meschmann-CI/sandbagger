@@ -153,6 +153,9 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 ## Next actions
 
 -18. The review (2026-11-06, evening): the first load split, and the two-phone pushes.
+   Web pushed and live (0dd1656, an empty deploy commit after a `[skip netlify]` head;
+   bundle index-B5LwLEuI + vendor-DcSduAV7, checked). Swift pushed (d68ea68), no
+   TestFlight build yet. Matt pasted the round_events SQL before the push.
    Review verdict: dead code is near zero and the dependencies are lean; the weight was one
    unsplit 1.16 MB bundle, `HoleEntry.tsx` at 1,935 lines, this file and the Swift README,
    and a stale 488 MB `bandit-swift/build/` (deleted). Done, committed, not pushed:
@@ -183,8 +186,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
      (until then the insert fails with another error and every phone sends, as today).
      The Swift port of the same (BanditCore `RoundMoments.swift` with `AnnouncedList`,
      `Backend.claim`, `Store.announce` and the absorb pass in `refresh()`) is committed in
-     the Swift repo, not pushed: 94 package tests pass, the iPhone build succeeds, no
-     TestFlight build yet. Both repos wait on Matt's say-so to push.
+     the Swift repo: 94 package tests pass, the iPhone build succeeds, no TestFlight
+     build yet.
 
 -17. Marking a course from the sofa, iPhone only (2026-11-06, evening). Web pushed and live
    (8050266, bundle index-DrkS4qKr, checked). TestFlight build 17 (Swift 22004f1) uploaded
