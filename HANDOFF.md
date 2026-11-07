@@ -181,8 +181,10 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
      sends trophies only. `tests/moments.test.mts` (in `npm test`) has the cases.
      Matt's step before the push: paste `supabase/apply-2026-11-06-round-events.sql`
      (until then the insert fails with another error and every phone sends, as today).
-     The Swift port of the same (BanditCore `RoundMoments.swift`, `Backend.claim`,
-     `Store.announce` and the absorb pass in `refresh()`) is in progress in this session.
+     The Swift port of the same (BanditCore `RoundMoments.swift` with `AnnouncedList`,
+     `Backend.claim`, `Store.announce` and the absorb pass in `refresh()`) is committed in
+     the Swift repo, not pushed: 94 package tests pass, the iPhone build succeeds, no
+     TestFlight build yet. Both repos wait on Matt's say-so to push.
 
 -17. Marking a course from the sofa, iPhone only (2026-11-06, evening). Web pushed and live
    (8050266, bundle index-DrkS4qKr, checked). TestFlight build 17 (Swift 22004f1) uploaded
