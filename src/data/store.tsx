@@ -330,7 +330,10 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     updateRound(incoming) {
       const before = findRound(dataRef.current, incoming.id)
       // Another golfer's own entry wins over this phone's (lib/scoringFor.ts).
-      const round = guardOwnHoles(before, incoming, dataRef.current.currentUserId)
+      const guarded = guardOwnHoles(before, incoming, dataRef.current.currentUserId)
+      // The call is written by the server once; a copy of the round taken
+      // before it landed must not write it back as blank.
+      const round = !guarded.recap && before?.recap ? { ...guarded, recap: before.recap } : guarded
       const patch = roundPatch(before, round)
       commit(patch ? { kind: 'round.patch', patch } : { kind: 'round.upsert', round }, (d) => ({
         ...d,
