@@ -155,7 +155,9 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 -21. The round playlist (2026-11-07): half the group is on Apple Music, half on Spotify,
    so the list lives in Bandit and each golfer takes it to their own service. Web pushed and
    live (90d651b, bundle index-Yq6HzskQ, checked); Swift pushed (49af704), 114 package
-   tests, iPhone build green, no TestFlight build yet. Both
+   tests, iPhone build green. TestFlight build 1.0 (18) uploaded 2026-11-07 at 12:59 am
+   (Swift 5b739f3): the moments, the call, the commissioner and the playlist. Everyone
+   should take 18; the first real round and the first booked round are the checks. Both
    services answered the function's ping ok on 2026-11-07 (the Spotify secrets are saved
    as "Spotify Client ID" / "Spotify Client Secret", with spaces, and the function accepts
    that spelling); the round_tracks SQL is pasted.
