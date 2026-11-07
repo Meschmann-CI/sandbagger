@@ -153,8 +153,9 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 ## Next actions
 
 -21. The round playlist (2026-11-07): half the group is on Apple Music, half on Spotify,
-   so the list lives in Bandit and each golfer takes it to their own service. Web committed,
-   not pushed; Swift port committed (114 package tests, iPhone build green), not pushed. Both
+   so the list lives in Bandit and each golfer takes it to their own service. Web pushed and
+   live (90d651b, bundle index-Yq6HzskQ, checked); Swift pushed (49af704), 114 package
+   tests, iPhone build green, no TestFlight build yet. Both
    services answered the function's ping ok on 2026-11-07 (the Spotify secrets are saved
    as "Spotify Client ID" / "Spotify Client Secret", with spaces, and the function accepts
    that spelling); the round_tracks SQL is pasted.
@@ -197,9 +198,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    first pick in the round playlist once that exists. `voteRace()` is the one source for
    leading, tied, vetoed in `TripPlanning.tsx` and the Trips page's `VoteRace`; Home's
    Saddam line ends "Commissioner until someone takes it." Tests: `tests/moments.test.mts`
-   section 7. The longer powers menu is parked in `notes/ideas.md`. Web committed, not
-   pushed; Swift port committed (107 package tests, iPhone build green), not pushed. No
-   SQL: the veto rides in the trip's options jsonb.
+   section 7. The longer powers menu is parked in `notes/ideas.md`. Web pushed and live with
+   -21; Swift pushed (26f0e04). No SQL: the veto rides in the trip's options jsonb.
 
 -19. The call (2026-11-06, late): a reverent broadcaster's account of each round, from the
    brainstorm in `notes/ideas.md` (Matt: one voice only, follow the round, lead changes,
