@@ -156,7 +156,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
    brainstorm in `notes/ideas.md` (Matt: one voice only, follow the round, lead changes,
    blow-ups, momentum, a quip or two, land on the winner). Web committed, not pushed; the
    `recap` Edge Function is deployed (v1, through the connector, which auto mode allowed
-   tonight); the Swift port is in progress in this session.
+   tonight); the Swift port is committed in the Swift repo (100 package tests, iPhone build
+   green), not pushed. Both repos wait on Matt's say-so to push, after the SQL paste.
    - `supabase/functions/recap/index.ts`: signed-in member, `{roundId, facts}`; checks the
      caller can see the round, returns the existing `rounds.recap` if there is one, else
      calls `claude-opus-5-5` with the facts (never free text from the group except the
