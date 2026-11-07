@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { StoreProvider } from './data/store'
@@ -14,28 +14,31 @@ import Home from './pages/Home'
 import Rounds from './pages/Rounds'
 import RoundDetail from './pages/RoundDetail'
 import { LogRedirect } from './components/Shell'
-import EditRound from './pages/EditRound'
 import HoleEntry from './pages/HoleEntry'
 import WatchRound from './pages/WatchRound'
-import Ledger from './pages/Ledger'
-import RivalryDetail from './pages/RivalryDetail'
-import Trips from './pages/Trips'
-import TripNew from './pages/TripNew'
-import TripDetail from './pages/TripDetail'
 import Profile from './pages/Profile'
-import Saddam from './pages/Saddam'
-import Wrapped from './pages/Wrapped'
-import Trophies from './pages/Trophies'
-import Bag from './pages/Bag'
 import Courses from './pages/Courses'
-import Group from './pages/Group'
 import CourseDetail from './pages/CourseDetail'
-import CourseEdit from './pages/CourseEdit'
-import CourseMap from './pages/CourseMap'
 import SignIn from './pages/SignIn'
 import PublicWatch from './pages/PublicWatch'
-import Setup from './pages/Setup'
 import { Card } from './components/ui'
+import { lazyPage } from './lib/lazyPage'
+
+// Off-Sunday screens load on their first tap (lib/lazyPage.tsx).
+const EditRound = lazyPage(() => import('./pages/EditRound'))
+const Ledger = lazyPage(() => import('./pages/Ledger'))
+const RivalryDetail = lazyPage(() => import('./pages/RivalryDetail'))
+const Trips = lazyPage(() => import('./pages/Trips'))
+const TripNew = lazyPage(() => import('./pages/TripNew'))
+const TripDetail = lazyPage(() => import('./pages/TripDetail'))
+const Saddam = lazyPage(() => import('./pages/Saddam'))
+const Wrapped = lazyPage(() => import('./pages/Wrapped'))
+const Trophies = lazyPage(() => import('./pages/Trophies'))
+const Bag = lazyPage(() => import('./pages/Bag'))
+const Group = lazyPage(() => import('./pages/Group'))
+const CourseEdit = lazyPage(() => import('./pages/CourseEdit'))
+const CourseMap = lazyPage(() => import('./pages/CourseMap'))
+const Setup = lazyPage(() => import('./pages/Setup'))
 
 // HashRouter keeps deep links working on static hosting (Netlify) with zero config.
 function AppRoutes() {
@@ -171,7 +174,11 @@ function CloudApp() {
   if (session === undefined || state.phase === 'booting') return <Splash message="Loading your group…" />
   if (state.phase === 'signedOut') return <SignIn />
   if (state.phase === 'needsProfile')
-    return <Setup email={state.email} groupExists={state.groupExists} onReady={() => void boot()} />
+    return (
+      <Suspense fallback={<Splash message="Loading…" />}>
+        <Setup email={state.email} groupExists={state.groupExists} onReady={() => void boot()} />
+      </Suspense>
+    )
   if (state.phase === 'error') return <Splash message={state.message} error />
 
   return (

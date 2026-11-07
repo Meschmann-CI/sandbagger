@@ -152,6 +152,21 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-18. The review (2026-11-06, evening): the first load split, and the two-phone pushes.
+   Review verdict: dead code is near zero and the dependencies are lean; the weight was one
+   unsplit 1.16 MB bundle, `HoleEntry.tsx` at 1,935 lines, this file and the Swift README,
+   and a stale 488 MB `bandit-swift/build/` (deleted). Done, committed, not pushed:
+   - Route splitting (`src/lib/lazyPage.tsx`): Wrapped, Saddam, Trophies, Bag, Ledger,
+     RivalryDetail, Trips, TripNew, TripDetail, CourseEdit, CourseMap, Group, EditRound and
+     Setup load on first tap, and every one is fetched in the background six seconds after
+     the Shell mounts (`warmPages`), so the service worker holds them for the back nine. A
+     load that fails shows "This screen needs a signal the first time" with Try again and
+     Reload, not a crash. `vite.config.ts` keeps React, the router and Supabase in
+     `vendor-*.js` (437 KB), so a deploy that only changes app code leaves it cached. First
+     load: `index-*.js` 460 KB + `icons-*.js` 87 KB (the shared chunk, named after one
+     module) + vendor, 282 KB gzipped, from 1,162 KB / 323 KB in one file.
+     `useNewVersion` still keys on `assets/index-*.js`, which is still the entry.
+
 -17. Marking a course from the sofa, iPhone only (2026-11-06, evening). Web pushed and live
    (8050266, bundle index-DrkS4qKr, checked). TestFlight build 17 (Swift 22004f1) uploaded
    at 2:19 pm; Swift pushed. Matt is playing River Vale this weekend and OSM has

@@ -7,7 +7,7 @@ import { useNewVersion } from '../lib/useNewVersion'
 import { updatesHeld } from '../lib/holdUpdates'
 import { Avatar } from './ui'
 import { CompactTitleBar, useNavRecorder } from './Nav'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
 import { announceRouted } from '../lib/viewTransition'
 import { unlockAudio } from '../lib/sound'
 import LogRound from '../pages/LogRound'
@@ -18,6 +18,7 @@ import SaddamHandover from './SaddamHandover'
 import TrophyMoment from './TrophyMoment'
 import PullToRefresh from './PullToRefresh'
 import ErrorBoundary from './ErrorBoundary'
+import { warmPages } from '../lib/lazyPage'
 
 // The tab order is the app's opinion about what matters most often:
 // Home, Rounds, Log (centre), Trips, You, on a floating pill (Matt,
@@ -129,6 +130,11 @@ export default function Shell() {
   usePhotoOutboxFlush(data.rounds, updateRound)
   // A hole-map run the app was closed in the middle of carries on.
   useEffect(() => resumeMaps(), [])
+  // The screens that load on first tap, fetched once the app has settled.
+  useEffect(() => {
+    const timer = setTimeout(warmPages, 6000)
+    return () => clearTimeout(timer)
+  }, [])
   const newVersion = useNewVersion(() => {
     if (logOpen || pendingWrites > 0 || hasPendingPhotos() || updatesHeld()) return true
     // The live card and every screen that is one big form.
@@ -202,7 +208,9 @@ export default function Shell() {
         )}
         <main className="flex-1 px-4 pb-32 pt-3">
           <ErrorBoundary key={pathname}>
-            <Outlet />
+            <Suspense fallback={null}>
+              <Outlet />
+            </Suspense>
           </ErrorBoundary>
         </main>
 
