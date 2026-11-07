@@ -231,6 +231,14 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
      answers with a call but cannot store it, so the phone shows it once.
    - Not yet seen end to end: no real round has gone final since the deploy, and the
      demo mode hides the section. The first live check is the next group round.
+   - Fixed 2026-11-07 (recap v7, deployed through the connector): Matt's first "Hear the
+     call" (iPhone build 18, round 547ec974) got "The booth had nothing to say". Opus 5.5
+     always thinks and the thinking counts against `max_tokens`; at 600 the thinking used
+     it all and the answer had no text block (two 422s in the function log, about 8 s
+     each). Now `max_tokens: 8000` with `output_config.effort: 'low'`, and an empty answer
+     logs its `stop_reason` and usage. No client change: both apps already show the
+     function's error. That round still has no recap, so tapping again should work;
+     not yet confirmed by a real tap. Any new Opus 5.5 call needs the same headroom.
 
 -18. The review (2026-11-06, evening): the first load split, and the two-phone pushes.
    Web pushed and live (0dd1656, an empty deploy commit after a `[skip netlify]` head;

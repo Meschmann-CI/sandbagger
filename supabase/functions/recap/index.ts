@@ -87,9 +87,15 @@ Deno.serve(async (req) => {
 
   let text: string
   try {
+    // Opus 5.5 always thinks first, and the thinking counts against
+    // max_tokens. The first version allowed 600, the thinking used all of
+    // it, and the answer came back with no text (2026-11-07). The call
+    // itself is about 250 tokens; the rest is room to think. Low effort
+    // keeps the wait on the phone short.
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 600,
+      max_tokens: 8000,
+      output_config: { effort: 'low' },
       system: SYSTEM,
       messages: [{ role: 'user', content: `The round, as data:\n${factsText}\n\nCall it.` }],
     })
@@ -98,11 +104,15 @@ Deno.serve(async (req) => {
       .map((b) => (b as { text: string }).text)
       .join('\n')
       .trim()
+    if (!text) {
+      console.error('recap: no text', response.stop_reason, JSON.stringify(response.usage))
+      const why = response.stop_reason === 'refusal' ? 'The booth declined to call this one.' : 'The booth had nothing to say.'
+      return json({ error: `${why} Try again in a minute.` }, 422)
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     return json({ error: `The booth is dark right now (${message.slice(0, 120)}). Try again in a minute.` }, 502)
   }
-  if (!text) return json({ error: 'The booth had nothing to say.' }, 422)
   text = text.replace(/—/g, ',').slice(0, 1600)
 
   // First writer wins: a second phone asking at the same moment gets the
