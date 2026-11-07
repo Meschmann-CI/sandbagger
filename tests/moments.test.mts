@@ -20,6 +20,8 @@ export async function resolve(specifier, context, next) {
 const { roundMoments, trophiesKey, FINAL_KEY } = await import('../src/lib/roundMoments.ts')
 const { spectatorNews } = await import('../src/lib/spectate.ts')
 const { wasAnnounced, markAnnounced, forgetAnnounced } = await import('../src/lib/announced.ts')
+const { recapFacts } = await import('../src/lib/recapFacts.ts')
+const { courseSlug } = await import('../src/lib/courses.ts')
 
 let failures = 0
 function check(label: string, actual: unknown, expected: unknown) {
@@ -124,6 +126,24 @@ const keysOf = (ms: { keys: string[] }[]) => ms.flatMap((m) => m.keys).sort()
   check('announced: another round is its own', wasAnnounced('r2', FINAL_KEY), false)
   for (let i = 0; i < 70; i++) markAnnounced(`old-${i}`, 'turn')
   check('announced: the oldest rounds drop off', [wasAnnounced('r1', FINAL_KEY), wasAnnounced('old-69', 'turn')], [false, true])
+}
+
+// 6. The facts the booth calls the round from.
+{
+  const course = { id: 'c', groupId: G, name: 'Split Rock Golf Course', slug: courseSlug('Split Rock Golf Course'), pars: Array(18).fill(4) }
+  const barry = [4, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+  const pat = [5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 9]
+  const r = round([rp('barry', barry), rp('pat', pat)], { notes: 'Windy.' })
+  const d = data({ courses: [course], rounds: [r], chirps: [{ id: 'ch', roundId: 'live', fromId: 'nader', toId: 'pat', text: 'Nice snowman', at: '2026-10-24T20:00:00Z' }] })
+  const f = recapFacts(d, r, TODAY)
+  check('facts: standings by net, first names', f.golfers.map((g) => [g.name, g.gross, g.rank]), [['Barry', 74, 1], ['Pat', 78, 2]])
+  // Barry leads after 1, Pat ties on 2 (Barry keeps it), Pat ahead after 3, Barry back in front after Pat's 9 on 18.
+  check('facts: the lead story, by hole', f.leadChanges, [{ afterHole: 3, leader: 'Pat', from: 'Barry' }, { afterHole: 18, leader: 'Barry', from: 'Pat' }])
+  check('facts: the blow-up on 18, by hole', f.moments.map((m) => [m.hole, m.name, m.kind, m.score]), [[18, 'Pat', 'blowup', 9]])
+  check('facts: par, chirp, note', [f.par, f.chirps, f.note], [72, [{ from: 'Nader', to: 'Pat', text: 'Nice snowman' }], 'Windy.'])
+  const totals = round([{ playerId: 'barry', handicapSnapshot: 12, gross: 80 }, { playerId: 'pat', handicapSnapshot: 12, gross: 85 }])
+  const t = recapFacts(data({ courses: [course], rounds: [totals] }), totals, TODAY)
+  check('facts: totals only means no holes, no lead story', [t.golfers.map((g) => g.holes), t.leadChanges.length, t.moments.length], [[null, null], 0, 0])
 }
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)

@@ -1,5 +1,6 @@
 import type { RoundPatch } from '../lib/scorePatch'
-import type { AppData, Bet, BetResult, Chirp, Course, CourseRanking, CourseRating, Expense, Group, Payment, Player, Round, Trip } from '../types'
+import type { RecapFacts } from '../lib/recapFacts'
+import type { AppData, Bet, BetResult, Chirp, Course, CourseRanking, CourseRating, Expense, Group, Payment, Player, Round, RoundRecap, Trip } from '../types'
 
 // Every mutation the app can make. The store applies the change to its
 // own state optimistically and hands the same descriptor to the backend,
@@ -56,4 +57,9 @@ export interface Backend {
    * phone has, false when one already did (round_events). Cloud only.
    */
   claim?(roundId: string, key: string): Promise<boolean>
+  /**
+   * The call for a round, from the `recap` Edge Function: written once on
+   * the server and handed back, or the one already there. Cloud only.
+   */
+  recap?(roundId: string, facts: RecapFacts): Promise<RoundRecap>
 }

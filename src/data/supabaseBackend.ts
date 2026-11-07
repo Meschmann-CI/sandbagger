@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { AppData, Bet, Course, CourseRanking, CourseRating, Expense, Group, Payment, Player, Round, Trip } from '../types'
+import type { AppData, Bet, Course, CourseRanking, CourseRating, Expense, Group, Payment, Player, Round, RoundRecap, Trip } from '../types'
 import type { Backend, Change } from './backend'
+import type { RecapFacts } from '../lib/recapFacts'
 import { RetryLater } from './outbox'
 import type { RoundField } from '../lib/scorePatch'
 
@@ -130,6 +131,7 @@ const ROUND_COLUMNS: Record<RoundField, string> = {
   teeTime: 'tee_time',
   bookedById: 'booked_by',
   holeTimes: 'hole_times',
+  recap: 'recap',
 }
 
 const roundRow = (r: Round) => ({
@@ -150,6 +152,8 @@ const roundRow = (r: Round) => ({
   ...(r.teeTime ? { tee_time: r.teeTime } : {}),
   ...(r.bookedById ? { booked_by: r.bookedById } : {}),
   ...(r.holeTimes ? { hole_times: r.holeTimes } : {}),
+  // Written by the recap function; a phone's upsert never blanks it.
+  ...(r.recap ? { recap: r.recap } : {}),
 })
 
 const expenseRow = (e: Expense) => ({
@@ -378,6 +382,7 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
           bookedById: r.booked_by ?? undefined,
           greenFee: r.green_fee?.payerId ? { payerId: r.green_fee.payerId, amount: num(r.green_fee.amount) } : undefined,
           holeTimes: Array.isArray(r.hole_times) && r.hole_times.length ? r.hole_times : undefined,
+          recap: r.recap && typeof r.recap.text === 'string' ? { text: r.recap.text, at: String(r.recap.at ?? '') } : undefined,
           players: scoresByRound.get(r.id) ?? [],
         })),
         bets: (betsRes.data ?? []).map((b: any) => ({
@@ -686,6 +691,24 @@ export function makeSupabaseBackend(client: SupabaseClient, playerId: string, gr
       // Taken already: another phone's went out. Anything else (the table
       // not pasted yet, no signal) and this phone sends, as it always did.
       return error?.code !== '23505'
+    },
+
+    async recap(roundId: string, facts: RecapFacts) {
+      const { data, error } = await client.functions.invoke<{ recap?: RoundRecap; error?: string }>('recap', { body: { roundId, facts } })
+      if (error) {
+        // The function answers a refusal with a plain reason in the body.
+        const ctx = (error as { context?: Response }).context
+        const text = ctx && typeof ctx.text === 'function' ? await ctx.text().catch(() => '') : ''
+        let reason = ''
+        try {
+          reason = (JSON.parse(text) as { error?: string }).error ?? ''
+        } catch {
+          reason = ''
+        }
+        throw new Error(reason || error.message || 'The call didn’t come back')
+      }
+      if (!data?.recap?.text) throw new Error(data?.error || 'The booth had nothing to say')
+      return data.recap
     },
 
     subscribe(onRemoteChange: () => void) {

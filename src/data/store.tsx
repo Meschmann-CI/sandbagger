@@ -21,7 +21,8 @@ import { findRound, sortBookings } from '../lib/bookings'
 import { roundPatch } from '../lib/scorePatch'
 import { tripNews } from '../lib/tripNews'
 import { guardOwnHoles } from '../lib/scoringFor'
-import type { EarnedTrophy } from '../lib/trophyMoments'
+import { roundIsFinal, type EarnedTrophy } from '../lib/trophyMoments'
+import { recapFacts } from '../lib/recapFacts'
 import { roundMoments } from '../lib/roundMoments'
 import { markAnnounced, wasAnnounced } from '../lib/announced'
 import { notifyGroup, type PushMessage } from '../lib/push'
@@ -58,6 +59,10 @@ interface StoreApi {
   updateRound: (round: Round) => void
   /** Trophies this phone's golfer just earned, for the moment over the screen. */
   trophyMoment: TrophyMoment | null
+  /** Asks the booth for the call of a finished round. Resolves to an error to show, or null. */
+  writeRecap: (roundId: string) => Promise<string | null>
+  /** The round whose call is being written right now. */
+  recapBusy: string | null
   dismissTrophyMoment: () => void
   /** A reaction at a golfer in a live round; they get a push unless they've turned chirps off. */
   addChirp: (roundId: string, toId: string, text: string) => void
@@ -120,6 +125,9 @@ interface StoreApi {
 }
 
 const StoreContext = createContext<StoreApi | null>(null)
+
+/** The per-phone mark that the booth was asked for a round's call. */
+const RECAP_KEY = 'recap'
 
 // UUIDs so ids are valid in Postgres as well as localStorage.
 const makeId = () =>
@@ -223,6 +231,32 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
       }
       if (m.push) sendOnce(after.id, m.keys, m.push)
     }
+    // The call, once the last score is in (lib/recapFacts.ts). Marked
+    // here so a score cleared and typed again doesn't ask twice; the
+    // function itself writes once per round across phones.
+    if (after.players.length > 1 && roundIsFinal(after) && !(before && roundIsFinal(before)) && !after.recap && !wasAnnounced(after.id, RECAP_KEY)) {
+      markAnnounced(after.id, RECAP_KEY)
+      void writeRecap(after.id)
+    }
+  }
+  const [recapBusy, setRecapBusy] = useState<string | null>(null)
+  const writeRecap = async (roundId: string): Promise<string | null> => {
+    const d = dataRef.current
+    const round = findRound(d, roundId)
+    if (!round || !backend.recap) return 'The call needs the online app'
+    setRecapBusy(roundId)
+    try {
+      const recap = await backend.recap(roundId, recapFacts(d, round, todayISO()))
+      // The server has it; show it here now rather than on the next reload.
+      const next: AppData = { ...dataRef.current, rounds: dataRef.current.rounds.map((r) => (r.id === roundId ? { ...r, recap } : r)) }
+      dataRef.current = next
+      setData(next)
+      return null
+    } catch (err) {
+      return err instanceof Error ? err.message : String(err)
+    } finally {
+      setRecapBusy((b) => (b === roundId ? null : b))
+    }
   }
   const sendOnce = (roundId: string, keys: string[], push: PushMessage) => {
     if (!backend.claim || !keys.length) return notifyGroup(push)
@@ -271,6 +305,8 @@ export function StoreProvider({ backend, initial, children }: { backend: Backend
     data,
     trophyMoment,
     dismissTrophyMoment: () => setTrophyMoment(null),
+    writeRecap,
+    recapBusy,
     cloud: backend.cloud,
     // A write the server actually refused matters more than one that
     // simply hasn't gone out yet.

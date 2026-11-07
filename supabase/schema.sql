@@ -1039,3 +1039,7 @@ create policy round_events_select on round_events for select
 drop policy if exists round_events_insert on round_events;
 create policy round_events_insert on round_events for insert
   with check (round_id in (select id from rounds) and by_player = current_player_id());
+
+-- The call (2026-11-06): see apply-2026-11-06-recap.sql. {text, at}, written
+-- once by the `recap` Edge Function when the last score lands.
+alter table rounds add column if not exists recap jsonb;

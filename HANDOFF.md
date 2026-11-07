@@ -152,6 +152,33 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-19. The call (2026-11-06, late): a reverent broadcaster's account of each round, from the
+   brainstorm in `notes/ideas.md` (Matt: one voice only, follow the round, lead changes,
+   blow-ups, momentum, a quip or two, land on the winner). Web committed, not pushed; the
+   `recap` Edge Function is deployed (v1, through the connector, which auto mode allowed
+   tonight); the Swift port is in progress in this session.
+   - `supabase/functions/recap/index.ts`: signed-in member, `{roundId, facts}`; checks the
+     caller can see the round, returns the existing `rounds.recap` if there is one, else
+     calls `claude-opus-5-5` with the facts (never free text from the group except the
+     capped chirps) and writes `{text, at}` with `recap is null` so two phones asking at
+     once get one call. 130 to 190 words, no em dashes (replaced server-side too).
+   - `src/lib/recapFacts.ts` builds the facts: standings by net with first names, each
+     card when scored hole by hole, lead changes (`leadStory`), eagles, birdies and
+     blow-ups (`moments`), pace, trophies earned, sandbaggers, money by game, the last 8
+     chirps, the Saddam (holder, changed hands, defenses), the round note. Same shape in
+     BanditCore/RecapFacts.swift. Tests in `tests/moments.test.mts` section 6.
+   - `Round.recap` (`rounds.recap` jsonb, in ROUND_FIELDS, written on upsert only when
+     set); `Backend.recap`; `store.writeRecap` and `recapBusy`; the trigger at the end of
+     `announce` when a round with 2+ golfers goes final (per-phone key `recap` in the
+     announced list, so a cleared and re-typed score doesn't ask twice). `TheCall.tsx` on
+     the round page after the note: the text, or "Hear the call" for a finished round the
+     booth missed. Hidden in demo mode.
+   - Matt's step: paste `supabase/apply-2026-11-06-recap.sql` (`alter table rounds add
+     column if not exists recap jsonb`) before the push. Until then the function still
+     answers with a call but cannot store it, so the phone shows it once.
+   - Not yet seen end to end: no real round has gone final since the deploy, and the
+     demo mode hides the section. The first live check is the next group round.
+
 -18. The review (2026-11-06, evening): the first load split, and the two-phone pushes.
    Web pushed and live (0dd1656, an empty deploy commit after a `[skip netlify]` head;
    bundle index-B5LwLEuI + vendor-DcSduAV7, checked). Swift pushed (d68ea68), no

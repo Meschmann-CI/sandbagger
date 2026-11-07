@@ -218,6 +218,12 @@ export interface CourseRanking {
   slugs: string[]
 }
 
+export interface RoundRecap {
+  text: string
+  /** ISO instant it was written. */
+  at: string
+}
+
 export interface Round {
   id: string
   groupId: string
@@ -253,6 +259,8 @@ export interface Round {
   bookedById?: string
   /** Green fees one golfer paid for the tee time, a head. Unset: paid at the course. */
   greenFee?: GreenFee
+  /** The call: a broadcaster's account of the round, written once when the last score lands (supabase/functions/recap). */
+  recap?: RoundRecap
   /**
    * Pace of play: the moment each hole's first score landed, an ISO
    * instant or null per hole (src/lib/pace.ts). Stamped by the live card
