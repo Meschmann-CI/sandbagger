@@ -336,6 +336,8 @@ export interface TripOption {
   pros: string[]
   cons: string[]
   votes: string[] // playerIds; one vote per player per trip
+  /** Struck from the vote by the commissioner (lib/commissioner.ts): who did it. */
+  vetoedById?: string
   // A photo of the place someone picked: its URL in the round-photos
   // bucket (a data URL on the demo). Rides inside the trip's options.
   photo?: string

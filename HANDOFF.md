@@ -152,9 +152,23 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-20. The commissioner (2026-11-07): whoever holds the Saddam, no election, no new field
+   (`commissionerId` in `src/lib/commissioner.ts` is `saddamState().holderId`). Three
+   powers, Matt's "keep it simple for now": a tied trip vote goes the commissioner's way
+   (their own vote on a tied option makes it "Commissioner's call"; a tie without their
+   vote leads nowhere and shows "Tied"), a veto (`TripOption.vetoedById`, struck through,
+   "Vetoed by Ravi", no vote button, last in the list, off the Trips page race; the
+   commissioner sees Veto / Reinstate; it rides in the trip's options jsonb, no SQL), and
+   first pick in the round playlist once that exists. `voteRace()` is the one source for
+   leading, tied, vetoed in `TripPlanning.tsx` and the Trips page's `VoteRace`; Home's
+   Saddam line ends "Commissioner until someone takes it." Tests: `tests/moments.test.mts`
+   section 7. The longer powers menu is parked in `notes/ideas.md`. Web committed, not
+   pushed; Swift port in progress in this session.
+
 -19. The call (2026-11-06, late): a reverent broadcaster's account of each round, from the
    brainstorm in `notes/ideas.md` (Matt: one voice only, follow the round, lead changes,
-   blow-ups, momentum, a quip or two, land on the winner). Web committed, not pushed; the
+   blow-ups, momentum, a quip or two, land on the winner). Web pushed and live (cc3f820,
+   bundle index-ByXyGsWX, checked), Swift pushed (6071cf7), SQL pasted by Matt; the
    `recap` Edge Function is deployed (v1, through the connector, which auto mode allowed
    tonight); the Swift port is committed in the Swift repo (100 package tests, iPhone build
    green), not pushed. Both repos wait on Matt's say-so to push, after the SQL paste.

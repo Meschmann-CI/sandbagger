@@ -6,6 +6,7 @@ import { useConfirm } from './Confirm'
 import { Icon } from './icons'
 import CourseScene from './CourseScene'
 import TripPhotoPicker, { TripImage } from './TripPhotoPicker'
+import { commissionerId, voteRace } from '../lib/commissioner'
 
 // Where are we going: each destination with its photo, the vote as a race
 // (a bar for each place, filled by its share of the people going), the
@@ -17,11 +18,16 @@ export default function TripPlanning({ trip }: { trip: Trip }) {
   const confirm = useConfirm()
   const [newDest, setNewDest] = useState('')
 
-  const sorted = trip.options
-    .map((o, i) => ({ o, i }))
-    .sort((a, b) => b.o.votes.length - a.o.votes.length || a.i - b.i)
-    .map((x) => x.o)
-  const top = Math.max(0, ...trip.options.map((o) => o.votes.length))
+  // The commissioner (whoever holds the Saddam) breaks a tie with their
+  // own vote and can strike an option (lib/commissioner.ts).
+  const me = data.currentUserId
+  const commissioner = commissionerId(data)
+  const commissionerName = commissioner ? (data.players.find((p) => p.id === commissioner)?.name.split(' ')[0] ?? null) : null
+  const race = voteRace(trip, commissioner)
+  const sorted = race.options
+  const top = Math.max(0, ...trip.options.filter((o) => !o.vetoedById).map((o) => o.votes.length))
+  const setVeto = (option: TripOption, on: boolean) =>
+    updateTrip({ ...trip, options: trip.options.map((o) => (o.id === option.id ? { ...o, vetoedById: on ? me : undefined } : o)) })
   const voted = new Set(trip.options.flatMap((o) => o.votes))
   const waiting = trip.attendeeIds
     .filter((id) => !voted.has(id))
@@ -62,20 +68,32 @@ export default function TripPlanning({ trip }: { trip: Trip }) {
       >
         The vote
       </SectionLabel>
+      {commissionerName && trip.options.length > 0 && (
+        <p className="-mt-1 mb-2.5 px-1 text-footnote text-ink-dim">
+          {commissioner === me ? 'You have' : `${commissionerName} has`} the Saddam, so a tie goes {commissioner === me ? 'your' : `${commissionerName}’s`} way, and {commissioner === me ? 'you' : commissionerName} can veto any of these.
+        </p>
+      )}
       {sorted.length === 0 && (
         <Card className="p-5 text-center text-footnote text-ink-dim">Nothing on the table yet. Add the first contender below, then everyone votes.</Card>
       )}
       <div className="space-y-3">
         {sorted.map((option) => {
-          const leading = option.votes.length > 0 && option.votes.length === top
+          const leading = race.leadingId === option.id
+          const tied = race.tied && !option.vetoedById && top > 0 && option.votes.length === top
+          const badge = leading ? (race.decided === 'commissioner' ? 'Commissioner’s call' : 'Leading') : tied ? 'Tied' : null
+          const vetoedBy = option.vetoedById ? (data.players.find((p) => p.id === option.vetoedById)?.name.split(' ')[0] ?? 'the commissioner') : null
           return (
             <OptionCard
               key={option.id}
               trip={trip}
               option={option}
               leading={leading}
-              expandedByDefault={leading || sorted.length === 1 || top === 0}
+              badge={badge}
+              vetoedBy={vetoedBy}
+              canVeto={commissioner === me}
+              expandedByDefault={!option.vetoedById && (leading || sorted.length === 1 || top === 0)}
               onVote={() => voteTripOption(trip.id, option.id)}
+              onVeto={() => setVeto(option, !option.vetoedById)}
               onLockIn={() => void lockIn(option)}
             />
           )
@@ -102,15 +120,25 @@ function OptionCard({
   trip,
   option,
   leading,
+  badge,
+  vetoedBy,
+  canVeto,
   expandedByDefault,
   onVote,
+  onVeto,
   onLockIn,
 }: {
   trip: Trip
   option: TripOption
   leading: boolean
+  /** "Leading", "Commissioner’s call", "Tied", or nothing. */
+  badge: string | null
+  /** Struck from the vote: by whom. */
+  vetoedBy: string | null
+  canVeto: boolean
   expandedByDefault: boolean
   onVote: () => void
+  onVeto: () => void
   onLockIn: () => void
 }) {
   const { data, updateTrip } = useStore()
@@ -153,8 +181,12 @@ function OptionCard({
           <TripImage photo={option.photo} className="h-full w-full" fallback={<CourseScene course={option.title} light="morning" className="h-[104px] w-full" />} />
           <div className="absolute inset-0 bg-gradient-to-b from-black/0 from-35% to-black/50" />
           <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 px-3.5 pb-2.5">
-            <p className="min-w-0 flex-1 truncate text-headline font-bold text-white [text-shadow:0_1px_8px_rgba(0,0,0,0.3)]">{option.title}</p>
-            {leading && <span className="shrink-0 rounded-full bg-gold-soft px-2 py-0.5 text-caption font-bold text-[#7A5A12]">Leading</span>}
+            <p className={`min-w-0 flex-1 truncate text-headline font-bold text-white [text-shadow:0_1px_8px_rgba(0,0,0,0.3)] ${vetoedBy ? 'line-through opacity-70' : ''}`}>{option.title}</p>
+            {vetoedBy ? (
+              <span className="shrink-0 rounded-full bg-flag-soft px-2 py-0.5 text-caption font-bold text-flag">Vetoed by {vetoedBy}</span>
+            ) : (
+              badge && <span className="shrink-0 rounded-full bg-gold-soft px-2 py-0.5 text-caption font-bold text-[#7A5A12]">{badge}</span>
+            )}
           </div>
         </div>
         <div className="absolute right-2.5 top-2.5">
@@ -173,7 +205,7 @@ function OptionCard({
 
       {/* The race: this place's share of the people going. */}
       <div className="h-1.5 bg-line/70">
-        <div className={`h-full transition-[width] duration-300 ${leading ? 'bg-green' : 'bg-green/40'}`} style={{ width: `${share * 100}%` }} />
+        <div className={`h-full transition-[width] duration-300 ${vetoedBy ? 'bg-ink/20' : leading ? 'bg-green' : 'bg-green/40'}`} style={{ width: `${share * 100}%` }} />
       </div>
 
       <div className="flex items-center gap-2 px-3.5 pt-2.5">
@@ -190,14 +222,22 @@ function OptionCard({
         <span className="flex-1" />
         {/* Toggled through its own change rather than by writing the whole
             trip back, so two people voting at once don't clash. */}
-        <button
-          onClick={onVote}
-          className={`rounded-lg px-3.5 py-2 text-footnote font-bold transition ${myPick ? 'bg-green text-white' : 'bg-green-soft text-green active:scale-95'}`}
-        >
-          {myPick ? 'Your pick ✓' : 'Vote'}
-        </button>
+        {!vetoedBy && (
+          <button
+            onClick={onVote}
+            className={`rounded-lg px-3.5 py-2 text-footnote font-bold transition ${myPick ? 'bg-green text-white' : 'bg-green-soft text-green active:scale-95'}`}
+          >
+            {myPick ? 'Your pick ✓' : 'Vote'}
+          </button>
+        )}
+        {/* The commissioner's veto, and the way back from it. */}
+        {canVeto && (
+          <button onClick={onVeto} className={`rounded-lg px-3.5 py-2 text-footnote font-bold ${vetoedBy ? 'bg-ink/[0.06] text-ink-dim active:bg-ink/10' : 'bg-flag-soft text-flag active:scale-95'}`}>
+            {vetoedBy ? 'Reinstate' : 'Veto'}
+          </button>
+        )}
         {/* Only the organizer calls it, so nobody books the trip by mistake. */}
-        {trip.createdById === me && (
+        {trip.createdById === me && !vetoedBy && (
           <button onClick={onLockIn} className="rounded-lg bg-ink/[0.06] px-3.5 py-2 text-footnote font-bold text-ink-dim active:bg-ink/10">
             Lock in
           </button>

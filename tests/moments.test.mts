@@ -22,6 +22,7 @@ const { spectatorNews } = await import('../src/lib/spectate.ts')
 const { wasAnnounced, markAnnounced, forgetAnnounced } = await import('../src/lib/announced.ts')
 const { recapFacts } = await import('../src/lib/recapFacts.ts')
 const { courseSlug } = await import('../src/lib/courses.ts')
+const { voteRace } = await import('../src/lib/commissioner.ts')
 
 let failures = 0
 function check(label: string, actual: unknown, expected: unknown) {
@@ -144,6 +145,22 @@ const keysOf = (ms: { keys: string[] }[]) => ms.flatMap((m) => m.keys).sort()
   const totals = round([{ playerId: 'barry', handicapSnapshot: 12, gross: 80 }, { playerId: 'pat', handicapSnapshot: 12, gross: 85 }])
   const t = recapFacts(data({ courses: [course], rounds: [totals] }), totals, TODAY)
   check('facts: totals only means no holes, no lead story', [t.golfers.map((g) => g.holes), t.leadChanges.length, t.moments.length], [[null, null], 0, 0])
+}
+
+// 7. The commissioner's two powers on a trip vote: a tie goes their way, a veto is off the board.
+{
+  const opt = (id: string, votes: string[], vetoedById?: string) => ({ id, title: id, pros: [], cons: [], votes, vetoedById })
+  const trip = (options: ReturnType<typeof opt>[]) => ({ id: 't', groupId: G, name: 'Spring', status: 'planning' as const, attendeeIds: ids, createdById: 'matt', options, itinerary: [] })
+  const clear = voteRace(trip([opt('az', ['matt', 'pat']), opt('fl', ['barry'])]), 'nader')
+  check('race: a clear leader is by the votes', [clear.leadingId, clear.tied, clear.decided], ['az', false, 'votes'])
+  const tie = voteRace(trip([opt('az', ['matt']), opt('fl', ['barry'])]), 'nader')
+  check('race: a tie with no call from the commissioner leads nowhere', [tie.leadingId, tie.tied, tie.decided], [null, true, null])
+  const call = voteRace(trip([opt('az', ['matt']), opt('fl', ['nader'])]), 'nader')
+  check("race: the commissioner's vote breaks the tie", [call.leadingId, call.decided], ['fl', 'commissioner'])
+  const veto = voteRace(trip([opt('az', ['matt', 'pat'], 'nader'), opt('fl', ['barry'])]), 'nader')
+  check('race: a vetoed option is last and cannot lead', [veto.options.map((o) => o.id), veto.leadingId], [['fl', 'az'], 'fl'])
+  check('race: no commissioner, a tie stays a tie', voteRace(trip([opt('az', ['matt']), opt('fl', ['nader'])]), null).leadingId, null)
+  check('race: nothing voted', voteRace(trip([opt('az', []), opt('fl', [])]), 'nader').decided, null)
 }
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)

@@ -497,7 +497,7 @@ function SeasonRace({
       {holder && (
         <p className="text-footnote text-on-forest/75">
           {holder.id === meId ? 'You have' : `${first(holder.name)} has`} the Saddam
-          {saddamSince && ` since ${shortDate(saddamSince).replace(/, \d{4}$/, '')}`}.
+          {saddamSince && ` since ${shortDate(saddamSince).replace(/, \d{4}$/, '')}`}. Commissioner until someone takes it.
         </p>
       )}
     </button>

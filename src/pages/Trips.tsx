@@ -1,6 +1,7 @@
 import { useNavigate } from '../lib/nav'
 import { useStore, useMembers } from '../data/store'
 import { timeToMinutes, tripBoard } from '../lib/stats'
+import { commissionerId, voteRace } from '../lib/commissioner'
 import { daysBetween, shortDay, todayISO, tripDateRange, weekdayShort } from '../lib/dates'
 import { money } from '../lib/money'
 import { canSeeTrip, type Trip } from '../types'
@@ -177,9 +178,10 @@ function VoteRace({ trip }: { trip: Trip }) {
   const me = data.currentUserId
   const voters = new Set(trip.options.flatMap((o) => o.votes))
   const going = Math.max(trip.attendeeIds.length, 1)
-  // Most votes first; ties keep the order they were added in.
-  const options = trip.options.map((o, i) => ({ o, i })).sort((a, b) => b.o.votes.length - a.o.votes.length || a.i - b.i).map((x) => x.o)
-  const top = options[0]?.votes.length ?? 0
+  // Most votes first, ties in the order added; a vetoed option is off the
+  // board here, and a tie leads only by the commissioner's call.
+  const race = voteRace(trip, commissionerId(data))
+  const options = race.options.filter((o) => !o.vetoedById)
   const missing = trip.attendeeIds
     .filter((id) => !voters.has(id))
     .map((id) => data.players.find((p) => p.id === id)?.name)
@@ -208,7 +210,7 @@ function VoteRace({ trip }: { trip: Trip }) {
         <>
           <div className="mt-2.5 space-y-1.5">
             {options.slice(0, 4).map((o) => {
-              const lead = top > 0 && o.votes.length === top
+              const lead = race.leadingId === o.id
               return (
                 <div key={o.id} className="flex items-center gap-2.5">
                   <span className={`w-[118px] shrink-0 truncate text-footnote ${o.votes.length === 0 ? 'text-ink-faint' : 'text-ink'} ${lead ? 'font-semibold' : ''}`}>
