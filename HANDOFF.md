@@ -246,8 +246,8 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
      are fine, events are not) and keeps the Saddam as the prize everyone wants. The
      function now puts the weekday from `facts.date` in the message, since the booth's
      "Sunday afternoon" prompt made the Ferry Point call say Sunday for a Saturday round.
-     Calls already stored (only Ferry Point, adcaec0b) keep the old voice unless that
-     row's `recap` is cleared. The UI copy still says "the booth" ("Hear the call",
+     The one stored call (Ferry Point, adcaec0b) was cleared on Matt's say-so the same
+     day so it gets told again in the new voice; no other round had one. The UI copy still says "the booth" ("Hear the call",
      "The booth hasn't called this one yet").
 
 -18. The review (2026-11-06, evening): the first load split, and the two-phone pushes.
