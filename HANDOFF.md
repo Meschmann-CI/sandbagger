@@ -152,6 +152,17 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-22. Matt's three from the 2026-11-08 round (build 18, iPhone and watch), committed, not
+   pushed, no TestFlight build yet. Details in the Swift README's State. (1) The last
+   golfer's putts were skipped: a typed score walked the pad past the last golfer straight
+   to the next hole. Both apps now stop on the hole after the last golfer's score (Next
+   hole moves on); web `advance(quiet, auto)` in `HoleEntry.tsx`. (2) More than one Live
+   Activity on the lock screen: the iPhone now keeps exactly one (reuse this round's, end
+   every other at once, including a finished card's 30-minute linger and leftovers from an
+   earlier launch). (3) The watch's middle yardage truncated to "2…" on the smallest
+   watch: the club gives way and the number shrinks instead. Needs a push of both repos
+   and a TestFlight build (19) when Matt says.
+
 -21. The round playlist (2026-11-07): half the group is on Apple Music, half on Spotify,
    so the list lives in Bandit and each golfer takes it to their own service. Web pushed and
    live (90d651b, bundle index-Yq6HzskQ, checked); Swift pushed (49af704), 114 package

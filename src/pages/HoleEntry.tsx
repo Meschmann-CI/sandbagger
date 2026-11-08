@@ -435,10 +435,20 @@ export default function HoleEntry() {
   // view, everyone.
   const walk = view === 'hole' ? order : round.players.map((rp) => rp.playerId)
   const isLastGolfer = !!cur && walk[walk.length - 1] === cur.playerId
-  const advance = (quiet = false) => {
+  // `auto` is the pad moving on by itself after a score. On the Hole view
+  // it walks the golfers but never leaves the hole: the last golfer's putts
+  // sit under the pad too, so the hole moves on with Next hole (Matt,
+  // 2026-11-08: Pat's score took the card on before his putts went in).
+  const advance = (quiet = false, auto = false) => {
     if (!cur) return
     const i = walk.indexOf(cur.playerId)
     if (i >= 0 && i < walk.length - 1) return select({ playerId: walk[i + 1], hole: cur.hole }, quiet)
+    if (auto && view === 'hole') {
+      setActive(cur)
+      setHole(cur.hole)
+      setBuffer('')
+      return
+    }
     if (cur.hole < HOLE_COUNT - 1) return select({ playerId: walk[0], hole: cur.hole + 1 }, quiet)
     if (!quiet) leaveCell()
     setActive(null)
@@ -454,7 +464,7 @@ export default function HoleEntry() {
     if (buffer === '1' && d >= 0 && d <= 9) {
       setScore(cur.playerId, cur.hole, 10 + d)
       setBuffer('')
-      advance(true)
+      advance(true, true)
       return
     }
     if (d === 0) return
@@ -462,7 +472,7 @@ export default function HoleEntry() {
     setBuffer(String(d))
     if (d !== 1) {
       celebrate(cur.playerId, cur.hole, d)
-      advance()
+      advance(false, true)
     }
   }
 
