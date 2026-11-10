@@ -152,6 +152,40 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
+-23. Game-day Home and the round story (2026-11-09, both apps, committed, NOT pushed, no
+   TestFlight build). From a fresh-eyes walk of the demo: Home didn't change on the day of
+   a round and a finished round had no shape. Matt approved both from a side-by-side
+   (canvas https://claude.ai/artifact/2pdQshEwYi4KbC2hac13rr) with "Build both".
+   - Game day: `src/lib/gameDay.ts` (`gameDayRound`: today's booking this golfer is
+     playing, nobody scored yet; `gameDayLines`: At stake (the Saddam, from the holder's
+     side or the challenger's), You two (the head-to-head, all time) or Season (wins this
+     year for a threesome or more), Money (the bets on it, and what's already owed between
+     you and the golfers playing); `teeOffIn`). Home swaps the season race for
+     `GameDayBand` (tee time, course, tees and yards when known, the forecast, who's in,
+     the lines, a cream Start the card) and shows the season as one row under the band
+     (`SeasonStrip`). The booking leaves the Up next rows that day. Once a score lands
+     it's a live round and the strip takes over, as before. Any other day Home is unchanged.
+   - Round story: `src/lib/roundStory.ts` (`roundStory`: a line per golfer with a full
+     card, net to par after each hole with the handicap spread evenly so each line ends on
+     the podium's number; up to three beats by weight: the lead change the winner kept,
+     eagles, blow-ups, birdies; null without all eighteen pars or any full card).
+     `components/RoundStory.tsx` draws "How it went" under the note. The round page's
+     order is now podium, note, How it went, the call, green fees and money, the chores,
+     scorecard, card, photos, playlist.
+   - The demo's July 4 round at Cobbs Creek is scored hole by hole in both seeds, so the
+     demo has a card, a hole history and a story.
+   - Tests: `tests/moments.test.mts` sections 8 and 9. Checked in Chromium on the demo
+     (the chart, the beats, the band with a booking moved to today). Not seen: the
+     forecast in the band (no network in the sandbox) and a real round's chart.
+   - Swift: ported by an Opus agent the same day (`BanditCore/GameDay.swift`,
+     `RoundStory.swift`, their tests, `Bandit/RoundStory.swift`, HomeView, RoundDetailView);
+     122 package tests, iPhone build green, both screens checked on the simulator's demo.
+     The Swift README's State has the detail.
+   - Next: Matt's say-so to push both repos (one web push), then TestFlight build 20.
+     The first booked round is the check for the band; the next hole-by-hole round for
+     the chart. Not built from the mock: "Songs" as a round button (the playlist only
+     moved below the photos).
+
 -22. Matt's three from the 2026-11-08 round (build 18, iPhone and watch), web pushed and
    live (d911171, bundle index-D91sVbio, checked), Swift pushed (2e36aeb), TestFlight build
    1.0 (19) uploaded 2026-11-08 at 5:02 pm. Everyone should take 19. Details in the Swift README's State. (1) The last
