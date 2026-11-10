@@ -152,8 +152,10 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
 
 ## Next actions
 
--23. Game-day Home and the round story (2026-11-09, both apps, committed, NOT pushed, no
-   TestFlight build). From a fresh-eyes walk of the demo: Home didn't change on the day of
+-23. Game-day Home and the round story (2026-11-09, both apps). Web pushed and live
+   (ec1178c, an empty deploy commit over the `[skip netlify]` HANDOFF head; bundle
+   index-DLSL9Nf6, the new strings checked on it). Swift pushed (5ea25d0, Build 20) and
+   TestFlight build 1.0 (20) uploaded 2026-11-09 at 7:46 pm. Everyone should take 20. From a fresh-eyes walk of the demo: Home didn't change on the day of
    a round and a finished round had no shape. Matt approved both from a side-by-side
    (canvas https://claude.ai/artifact/2pdQshEwYi4KbC2hac13rr) with "Build both".
    - Game day: `src/lib/gameDay.ts` (`gameDayRound`: today's booking this golfer is
@@ -181,8 +183,7 @@ Read this first. `README.md` and `SETUP.md` cover running and deploying it;
      `RoundStory.swift`, their tests, `Bandit/RoundStory.swift`, HomeView, RoundDetailView);
      122 package tests, iPhone build green, both screens checked on the simulator's demo.
      The Swift README's State has the detail.
-   - Next: Matt's say-so to push both repos (one web push), then TestFlight build 20.
-     The first booked round is the check for the band; the next hole-by-hole round for
+   - Next: the first booked round is the check for the band; the next hole-by-hole round for
      the chart. Not built from the mock: "Songs" as a round button (the playlist only
      moved below the photos).
 
