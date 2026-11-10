@@ -154,10 +154,11 @@ export const seedData: AppData = {
     {
       id: 'r-h3', groupId: 'g-1', date: '2026-07-04', courseName: 'Cobbs Creek', tee: 'White',
       players: [
-        { playerId: 'p-alex', gross: 86, handicapSnapshot: 11.2 },
-        { playerId: 'p-ravi', gross: 91, handicapSnapshot: 14.8 },
-        { playerId: 'p-danny', gross: 95, handicapSnapshot: 17.5 },
-        { playerId: 'p-kim', gross: 99, handicapSnapshot: 21.0 },
+        // Scored hole by hole, so the demo has a card, a hole history and a round story.
+        { playerId: 'p-alex', gross: 86, handicapSnapshot: 11.2, holes: [5, 5, 4, 5, 4, 4, 6, 5, 5, 4, 4, 6, 5, 5, 5, 4, 5, 5] },
+        { playerId: 'p-ravi', gross: 91, handicapSnapshot: 14.8, holes: [4, 6, 3, 5, 6, 4, 6, 5, 5, 6, 4, 5, 6, 5, 6, 4, 6, 5] },
+        { playerId: 'p-danny', gross: 95, handicapSnapshot: 17.5, holes: [5, 6, 5, 5, 5, 4, 4, 6, 5, 5, 4, 8, 6, 6, 5, 5, 6, 5] },
+        { playerId: 'p-kim', gross: 99, handicapSnapshot: 21.0, holes: [6, 6, 4, 6, 5, 5, 6, 6, 6, 5, 5, 6, 6, 5, 6, 4, 7, 5] },
       ],
     },
     {

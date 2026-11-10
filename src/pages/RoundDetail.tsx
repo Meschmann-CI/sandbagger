@@ -22,6 +22,7 @@ import Scorecard from '../components/Scorecard'
 import RoundPhotos from '../components/RoundPhotos'
 import RoundNote from '../components/RoundNote'
 import TheCall from '../components/TheCall'
+import RoundStory from '../components/RoundStory'
 import Playlist from '../components/Playlist'
 import { paceLine, paceOf } from '../lib/pace'
 import { shareWatchLink, watchLink } from '../lib/watchLink'
@@ -433,11 +434,151 @@ function PlayedRound() {
       {/* The round's own line, from whoever was there. */}
       <RoundNote round={round} />
 
+      {/* How it went: the chart and its beats, on a round with full cards. */}
+      <RoundStory round={round} />
+
       {/* The booth's call of the round, once the last score is in. */}
       <TheCall round={round} />
 
-      {/* The round's playlist, for whoever has the aux cord. */}
-      <Playlist round={round} />
+      {/* Money next (2026-11-09): what the day cost comes before the chores and the card. */}
+      <GreenFeeSection round={round} />
+
+      {(bets.length > 0 || addingBet) && (
+        <SectionLabel
+          action={
+            bets.length > 0 && !addingBet ? (
+              <span className="flex items-baseline gap-4">
+                <button onClick={() => setEditingBets((e) => !e)} className="text-footnote font-bold text-ink-dim">
+                  {editingBets ? 'Done' : 'Edit'}
+                </button>
+                {!editingBets && (
+                  <button onClick={() => setAddingBet(true)} className="text-footnote font-bold text-green">Add bet</button>
+                )}
+              </span>
+            ) : undefined
+          }
+        >
+          Money games
+        </SectionLabel>
+      )}
+
+      {addingBet && <AddGames round={round} onDone={() => setAddingBet(false)} />}
+      {readingCard && <GameCardSheet type={readingCard} onClose={() => setReadingCard(null)} />}
+
+      {/* What the bets add up to between people, and how to make it stop
+          being true. Money won on a round is a permanent record; this is
+          about whether it's actually changed hands. */}
+      {(bets.length > 0 || round.greenFee || roundPaybacks.length > 0) && (
+        <Card className={`mb-3 p-4 ${!bets.length ? 'mt-3 ' : ''}${betsOwed.length === 0 ? 'bg-green-soft/50 border-green/25' : 'bg-gold-soft/40 border-gold/30'}`}>
+          <p className="text-footnote font-bold text-ink mb-2.5">Settle up</p>
+          {round.greenFee && round.greenFee.amount > 0 && (
+            <p className="-mt-1.5 mb-2.5 text-caption text-ink-faint">
+              Includes green fees: {money(round.greenFee.amount)} a head to{' '}
+              {round.greenFee.payerId === data.currentUserId ? 'you' : data.players.find((p) => p.id === round.greenFee!.payerId)?.name.split(' ')[0]}.
+            </p>
+          )}
+          <SettleUp
+            url={`/rounds/${round.id}`}
+            owed={betsOwed}
+            note={`${round.courseName} (Bandit)`}
+            squareLabel="All settled. Nobody owes anybody for this one."
+            onMarkPaid={(s) =>
+              addPayment({ roundId: round.id, fromId: s.fromId, toId: s.toId, amount: s.amount, date: todayISO() })
+            }
+          />
+          {roundPaybacks.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-gold/25 space-y-1.5">
+              {roundPaybacks.map((p) => (
+                <div key={p.id} className="flex items-center gap-2 text-footnote">
+                  <span className="flex-1 text-ink-dim">
+                    <span className="font-bold text-ink">{data.players.find((x) => x.id === p.fromId)?.name}</span> paid{' '}
+                    <span className="font-bold text-ink">{data.players.find((x) => x.id === p.toId)?.name}</span>{' '}
+                    <span className="font-bold tabular-nums text-green">{money(p.amount)}</span>
+                  </span>
+                  {editingBets && (
+                    <button onClick={() => deletePayment(p.id)} className="text-caption font-bold text-ink-faint shrink-0">
+                      Undo
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {bets.length > 0 && (
+        <>
+          <div className="space-y-3">
+            {bets.map((bet) => {
+              // The card's verdict as it stands — "2 up thru 14", "3
+              // holes judged" — for bets that settle from the card.
+              const live = settleFromCard(bet, round, course)
+              const status = live && betStatus(live.detail, (id) => data.players.find((p) => p.id === id)?.name)
+              // The money shown is the card's too, the same numbers
+              // Standings and Settle up read (lib/betMoney.ts).
+              const results = live ? live.results : bet.results
+              return (
+              <Card key={bet.id} className="p-4">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="font-bold text-body text-ink min-w-0 truncate">{bet.name}</p>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {gameCard(bet.type) ? (
+                      <button
+                        type="button"
+                        onClick={() => setReadingCard(bet.type)}
+                        aria-label={`How ${bet.name} works`}
+                        className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-line-strong bg-card text-caption font-extrabold leading-none text-ink-faint"
+                      >
+                        ?
+                      </button>
+                    ) : (
+                      <HelpTip {...rulesFor(bet)} />
+                    )}
+                    <p className="text-caption text-ink-faint tabular-nums">{money(bet.stake)} stake</p>
+                    {editingBets && (
+                    <button
+                      onClick={async () => {
+                        const ok = await confirm({
+                          title: `Remove "${bet.name}"?`,
+                          body: 'The money from this bet comes back off everyone\'s all-time total.',
+                          confirmLabel: 'Remove bet',
+                          danger: true,
+                        })
+                        if (ok) deleteBet(bet.id)
+                      }}
+                      className="text-caption font-bold text-flag"
+                    >
+                      Remove
+                    </button>
+                    )}
+                  </div>
+                </div>
+                {status && (
+                  <p className={`text-footnote mt-1 font-semibold ${live?.computable ? 'text-ink-dim' : 'text-gold'}`}>
+                    {live?.computable ? status : `Live: ${status}`}
+                  </p>
+                )}
+                <div className="mt-2.5 space-y-1.5">
+                  {[...results]
+                    .sort((a, b) => b.amount - a.amount)
+                    .map((res) => {
+                      const p = data.players.find((pl) => pl.id === res.playerId)
+                      if (!p) return null
+                      return (
+                        <div key={res.playerId} className="flex items-center justify-between text-footnote">
+                          <span className="text-ink-dim">{p.name}</span>
+                          <MoneyBadge amount={res.amount} />
+                        </div>
+                      )
+                    })}
+                </div>
+              </Card>
+              )
+            })}
+          </div>
+        </>
+      )}
 
       {/* Attesting, once every hole is in: sign it and the card turns over. */}
       {iPlayed && anyCards(round) && round.players.every(cardComplete) && (
@@ -639,144 +780,8 @@ function PlayedRound() {
         <RoundPhotos round={round} openerRef={openPhotos} />
       </div>
 
-      <GreenFeeSection round={round} />
-
-      {(bets.length > 0 || addingBet) && (
-        <SectionLabel
-          action={
-            bets.length > 0 && !addingBet ? (
-              <span className="flex items-baseline gap-4">
-                <button onClick={() => setEditingBets((e) => !e)} className="text-footnote font-bold text-ink-dim">
-                  {editingBets ? 'Done' : 'Edit'}
-                </button>
-                {!editingBets && (
-                  <button onClick={() => setAddingBet(true)} className="text-footnote font-bold text-green">Add bet</button>
-                )}
-              </span>
-            ) : undefined
-          }
-        >
-          Money games
-        </SectionLabel>
-      )}
-
-      {addingBet && <AddGames round={round} onDone={() => setAddingBet(false)} />}
-      {readingCard && <GameCardSheet type={readingCard} onClose={() => setReadingCard(null)} />}
-
-      {/* What the bets add up to between people, and how to make it stop
-          being true. Money won on a round is a permanent record; this is
-          about whether it's actually changed hands. */}
-      {(bets.length > 0 || round.greenFee || roundPaybacks.length > 0) && (
-        <Card className={`mb-3 p-4 ${!bets.length ? 'mt-3 ' : ''}${betsOwed.length === 0 ? 'bg-green-soft/50 border-green/25' : 'bg-gold-soft/40 border-gold/30'}`}>
-          <p className="text-footnote font-bold text-ink mb-2.5">Settle up</p>
-          {round.greenFee && round.greenFee.amount > 0 && (
-            <p className="-mt-1.5 mb-2.5 text-caption text-ink-faint">
-              Includes green fees: {money(round.greenFee.amount)} a head to{' '}
-              {round.greenFee.payerId === data.currentUserId ? 'you' : data.players.find((p) => p.id === round.greenFee!.payerId)?.name.split(' ')[0]}.
-            </p>
-          )}
-          <SettleUp
-            url={`/rounds/${round.id}`}
-            owed={betsOwed}
-            note={`${round.courseName} (Bandit)`}
-            squareLabel="All settled. Nobody owes anybody for this one."
-            onMarkPaid={(s) =>
-              addPayment({ roundId: round.id, fromId: s.fromId, toId: s.toId, amount: s.amount, date: todayISO() })
-            }
-          />
-          {roundPaybacks.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gold/25 space-y-1.5">
-              {roundPaybacks.map((p) => (
-                <div key={p.id} className="flex items-center gap-2 text-footnote">
-                  <span className="flex-1 text-ink-dim">
-                    <span className="font-bold text-ink">{data.players.find((x) => x.id === p.fromId)?.name}</span> paid{' '}
-                    <span className="font-bold text-ink">{data.players.find((x) => x.id === p.toId)?.name}</span>{' '}
-                    <span className="font-bold tabular-nums text-green">{money(p.amount)}</span>
-                  </span>
-                  {editingBets && (
-                    <button onClick={() => deletePayment(p.id)} className="text-caption font-bold text-ink-faint shrink-0">
-                      Undo
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      )}
-
-      {bets.length > 0 && (
-        <>
-          <div className="space-y-3">
-            {bets.map((bet) => {
-              // The card's verdict as it stands — "2 up thru 14", "3
-              // holes judged" — for bets that settle from the card.
-              const live = settleFromCard(bet, round, course)
-              const status = live && betStatus(live.detail, (id) => data.players.find((p) => p.id === id)?.name)
-              // The money shown is the card's too, the same numbers
-              // Standings and Settle up read (lib/betMoney.ts).
-              const results = live ? live.results : bet.results
-              return (
-              <Card key={bet.id} className="p-4">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="font-bold text-body text-ink min-w-0 truncate">{bet.name}</p>
-                  <div className="flex items-center gap-3 shrink-0">
-                    {gameCard(bet.type) ? (
-                      <button
-                        type="button"
-                        onClick={() => setReadingCard(bet.type)}
-                        aria-label={`How ${bet.name} works`}
-                        className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-line-strong bg-card text-caption font-extrabold leading-none text-ink-faint"
-                      >
-                        ?
-                      </button>
-                    ) : (
-                      <HelpTip {...rulesFor(bet)} />
-                    )}
-                    <p className="text-caption text-ink-faint tabular-nums">{money(bet.stake)} stake</p>
-                    {editingBets && (
-                    <button
-                      onClick={async () => {
-                        const ok = await confirm({
-                          title: `Remove "${bet.name}"?`,
-                          body: 'The money from this bet comes back off everyone\'s all-time total.',
-                          confirmLabel: 'Remove bet',
-                          danger: true,
-                        })
-                        if (ok) deleteBet(bet.id)
-                      }}
-                      className="text-caption font-bold text-flag"
-                    >
-                      Remove
-                    </button>
-                    )}
-                  </div>
-                </div>
-                {status && (
-                  <p className={`text-footnote mt-1 font-semibold ${live?.computable ? 'text-ink-dim' : 'text-gold'}`}>
-                    {live?.computable ? status : `Live: ${status}`}
-                  </p>
-                )}
-                <div className="mt-2.5 space-y-1.5">
-                  {[...results]
-                    .sort((a, b) => b.amount - a.amount)
-                    .map((res) => {
-                      const p = data.players.find((pl) => pl.id === res.playerId)
-                      if (!p) return null
-                      return (
-                        <div key={res.playerId} className="flex items-center justify-between text-footnote">
-                          <span className="text-ink-dim">{p.name}</span>
-                          <MoneyBadge amount={res.amount} />
-                        </div>
-                      )
-                    })}
-                </div>
-              </Card>
-              )
-            })}
-          </div>
-        </>
-      )}
+      {/* The round's playlist, for whoever has the aux cord. */}
+      <Playlist round={round} />
 
       {/* Deleting lives in Edit, out of reach of a stray thumb. */}
       <div className="h-6" />

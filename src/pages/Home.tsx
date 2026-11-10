@@ -7,13 +7,14 @@ import { useStore } from '../data/store'
 import { byDate, leaderboard, playerStats, roundStandings, saddamState, shortDate, timeToMinutes, type LeaderRow } from '../lib/stats'
 import { daysAgoISO, shortDay, todayISO, weekdayName } from '../lib/dates'
 import { bookedRounds } from '../lib/bookings'
+import { gameDayLines, gameDayRound, teeOffIn } from '../lib/gameDay'
 import { fmtDuration, paceOf } from '../lib/pace'
 import { forecastLine, useRoundWeather } from '../lib/weather'
 import { liveLines, toParLabel } from '../lib/spectate'
 import { myOutstanding } from '../lib/settlements'
 import { anyCards, cardComplete, cardOf, holesEntered, roundUnderway } from '../lib/holes'
 import { money } from '../lib/money'
-import { courseSlug, courseForRound, hasPars, padded } from '../lib/courses'
+import { courseSlug, courseForRound, hasPars, padded, yardsFor } from '../lib/courses'
 import { ratingFor } from '../lib/ratings'
 import { canSeeTrip, fmt1, isSoloRound, pending, type Round, type Trip } from '../types'
 import { Icon, IconTile } from '../components/icons'
@@ -158,13 +159,19 @@ export default function Home() {
   const overdue = myBookings.filter((r) => r.date < TODAY)
   const bookingSoon =
     nextBooking && daysBetween(TODAY, nextBooking.date) <= 7 && (!soonTrip || nextBooking.date <= soonTrip.startDate!) ? nextBooking : undefined
-  const bookingRows = [...overdue, ...(nextBooking ? [nextBooking] : [])]
+  // Game day (2026-11-09): a round I'm playing is booked for today and
+  // nobody has scored yet. The band is that round; the season shrinks to a
+  // row under it. Once a score lands it's a live round and the strip takes over.
+  const gameDay = inProgress ? undefined : gameDayRound(data, me.id, TODAY)
+  const bookingRows = [...overdue, ...(nextBooking ? [nextBooking] : [])].filter((r) => r.id !== gameDay?.id)
 
   // One line under the group's name, only when a trip is close.
   // The Saddam used to be the fallback here too, which said the same
   // thing as the strip under the hero. It now lives as one small mark
   // on the standings, and gets its full due on the Standings page.
-  const subline = bookingSoon
+  const subline = gameDay
+    ? 'Game day.'
+    : bookingSoon
     ? (() => {
         const n = daysBetween(TODAY, bookingSoon.date)
         return n === 0
@@ -197,9 +204,15 @@ export default function Home() {
         </header>
         <div className="mt-[18px] h-px bg-on-forest/[0.18]" />
         <div className="mt-4">
-          <SeasonRace board={board} meId={me.id} holderId={holder?.id} saddamSince={saddam.since} year={YEAR} />
+          {gameDay ? (
+            <GameDayBand round={gameDay} meId={me.id} />
+          ) : (
+            <SeasonRace board={board} meId={me.id} holderId={holder?.id} saddamSince={saddam.since} year={YEAR} />
+          )}
         </div>
       </div>
+
+      {gameDay && board.length > 0 && <SeasonStrip board={board} meId={me.id} year={YEAR} />}
 
       {inProgress && live && (
         <div className="mt-4">
@@ -501,6 +514,99 @@ function SeasonRace({
         </p>
       )}
     </button>
+  )
+}
+
+/**
+ * The band on the morning of a round: the tee time, where, the forecast,
+ * who's in, the three lines from lib/gameDay.ts, and the one button.
+ * Tapping anything but the button opens the booking, where bets are added.
+ */
+function GameDayBand({ round, meId }: { round: Round; meId: string }) {
+  const { data } = useStore()
+  const navigate = useNavigate()
+  const w = useRoundWeather(data, round)
+  const first = (name: string) => name.trim().split(/\s+/)[0]
+  // You first, then card order.
+  const people = round.players
+    .map((rp) => data.players.find((p) => p.id === rp.playerId))
+    .filter((p) => !!p)
+    .sort((x, y) => (y.id === meId ? 1 : 0) - (x.id === meId ? 1 : 0))
+  const names = people.map((p) => (p.id === meId ? 'You' : first(p.name)))
+  const yards = yardsFor(courseForRound(data, round), round.tee)?.yards.reduce<number>((sum, y) => sum + (y ?? 0), 0)
+  const now = new Date()
+  const countdown = teeOffIn(timeToMinutes(round.teeTime), now.getHours() * 60 + now.getMinutes())
+  const [clock, meridiem] = (round.teeTime ?? '').split(' ')
+  const facts = [round.tee && `${round.tee} tees`, yards ? `${yards.toLocaleString()} yds` : null, countdown && `tee off in ${countdown}`].filter(Boolean)
+  return (
+    <div className="text-on-forest">
+      <button type="button" onClick={() => navigate(`/rounds/${round.id}`)} className="press block w-full text-left">
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-hero font-extrabold leading-none tabular-nums">
+              {clock}
+              {meridiem && <span className="ml-1.5 text-headline font-bold text-on-forest/75">{meridiem}</span>}
+            </p>
+            <p className="mt-1.5 truncate text-headline font-bold">{round.courseName}</p>
+            {facts.length > 0 && <p className="mt-0.5 text-footnote text-on-forest/75">{facts.join(' · ')}</p>}
+          </div>
+          {w && (
+            <div className="shrink-0 text-right">
+              <p className="text-title font-extrabold tabular-nums">{w.tempF}°</p>
+              <p className="text-footnote leading-snug text-on-forest/75">
+                {w.forecast && w.rainPct != null ? `${w.rainPct}% rain` : w.label}
+                <br />
+                wind {w.windMph} mph
+              </p>
+            </div>
+          )}
+        </div>
+        <div className="mt-4 flex items-center gap-2.5">
+          <AvatarStack players={people} size={30} max={4} ring="var(--color-forest)" />
+          <p className="min-w-0 truncate text-footnote font-bold">{names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0]}</p>
+        </div>
+        <dl className="mt-4 space-y-2.5">
+          {gameDayLines(data, round, meId).map((l) => (
+            <div key={l.label} className="flex gap-2.5 text-footnote leading-snug">
+              <dt className="w-16 shrink-0 text-on-forest/70">{l.label}</dt>
+              <dd className="min-w-0">{l.text}</dd>
+            </div>
+          ))}
+        </dl>
+      </button>
+      <button
+        type="button"
+        onClick={() => navigate(`/rounds/${round.id}/card`)}
+        className="press mt-5 h-[50px] w-full rounded-xl bg-cream text-headline font-extrabold text-ink"
+      >
+        Start the card
+      </button>
+    </div>
+  )
+}
+
+/** The season as one row, for the days the band is busy with a round. */
+function SeasonStrip({ board, meId, year }: { board: LeaderRow[]; meId: string; year: string }) {
+  const navigate = useNavigate()
+  return (
+    <Card className="overflow-hidden">
+      <RowButton onClick={() => navigate('/h2h')} className="flex items-center gap-3 px-4 py-3">
+        <span className="w-12 shrink-0 text-caption leading-tight text-ink-dim">{year} season</span>
+        <span className="flex min-w-0 flex-1 items-center gap-3" aria-label={`Group wins: ${board.map((r) => `${r.player.name} ${r.wins}`).join(', ')}`}>
+          {board.slice(0, 5).map((r) => (
+            <span key={r.player.id} className="flex items-center gap-1.5 text-body font-extrabold tabular-nums text-ink">
+              <span className="rounded-full" style={r.player.id === meId ? { boxShadow: `0 0 0 2px ${LIVE_YELLOW}` } : undefined}>
+                <Avatar player={r.player} size={24} />
+              </span>
+              {r.wins}
+            </span>
+          ))}
+        </span>
+        <span className="flex shrink-0 items-center gap-0.5 text-footnote font-bold text-green">
+          Standings <Icon name="chevronRight" size={14} />
+        </span>
+      </RowButton>
+    </Card>
   )
 }
 

@@ -23,6 +23,8 @@ const { wasAnnounced, markAnnounced, forgetAnnounced } = await import('../src/li
 const { recapFacts } = await import('../src/lib/recapFacts.ts')
 const { courseSlug } = await import('../src/lib/courses.ts')
 const { voteRace } = await import('../src/lib/commissioner.ts')
+const { roundStory, storyLabel, holeOrdinal } = await import('../src/lib/roundStory.ts')
+const { gameDayRound, gameDayLines, teeOffIn } = await import('../src/lib/gameDay.ts')
 
 let failures = 0
 function check(label: string, actual: unknown, expected: unknown) {
@@ -161,6 +163,68 @@ const keysOf = (ms: { keys: string[] }[]) => ms.flatMap((m) => m.keys).sort()
   check('race: a vetoed option is last and cannot lead', [veto.options.map((o) => o.id), veto.leadingId], [['fl', 'az'], 'fl'])
   check('race: no commissioner, a tie stays a tie', voteRace(trip([opt('az', ['matt']), opt('fl', ['nader'])]), null).leadingId, null)
   check('race: nothing voted', voteRace(trip([opt('az', []), opt('fl', [])]), 'nader').decided, null)
+}
+
+// 8. How it went: the round page's chart and its three beats (2026-11-09).
+// Same cases as BanditCore/Tests/RoundStoryTests.swift.
+{
+  const course = { id: 'c', groupId: G, name: 'Split Rock Golf Course', slug: courseSlug('Split Rock Golf Course'), pars: Array(18).fill(4) }
+  const holes = (changes: Record<number, number>, base = 4) => Array.from({ length: 18 }, (_, i) => changes[i] ?? base)
+  const scratch = (id: string, h: number[]): RoundPlayer => ({ ...rp(id, h), handicapSnapshot: 0 })
+  const r = round([scratch('matt', holes({ 6: 3 })), scratch('barry', holes({ 0: 3, 10: 8 }))])
+  const s = roundStory(data({ courses: [course], rounds: [r] }), r)!
+  check('story: gross when nobody has a handicap', s.net, false)
+  check('story: each line ends on net minus par', s.lines.map((l) => [l.playerId, l.final]), [['matt', -1], ['barry', 3]])
+  check('story: the winner is named', s.winnerId, 'matt')
+  check('story: three beats in hole order, the lead last on its hole', s.beats.map((b) => [b.hole, b.kind, b.text]), [
+    [6, 'birdie', 'Matt makes birdie.'],
+    [10, 'blowup', 'Barry makes an 8.'],
+    [10, 'lead', 'Matt takes the lead from Barry and keeps it.'],
+  ])
+
+  const fives = round([rp('matt', card(18)), rp('barry', card(18, 6))])
+  const n = roundStory(data({ courses: [course], rounds: [fives] }), fives)!
+  check('story: the handicap is spread over the eighteen', [n.net, n.lines[0].points[8], n.lines[0].final], [true, 3, 6])
+  check('story: no beats on a round of bogeys', n.beats, [])
+
+  const half = round([rp('matt', card(18)), rp('barry', card(9))])
+  check('story: only full cards are drawn', roundStory(data({ courses: [course], rounds: [half] }), half)!.lines.map((l) => l.playerId), ['matt'])
+  const none = round([rp('matt', card(9)), rp('barry', card(9))])
+  check('story: no full card, no story', roundStory(data({ courses: [course], rounds: [none] }), none), null)
+  check('story: no pars, no story', roundStory(data({ rounds: [r] }), r), null)
+  check('story: labels', [storyLabel(2.2), storyLabel(0), storyLabel(-1), storyLabel(3)], ['+2.2', 'E', '−1', '+3'])
+  check('story: hole ordinals', [0, 1, 2, 10, 11].map(holeOrdinal), ['1st', '2nd', '3rd', '11th', '12th'])
+}
+
+// 9. Home on game day: the band's three lines (2026-11-09).
+// Same cases as BanditCore/Tests/GameDayTests.swift.
+{
+  const total = (playerId: string, gross: number): RoundPlayer => ({ playerId, handicapSnapshot: 12, gross })
+  const blank = (playerId: string): RoundPlayer => ({ playerId, handicapSnapshot: 12, gross: null })
+  const r1: Round = { id: 'r1', groupId: G, date: '2026-09-01', courseName: 'Split Rock', players: [total('matt', 80), total('barry', 90)] }
+  const r2: Round = { id: 'r2', groupId: G, date: '2026-10-01', courseName: 'Split Rock', players: [total('matt', 85), total('barry', 80)] }
+  const book = (players: string[]): Round => ({ id: 'bk', groupId: G, date: TODAY, courseName: 'Split Rock', teeTime: '7:40 AM', players: players.map(blank) })
+  const bets = [
+    { id: 'b1', roundId: 'r2', type: 'skins' as const, name: 'Skins', stake: 5, results: [{ playerId: 'barry', amount: 5 }, { playerId: 'matt', amount: -5 }] },
+    { id: 'b2', roundId: 'bk', type: 'nassau' as const, name: 'Nassau', stake: 5, results: [] },
+  ]
+  const two = data({ rounds: [r1, r2], bookings: [book(['barry', 'matt'])], bets })
+  check('game day: today\'s booking I am playing', gameDayRound(two, 'matt', TODAY)?.id, 'bk')
+  check('game day: not mine, not my game day', gameDayRound(two, 'pat', TODAY), undefined)
+  check('game day: not today', gameDayRound(two, 'matt', '2026-10-25'), undefined)
+  check('game day: a twosome', gameDayLines(two, two.bookings![0], 'matt'), [
+    { label: 'At stake', text: "The Saddam. Barry has had it since Oct 1. Win outright and it's yours." },
+    { label: 'You two', text: 'Level at 1 each. Barry took the last one.' },
+    { label: 'Money', text: '$5 Nassau is on. You owe Barry $5 going in.' },
+  ])
+  check('game day: the holder sees it from the other side', gameDayLines(two, two.bookings![0], 'barry')[0].text, 'The Saddam. Yours since Oct 1. Anyone who beats you outright takes it.')
+  const three = data({ rounds: [r1, r2], bookings: [book(['matt', 'pat', 'nader'])] })
+  check('game day: a threesome without the holder', gameDayLines(three, three.bookings![0], 'matt'), [
+    { label: 'At stake', text: "The Saddam. Barry isn't playing. Win outright and it's yours." },
+    { label: 'Season', text: 'Wins in 2026: You 1, Pat 0, Nader 0.' },
+    { label: 'Money', text: 'No bets on it yet.' },
+  ])
+  check('game day: tee off in', [teeOffIn(460, 388), teeOffIn(460, 430), teeOffIn(460, 470)], ['1h 12m', '30 min', null])
 }
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`)
